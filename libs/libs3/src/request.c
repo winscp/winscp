@@ -1314,7 +1314,7 @@ static S3Status setup_neon(Request *request,
         {
             *colon = '\0';
         }
-        for (int i = 0; i < strlen(params->bucketContext.bucketName); i++)
+        for (size_t i = 0; i < strlen(params->bucketContext.bucketName); i++)
         {
             if (hostName[i] == '.')
             {
