@@ -1234,7 +1234,6 @@ static S3Status setup_neon(Request *request,
     }
     request->NeonRequest = ne_request_create(request->NeonSession, method, buf->data);
     ne_buffer_destroy(buf);
-    ne_uri_free(&uri);
 
     // Set header callback and data
     // Set read callback, data, and readSize
@@ -1302,17 +1301,31 @@ static S3Status setup_neon(Request *request,
         do_add_header(values-> fieldName);                               \
     }
 
-    // WINSCP (hostHeader is added implicitly by neon based on uri, but for certificate check, we use base hostname
-    // as the bucket name can contain dots, for which the certificate check would fail)
-    char * hostName = strdup(params->bucketContext.hostName ? params->bucketContext.hostName : defaultHostNameG);
-    char * colon = strchr(hostName, ':');
-    if (colon != NULL)
+    // WINSCP (hostHeader is added implicitly by neon based on uri, but for certificate check,
+    // we remove the dots, as they fail it)
+    if ((params->bucketContext.bucketName != NULL) &&
+        (strchr(params->bucketContext.bucketName, '.') != NULL) &&
+        (strncmp(params->bucketContext.bucketName, uri.host, strlen(params->bucketContext.bucketName)) == 0) &&
+        (uri.host[strlen(params->bucketContext.bucketName)] == '.'))
     {
-        *colon = '\0';
+        char * hostName = strdup(uri.host);
+        char * colon = strchr(hostName, ':');
+        if (colon != NULL)
+        {
+            *colon = '\0';
+        }
+        for (int i = 0; i < strlen(params->bucketContext.bucketName); i++)
+        {
+            if (hostName[i] == '.')
+            {
+                hostName[i] = '-';
+            }
+        }
+        ne_set_realhost(request->NeonSession, hostName);
+        free(hostName);
     }
-    ne_set_realhost(request->NeonSession, hostName);
-    free(hostName);
 
+    // WINSCP (hostHeader is added implicitly by neon based on uri)
     append_standard_header(cacheControlHeader);
     append_standard_header(contentTypeHeader);
     append_standard_header(md5Header);
@@ -1331,6 +1344,8 @@ static S3Status setup_neon(Request *request,
     for (i = 0; i < values->amzHeadersCount; i++) {
         do_add_header(values->amzHeaders[i]);
     }
+
+    ne_uri_free(&uri); // WINSCP (moved)
 
     return S3StatusOK;
 }
