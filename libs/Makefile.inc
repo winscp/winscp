@@ -1,9 +1,14 @@
 CC = "$(BDS)\bin\bcc32c"
 MKLIB = "$(BDS)\bin\tlib" /a /C
 
+CFLAG_BASE = -O2
+
+# Debug
+# CFLAG_BASE = -O0 -D_DEBUG -debug-info-kind=standalone
+
 CFLAG_BASE = \
     -cc1 -nobuiltininc -nostdsysteminc -triple i686-pc-windows-omf -emit-obj -mrelocation-model static \
-    -masm-verbose -mstack-alignment=16 -O2 -tM -tW -fborland-extensions --jobs=8 \
+    -masm-verbose -mstack-alignment=16 $(CFLAG_BASE) -tM -tW -fborland-extensions --jobs=8 \
     -isystem "$(BDS)/include/windows/crtl" -isystem "$(BDS)/include/windows/sdk" \
     -isystem "$(BDS)/include/dinkumware64"
 
@@ -12,6 +17,3 @@ CFLAG_COMMON = \
 
 CFLAG_CPP = \
     $(CFLAG_BASE) -x c++ -std=c++17 -fcxx-exceptions -ffunction-sections -fno-use-cxa-atexit
-
-# Debug (and replace -O2 with -O0):
-# CFLAG_CPP=$(CFLAG_CPP) -D_DEBUG -debug-info-kind=standalone
