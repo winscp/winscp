@@ -1107,7 +1107,8 @@ UnicodeString __fastcall TSessionLog::GetCmdLineLog(TConfiguration * AConfigurat
 template <typename T>
 UnicodeString __fastcall EnumName(T Value, UnicodeString Names)
 {
-  int N = int(Value);
+  int ValueI = int(Value);
+  int N = ValueI;
 
   do
   {
@@ -1120,7 +1121,7 @@ UnicodeString __fastcall EnumName(T Value, UnicodeString Names)
   }
   while ((N >= 0) && !Names.IsEmpty());
 
-  return L"(unknown)";
+  return FORMAT(L"(unknown %d)", (ValueI));
 }
 #define ADSTR(S) AddLogEntry(S)
 #define ADF(S, F) ADSTR(FORMAT(S, F));
