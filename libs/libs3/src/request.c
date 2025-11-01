@@ -1328,7 +1328,6 @@ static S3Status setup_neon(Request *request,
         free(hostName);
     }
 
-    // WINSCP (hostHeader is added implicitly by neon based on uri)
     append_standard_header(cacheControlHeader);
     append_standard_header(contentTypeHeader);
     append_standard_header(md5Header);
