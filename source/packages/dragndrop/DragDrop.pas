@@ -1358,7 +1358,7 @@ var
   end;
 
 begin
-  Result := E_Fail;
+  Result := E_Fail; // Should return DRAGDROP_S_CANCEL when the menu is canceled
   if FOwner.FContextMenu then KeyState := grfKeyState or MK_RBUTTON
     else KeyState := grfKeyState or MK_LButton;
   if FAccept then SuggestDropEffect(KeyState, dwEffect)
