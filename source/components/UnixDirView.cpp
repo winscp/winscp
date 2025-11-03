@@ -467,18 +467,19 @@ bool __fastcall TUnixDirView::PasteFromClipBoard(UnicodeString TargetPath)
 {
   DragDropFilesEx->FileList->Clear();
   bool Result = false;
+  int Effect;
   if (CanPasteFromClipBoard() &&
-      DragDropFilesEx->GetFromClipboard())
+      DragDropFilesEx->GetFromClipboard(Effect))
   {
     if (TargetPath.IsEmpty())
     {
       TargetPath = PathName;
     }
 
-    PerformItemDragDropOperation(NULL, DROPEFFECT_COPY, true);
+    PerformItemDragDropOperation(NULL, Effect, true);
     if (OnDDExecuted != NULL)
     {
-      OnDDExecuted(this, DROPEFFECT_COPY);
+      OnDDExecuted(this, Effect);
     }
     Result = true;
   }

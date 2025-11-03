@@ -386,9 +386,6 @@ function DropFiles(
   out SourcePath: string; out SourceIsDirectory: Boolean): Boolean;
 procedure CheckCanOpenDirectory(Path: string);
 
-var
-  LastClipBoardOperation: TClipBoardOperation;
-
 implementation
 
 uses
@@ -2190,7 +2187,6 @@ begin
         if Verb = shcCut then
         begin
           ClearCutState;
-          LastClipBoardOperation := cboCut;
           {Set property cut to TRUE for all selected items:}
           Item := GetNextItem(nil, sdAll, [isSelected]);
           while Assigned(Item) do
@@ -2205,7 +2201,6 @@ begin
         if Verb = shcCopy then
         begin
           ClearCutState;
-          LastClipBoardOperation := cboCopy;
         end
           else
         {----------- Paste ----------}
@@ -2244,7 +2239,6 @@ begin
         if Verb = shcCut then
         begin
           ClearCutState;
-          LastClipBoardOperation := cboCut;
           ItemFocused.Cut := True;
           FAnyCut := True;
         end
@@ -2253,7 +2247,6 @@ begin
         if Verb = shcCopy then
         begin
           ClearCutState;
-          LastClipBoardOperation := cboCopy;
         end
           else
         {----------- Paste ----------}
@@ -3285,7 +3278,6 @@ begin
     end;
     FAnyCut := False;
   end;
-  LastClipBoardOperation := cboNone;
   if Assigned(FDriveView) and
      (TDriveView(FDriveView).LastPathCut <> '') then // prevent recursion
   begin
@@ -3332,7 +3324,6 @@ begin
       end;
 
       Result := DragDropFilesEx.CopyToClipBoard;
-      LastClipBoardOperation := Operation;
     end;
   finally
     Screen.Cursor := SaveCursor;
@@ -3350,33 +3341,17 @@ begin
 end;
 
 function TDirView.PasteFromClipBoard(TargetPath: string): Boolean;
+var
+  Effect: LongInt;
 begin
   DragDropFilesEx.FileList.Clear;
-  Result := False;
-  if CanPasteFromClipBoard and {MP}DragDropFilesEx.GetFromClipBoard{/MP}
-    then
+  Result := CanPasteFromClipBoard and DragDropFilesEx.GetFromClipBoard(Effect);
+  if Result then
   begin
     if TargetPath = '' then
       TargetPath := PathName;
-    case LastClipBoardOperation of
-      cboNone:
-        begin
-          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_COPY);
-        end;
-      cboCopy:
-        begin
-          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_COPY);
-        end;
-      cboCut:
-        begin
-          PerformDragDropFileOperation(TargetPath, DROPEFFECT_MOVE);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_MOVE);
-          EmptyClipBoard;
-        end;
-    end;
-    Result := True;
+    PerformDragDropFileOperation(TargetPath, Effect);
+    if Assigned(OnDDExecuted) then OnDDExecuted(Self, Effect);
   end;
 end; {PasteFromClipBoard}
 
@@ -3421,6 +3396,5 @@ end;
 {=================================================================}
 
 initialization
-  LastClipBoardOperation := cboNone;
   DaylightHack := (not IsWin7);
 end.

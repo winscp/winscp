@@ -2669,7 +2669,6 @@ begin
   if Verb = shcCut then
   begin
     ClearCutState;
-    LastClipBoardOperation := cboCut;
     FLastPathCut := NodePathName(Node);
     Node.Cut := True;
   end
@@ -2677,7 +2676,6 @@ begin
   if Verb = shcCopy then
   begin
     ClearCutState;
-    LastClipBoardOperation := cboCopy;
   end
     else
   if Verb = shcPaste then
@@ -2915,7 +2913,6 @@ begin
     end;
     FLastPathCut := '';
   end;
-  LastClipBoardOperation := cboNone;
   if Assigned(FDirView) and
      FDirView.AnyCut then // prevent recursion
   begin
@@ -2944,26 +2941,17 @@ begin
 end; {CanPasteFromClipBoard}
 
 procedure TDriveView.PasteFromClipBoard(Node: TTreeNode);
+var
+  Effect: LongInt;
 begin
   ClearDragFileList(FDragDropFilesEx.FileList);
-  if CanPasteFromClipBoard and FDragDropFilesEx.GetFromClipBoard then
+  if CanPasteFromClipBoard and FDragDropFilesEx.GetFromClipBoard(Effect) then
   begin
-    case LastClipBoardOperation of
-      cboCopy,
-      cboNone:
-        begin
-          PerformDragDropFileOperation(Node, DROPEFFECT_COPY);
-          if Assigned(FOnDDExecuted) then
-            FOnDDExecuted(Self, DROPEFFECT_COPY);
-        end;
-      cboCut:
-        begin
-          PerformDragDropFileOperation(Node, DROPEFFECT_MOVE);
-          if Assigned(FOnDDExecuted) then
-            FOnDDExecuted(Self, DROPEFFECT_MOVE);
-          EmptyClipBoard;
-        end;
-    end;
+    PerformDragDropFileOperation(Node, Effect);
+    if Assigned(FOnDDExecuted) then
+      FOnDDExecuted(Self, Effect);
+    if Effect = DROPEFFECT_MOVE then
+      EmptyClipBoard;
   end;
 end; {PasteFromClipBoard}
 
