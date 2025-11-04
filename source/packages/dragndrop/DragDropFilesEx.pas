@@ -864,9 +864,7 @@ begin
     end;
   end;
 
-  var Effect := GetPreferredDropEffect(DataObj);
-  if Effect <> 0 then
-    dwEffect := Effect;
+  dwEffect := GetPreferredDropEffect(DataObj);
 end;
 
 // TShellExtension ---------------------------------------------------

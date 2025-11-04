@@ -2044,8 +2044,17 @@ begin
   begin
     pt.x := -1;
     pt.y := -1;
-    dwEffect := DROPEFFECT_COPY;
-    FDropTarget.RenderDropped(DataObject, 0, pt, dwEffect);
+    var Effect: LongInt := 0;
+    // CF_PREFERREDDROPEFFECT is a bitmask, so it can be e.g. (DROPEFFECT_COPY | DROPEFFECT_LINK)
+    FDropTarget.RenderDropped(DataObject, 0, pt, Effect);
+    if (Effect and DROPEFFECT_COPY) <> 0 then
+      dwEffect := DROPEFFECT_COPY
+    else if (Effect and DROPEFFECT_MOVE) <> 0 then
+      dwEffect := DROPEFFECT_MOVE
+    else if (Effect and DROPEFFECT_LINK) <> 0 then
+      dwEffect := DROPEFFECT_LINK
+    else
+      dwEffect := DROPEFFECT_COPY;
   end;
 end;
 
