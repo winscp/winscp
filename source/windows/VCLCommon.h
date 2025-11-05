@@ -6,7 +6,7 @@
 #include "Configuration.h"
 #include "Exceptions.h"
 #include <ComCtrls.hpp>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 //---------------------------------------------------------------------------
 extern const UnicodeString ContextSeparator;
 //---------------------------------------------------------------------------

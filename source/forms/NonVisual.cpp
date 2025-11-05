@@ -7,7 +7,7 @@
 #include <Setup.h>
 #include "TerminalManager.h"
 #include "TBX.hpp"
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 #include "Glyphs.h"
 //---------------------------------------------------------------------------
 #pragma link "TB2Item"

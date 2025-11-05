@@ -7,7 +7,7 @@
 #include <Queue.h>
 #include <Glyphs.h>
 #include <Custom.h>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 
 #include "JclDebug.hpp"
 #include "JclHookExcept.hpp"

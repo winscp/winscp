@@ -6,7 +6,7 @@
 #include <Vcl.Controls.hpp>
 #include <Vcl.StdCtrls.hpp>
 #include <Vcl.Forms.hpp>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include <Vcl.ExtCtrls.hpp>
 #include <GUITools.h>
 //---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 #ifndef LocationProfilesH
 #define LocationProfilesH
 //----------------------------------------------------------------------------
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include <System.Classes.hpp>
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Controls.hpp>

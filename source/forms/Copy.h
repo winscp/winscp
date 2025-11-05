@@ -8,7 +8,7 @@
 #include <Forms.hpp>
 #include <Mask.hpp>
 #include <ExtCtrls.hpp>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 
 #include <Menus.hpp>
 //---------------------------------------------------------------------------

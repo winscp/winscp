@@ -2,7 +2,7 @@
 #ifndef ConsoleH
 #define ConsoleH
 //----------------------------------------------------------------------------
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include "PathLabel.hpp"
 #include <System.Classes.hpp>
 #include <Vcl.ActnList.hpp>

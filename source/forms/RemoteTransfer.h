@@ -6,7 +6,7 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include <Vcl.ExtCtrls.hpp>
 //---------------------------------------------------------------------------
 class TRemoteTransferDialog : public TForm

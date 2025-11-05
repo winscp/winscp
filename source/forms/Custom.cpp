@@ -4,7 +4,7 @@
 
 #include <ProgParams.h>
 #include <PuttyTools.h>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 #include <System.Character.hpp>
 
 #include "Custom.h"

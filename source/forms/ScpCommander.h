@@ -21,7 +21,7 @@
 
 #include <WinInterface.h>
 
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include "CustomDriveView.hpp"
 #include "DriveView.hpp"
 #include "UnixDriveView.h"

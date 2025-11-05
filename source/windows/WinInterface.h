@@ -9,7 +9,7 @@
 #include <Terminal.h>
 #include <SynchronizeController.h>
 #include <Script.h>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 
 #ifdef LOCALINTERFACE
 #include <LocalInterface.h>

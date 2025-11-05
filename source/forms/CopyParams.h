@@ -7,7 +7,7 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 
 #include <WinInterface.h>
 

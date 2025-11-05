@@ -12,7 +12,7 @@
 #include "PngImageList.hpp"
 #include <Glyphs.h>
 #include <WinApi.h>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 #include <vssym32.h>
 #include <Queue.h>
 #include <Vcl.Themes.hpp>

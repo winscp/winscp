@@ -15,7 +15,7 @@
 #include "UpDownEdit.hpp"
 #include <Dialogs.hpp>
 #include <PasTools.hpp>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include "PathLabel.hpp"
 #include <Vcl.Menus.hpp>
 #include <WinInterface.h>
