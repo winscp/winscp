@@ -517,7 +517,7 @@ UnicodeString Base64ToUrlSafe(const UnicodeString & S)
   {
     Result.SetLength(Result.Length() - 1);
   }
-  // See https://en.wikipedia.org/wiki/Base64#Implementations_and_history
+  // See https://en.wikipedia.org/wiki/Base64#Variants
   Result = ReplaceChar(Result, L'+', L'-');
   Result = ReplaceChar(Result, L'/', L'_');
   return Result;
