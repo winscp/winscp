@@ -215,13 +215,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 312
           Width = 445
-          Height = 72
+          Height = 95
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Notifications'
           TabOrder = 1
           DesignSize = (
             445
-            72)
+            95)
           object BeepOnFinishAfterText: TLabel
             Left = 429
             Top = 22
@@ -262,6 +262,18 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Show balloon &notifications in taskbar status area (system tray)'
             TabOrder = 2
+            OnClick = ControlChange
+          end
+          object FlashTaskbarCheck: TCheckBox
+            Left = 11
+            Top = 68
+            Width = 425
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 
+              'Flash taskbar button when &attention is needed while on backgrou' +
+              'nd'
+            TabOrder = 3
             OnClick = ControlChange
           end
         end

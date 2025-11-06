@@ -360,6 +360,7 @@ __published:
   TGroupBox *SearchGroup;
   TCheckBox *SessionReopenAutoInactiveCheck;
   TPanel *NavigationPanel;
+  TCheckBox *FlashTaskbarCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

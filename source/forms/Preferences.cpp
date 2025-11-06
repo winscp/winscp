@@ -313,6 +313,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BeepOnFinishAfterEdit->AsInteger =
       int(static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * SecsPerDay);
     BOOLPROP(BalloonNotifications);
+    BOOLPROP(FlashTaskbar);
 
     DDFakeFileEnabledButton->Checked = WinConfiguration->DDFakeFile;
     DDFakeFileDisabledButton->Checked = !DDFakeFileEnabledButton->Checked;
@@ -736,6 +737,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     GUIConfiguration->BeepOnFinishAfter =
       static_cast<double>(BeepOnFinishAfterEdit->Value / SecsPerDay);
     BOOLPROP(BalloonNotifications);
+    BOOLPROP(FlashTaskbar);
 
     WinConfiguration->DDFakeFile = DDFakeFileEnabledButton->Checked;
     WinConfiguration->DDDrives = DDDrivesMemo->Lines->CommaText;
