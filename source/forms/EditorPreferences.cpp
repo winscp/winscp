@@ -108,10 +108,8 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & R
     ReformatFileNameCommand(ExternalEditor);
   }
   ExternalEditorEdit->Text = ExternalEditor;
-  ExternalEditorEdit->Items = CustomWinConfiguration->History[L"ExternalEditor"];
   FExternalEditorDefaults = GetExternalEditorDefaults();
   MaskEdit->Text = Editor->FileMask.Masks;
-  MaskEdit->Items = CustomWinConfiguration->History[L"Mask"];
   ExternalEditorTextCheck->Checked = Editor->ExternalEditorText;
   SDIExternalEditorCheck->Checked = Editor->SDIExternalEditor;
   RememberCheck->Checked = Remember;
@@ -135,10 +133,8 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & R
     }
     Editor->ExternalEditor = ExternalEditorEdit->Text;
     ExternalEditorEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"ExternalEditor"] = ExternalEditorEdit->Items;
     Editor->FileMask = MaskEdit->Text;
     MaskEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"Mask"] = MaskEdit->Items;
     Editor->ExternalEditorText = ExternalEditorTextCheck->Checked;
     Editor->SDIExternalEditor = SDIExternalEditorCheck->Checked;
     Remember = RememberCheck->Checked;

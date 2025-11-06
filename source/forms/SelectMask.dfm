@@ -102,6 +102,7 @@ object SelectMaskDialog: TSelectMaskDialog
       Text = '*.*'
       OnChange = MaskEditChange
       OnExit = MaskEditExit
+      HistoryKey = 'Mask'
     end
     object HintText: TStaticText
       Left = 235

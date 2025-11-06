@@ -76,6 +76,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange
+      HistoryKey = 'RemoteTarget'
     end
     object NotDirectCopyCheck: TCheckBox
       Left = 49

@@ -2901,6 +2901,7 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 0
             OnChange = PuttyPathEditChange
             OnExit = PuttyPathEditExit
+            HistoryKey = 'PuttyPath'
           end
           object PuttyPasswordCheck2: TCheckBox
             Left = 11

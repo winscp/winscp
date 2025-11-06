@@ -61,7 +61,6 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & 
       break;
     }
   }
-  DirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteTarget"];
   DirectoryEdit->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
   FDirectCopy = DirectCopy;
   FOriginalTarget = Target;
@@ -70,7 +69,7 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & 
   if (Result)
   {
     Session = GetSelectedSession();
-    CustomWinConfiguration->History[L"RemoteTarget"] = DirectoryEdit->Items;
+    DirectoryEdit->SaveToHistory();
     Target = GetTarget();
     FileMask = GetFileMask();
     DirectCopy = !NotDirectCopyCheck->Checked;

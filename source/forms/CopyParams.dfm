@@ -295,6 +295,7 @@ object CopyParamsFrame: TCopyParamsFrame
       TabOrder = 3
       Text = 'AsciiFileMaskCombo'
       OnExit = ValidateMaskComboExit
+      HistoryKey = 'Mask'
     end
   end
   object OtherGroup: TGroupBox
@@ -326,6 +327,7 @@ object CopyParamsFrame: TCopyParamsFrame
       TabOrder = 0
       Text = 'IncludeFileMaskCombo'
       OnExit = ValidateMaskComboExit
+      HistoryKey = 'IncludeMask'
     end
     object IncludeFileMaskButton: TButton
       Left = 361

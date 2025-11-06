@@ -28,7 +28,7 @@ void SaveToHistory(TStrings * Strings, const UnicodeString & T, TObject * Data, 
 //---------------------------------------------------------------------------
 // TUIStateAwareComboBox
 //---------------------------------------------------------------------------
-TUIStateAwareComboBox::TUIStateAwareComboBox(TComponent * AOwner) :
+__fastcall TUIStateAwareComboBox::TUIStateAwareComboBox(TComponent * AOwner) :
   TComboBox(AOwner)
 {
 }
@@ -64,6 +64,9 @@ void TUIStateAwareComboBox::SetDarkMode(bool Value)
 //---------------------------------------------------------------------------
 // THistoryComboBox
 //---------------------------------------------------------------------------
+THistoryComboHistoryEvent THistoryComboBox::OnLoadHistory = nullptr;
+THistoryComboHistoryEvent THistoryComboBox::OnSaveHistory = nullptr;
+//---------------------------------------------------------------------------
 __fastcall THistoryComboBox::THistoryComboBox(TComponent * AOwner) :
   TUIStateAwareComboBox(AOwner)
 {
@@ -80,7 +83,7 @@ void __fastcall THistoryComboBox::KeyDown(unsigned short & Key, TShiftState Shif
   {
     if (Items->IndexOf(Text) < 0)
     {
-      SaveToHistory();
+      AddToHistory();
     }
   }
   if (DroppedDown && (Key == VK_DELETE) && Shift.Contains(ssCtrl) && !SaveOn.Empty())
@@ -105,7 +108,7 @@ void __fastcall THistoryComboBox::DoExit()
   TUIStateAwareComboBox::DoExit();
   if (SaveOn.Contains(soExit))
   {
-    SaveToHistory();
+    AddToHistory();
   }
 }
 //---------------------------------------------------------------------------
@@ -115,7 +118,7 @@ void __fastcall THistoryComboBox::DropDown()
 
   if (SaveOn.Contains(soDropDown))
   {
-    SaveToHistory();
+    AddToHistory();
   }
 
   int ItemWidth = GetMaxItemWidth() + ScaleByPixelsPerInch(8, this);
@@ -140,7 +143,7 @@ void __fastcall THistoryComboBox::Change()
   }
 }
 //---------------------------------------------------------------------------
-void THistoryComboBox::SaveToHistory()
+void THistoryComboBox::AddToHistory()
 {
   if (!Text.IsEmpty())
   {
@@ -151,6 +154,15 @@ void THistoryComboBox::SaveToHistory()
     }
     ::SaveToHistory(Items, Text, Data, MaxHistorySize);
     ItemIndex = 0;
+  }
+}
+//---------------------------------------------------------------------------
+void THistoryComboBox::SaveToHistory()
+{
+  AddToHistory();
+  if (OnSaveHistory != nullptr)
+  {
+    OnSaveHistory(this);
   }
 }
 //---------------------------------------------------------------------------
@@ -177,4 +189,34 @@ int THistoryComboBox::GetMaxItemWidth()
     ReleaseDC(0, DC);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void THistoryComboBox::LoadHistory()
+{
+  if (!SaveOn.Empty() && !HistoryKey.IsEmpty() && HandleAllocated())
+  {
+    if (OnLoadHistory != nullptr)
+    {
+      OnLoadHistory(this);
+    }
+    else
+    {
+      Items->Clear();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THistoryComboBox::SetHistoryKey(UnicodeString value)
+{
+  if (HistoryKey != value)
+  {
+    FHistoryKey = value;
+    LoadHistory();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THistoryComboBox::CreateWnd()
+{
+  TUIStateAwareComboBox::CreateWnd();
+  LoadHistory();
 }

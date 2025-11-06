@@ -825,7 +825,7 @@ __fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi, TDirectoryExistsEven
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteMoveDialog::Execute(UnicodeString & Target, UnicodeString & FileMask)
 {
-  Combo->Items = CustomWinConfiguration->History[L"RemoteTarget"];
+  Combo->HistoryKey = L"RemoteTarget";
   Combo->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
   bool Result = TCustomDialog::Execute();
   if (Result)
@@ -833,7 +833,6 @@ bool __fastcall TRemoteMoveDialog::Execute(UnicodeString & Target, UnicodeString
     Target = UnixExtractFilePath(Combo->Text);
     FileMask = GetFileMask();
     Combo->SaveToHistory();
-    CustomWinConfiguration->History[L"RemoteTarget"] = Combo->Items;
   }
   return Result;
 }
@@ -899,11 +898,10 @@ private:
   UnicodeString FSite;
   TComboBox * FShortCutCombo;
 
-  UnicodeString __fastcall HistoryKey(const TCustomCommandType::TOption & Option);
   THistoryComboBox * __fastcall CreateHistoryComboBox(const TCustomCommandType::TOption & Option, const UnicodeString & Value);
   void __fastcall BrowseButtonClick(TObject * Sender);
   void __fastcall LinkLabelClick(TObject * Sender);
-  UnicodeString __fastcall SaveHistoryComboBoxValue(TControl * Control, const TCustomCommandType::TOption & Option);
+  UnicodeString __fastcall SaveHistoryComboBoxValue(TControl * Control);
   void __fastcall AddOptionComboBox(
     TComboBox * ComboBox, const UnicodeString & Value, const TCustomCommandType::TOption & Option,
     std::vector<UnicodeString> & Values);
@@ -1194,16 +1192,14 @@ THistoryComboBox * __fastcall TCustomCommandOptionsDialog::CreateHistoryComboBox
   THistoryComboBox * ComboBox = new THistoryComboBox(this);
   ComboBox->AutoComplete = false;
   AddComboBox(ComboBox, CreateLabel(Option.Caption));
-  ComboBox->Items = CustomWinConfiguration->History[HistoryKey(Option)];
+
+  UnicodeString HistoryKey = FCommand->GetOptionKey(Option, FSite);
+  HistoryKey = CustomWinConfiguration->GetValidHistoryKey(HistoryKey);
+  HistoryKey = L"CustomCommandOption_" + HistoryKey;
+  ComboBox->HistoryKey = HistoryKey;
+
   ComboBox->Text = Value;
   return ComboBox;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandOptionsDialog::HistoryKey(const TCustomCommandType::TOption & Option)
-{
-  UnicodeString Result = FCommand->GetOptionKey(Option, FSite);
-  Result = CustomWinConfiguration->GetValidHistoryKey(Result);
-  return L"CustomCommandOption_" + Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomCommandOptionsDialog::Execute(TShortCut * ShortCut)
@@ -1233,11 +1229,11 @@ bool __fastcall TCustomCommandOptionsDialog::Execute(TShortCut * ShortCut)
           UnicodeString Value;
           if (Option.Kind == TCustomCommandType::okTextBox)
           {
-            Value = SaveHistoryComboBoxValue(Control, Option);
+            Value = SaveHistoryComboBoxValue(Control);
           }
           else if (Option.Kind == TCustomCommandType::okFile)
           {
-            Value = SaveHistoryComboBoxValue(Control, Option);
+            Value = SaveHistoryComboBoxValue(Control);
           }
           else if (Option.Kind == TCustomCommandType::okDropDownList)
           {
@@ -1293,12 +1289,10 @@ UnicodeString __fastcall TCustomCommandOptionsDialog::GetComboBoxValue(
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandOptionsDialog::SaveHistoryComboBoxValue(
-  TControl * Control, const TCustomCommandType::TOption & Option)
+UnicodeString __fastcall TCustomCommandOptionsDialog::SaveHistoryComboBoxValue(TControl * Control)
 {
   THistoryComboBox * ComboBox = DebugNotNull(dynamic_cast<THistoryComboBox *>(Control));
   ComboBox->SaveToHistory();
-  CustomWinConfiguration->History[HistoryKey(Option)] = ComboBox->Items;
   return ComboBox->Text;
 }
 //---------------------------------------------------------------------------

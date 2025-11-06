@@ -890,8 +890,6 @@ public:
   bool __fastcall Execute(TUnicodeStringVector & Values);
 
 private:
-  UnicodeString __fastcall HistoryKey(int Index);
-
   std::vector<THistoryComboBox *> FEdits;
   TUnicodeStringVector FPrompts;
   UnicodeString FCustomCommandName;
@@ -918,22 +916,20 @@ __fastcall TCustomCommandPromptsDialog::TCustomCommandPromptsDialog(
     THistoryComboBox * ComboBox = new THistoryComboBox(this);
     ComboBox->AutoComplete = false;
     AddComboBox(ComboBox, CreateLabel(Prompt));
-    ComboBox->Items = CustomWinConfiguration->History[HistoryKey(Index)];
+
+    UnicodeString HistoryKey = FPrompts[Index];
+    if (HistoryKey.IsEmpty())
+    {
+      HistoryKey = IntToStr(static_cast<int>(Index));
+    }
+    HistoryKey = FORMAT(L"%s_%s", (FCustomCommandName, HistoryKey));
+    HistoryKey = CustomWinConfiguration->GetValidHistoryKey(HistoryKey);
+    HistoryKey = L"CustomCommandParam_" + HistoryKey;
+    ComboBox->HistoryKey = HistoryKey;
+
     ComboBox->Text = Defaults[Index];
     FEdits.push_back(ComboBox);
   }
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandPromptsDialog::HistoryKey(int Index)
-{
-  UnicodeString Result = FPrompts[Index];
-  if (Result.IsEmpty())
-  {
-    Result = IntToStr(Index);
-  }
-  Result = FORMAT(L"%s_%s", (FCustomCommandName, Result));
-  Result = CustomWinConfiguration->GetValidHistoryKey(Result);
-  return L"CustomCommandParam_" + Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomCommandPromptsDialog::Execute(TUnicodeStringVector & Values)
@@ -947,7 +943,6 @@ bool __fastcall TCustomCommandPromptsDialog::Execute(TUnicodeStringVector & Valu
     {
       Values.push_back(FEdits[Index]->Text);
       FEdits[Index]->SaveToHistory();
-      CustomWinConfiguration->History[HistoryKey(Index)] = FEdits[Index]->Items;
     }
   }
 
@@ -1465,6 +1460,16 @@ static void __fastcall AppGetMainFormHandle(void * /*Data*/, HWND & Handle)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall LoadHistory(void *, THistoryComboBox * Sender)
+{
+  Sender->Items = CustomWinConfiguration->History[Sender->HistoryKey];
+}
+//---------------------------------------------------------------------------
+void __fastcall SaveHistory(void *, THistoryComboBox * Sender)
+{
+  CustomWinConfiguration->History[Sender->HistoryKey] = Sender->Items;
+}
+//---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
   // Not sure if we need to call JclHookExceptions at all, stack trace tracking seems to work without it.
@@ -1485,7 +1490,9 @@ void __fastcall WinInitialize()
   SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
   OnApiPath = ApiPath;
   MainThread = GetCurrentThreadId();
-  Application->OnGetMainFormHandle = MakeMethod<TGetHandleEvent>(NULL, AppGetMainFormHandle);
+  Application->OnGetMainFormHandle = MakeMethod<TGetHandleEvent>(nullptr, AppGetMainFormHandle);
+  THistoryComboBox::OnLoadHistory = MakeMethod<THistoryComboHistoryEvent>(nullptr, LoadHistory);
+  THistoryComboBox::OnSaveHistory = MakeMethod<THistoryComboHistoryEvent>(nullptr, SaveHistory);
 }
 //---------------------------------------------------------------------------
 void __fastcall WinFinalize()

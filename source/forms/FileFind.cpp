@@ -206,9 +206,7 @@ void __fastcall TFileFindDialog::Start()
   }
 
   RemoteDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
   MaskEdit->SaveToHistory();
-  WinConfiguration->History[L"Mask"] = MaskEdit->Items;
   WinConfiguration->SelectMask = MaskEdit->Text;
 
   DebugAssert(FState != ffFinding);
@@ -397,10 +395,6 @@ void __fastcall TFileFindDialog::FormShow(TObject * /*Sender*/)
 {
   InstallPathWordBreakProc(MaskEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
-
-  // have to set history after value, to prevent autocompletition
-  MaskEdit->Items = WinConfiguration->History[L"Mask"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
 
   UpdateFormPosition(this, poOwnerFormCenter);
   RestoreFormSize(CustomWinConfiguration->FindFile.WindowParams, this);

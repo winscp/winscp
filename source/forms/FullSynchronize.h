@@ -101,7 +101,6 @@ private:
   void __fastcall StartInNewWindow();
   void DoLocalDirectoryBrowseButtonClick(TComboBox * ComboBox);
   bool CanSynchronizeTimestamps();
-  UnicodeString GetRightDirectoryHistory();
 
 public:
   __fastcall TFullSynchronizeDialog(TComponent* Owner);

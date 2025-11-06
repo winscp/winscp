@@ -35,7 +35,7 @@
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
-        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-padded -Wno-language-extension-token -Wno-c++98-compat-pedantic -Wno-zero-as-null-pointer-constant -Wno-old-style-cast</BCC_UserSuppliedOptions>
+        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-padded -Wno-language-extension-token -Wno-c++98-compat-pedantic -Wno-zero-as-null-pointer-constant -Wno-old-style-cast -Wno-global-constructors</BCC_UserSuppliedOptions>
         <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_CVT_ACHAR_TO_WCHAR>true</DCC_CVT_ACHAR_TO_WCHAR>

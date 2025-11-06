@@ -77,6 +77,7 @@ object CustomCommandDialog: TCustomCommandDialog
       OnChange = ControlChange
       OnGetData = CommandEditGetData
       OnSetData = CommandEditSetData
+      HistoryKey = 'CustomCommand'
     end
     object ApplyToDirectoriesCheck: TCheckBox
       Left = 11

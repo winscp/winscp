@@ -160,13 +160,12 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
 //---------------------------------------------------------------------
 bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
 {
-  PuttyPathEdit->Items = CustomWinConfiguration->History[L"PuttyPath"];
   FDialogData = DialogData;
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     SaveConfiguration();
-    CustomWinConfiguration->History[L"PuttyPath"] = PuttyPathEdit->Items;
+    PuttyPathEdit->SaveToHistory();
   }
   else
   {

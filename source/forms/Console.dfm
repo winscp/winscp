@@ -1455,6 +1455,7 @@ object ConsoleDialog: TConsoleDialog
     MaxLength = 2048
     TabOrder = 0
     OnChange = CommandEditChange
+    HistoryKey = 'Commands'
   end
   object ExecuteButton: TButton
     Left = 377

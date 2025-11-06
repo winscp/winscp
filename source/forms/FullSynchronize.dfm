@@ -78,6 +78,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       TabOrder = 0
       Text = 'LocalDirectoryEdit'
       OnChange = ControlChange
+      HistoryKey = 'LocalDirectory'
     end
     object LocalDirectoryBrowseButton: TButton
       Left = 429

@@ -48,7 +48,6 @@ TCopyLocalDialog::TCopyLocalDialog(TComponent * Owner, bool Move, int Options)
 //---------------------------------------------------------------------------
 bool TCopyLocalDialog::Execute(UnicodeString & TargetDirectory, UnicodeString & FileMask, int & OutputOptions)
 {
-  DirectoryEdit->Items = CustomWinConfiguration->History[L"LocalTarget"];
   SetDirectoryAndFileMask(TargetDirectory, FileMask);
   NeverShowAgainCheck->Checked = FLAGSET(OutputOptions, clooDoNotShowAgain);
   DebugAssert((OutputOptions & ~clooDoNotShowAgain) == 0);
@@ -56,9 +55,7 @@ bool TCopyLocalDialog::Execute(UnicodeString & TargetDirectory, UnicodeString & 
   if (Result)
   {
     ValidateDirectoryEdit();
-
     DirectoryEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"LocalTarget"] = DirectoryEdit->Items;
 
     FileMask = GetFileMask();
     TargetDirectory = GetDirectory();

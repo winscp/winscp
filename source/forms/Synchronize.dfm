@@ -70,6 +70,7 @@ object SynchronizeDialog: TSynchronizeDialog
       TabOrder = 2
       Text = 'RemoteDirectoryEdit'
       OnChange = ControlChange
+      HistoryKey = 'RemoteDirectory'
     end
     object LocalDirectoryEdit: THistoryComboBox
       Left = 49
@@ -82,6 +83,7 @@ object SynchronizeDialog: TSynchronizeDialog
       TabOrder = 0
       Text = 'LocalDirectoryEdit'
       OnChange = ControlChange
+      HistoryKey = 'LocalDirectory'
     end
     object LocalDirectoryBrowseButton: TButton
       Left = 413

@@ -128,14 +128,12 @@ bool __fastcall TSelectMaskDialog::Execute(TFileFilter & FileFilter, TColor & Co
 {
   ApplyToDirectoriesCheck->Checked = FileFilter.Directories;
   MaskEdit->Text = FileFilter.Masks;
-  MaskEdit->Items = WinConfiguration->History[L"Mask"];
   ActiveControl = MaskEdit;
   FColor = Color;
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     MaskEdit->SaveToHistory();
-    WinConfiguration->History[L"Mask"] = MaskEdit->Items;
     FileFilter.Directories = ApplyToDirectoriesCheck->Checked;
     FileFilter.Masks = MaskEdit->Text;
     Color = FColor;

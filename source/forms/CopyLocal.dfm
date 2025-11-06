@@ -48,6 +48,7 @@ object CopyLocalDialog: TCopyLocalDialog
     TabOrder = 0
     Text = 'DirectoryEdit'
     OnExit = DirectoryEditExit
+    HistoryKey = 'LocalTarget'
   end
   object OkButton: TButton
     Left = 251

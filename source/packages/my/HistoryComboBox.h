@@ -26,6 +26,7 @@ typedef Set<THistorySaveOnEnum, soExit, soDropDown> THistorySaveOn;
 class THistoryComboBox;
 typedef void __fastcall (__closure *THistoryComboBoxGetData)(THistoryComboBox * Sender, TObject * &Data);
 typedef void __fastcall (__closure *THistoryComboBoxSetData)(THistoryComboBox * Sender, TObject * Data);
+typedef void __fastcall (__closure *THistoryComboHistoryEvent)(THistoryComboBox * Sender);
 //---------------------------------------------------------------------------
 #define DefaultHistorySaveOn ((1 << soExit) + (1 << soDropDown))
 const int DefaultMaxHistorySize = 30;
@@ -37,24 +38,34 @@ private:
   int FMaxHistorySize;
   THistoryComboBoxGetData FOnGetData;
   THistoryComboBoxSetData FOnSetData;
+  UnicodeString FHistoryKey;
+
   void __fastcall SetMaxHistorySize(int AMaxHistorySize);
+  void __fastcall SetHistoryKey(UnicodeString value);
   int GetMaxItemWidth();
+  void LoadHistory();
+  void AddToHistory();
 
 protected:
   DYNAMIC void __fastcall DoExit();
   DYNAMIC void __fastcall DropDown();
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
   DYNAMIC void __fastcall Change();
+  virtual void __fastcall CreateWnd();
 
 public:
   __fastcall THistoryComboBox(TComponent * AOwner);
   void SaveToHistory();
+
+  static THistoryComboHistoryEvent OnLoadHistory;
+  static THistoryComboHistoryEvent OnSaveHistory;
 
 __published:
   __property THistorySaveOn SaveOn = { read = FSaveOn, write = FSaveOn, default = 3 };
   __property int MaxHistorySize = { read = FMaxHistorySize, write = SetMaxHistorySize, default = 30 };
   __property THistoryComboBoxGetData OnGetData = { read = FOnGetData, write = FOnGetData };
   __property THistoryComboBoxSetData OnSetData = { read = FOnSetData, write = FOnSetData };
+  __property UnicodeString HistoryKey = { read = FHistoryKey, write = SetHistoryKey };
 };
 //---------------------------------------------------------------------------
 void SaveToHistory(TStrings * Strings, const UnicodeString & T, TObject * Data = nullptr, int MaxHistorySize = DefaultMaxHistorySize);

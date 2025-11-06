@@ -402,8 +402,7 @@ bool __fastcall TCopyDialog::Execute()
 {
   // at start assume that copy param is current preset
   FPreset = GUIConfiguration->CopyParamCurrent;
-  DirectoryEdit->Items = CustomWinConfiguration->History[
-    FToRemote ? L"RemoteTarget" : L"LocalTarget"];
+  DirectoryEdit->HistoryKey = FToRemote ? L"RemoteTarget" : L"LocalTarget";
   FExplore = false;
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
@@ -416,8 +415,6 @@ bool __fastcall TCopyDialog::Execute()
         GUIConfiguration->DefaultCopyParam = Params;
       }
       DirectoryEdit->SaveToHistory();
-      CustomWinConfiguration->History[FToRemote ?
-        L"RemoteTarget" : L"LocalTarget"] = DirectoryEdit->Items;
 
       if (FLAGSET(FOptions, coShortCutHint))
       {

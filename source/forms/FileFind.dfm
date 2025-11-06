@@ -1415,6 +1415,7 @@ object FileFindDialog: TFileFindDialog
       TabOrder = 3
       Text = 'RemoteDirectoryEdit'
       OnChange = ControlChange
+      HistoryKey = 'RemoteDirectory'
     end
     object MaskEdit: THistoryComboBox
       Left = 49
@@ -1428,6 +1429,7 @@ object FileFindDialog: TFileFindDialog
       Text = 'MaskEdit'
       OnChange = ControlChange
       OnExit = MaskEditExit
+      HistoryKey = 'Mask'
     end
     object MaskHintText: TStaticText
       Left = 213

@@ -166,7 +166,6 @@ void __fastcall TCustomCommandDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
 {
-  CommandEdit->Items = CustomWinConfiguration->History[L"CustomCommand"];
   if (CommandEdit->Items->Count == 0)
   {
     for (int i = 0; i < FCustomCommandList->Count; i++)
@@ -190,7 +189,6 @@ bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
     GetCommand(Command);
 
     CommandEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"CustomCommand"] = CommandEdit->Items;
   }
   return Result;
 }

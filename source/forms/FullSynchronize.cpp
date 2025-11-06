@@ -198,17 +198,11 @@ void __fastcall TFullSynchronizeDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-UnicodeString TFullSynchronizeDialog::GetRightDirectoryHistory()
-{
-  return FLAGCLEAR(FOptions, fsoLocalLocal) ? L"RemoteDirectory" : L"LocalDirectory2";
-}
-//---------------------------------------------------------------------------
 bool __fastcall TFullSynchronizeDialog::Execute()
 {
   // at start assume that copy param is current preset
   FPreset = GUIConfiguration->CopyParamCurrent;
-  LocalDirectoryEdit->Items = CustomWinConfiguration->History[L"LocalDirectory"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[GetRightDirectoryHistory()];
+  RemoteDirectoryEdit->HistoryKey = FLAGCLEAR(FOptions, fsoLocalLocal) ? L"RemoteDirectory" : L"LocalDirectory2";
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
@@ -220,9 +214,7 @@ bool __fastcall TFullSynchronizeDialog::Execute()
 void __fastcall TFullSynchronizeDialog::Submitted()
 {
   LocalDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
   RemoteDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[GetRightDirectoryHistory()] = RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
 void TFullSynchronizeDialog::SetDirectory2(const UnicodeString & value)

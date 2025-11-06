@@ -231,8 +231,6 @@ void __fastcall TCopyParamsFrame::BeforeExecute()
   // adding TRightsFrame on run-time corrupts the tab order, fix it
   TransferModeGroup->TabOrder = 0;
   DebugAssert(CustomWinConfiguration);
-  AsciiFileMaskCombo->Items = CustomWinConfiguration->History[L"Mask"];
-  IncludeFileMaskCombo->Items = CustomWinConfiguration->History[L"IncludeMask"];
   CopySpeedLimits(CustomWinConfiguration->History[L"SpeedLimit"], SpeedCombo->Items);
 }
 //---------------------------------------------------------------------------
@@ -240,9 +238,7 @@ void __fastcall TCopyParamsFrame::AfterExecute()
 {
   DebugAssert(CustomWinConfiguration);
   AsciiFileMaskCombo->SaveToHistory();
-  CustomWinConfiguration->History[L"Mask"] = AsciiFileMaskCombo->Items;
   IncludeFileMaskCombo->SaveToHistory();
-  CustomWinConfiguration->History[L"IncludeMask"] = IncludeFileMaskCombo->Items;
   SpeedCombo->SaveToHistory();
   CustomWinConfiguration->History[L"SpeedLimit"] = SpeedCombo->Items;
 }

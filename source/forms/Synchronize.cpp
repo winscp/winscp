@@ -221,8 +221,6 @@ bool __fastcall TSynchronizeDialog::Execute()
   // at start assume that copy param is current preset
   FPreset = GUIConfiguration->CopyParamCurrent;
 
-  LocalDirectoryEdit->Items = CustomWinConfiguration->History[L"LocalDirectory"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
   ShowModal();
 
   return true;
@@ -497,9 +495,7 @@ void __fastcall TSynchronizeDialog::Start()
 void __fastcall TSynchronizeDialog::SaveHistory()
 {
   LocalDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
   RemoteDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::StopButtonClick(TObject * /*Sender*/)

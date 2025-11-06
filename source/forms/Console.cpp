@@ -122,8 +122,6 @@ bool __fastcall TConsoleDialog::Execute(const UnicodeString Command,
 {
   try
   {
-    CommandEdit->Items = CustomWinConfiguration->History[L"Commands"];
-
     if (Log != NULL)
     {
       OutputMemo->Lines->BeginUpdate();
@@ -162,7 +160,6 @@ bool __fastcall TConsoleDialog::Execute(const UnicodeString Command,
     if (FTerminal)
     {
       CommandEdit->SaveToHistory();
-      CustomWinConfiguration->History[L"Commands"] = CommandEdit->Items;
     }
   }
   return true;
