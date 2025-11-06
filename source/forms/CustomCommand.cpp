@@ -255,13 +255,13 @@ void __fastcall TCustomCommandDialog::HelpButtonClick(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::CommandEditGetData(
-  THistoryComboBox * /*Sender*/, Pointer & Data)
+  THistoryComboBox * /*Sender*/, TObject *& Data)
 {
-  Data = reinterpret_cast<void *>(ccSet | GetParams());
+  Data = reinterpret_cast<TObject *>(ccSet | GetParams());
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::CommandEditSetData(
-  THistoryComboBox * /*Sender*/, Pointer Data)
+  THistoryComboBox * /*Sender*/, TObject * Data)
 {
   int IData = reinterpret_cast<int>(Data);
   if (FLAGSET(IData, ccSet))

@@ -35,9 +35,9 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall CommandEditGetData(THistoryComboBox *Sender,
-    Pointer & Data);
+    TObject *& Data);
   void __fastcall CommandEditSetData(THistoryComboBox *Sender,
-    Pointer Data);
+    TObject * Data);
   void __fastcall FormShow(TObject *Sender);
 
 private:
