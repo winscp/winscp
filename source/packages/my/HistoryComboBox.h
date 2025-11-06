@@ -64,6 +64,7 @@ public:
 
 __published:
   __property THistorySaveOn SaveOn = { read = FSaveOn, write = FSaveOn, default = 3 };
+  // There's a redundant limit in TCustomWinConfiguration::SetHistory
   __property int MaxHistorySize = { read = FMaxHistorySize, write = SetMaxHistorySize, default = 30 };
   __property THistoryComboBoxGetData OnGetData = { read = FOnGetData, write = FOnGetData };
   __property THistoryComboBoxSetData OnSetData = { read = FOnSetData, write = FOnSetData };

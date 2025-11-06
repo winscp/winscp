@@ -425,6 +425,7 @@ void __fastcall TCustomWinConfiguration::SetHistory(const UnicodeString Index,
     if (NonEmpty)
     {
       HistoryStrings->Assign(value);
+      // There's a redundant limit in THistoryComboBox/SaveToHistory
       while (HistoryStrings->Count > MaxHistoryCount)
       {
         HistoryStrings->Delete(HistoryStrings->Count - 1);
