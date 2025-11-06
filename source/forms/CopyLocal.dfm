@@ -42,9 +42,7 @@ object CopyLocalDialog: TCopyLocalDialog
     Top = 26
     Width = 371
     Height = 23
-    AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
-    DropDownCount = 16
     TabOrder = 0
     Text = 'DirectoryEdit'
     OnExit = DirectoryEditExit

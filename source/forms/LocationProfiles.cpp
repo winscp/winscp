@@ -82,7 +82,7 @@ __fastcall TBookmarkNameDialog::TBookmarkNameDialog(TStrings * PeerBookmarks,
 
   NameCombo = new TUIStateAwareComboBox(this);
   NameCombo->AutoComplete = false;
-  NameCombo->DropDownCount = Max(NameCombo->DropDownCount, 16);
+  NameCombo->DropDownCount = Max(NameCombo->DropDownCount, DefaultHistoryDropDownCount);
   AddComboBox(NameCombo, CreateLabel(LoadStr(ADD_BOOKMARK_PROMPT)));
   NameCombo->Items = PeerBookmarks;
 

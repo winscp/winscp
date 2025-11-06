@@ -313,7 +313,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
     Width = 461
     Height = 23
     Anchors = [akLeft, akTop, akRight]
-    DropDownCount = 16
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
@@ -325,7 +324,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
     Width = 547
     Height = 23
     Anchors = [akLeft, akTop, akRight]
-    DropDownCount = 16
     MaxLength = 1000
     TabOrder = 2
     Text = 'RemoteDirectoryEdit'

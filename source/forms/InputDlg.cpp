@@ -52,7 +52,6 @@ __fastcall TInputDialog::TInputDialog(
     HistoryCombo = new THistoryComboBox(this);
     AddEditLikeControl(HistoryCombo, Label);
     HistoryCombo->MaxLength = MaxLength;
-    HistoryCombo->AutoComplete = false;
     Edit = NULL;
   }
 }

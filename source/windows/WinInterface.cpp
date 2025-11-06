@@ -914,7 +914,6 @@ __fastcall TCustomCommandPromptsDialog::TCustomCommandPromptsDialog(
       Prompt = LoadStr(CUSTOM_COMMANDS_PARAM_PROMPT2);
     }
     THistoryComboBox * ComboBox = new THistoryComboBox(this);
-    ComboBox->AutoComplete = false;
     AddComboBox(ComboBox, CreateLabel(Prompt));
 
     UnicodeString HistoryKey = FPrompts[Index];

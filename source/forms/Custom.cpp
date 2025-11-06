@@ -453,7 +453,7 @@ void __fastcall TSaveSessionDialog::Init(bool CanSavePassword,
 
   FolderCombo = new TUIStateAwareComboBox(this);
   AddComboBox(FolderCombo, CreateLabel(LoadStr(SAVE_SESSION_FOLDER)));
-  FolderCombo->DropDownCount = Max(FolderCombo->DropDownCount, 16);
+  FolderCombo->DropDownCount = Max(FolderCombo->DropDownCount, DefaultHistoryDropDownCount);
   FolderCombo->Items->Add(FRootFolder);
   FolderCombo->Items->AddStrings(Folders.get());
 
@@ -661,7 +661,7 @@ __fastcall TSaveWorkspaceDialog::TSaveWorkspaceDialog(
   WorkspaceNameCombo = new TUIStateAwareComboBox(this);
   WorkspaceNameCombo->AutoComplete = false;
   AddComboBox(WorkspaceNameCombo, CreateLabel(LoadStr(SAVE_WORKSPACE_PROMPT)));
-  WorkspaceNameCombo->DropDownCount = Max(WorkspaceNameCombo->DropDownCount, 16);
+  WorkspaceNameCombo->DropDownCount = Max(WorkspaceNameCombo->DropDownCount, DefaultHistoryDropDownCount);
 
   std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   WorkspaceNameCombo->Items->AddStrings(Workspaces.get());
@@ -819,7 +819,6 @@ __fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi, TDirectoryExistsEven
   AddImage(L"Move L to R");
 
   Combo = new THistoryComboBox(this);
-  Combo->AutoComplete = false;
   AddComboBox(Combo, CreateLabel(LoadStr(REMOTE_TRANSFER_PROMPT2)));
 }
 //---------------------------------------------------------------------------
@@ -1190,7 +1189,6 @@ THistoryComboBox * __fastcall TCustomCommandOptionsDialog::CreateHistoryComboBox
   const TCustomCommandType::TOption & Option, const UnicodeString & Value)
 {
   THistoryComboBox * ComboBox = new THistoryComboBox(this);
-  ComboBox->AutoComplete = false;
   AddComboBox(ComboBox, CreateLabel(Option.Caption));
 
   UnicodeString HistoryKey = FCommand->GetOptionKey(Option, FSite);
@@ -1535,7 +1533,7 @@ void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
   AddDialog->Caption = LoadStr(SITE_RAW_ADD_CAPTION);
   TComboBox * AddComboBox = new TUIStateAwareComboBox(AddDialog.get());
   AddComboBox->Style = csDropDownList;
-  AddComboBox->DropDownCount = Max(AddComboBox->DropDownCount, 16);
+  AddComboBox->DropDownCount = Max(AddComboBox->DropDownCount, DefaultHistoryDropDownCount);
   AddDialog->AddComboBox(AddComboBox, CreateLabel(LoadStr(SITE_RAW_ADD_LABEL)), Names.get(), true);
   AddComboBox->ItemIndex = 0;
   if (AddDialog->Execute())

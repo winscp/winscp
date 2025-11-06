@@ -58,7 +58,6 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 91
       Width = 101
       Height = 23
-      AutoComplete = False
       TabOrder = 3
       Text = 'SpeedCombo'
       OnExit = SpeedComboExit
@@ -289,7 +288,6 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 109
       Width = 255
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 3
@@ -321,7 +319,6 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 40
       Width = 346
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 3000
       TabOrder = 0

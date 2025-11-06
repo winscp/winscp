@@ -64,7 +64,6 @@ object SynchronizeDialog: TSynchronizeDialog
       Top = 87
       Width = 444
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 2
@@ -77,7 +76,6 @@ object SynchronizeDialog: TSynchronizeDialog
       Top = 40
       Width = 358
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 0

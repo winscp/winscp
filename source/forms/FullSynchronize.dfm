@@ -60,7 +60,6 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Top = 87
       Width = 460
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 2
@@ -72,7 +71,6 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Top = 40
       Width = 374
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 0

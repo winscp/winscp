@@ -74,6 +74,8 @@ __fastcall THistoryComboBox::THistoryComboBox(TComponent * AOwner) :
   FMaxHistorySize = DefaultMaxHistorySize;
   FOnGetData = nullptr;
   FOnSetData = nullptr;
+  DropDownCount = DefaultHistoryDropDownCount;
+  AutoComplete = DefaultHistoryAutoComplete;
 }
 //---------------------------------------------------------------------------
 void __fastcall THistoryComboBox::KeyDown(unsigned short & Key, TShiftState Shift)

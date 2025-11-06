@@ -41,9 +41,7 @@ object CopyDialog: TCopyDialog
     Top = 26
     Width = 427
     Height = 23
-    AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
-    DropDownCount = 16
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
     OnChange = ControlChange
@@ -54,9 +52,7 @@ object CopyDialog: TCopyDialog
     Top = 26
     Width = 513
     Height = 23
-    AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
-    DropDownCount = 16
     MaxLength = 1000
     TabOrder = 2
     Text = 'RemoteDirectoryEdit'

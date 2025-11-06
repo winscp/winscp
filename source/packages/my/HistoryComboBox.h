@@ -30,6 +30,8 @@ typedef void __fastcall (__closure *THistoryComboHistoryEvent)(THistoryComboBox 
 //---------------------------------------------------------------------------
 #define DefaultHistorySaveOn ((1 << soExit) + (1 << soDropDown))
 const int DefaultMaxHistorySize = 30;
+const int DefaultHistoryDropDownCount = 16;
+const int DefaultHistoryAutoComplete = false;
 //---------------------------------------------------------------------------
 class THistoryComboBox : public TUIStateAwareComboBox
 {
@@ -66,6 +68,8 @@ __published:
   __property THistoryComboBoxGetData OnGetData = { read = FOnGetData, write = FOnGetData };
   __property THistoryComboBoxSetData OnSetData = { read = FOnSetData, write = FOnSetData };
   __property UnicodeString HistoryKey = { read = FHistoryKey, write = SetHistoryKey };
+  __property DropDownCount = { default = DefaultHistoryDropDownCount };
+  __property AutoComplete = { default = DefaultHistoryAutoComplete };
 };
 //---------------------------------------------------------------------------
 void SaveToHistory(TStrings * Strings, const UnicodeString & T, TObject * Data = nullptr, int MaxHistorySize = DefaultMaxHistorySize);

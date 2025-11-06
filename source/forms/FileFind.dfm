@@ -1409,7 +1409,6 @@ object FileFindDialog: TFileFindDialog
       Top = 89
       Width = 374
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 3
@@ -1422,7 +1421,6 @@ object FileFindDialog: TFileFindDialog
       Top = 40
       Width = 288
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 0

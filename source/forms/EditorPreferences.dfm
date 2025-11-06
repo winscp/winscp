@@ -85,7 +85,6 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Top = 68
       Width = 310
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 2
       Text = 'ExternalEditorEdit'
@@ -146,7 +145,6 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Top = 40
       Width = 413
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 0
