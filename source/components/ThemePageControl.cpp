@@ -24,8 +24,8 @@ namespace Themepagecontrol
 {
   void __fastcall PACKAGE Register()
   {
-    TComponentClass classes[2] = {__classid(TThemePageControl), __classid(TThemeTabSheet)};
-    RegisterComponents(L"Scp", classes, 1);
+    TComponentClass classes[] = { __classid(TThemePageControl), __classid(TThemeTabSheet) };
+    RegisterComponents(L"Scp", classes, LENOF(classes) - 1);
   }
 }
 //----------------------------------------------------------------------------------------------------------

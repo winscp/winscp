@@ -21,8 +21,8 @@ namespace Unixdriveview
 {
   void __fastcall PACKAGE Register()
   {
-    TComponentClass classes[1] = {__classid(TUnixDriveView)};
-    RegisterComponents(L"Scp", classes, 0);
+    TComponentClass classes[] = { __classid(TUnixDriveView) };
+    RegisterComponents(L"Scp", classes, LENOF(classes) - 1);
   }
 }
 //---------------------------------------------------------------------------

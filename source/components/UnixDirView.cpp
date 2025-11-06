@@ -31,8 +31,8 @@ namespace Unixdirview
 {
   void __fastcall PACKAGE Register()
   {
-    TComponentClass classes[1] = {__classid(TUnixDirView)};
-    RegisterComponents(L"Scp", classes, 0);
+    TComponentClass classes[] = { __classid(TUnixDirView) };
+    RegisterComponents(L"Scp", classes, LENOF(classes) - 1);
   }
 }
 //---------------------------------------------------------------------------
