@@ -6,6 +6,7 @@
 #include "HistoryComboBox.h"
 #include "PasTools.hpp"
 #include "Common.h"
+#include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -124,10 +125,28 @@ void __fastcall THistoryComboBox::DropDown()
   }
 
   int ItemWidth = GetMaxItemWidth() + ScaleByPixelsPerInch(8, this);
+  int VScrollWidth = GetSystemMetricsForControl(this, SM_CXVSCROLL);
   if (Items->Count > DropDownCount)
   {
-    ItemWidth += GetSystemMetricsForControl(this, SM_CXVSCROLL);
+    ItemWidth += VScrollWidth;
   }
+
+  // If dropdown fits from control's left to desktop's right edge, it's dropped to the right.
+  // Otherwise it drops to the left.
+  // The following limits the width do that it fits either to the right or left on the current monitor only.
+  TRect MonitorRect = GetParentForm(this)->Monitor->WorkareaRect;
+  TPoint ScreenPosition = ClientToScreen(TPoint());
+  // VScrollWidth is used just as a convenient size of margin between monitor edge and scrollber
+  int RightSpace = MonitorRect.Right - ScreenPosition.X - VScrollWidth;
+  int LeftSpace = ScreenPosition.X + Width - MonitorRect.Left - VScrollWidth;
+  int DropSpace = RightSpace;
+  // Drop to the left only if there's considerably more space on left than right
+  if (LeftSpace > RightSpace * 11 / 10)
+  {
+    DropSpace = LeftSpace;
+  }
+  ItemWidth = std::min(ItemWidth, DropSpace);
+
   Perform(CB_SETDROPPEDWIDTH, static_cast<unsigned int>(ItemWidth), 0);
 }
 //---------------------------------------------------------------------------
