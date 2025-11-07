@@ -60,7 +60,8 @@ protected:
   virtual bool __fastcall DragCompleteFileList();
   virtual TDropEffectSet __fastcall DDSourceEffects();
 
-  TTreeNode * __fastcall FindNodeToPath(UnicodeString Path);
+  virtual TTreeNode * __fastcall FindNodeToPath(UnicodeString Path);
+  virtual TTreeNode * __fastcall TryFindNodeToPath(UnicodeString Path);
   virtual UnicodeString __fastcall NodePath(TTreeNode * Node);
   virtual bool __fastcall NodeIsRecycleBin(TTreeNode * Node);
   virtual bool __fastcall NodePathExists(TTreeNode * Node);
@@ -73,6 +74,7 @@ protected:
 
   virtual void __fastcall ValidateDirectoryEx(TTreeNode * Node,
     TRecursiveScan Recurse, bool NewDirs);
+  virtual void __fastcall ValidateCurrentDirectoryIfNotMonitoring();
   void LoadNodeState(TTreeNode * Node, const UnicodeString & Path);
 
   virtual void __fastcall RebuildTree();

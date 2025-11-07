@@ -134,7 +134,6 @@ type
     function DDSourceEffects: TDropEffectSet; virtual; abstract;
 
     function NodePath(Node: TTreeNode): string; virtual; abstract;
-    function NodeIsRecycleBin(Node: TTreeNode): Boolean; virtual;
     function NodePathExists(Node: TTreeNode): Boolean; virtual;
     function NodeColor(Node: TTreeNode): TColor; virtual; abstract;
     function NodeCanDrag(Node: TTreeNode): Boolean; virtual;
@@ -170,6 +169,17 @@ type
       CallBackFunc: TCallBackFunc; Recurse: TRecursiveScan;
       ScanStartNode: TScanStartNode; Data: Pointer): Boolean;
     function NodePathName(Node: TTreeNode): string; virtual; abstract;
+    function NodeIsRecycleBin(Node: TTreeNode): Boolean; virtual;
+
+    function FindNodeToPath(Path: string): TTreeNode; virtual; abstract;
+    function TryFindNodeToPath(Path: string): TTreeNode; virtual;
+    procedure ValidateCurrentDirectoryIfNotMonitoring; virtual;
+    procedure StartWatchThread; virtual;
+    procedure StopWatchThread; virtual;
+    procedure SuspendChangeTimer; virtual;
+    procedure ResumeChangeTimer; virtual;
+    procedure EmptyClipboardIfCut; virtual;
+    procedure DirHasNoChildren(Path: string); virtual;
 
     property DragDropFilesEx: TCustomizableDragDropFilesEx read FDragDropFilesEx;
     property UseSystemContextMenu: Boolean read FUseSystemContextMenu
@@ -1278,6 +1288,47 @@ end;
 procedure TCustomDriveView.EndBusy;
 begin
   DoBusy(-1);
+end;
+
+function TCustomDriveView.TryFindNodeToPath(Path: string): TTreeNode;
+begin
+  Assert(False);
+  Result := nil;
+end;
+
+procedure TCustomDriveView.ValidateCurrentDirectoryIfNotMonitoring;
+begin
+  Assert(False);
+end;
+
+procedure TCustomDriveView.StartWatchThread;
+begin
+  Assert(False);
+end;
+
+procedure TCustomDriveView.StopWatchThread;
+begin
+  Assert(False);
+end;
+
+procedure TCustomDriveView.SuspendChangeTimer;
+begin
+  Assert(False);
+end;
+
+procedure TCustomDriveView.ResumeChangeTimer;
+begin
+  Assert(False);
+end;
+
+procedure TCustomDriveView.EmptyClipboardIfCut;
+begin
+  Assert(False);
+end;
+
+procedure TCustomDriveView.DirHasNoChildren(Path: string);
+begin
+  Assert(False);
 end;
 
 end.
