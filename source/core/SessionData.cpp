@@ -224,11 +224,7 @@ void __fastcall TSessionData::DefaultSettings()
   WebDavLiberalEscaping = false;
   WebDavAuthLegacy = false;
 
-  ProxyMethod = ::pmNone;
-  ProxyHost = L"proxy";
-  ProxyPort = ProxyPortNumber;
-  ProxyUsername = L"";
-  ProxyPassword = L"";
+  DefaultProxy();
   ProxyTelnetCommand = L"connect %host %port\\n";
   ProxyLocalCommand = L"";
   ProxyDNS = asAuto;
@@ -344,6 +340,15 @@ void __fastcall TSessionData::DefaultSettings()
 
   CustomParam1 = L"";
   CustomParam2 = L"";
+}
+//---------------------------------------------------------------------
+void TSessionData::DefaultProxy()
+{
+  ProxyMethod = ::pmNone;
+  ProxyHost = L"proxy";
+  ProxyPort = ProxyPortNumber;
+  ProxyUsername = L"";
+  ProxyPassword = L"";
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Default()
@@ -890,14 +895,26 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   PuttyProtocol = Storage->ReadString(L"Protocol", PuttyProtocol);
 
   Tunnel = Storage->ReadBool(L"Tunnel", Tunnel);
-  TunnelPortNumber = Storage->ReadInteger(L"TunnelPortNumber", TunnelPortNumber);
-  TunnelUserName = Storage->ReadString(L"TunnelUserName", TunnelUserName);
-  // must be loaded after TunnelUserName,
-  // because TunnelHostName may be in format user@host
-  TunnelHostName = Storage->ReadString(L"TunnelHostName", TunnelHostName);
-  if (LoadPasswords)
+  if (!Tunnel && PuttyImport && (ProxyMethod == pmSshTcpIp))
   {
-    LOAD_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
+    Tunnel = true;
+    TunnelPortNumber = ProxyPort;
+    TunnelUserName = ProxyUsername;
+    TunnelHostName = ProxyHost;
+    TunnelPassword = ProxyPassword;
+    DefaultProxy();
+  }
+  else
+  {
+    TunnelPortNumber = Storage->ReadInteger(L"TunnelPortNumber", TunnelPortNumber);
+    TunnelUserName = Storage->ReadString(L"TunnelUserName", TunnelUserName);
+    // must be loaded after TunnelUserName,
+    // because TunnelHostName may be in format user@host
+    TunnelHostName = Storage->ReadString(L"TunnelHostName", TunnelHostName);
+    if (LoadPasswords)
+    {
+      LOAD_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
+    }
   }
   TunnelPublicKeyFile = Storage->ReadString(L"TunnelPublicKeyFile", TunnelPublicKeyFile);
   // Contrary to main session passphrase (which has -passphrase switch in scripting),
