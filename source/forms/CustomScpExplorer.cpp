@@ -6312,49 +6312,52 @@ void TCustomScpExplorerForm::SynchronizeApplyLocal(TSynchronizeChecklist * Check
   std::unique_ptr<TSynchronizeChecklistFileOperation> ChecklistFileOperation(
     new TSynchronizeChecklistFileOperation(Checklist, SynchronizeProcessedItem, &Params));
 
-  unsigned int OperationFlags =
-    FOF_ALLOWUNDO |
-    FOF_NOCONFIRMMKDIR |
-    FOFX_RECYCLEONDELETE | // same effect as FOF_ALLOWUNDO?
-    FLAGMASK(FLAGSET(Params.Params, TTerminal::spNoConfirmation), FOF_NOCONFIRMATION);
-  IFileOperation * FileOperation = ChecklistFileOperation->FileOperation;
-  OleCheck(FileOperation->SetOperationFlags(OperationFlags));
+  if (ChecklistFileOperation->Any)
+  {
+    unsigned int OperationFlags =
+      FOF_ALLOWUNDO |
+      FOF_NOCONFIRMMKDIR |
+      FOFX_RECYCLEONDELETE | // same effect as FOF_ALLOWUNDO?
+      FLAGMASK(FLAGSET(Params.Params, TTerminal::spNoConfirmation), FOF_NOCONFIRMATION);
+    IFileOperation * FileOperation = ChecklistFileOperation->FileOperation;
+    OleCheck(FileOperation->SetOperationFlags(OperationFlags));
 
-  TForm * ActiveForm = Screen->ActiveForm;
-  if (ActiveForm == this)
-  {
-    LockWindow();
-  }
-  else
-  {
-    ActiveForm->Enabled = false;
-  }
-
-  FileOperation->SetOwnerWindow(ActiveForm->Handle);
-
-  try
-  {
-    HRESULT Result = FileOperation->PerformOperations();
-    AppLogFmt(L"Performed %d", (int(Result)));
-    BOOL Aborted;
-    OleCheck(FileOperation->GetAnyOperationsAborted(&Aborted));
-    if ((Result == HRESULT_FROM_WIN32(ERROR_CANCELLED)) || Aborted)
-    {
-      AppLog(L"Aborted");
-      Abort();
-    }
-    AppLog(L"Checking");
-    OleCheck(Result);
-  }
-  __finally
-  {
+    TForm * ActiveForm = Screen->ActiveForm;
     if (ActiveForm == this)
     {
-      UnlockWindow();
+      LockWindow();
     }
     else
     {
-      ActiveForm->Enabled = true;
+      ActiveForm->Enabled = false;
+    }
+
+    FileOperation->SetOwnerWindow(ActiveForm->Handle);
+
+    try
+    {
+      HRESULT Result = FileOperation->PerformOperations();
+      AppLogFmt(L"Performed %d", (int(Result)));
+      BOOL Aborted;
+      OleCheck(FileOperation->GetAnyOperationsAborted(&Aborted));
+      if ((Result == HRESULT_FROM_WIN32(ERROR_CANCELLED)) || Aborted)
+      {
+        AppLog(L"Aborted");
+        Abort();
+      }
+      AppLog(L"Checking");
+      OleCheck(Result);
+    }
+    __finally
+    {
+      if (ActiveForm == this)
+      {
+        UnlockWindow();
+      }
+      else
+      {
+        ActiveForm->Enabled = true;
+      }
     }
   }
 }

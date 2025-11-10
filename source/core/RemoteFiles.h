@@ -568,6 +568,7 @@ public:
   ~TSynchronizeChecklistFileOperation();
 
   __property IFileOperation * FileOperation = { read = GetFileOperation };
+  __property bool Any = { read = FAny };
 
 protected:
   void ProcessedItem(IShellItem * ShellItem);
@@ -579,6 +580,7 @@ private:
   std::map<UnicodeString, const TSynchronizeChecklist::TItem *> FShellItems;
   TProcessedSynchronizationChecklistItem FOnProcessedItem;
   void * FToken;
+  bool FAny;
 };
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;

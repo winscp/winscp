@@ -3266,6 +3266,7 @@ TSynchronizeChecklistFileOperation::TSynchronizeChecklistFileOperation(
   OleCheck(FFileOperation->Advise(FProgressSink, &UnusedCookie));
 
   int Index = 0;
+  FAny = false;
   const TSynchronizeChecklist::TItem * ChecklistItem;
   while (Checklist->GetNextChecked(Index, ChecklistItem))
   {
@@ -3292,6 +3293,7 @@ TSynchronizeChecklistFileOperation::TSynchronizeChecklistFileOperation(
           TComPtr<IShellItem> Item = CreateShellItemFromParsingName(ItemPath);
           TComPtr<IShellItem> DestinationFolder = CreateShellItemFromParsingName(DestinationFolderPath);
           OleCheck(FFileOperation->CopyItem(Item.Get(), DestinationFolder.Get(), nullptr, nullptr));
+          FAny = true;
         }
         break;
 
@@ -3302,6 +3304,7 @@ TSynchronizeChecklistFileOperation::TSynchronizeChecklistFileOperation(
           ItemPath = Left ? ChecklistItem->GetLocalPath() : ChecklistItem->GetLocalPath2();
           TComPtr<IShellItem> Item = CreateShellItemFromParsingName(ItemPath);
           OleCheck(FFileOperation->DeleteItem(Item.Get(), nullptr));
+          FAny = true;
         }
         break;
 
