@@ -3025,35 +3025,87 @@ void TSynchronizeChecklist::Add(TItem * Item)
   FList->Add(Item);
 }
 //---------------------------------------------------------------------------
-int TSynchronizeChecklist::Compare(const TItem * Item1, const TItem * Item2)
+static inline int __fastcall DoCompare(const TSynchronizeChecklist::TItem * Item1, const TSynchronizeChecklist::TItem * Item2)
 {
   int Result;
-  if (!Item1->Info1.Directory.IsEmpty())
+  // VCL's Sort calls the func for the same items, optimize that
+  if (Item1 == Item2)
   {
-    Result = AnsiCompareText(Item1->Info1.Directory, Item2->Info1.Directory);
+    Result = 0;
   }
   else
   {
-    DebugAssert(!Item1->Info2.Directory.IsEmpty());
-    Result = AnsiCompareText(Item1->Info2.Directory, Item2->Info2.Directory);
-  }
+    if (!Item1->Info1.Directory.IsEmpty())
+    {
+      // Magnitude faster that AnsiCompareText
+      if (Item1->Info1.Directory == Item2->Info1.Directory)
+      {
+        Result = 0;
+      }
+      else
+      {
+        Result = AnsiCompareText(Item1->Info1.Directory, Item2->Info1.Directory);
+      }
+    }
+    else
+    {
+      DebugAssert(!Item1->Info2.Directory.IsEmpty());
+      if (Item1->Info2.Directory == Item2->Info2.Directory)
+      {
+        Result = 0;
+      }
+      else
+      {
+        Result = AnsiCompareText(Item1->Info2.Directory, Item2->Info2.Directory);
+      }
+    }
 
-  if (Result == 0)
-  {
-    Result = AnsiCompareText(Item1->GetFileName(), Item2->GetFileName());
+    if (Result == 0)
+    {
+      Result = AnsiCompareText(Item1->GetFileName(), Item2->GetFileName());
+    }
   }
-
   return Result;
+}
+//---------------------------------------------------------------------------
+int TSynchronizeChecklist::Compare(const TItem * Item1, const TItem * Item2)
+{
+  return DoCompare(Item1, Item2);
 }
 //---------------------------------------------------------------------------
 int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
 {
-  return Compare(static_cast<TItem *>(AItem1), static_cast<TItem *>(AItem2));
+  return DoCompare(static_cast<TItem *>(AItem1), static_cast<TItem *>(AItem2));
 }
 //---------------------------------------------------------------------------
 void TSynchronizeChecklist::Sort()
 {
-  FList->Sort(Compare);
+  // Quick sort is slow if the list is huge and almost sorted (what is usually true),
+  // so as an optimization, doing linear comparison to test if it is really sorted.
+  // Though in real live, locale-aware comparison might cause the list not to be really sorted.
+  // We might consider optimize the sorting by blocks of files in the same folder.
+  int C = FList->Count;
+  if (C > 0)
+  {
+    int Index = 0;
+    bool Sorted = true;
+    TItem * Item0 = static_cast<TItem *>(FList->Items[Index]);
+    while (Sorted && (Index < C - 1))
+    {
+      Index++;
+      TItem * Item1 = static_cast<TItem *>(FList->Items[Index]);
+      if (Compare(Item0, Item1) > 0)
+      {
+        Sorted = false;
+      }
+      Item0 = Item1;
+    }
+
+    if (!Sorted)
+    {
+      FList->Sort(Compare);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 int TSynchronizeChecklist::GetCount() const
