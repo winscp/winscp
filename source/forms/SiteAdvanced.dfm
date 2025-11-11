@@ -180,13 +180,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 8
           Top = 164
           Width = 438
-          Height = 93
+          Height = 96
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Daylight saving time'
           TabOrder = 1
           DesignSize = (
             438
-            93)
+            96)
           object DSTModeUnixCheck: TRadioButton
             Left = 11
             Top = 23
@@ -220,7 +220,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         end
         object PuttyGroup: TGroupBox
           Left = 8
-          Top = 263
+          Top = 266
           Width = 438
           Height = 103
           Anchors = [akLeft, akTop, akRight]
