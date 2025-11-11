@@ -68,6 +68,7 @@
         <FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <Icon_MainIcon>resource\Application.ico</Icon_MainIcon>
         <ILINK_GenerateDRC>True</ILINK_GenerateDRC>
+        <ILINK_LargeAddressAware>true</ILINK_LargeAddressAware>
         <ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
         <IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;..\libs\mfc\include;$(BDS)\include\windows;$(BDS)\include\windows\sdk;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
