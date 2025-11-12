@@ -32,9 +32,7 @@
 #include "internal/common.h"
 #include "internal/thread_arch.h"
 #include "internal/rcu.h"
-#ifndef WINSCP
 #include "rcu_internal.h"
-#endif
 
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
@@ -44,8 +42,6 @@ typedef struct {
     int exclusive;
 } CRYPTO_win_rwlock;
 # endif
-
-#ifndef WINSCP
 
 /*
  * This defines a quescent point (qp)
@@ -384,8 +380,6 @@ void ossl_rcu_assign_uptr(void **p, void **v)
 {
     InterlockedExchangePointer((void * volatile *)p, (void *)*v);
 }
-
-#endif // WINSCP
 
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
 {

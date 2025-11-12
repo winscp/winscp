@@ -4,6 +4,7 @@ MKLIB = "$(BDS)\bin\tlib" /a /C
 CFLAG_BASE = -O2
 
 # Debug
+# OpenSSL needs -O2, otherwise it won't link
 # CFLAG_BASE = -O0 -D_DEBUG -debug-info-kind=standalone
 
 CFLAG_BASE = \

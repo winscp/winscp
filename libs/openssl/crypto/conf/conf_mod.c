@@ -11,9 +11,7 @@
 #define OPENSSL_SUPPRESS_DEPRECATED
 
 #include "internal/cryptlib.h"
-#ifndef WinSCP
 #include "internal/rcu.h"
-#endif
 #include <stdio.h>
 #include <ctype.h>
 #include <openssl/crypto.h>
@@ -25,35 +23,6 @@
 #include <openssl/trace.h>
 #include <openssl/engine.h>
 #include "conf_local.h"
-
-#ifdef WINSCP
-
-// UPGRADE
-// RCU cannot be used in C++Builder XE6 as it does not support Interlocked* intrinsic.
-// Mapping RCU API to plain locks.
-// This is effectivelly a rollback of
-// https://github.com/openssl/openssl/commit/504e72fc1a1432d5266bd6e8909648c49884a36c
-
-// Localized to this unit only, as it is the only one that uses RCU currently.
-// And we want to know when more uses emerge.
-
-#define CRYPTO_RCU_LOCK CRYPTO_RWLOCK
-
-#define ossl_rcu_lock_new(num_writers, ctx) CRYPTO_THREAD_lock_new()
-#define ossl_rcu_lock_free CRYPTO_THREAD_lock_free
-// CRYPTO_THREAD_*_lock return boolean result, while ossl_rcu_*_lock are void.
-// But the CRYPTO_THREAD_*_lock actually always returns 1/true, so it's safe to ignore the result.
-#define ossl_rcu_read_lock CRYPTO_THREAD_read_lock
-#define ossl_rcu_write_lock CRYPTO_THREAD_write_lock
-#define ossl_rcu_write_unlock CRYPTO_THREAD_unlock
-#define ossl_rcu_read_unlock CRYPTO_THREAD_unlock
-#define ossl_synchronize_rcu(lock)
-#undef ossl_rcu_deref
-#define ossl_rcu_deref(p) (*(p))
-#undef ossl_rcu_assign_ptr
-#define ossl_rcu_assign_ptr(p, v) (*(p)) = (*(v))
-
-#endif // WINSCP
 
 DEFINE_STACK_OF(CONF_MODULE)
 DEFINE_STACK_OF(CONF_IMODULE)
