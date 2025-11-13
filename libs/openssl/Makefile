@@ -20,7 +20,7 @@
 CFLAG_WARNINGS=-Wno-incompatible-function-pointer-types -Wno-deprecated-declarations
 CFLAG=$(CFLAG_COMMON) $(CFLAG_WARNINGS)
 
-DEFINES=MD5_ASM;SHA1_ASM;SHA256_ASM;SHA512_ASM;RMD160_ASM
+DEFINES=MD5_ASM;SHA1_ASM;SHA256_ASM;SHA512_ASM;RMD160_ASM;AES_ASM
 DEFINES=$(DEFINES);OPENSSL_BN_ASM_PART_WORDS;OPENSSL_BN_ASM_MONT;OPENSSL_BN_ASM_GF2m
 DEFINES=$(DEFINES);OPENSSL_NO_CAMELLIA;OPENSSL_NO_RC5;OPENSSL_NO_MDC2;OPENSSL_NO_WHIRLPOOL
 DEFINES=$(DEFINES);OPENSSL_NO_SEED;OPENSSL_NO_CAPIENG;OPENSSL_NO_ENGINE;OPENSSL_NO_ZLIB
@@ -139,7 +139,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\bf_skey.obj $(OBJ_D)\bf_ecb.obj $(OBJ_D)\bf_cfb64.obj $(OBJ_D)\bf_ofb64.obj \
     $(OBJ_D)\c_skey.obj $(OBJ_D)\c_ecb.obj $(OBJ_D)\c_cfb64.obj $(OBJ_D)\c_ofb64.obj \
     $(OBJ_D)\aes_misc.obj $(OBJ_D)\aes_ecb.obj $(OBJ_D)\aes_cfb.obj $(OBJ_D)\aes_ofb.obj \
-    $(OBJ_D)\aes_ige.obj $(OBJ_D)\aes_wrap.obj $(OBJ_D)\aes_core.obj $(OBJ_D)\aes_cbc.obj \
+    $(OBJ_D)\aes_ige.obj $(OBJ_D)\aes_wrap.obj \
     $(OBJ_D)\bn_add.obj $(OBJ_D)\bn_div.obj $(OBJ_D)\bn_exp.obj $(OBJ_D)\bn_lib.obj \
     $(OBJ_D)\bn_ctx.obj $(OBJ_D)\bn_mul.obj $(OBJ_D)\bn_mod.obj $(OBJ_D)\bn_print.obj \
     $(OBJ_D)\bn_rand.obj $(OBJ_D)\bn_shift.obj $(OBJ_D)\bn_word.obj $(OBJ_D)\bn_blind.obj \
@@ -352,7 +352,8 @@ CRYPTOOBJASM= \
     $(OBJ_D)\sha1_586.obj \
     $(OBJ_D)\bn_586.obj $(OBJ_D)\x86_mont.obj $(OBJ_D)\x86_gf2m.obj $(OBJ_D)\co_586.obj \
     $(OBJ_D)\rmd_586.obj \
-    $(OBJ_D)\sha256_586.obj $(OBJ_D)\sha512_586.obj
+    $(OBJ_D)\sha256_586.obj $(OBJ_D)\sha512_586.obj \
+    $(OBJ_D)\aes_586.obj
 ###################################################################
 all: banner $(TMP_D) lib
 
@@ -526,8 +527,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\aes\aes_ofb.c \
     $(SRC_D)\crypto\aes\aes_ige.c \
     $(SRC_D)\crypto\aes\aes_wrap.c \
-    $(SRC_D)\crypto\aes\aes_core.c \
-    $(SRC_D)\crypto\aes\aes_cbc.c \
     $(SRC_D)\crypto\bn\bn_add.c \
     $(SRC_D)\crypto\bn\bn_div.c \
     $(SRC_D)\crypto\bn\bn_exp.c \
@@ -1249,6 +1248,9 @@ $(OBJ_D)\sha256_586.obj: $(SRC_D)\crypto\sha\asm\sha256_586.asm
 
 $(OBJ_D)\sha512_586.obj: $(SRC_D)\crypto\sha\asm\sha512_586.asm
     $(ASM) -o$(OBJ_D)\sha512_586.obj $(SRC_D)\crypto\sha\asm\sha512_586.asm
+
+$(OBJ_D)\aes_586.obj: $(SRC_D)\crypto\aes\asm\aes_586.asm
+    $(ASM) -o$(OBJ_D)\aes_586.obj $(SRC_D)\crypto\aes\asm\aes_586.asm
 
 $(O_SSL):
     -if exist $(O_SSL) $(RM) $(O_SSL)
