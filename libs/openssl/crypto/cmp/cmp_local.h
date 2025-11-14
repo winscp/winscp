@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2007-2025 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright Nokia 2007-2019
  * Copyright Siemens AG 2015-2019
  *
@@ -211,6 +211,36 @@ DECLARE_ASN1_FUNCTIONS(OSSL_CMP_CAKEYUPDANNCONTENT)
 typedef struct ossl_cmp_rootcakeyupdate_st OSSL_CMP_ROOTCAKEYUPDATE;
 DECLARE_ASN1_FUNCTIONS(OSSL_CMP_ROOTCAKEYUPDATE)
 
+typedef struct ossl_cmp_certreqtemplate_st OSSL_CMP_CERTREQTEMPLATE;
+DECLARE_ASN1_FUNCTIONS(OSSL_CMP_CERTREQTEMPLATE)
+
+/*-
+ * CRLSource ::= CHOICE {
+ *      dpn          [0] DistributionPointName,
+ *      issuer       [1] GeneralNames }
+ */
+
+typedef struct ossl_cmp_crlsource_st {
+    int type;
+    union {
+        DIST_POINT_NAME *dpn;
+        GENERAL_NAMES *issuer;
+    } value;
+} OSSL_CMP_CRLSOURCE;
+DECLARE_ASN1_FUNCTIONS(OSSL_CMP_CRLSOURCE)
+
+/*
+ * CRLStatus ::= SEQUENCE {
+ *      source       CRLSource,
+ *      thisUpdate   Time OPTIONAL }
+ */
+
+struct ossl_cmp_crlstatus_st {
+    OSSL_CMP_CRLSOURCE *source;
+    ASN1_TIME *thisUpdate;
+}; /* OSSL_CMP_CRLSTATUS */
+DECLARE_ASN1_FUNCTIONS(OSSL_CMP_CRLSTATUS)
+
 /*-
  * declared already here as it will be used in OSSL_CMP_MSG (nested) and
  * infoType and infoValue
@@ -264,6 +294,13 @@ struct ossl_cmp_itav_st {
         X509 *rootCaCert;
         /* NID_id_it_rootCaKeyUpdate - Root CA Certificate Update */
         OSSL_CMP_ROOTCAKEYUPDATE *rootCaKeyUpdate;
+        /* NID_id_it_certReqTemplate - Certificate Request Template */
+        OSSL_CMP_CERTREQTEMPLATE *certReqTemplate;
+        /* NID_id_it_crlStatusList -  CRL Update Retrieval */
+        STACK_OF(OSSL_CMP_CRLSTATUS) *crlStatusList;
+        /* NID_id_it_crls - Certificate Status Lists */
+        STACK_OF(X509_CRL) *crls;
+
         /* this is to be used for so far undeclared objects */
         ASN1_TYPE *other;
     } infoValue;
@@ -274,7 +311,7 @@ typedef struct ossl_cmp_certorenccert_st {
     int type;
     union {
         X509 *certificate;
-        OSSL_CRMF_ENCRYPTEDVALUE *encryptedCert;
+        OSSL_CRMF_ENCRYPTEDKEY *encryptedCert;
     } value;
 } OSSL_CMP_CERTORENCCERT;
 DECLARE_ASN1_FUNCTIONS(OSSL_CMP_CERTORENCCERT)
@@ -289,7 +326,7 @@ DECLARE_ASN1_FUNCTIONS(OSSL_CMP_CERTORENCCERT)
  */
 typedef struct ossl_cmp_certifiedkeypair_st {
     OSSL_CMP_CERTORENCCERT *certOrEncCert;
-    OSSL_CRMF_ENCRYPTEDVALUE *privateKey;
+    OSSL_CRMF_ENCRYPTEDKEY *privateKey;
     OSSL_CRMF_PKIPUBLICATIONINFO *publicationInfo;
 } OSSL_CMP_CERTIFIEDKEYPAIR;
 DECLARE_ASN1_FUNCTIONS(OSSL_CMP_CERTIFIEDKEYPAIR)
@@ -765,6 +802,17 @@ struct ossl_cmp_rootcakeyupdate_st {
 } /* OSSL_CMP_ROOTCAKEYUPDATE */;
 DECLARE_ASN1_FUNCTIONS(OSSL_CMP_ROOTCAKEYUPDATE)
 
+/*-
+ * CertReqTemplateContent ::= SEQUENCE {
+ *      certTemplate      CertTemplate,
+ *      keySpec           Controls OPTIONAL
+ * }
+ */
+struct ossl_cmp_certreqtemplate_st {
+    OSSL_CRMF_CERTTEMPLATE *certTemplate;
+    OSSL_CMP_ATAVS *keySpec;
+} /* OSSL_CMP_CERTREQTEMPLATE */;
+
 /* from cmp_asn.c */
 int ossl_cmp_asn1_get_int(const ASN1_INTEGER *a);
 
@@ -904,7 +952,8 @@ OSSL_CMP_MSG *ossl_cmp_certreq_new(OSSL_CMP_CTX *ctx, int bodytype,
                                    const OSSL_CRMF_MSG *crm);
 OSSL_CMP_MSG *ossl_cmp_certrep_new(OSSL_CMP_CTX *ctx, int bodytype,
                                    int certReqId, const OSSL_CMP_PKISI *si,
-                                   X509 *cert, const X509 *encryption_recip,
+                                   X509 *cert, const EVP_PKEY *pkey,
+                                   const X509 *encryption_recip,
                                    STACK_OF(X509) *chain, STACK_OF(X509) *caPubs,
                                    int unprotectedErrors);
 OSSL_CMP_MSG *ossl_cmp_rr_new(OSSL_CMP_CTX *ctx);
@@ -946,6 +995,7 @@ OSSL_CMP_MSG *ossl_cmp_msg_load(const char *file);
 int ossl_cmp_is_error_with_waiting(const OSSL_CMP_MSG *msg);
 
 /* from cmp_protect.c */
+void ossl_cmp_set_own_chain(OSSL_CMP_CTX *ctx);
 int ossl_cmp_msg_add_extraCerts(OSSL_CMP_CTX *ctx, OSSL_CMP_MSG *msg);
 ASN1_BIT_STRING *ossl_cmp_calc_protection(const OSSL_CMP_CTX *ctx,
                                           const OSSL_CMP_MSG *msg);

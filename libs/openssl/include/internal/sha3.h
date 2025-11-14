@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -26,8 +26,7 @@ typedef size_t (sha3_absorb_fn)(void *vctx, const void *in, size_t inlen);
 typedef int (sha3_final_fn)(void *vctx, unsigned char *out, size_t outlen);
 typedef int (sha3_squeeze_fn)(void *vctx, unsigned char *out, size_t outlen);
 
-typedef struct prov_sha3_meth_st
-{
+typedef struct prov_sha3_meth_st {
     sha3_absorb_fn *absorb;
     sha3_final_fn *final;
     sha3_squeeze_fn *squeeze;
@@ -51,8 +50,8 @@ struct keccak_st {
 
 void ossl_sha3_reset(KECCAK1600_CTX *ctx);
 int ossl_sha3_init(KECCAK1600_CTX *ctx, unsigned char pad, size_t bitlen);
-int ossl_keccak_kmac_init(KECCAK1600_CTX *ctx, unsigned char pad,
-                          size_t bitlen);
+int ossl_keccak_init(KECCAK1600_CTX *ctx, unsigned char pad,
+                     size_t typelen, size_t mdlen);
 int ossl_sha3_update(KECCAK1600_CTX *ctx, const void *_inp, size_t len);
 int ossl_sha3_final(KECCAK1600_CTX *ctx, unsigned char *out, size_t outlen);
 int ossl_sha3_squeeze(KECCAK1600_CTX *ctx, unsigned char *out, size_t outlen);

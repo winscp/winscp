@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -299,7 +299,8 @@ int PKCS7_add_crl(PKCS7 *p7, X509_CRL *crl)
         return 0;
     }
 
-    X509_CRL_up_ref(crl);
+    if (!X509_CRL_up_ref(crl))
+        return 0;
     if (!sk_X509_CRL_push(*sk, crl)) {
         X509_CRL_free(crl);
         return 0;
@@ -363,7 +364,9 @@ int PKCS7_SIGNER_INFO_set(PKCS7_SIGNER_INFO *p7i, X509 *x509, EVP_PKEY *pkey,
         return 0;
 
     /* lets keep the pkey around for a while */
-    EVP_PKEY_up_ref(pkey);
+    if (!EVP_PKEY_up_ref(pkey))
+        return 0;
+
     p7i->pkey = pkey;
 
     /* Set the algorithms */
@@ -418,7 +421,7 @@ PKCS7_SIGNER_INFO *PKCS7_add_signature(PKCS7 *p7, X509 *x509, EVP_PKEY *pkey,
     return NULL;
 }
 
-static STACK_OF(X509) *pkcs7_get_signer_certs(const PKCS7 *p7)
+STACK_OF(X509) *pkcs7_get0_certificates(const PKCS7 *p7)
 {
     if (p7->d.ptr == NULL)
         return NULL;
@@ -459,7 +462,7 @@ void ossl_pkcs7_resolve_libctx(PKCS7 *p7)
 
     rinfos = pkcs7_get_recipient_info(p7);
     sinfos = PKCS7_get_signer_info(p7);
-    certs = pkcs7_get_signer_certs(p7);
+    certs = pkcs7_get0_certificates(p7);
 
     for (i = 0; i < sk_X509_num(certs); i++)
         ossl_x509_set0_libctx(sk_X509_value(certs, i), libctx, propq);
@@ -663,7 +666,9 @@ int PKCS7_RECIP_INFO_set(PKCS7_RECIP_INFO *p7i, X509 *x509)
         goto err;
     }
 finished:
-    X509_up_ref(x509);
+    if (!X509_up_ref(x509))
+        goto err;
+
     p7i->cert = x509;
 
     return 1;

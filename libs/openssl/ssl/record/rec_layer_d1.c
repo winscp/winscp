@@ -15,6 +15,7 @@
 #include "record_local.h"
 #include "internal/packet.h"
 #include "internal/cryptlib.h"
+#include "internal/ssl_unwrap.h"
 
 int DTLS_RECORD_LAYER_new(RECORD_LAYER *rl)
 {
@@ -174,7 +175,7 @@ static void dtls_unbuffer_record(SSL_CONNECTION *s)
  *   -  SSL3_RT_APPLICATION_DATA (when ssl3_read calls us)
  *   -  0 (during a shutdown, no data has to be returned)
  *
- * If we don't have stored data to work from, read a SSL/TLS record first
+ * If we don't have stored data to work from, read an SSL/TLS record first
  * (possibly multiple records if we still don't have anything to return).
  *
  * This function must handle any surprises the peer may have for us, such as

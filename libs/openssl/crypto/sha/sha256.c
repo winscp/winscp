@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2004-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -88,27 +88,31 @@ int SHA224_Final(unsigned char *md, SHA256_CTX *c)
 #define HASH_MAKE_STRING(c,s)   do {    \
         unsigned long ll;               \
         unsigned int  nn;               \
-        switch ((c)->md_len)            \
-        {   case SHA256_192_DIGEST_LENGTH: \
-                for (nn=0;nn<SHA256_192_DIGEST_LENGTH/4;nn++)   \
-                {   ll=(c)->h[nn]; (void)HOST_l2c(ll,(s));   }  \
+        switch ((c)->md_len) {          \
+            case SHA256_192_DIGEST_LENGTH: \
+                for (nn=0;nn<SHA256_192_DIGEST_LENGTH/4;nn++) { \
+                    ll=(c)->h[nn]; (void)HOST_l2c(ll,(s));      \
+                }                       \
                 break;                  \
             case SHA224_DIGEST_LENGTH:  \
-                for (nn=0;nn<SHA224_DIGEST_LENGTH/4;nn++)       \
-                {   ll=(c)->h[nn]; (void)HOST_l2c(ll,(s));   }  \
+                for (nn=0;nn<SHA224_DIGEST_LENGTH/4;nn++) {     \
+                    ll=(c)->h[nn]; (void)HOST_l2c(ll,(s));      \
+                }                       \
                 break;                  \
             case SHA256_DIGEST_LENGTH:  \
-                for (nn=0;nn<SHA256_DIGEST_LENGTH/4;nn++)       \
-                {   ll=(c)->h[nn]; (void)HOST_l2c(ll,(s));   }  \
+                for (nn=0;nn<SHA256_DIGEST_LENGTH/4;nn++) {     \
+                    ll=(c)->h[nn]; (void)HOST_l2c(ll,(s));      \
+                }                       \
                 break;                  \
             default:                    \
                 if ((c)->md_len > SHA256_DIGEST_LENGTH) \
                     return 0;                           \
-                for (nn=0;nn<(c)->md_len/4;nn++)                \
-                {   ll=(c)->h[nn]; (void)HOST_l2c(ll,(s));   }  \
+                for (nn=0;nn<(c)->md_len/4;nn++) {              \
+                    ll=(c)->h[nn]; (void)HOST_l2c(ll,(s));      \
+                }                       \
                 break;                  \
         }                               \
-        } while (0)
+    } while (0)
 
 #define HASH_UPDATE             SHA256_Update
 #define HASH_TRANSFORM          SHA256_Transform

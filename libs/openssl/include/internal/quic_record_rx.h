@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -23,7 +23,6 @@
  * QUIC Record Layer - RX
  * ======================
  */
-typedef struct ossl_qrx_st OSSL_QRX;
 
 typedef struct ossl_qrx_args_st {
     OSSL_LIB_CTX   *libctx;
@@ -66,6 +65,11 @@ void ossl_qrx_set_msg_callback(OSSL_QRX *qrx, ossl_msg_cb msg_callback,
                                SSL *msg_callback_ssl);
 void ossl_qrx_set_msg_callback_arg(OSSL_QRX *qrx,
                                    void *msg_callback_arg);
+
+/*
+ * Get the short header connection id len from this qrx
+ */
+size_t ossl_qrx_get_short_hdr_conn_id_len(OSSL_QRX *qrx);
 
 /*
  * Secret Management
@@ -164,6 +168,17 @@ int ossl_qrx_provide_secret(OSSL_QRX              *qrx,
                             size_t                 secret_len);
 
 /*
+ * Utility function to update the pn space from a src to a dst qrx.
+ * Occasionally we use a temporary qrx to do packet validation on quic frames
+ * that are not yet associated with a channel, and in the event a validation is
+ * successful AND we allocate a new qrx for the newly created channel, we need
+ * to migrate the largest_pn values recorded in the tmp qrx to the channel qrx.
+ * If we don't then PN decoding fails in cases where the initial PN is a large value.
+ * This function does that migration for us
+ */
+void ossl_qrx_update_pn_space(OSSL_QRX *src, OSSL_QRX *dst);
+
+/*
  * Informs the QRX that it can now discard key material for a given EL. The QRX
  * will no longer be able to process incoming packets received at that
  * encryption level. This function is idempotent and succeeds if the EL has
@@ -255,6 +270,12 @@ int ossl_qrx_read_pkt(OSSL_QRX *qrx, OSSL_QRX_PKT **pkt);
  */
 void ossl_qrx_pkt_release(OSSL_QRX_PKT *pkt);
 
+/*
+ * Like ossl_qrx_pkt_release, but just ensures that the refcount is dropped
+ * on this qrx_pkt, and ensure its not on any list
+ */
+void ossl_qrx_pkt_orphan(OSSL_QRX_PKT *pkt);
+
 /* Increments the reference count for the given packet. */
 void ossl_qrx_pkt_up_ref(OSSL_QRX_PKT *pkt);
 
@@ -316,6 +337,9 @@ int ossl_qrx_set_late_validation_cb(OSSL_QRX *qrx,
  * establish a new connection.
  */
 void ossl_qrx_inject_urxe(OSSL_QRX *qrx, QUIC_URXE *e);
+void ossl_qrx_inject_pkt(OSSL_QRX *qrx, OSSL_QRX_PKT *pkt);
+int ossl_qrx_validate_initial_packet(OSSL_QRX *qrx, QUIC_URXE *urxe,
+                                     const QUIC_CONN_ID *dcid);
 
 /*
  * Decryption of 1-RTT packets must be explicitly enabled by calling this

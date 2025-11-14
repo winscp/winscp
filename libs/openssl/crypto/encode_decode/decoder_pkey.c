@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -65,6 +65,7 @@ struct decoder_pkey_data_st {
     STACK_OF(EVP_KEYMGMT) *keymgmts;
     char *object_type;           /* recorded object data type, may be NULL */
     void **object;               /* Where the result should end up */
+    OSSL_DECODER_CTX *ctx;       /* The parent decoder context */
 };
 
 static int decoder_construct_pkey(OSSL_DECODER_INSTANCE *decoder_inst,
@@ -171,6 +172,14 @@ static int decoder_construct_pkey(OSSL_DECODER_INSTANCE *decoder_inst,
             keydata = import_data.keydata;
             import_data.keydata = NULL;
         }
+        /*
+         * When load or import fails, because this is not an acceptable key
+         * (despite the provided key material being syntactically valid), the
+         * reason why the key is rejected would be lost, unless we signal a
+         * hard error, and suppress resetting for another try.
+         */
+        if (keydata == NULL)
+            ossl_decoder_ctx_set_harderr(data->ctx);
 
         if (keydata != NULL
             && (pkey = evp_keymgmt_util_make_pkey(keymgmt, keydata)) == NULL)
@@ -213,15 +222,21 @@ struct collect_data_st {
     int total;      /* number of matching results */
     char error_occurred;
     char keytype_resolved;
+    OSSL_PROPERTY_LIST *pq;
 
     STACK_OF(EVP_KEYMGMT) *keymgmts;
 };
 
-static void collect_decoder_keymgmt(EVP_KEYMGMT *keymgmt, OSSL_DECODER *decoder,
-                                    void *provctx, struct collect_data_st *data)
+/*
+ * Add decoder instance to the decoder context if it is compatible. Returns 1
+ * if a decoder was added, 0 otherwise.
+ */
+static int collect_decoder_keymgmt(EVP_KEYMGMT *keymgmt, OSSL_DECODER *decoder,
+                                   void *provctx, struct collect_data_st *data)
 {
     void *decoderctx = NULL;
     OSSL_DECODER_INSTANCE *di = NULL;
+    const OSSL_PROPERTY_LIST *props;
 
     /*
      * We already checked the EVP_KEYMGMT is applicable in check_keymgmt so we
@@ -230,17 +245,31 @@ static void collect_decoder_keymgmt(EVP_KEYMGMT *keymgmt, OSSL_DECODER *decoder,
 
     if (keymgmt->name_id != decoder->base.id)
         /* Mismatch is not an error, continue. */
-        return;
+        return 0;
 
     if ((decoderctx = decoder->newctx(provctx)) == NULL) {
         data->error_occurred = 1;
-        return;
+        return 0;
     }
 
     if ((di = ossl_decoder_instance_new(decoder, decoderctx)) == NULL) {
         decoder->freectx(decoderctx);
         data->error_occurred = 1;
-        return;
+        return 0;
+    }
+
+    /*
+     * Input types must be compatible, but we must accept DER encoders when the
+     * start input type is "PEM".
+     */
+    if (data->ctx->start_input_type != NULL
+        && di->input_type != NULL
+        && OPENSSL_strcasecmp(di->input_type, data->ctx->start_input_type) != 0
+        && (OPENSSL_strcasecmp(di->input_type, "DER") != 0
+            || OPENSSL_strcasecmp(data->ctx->start_input_type, "PEM") != 0)) {
+        /* Mismatch is not an error, continue. */
+        ossl_decoder_instance_free(di);
+        return 0;
     }
 
     OSSL_TRACE_BEGIN(DECODER) {
@@ -252,13 +281,30 @@ static void collect_decoder_keymgmt(EVP_KEYMGMT *keymgmt, OSSL_DECODER *decoder,
                    OSSL_DECODER_get0_properties(decoder));
     } OSSL_TRACE_END(DECODER);
 
+    /*
+     * Get the property match score so the decoders can be prioritized later.
+     */
+    props = ossl_decoder_parsed_properties(decoder);
+    if (data->pq != NULL && props != NULL) {
+        di->score = ossl_property_match_count(data->pq, props);
+        /*
+         * Mismatch of mandatory properties is not an error, the decoder is just
+         * ignored, continue.
+         */
+        if (di->score < 0) {
+            ossl_decoder_instance_free(di);
+            return 0;
+        }
+    }
+
     if (!ossl_decoder_ctx_add_decoder_inst(data->ctx, di)) {
         ossl_decoder_instance_free(di);
         data->error_occurred = 1;
-        return;
+        return 0;
     }
 
     ++data->total;
+    return 1;
 }
 
 static void collect_decoder(OSSL_DECODER *decoder, void *arg)
@@ -298,7 +344,9 @@ static void collect_decoder(OSSL_DECODER *decoder, void *arg)
     for (i = 0; i < end_i; ++i) {
         keymgmt = sk_EVP_KEYMGMT_value(keymgmts, i);
 
-        collect_decoder_keymgmt(keymgmt, decoder, provctx, data);
+        /* Only add this decoder once */
+        if (collect_decoder_keymgmt(keymgmt, decoder, provctx, data))
+            break;
         if (data->error_occurred)
             return;
     }
@@ -384,6 +432,8 @@ static int ossl_decoder_ctx_setup_for_pkey(OSSL_DECODER_CTX *ctx,
     struct decoder_pkey_data_st *process_data = NULL;
     struct collect_data_st collect_data = { NULL };
     STACK_OF(EVP_KEYMGMT) *keymgmts = NULL;
+    OSSL_PROPERTY_LIST **plp;
+    OSSL_PROPERTY_LIST *pq = NULL, *p2 = NULL;
 
     OSSL_TRACE_BEGIN(DECODER) {
         const char *input_type = ctx->start_input_type;
@@ -420,6 +470,25 @@ static int ossl_decoder_ctx_setup_for_pkey(OSSL_DECODER_CTX *ctx,
     process_data->keymgmts  = keymgmts;
 
     /*
+     * Collect passed and default properties to prioritize the decoders.
+     */
+    if (propquery != NULL)
+        p2 = pq = ossl_parse_query(libctx, propquery, 1);
+
+    plp = ossl_ctx_global_properties(libctx, 0);
+    if (plp != NULL && *plp != NULL) {
+        if (pq == NULL) {
+            pq = *plp;
+        } else {
+            p2 = ossl_property_merge(pq, *plp);
+            ossl_property_free(pq);
+            if (p2 == NULL)
+                goto err;
+            pq = p2;
+        }
+    }
+
+    /*
      * Enumerate all keymgmts into a stack.
      *
      * We could nest EVP_KEYMGMT_do_all_provided inside
@@ -434,10 +503,11 @@ static int ossl_decoder_ctx_setup_for_pkey(OSSL_DECODER_CTX *ctx,
      * upfront, as this ensures that the names for all loaded providers have
      * been registered by the time we try to resolve the keytype string.
      */
-    collect_data.ctx        = ctx;
-    collect_data.libctx     = libctx;
-    collect_data.keymgmts   = keymgmts;
-    collect_data.keytype    = keytype;
+    collect_data.ctx            = ctx;
+    collect_data.libctx         = libctx;
+    collect_data.keymgmts       = keymgmts;
+    collect_data.keytype        = keytype;
+    collect_data.pq             = pq;
     EVP_KEYMGMT_do_all_provided(libctx, collect_keymgmt, &collect_data);
 
     if (collect_data.error_occurred)
@@ -473,6 +543,7 @@ static int ossl_decoder_ctx_setup_for_pkey(OSSL_DECODER_CTX *ctx,
     ok = 1;
  err:
     decoder_clean_pkey_construct_arg(process_data);
+    ossl_property_free(p2);
     return ok;
 }
 
@@ -561,6 +632,7 @@ ossl_decoder_ctx_for_pkey_dup(OSSL_DECODER_CTX *src,
         process_data_dest->object    = (void **)pkey;
         process_data_dest->libctx    = process_data_src->libctx;
         process_data_dest->selection = process_data_src->selection;
+        process_data_dest->ctx       = dest;
         if (!OSSL_DECODER_CTX_set_construct_data(dest, process_data_dest)) {
             ERR_raise(ERR_LIB_OSSL_DECODER, ERR_R_OSSL_DECODER_LIB);
             goto err;
@@ -576,11 +648,7 @@ ossl_decoder_ctx_for_pkey_dup(OSSL_DECODER_CTX *src,
 
     return dest;
  err:
-    if (process_data_dest != NULL) {
-        OPENSSL_free(process_data_dest->propq);
-        sk_EVP_KEYMGMT_pop_free(process_data_dest->keymgmts, EVP_KEYMGMT_free);
-        OPENSSL_free(process_data_dest);
-    }
+    decoder_clean_pkey_construct_arg(process_data_dest);
     OSSL_DECODER_CTX_free(dest);
     return NULL;
 }
@@ -747,19 +815,26 @@ OSSL_DECODER_CTX_new_for_pkey(EVP_PKEY **pkey,
     OSSL_DECODER_CTX *ctx = NULL;
     OSSL_PARAM decoder_params[] = {
         OSSL_PARAM_END,
+        OSSL_PARAM_END,
         OSSL_PARAM_END
     };
     DECODER_CACHE *cache
         = ossl_lib_ctx_get_data(libctx, OSSL_LIB_CTX_DECODER_CACHE_INDEX);
     DECODER_CACHE_ENTRY cacheent, *res, *newcache = NULL;
+    int i = 0;
 
     if (cache == NULL) {
         ERR_raise(ERR_LIB_OSSL_DECODER, ERR_R_OSSL_DECODER_LIB);
         return NULL;
     }
+    if (input_structure != NULL)
+        decoder_params[i++] =
+            OSSL_PARAM_construct_utf8_string(OSSL_OBJECT_PARAM_DATA_STRUCTURE,
+                                             (char *)input_structure, 0);
     if (propquery != NULL)
-        decoder_params[0] = OSSL_PARAM_construct_utf8_string(OSSL_DECODER_PARAM_PROPERTIES,
-                                                             (char *)propquery, 0);
+        decoder_params[i++] =
+            OSSL_PARAM_construct_utf8_string(OSSL_DECODER_PARAM_PROPERTIES,
+                                             (char *)propquery, 0);
 
     /* It is safe to cast away the const here */
     cacheent.input_type = (char *)input_type;
