@@ -12,7 +12,6 @@
 #include <openssl/bn.h>
 #include "crypto/bn.h"
 #include "rsa_local.h"
-#include "../bn/bn_local.h" // WINSCP
 
 /*
  * Part of the RSA keypair test.

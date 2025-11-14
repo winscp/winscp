@@ -10,7 +10,6 @@
 #include "internal/ffc.h"
 #include "internal/nelem.h"
 #include "crypto/bn_dh.h"
-#include "../bn/bn_local.h" // WINSCP
 
 #ifndef OPENSSL_NO_DH
 

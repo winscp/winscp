@@ -381,6 +381,7 @@ void ossl_rcu_assign_uptr(void **p, void **v)
     InterlockedExchangePointer((void * volatile *)p, (void *)*v);
 }
 
+
 CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
 {
     CRYPTO_RWLOCK *lock;

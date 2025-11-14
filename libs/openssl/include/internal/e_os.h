@@ -106,8 +106,6 @@
         * it's sufficient to check for specific Winsock2 API availability
         * at run-time [DSO_global_lookup is recommended]...
         */
-// WORKAROUND to avoid including unneeded wspiapi.h that has code before declaration in WspiapiLoad
-#    define _WSPIAPI_H_
 #    include <winsock2.h>
 #    include <ws2tcpip.h>
        /*
