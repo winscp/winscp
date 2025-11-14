@@ -31,7 +31,7 @@ DEFINES=$(DEFINES);WINSCP
 
 CFLAG=$(CFLAG) -D$(DEFINES:;= -D)
 
-# Copied from generated OpenSSL "makefile"
+# Copied from OpenSSL "makefile" generated with "perl Configure BC-32 --prefix=%CD%"
 # (but the OPENSSL_BUILDING_OPENSSL, _stricmp, _strnicmp and _setmode are not needed)
 # (and DSO_WIN32 removed as it clashes with dso_conf.h)
 CFLAG= $(CFLAG) \
