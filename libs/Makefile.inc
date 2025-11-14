@@ -6,6 +6,7 @@ CFLAG_BASE = -O2
 # Debug
 # OpenSSL needs -O2, otherwise it won't link
 # CFLAG_BASE = -O0 -D_DEBUG -debug-info-kind=standalone
+# For nasm, add -g
 
 CFLAG_BASE = \
     -cc1 -nobuiltininc -nostdsysteminc -triple i686-pc-windows-omf -emit-obj -mrelocation-model static \
