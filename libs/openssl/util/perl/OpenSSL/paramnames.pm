@@ -31,8 +31,33 @@ my %params = (
     'PROV_PARAM_BUILDINFO' =>          "buildinfo",          # utf8_ptr
     'PROV_PARAM_STATUS' =>             "status",             # uint
     'PROV_PARAM_SECURITY_CHECKS' =>    "security-checks",    # uint
+    'PROV_PARAM_HMAC_KEY_CHECK' =>     "hmac-key-check",     # uint
+    'PROV_PARAM_KMAC_KEY_CHECK' =>     "kmac-key-check",     # uint
     'PROV_PARAM_TLS1_PRF_EMS_CHECK' => "tls1-prf-ems-check", # uint
+    'PROV_PARAM_NO_SHORT_MAC' =>       "no-short-mac",       # uint
     'PROV_PARAM_DRBG_TRUNC_DIGEST' =>  "drbg-no-trunc-md",   # uint
+    'PROV_PARAM_HKDF_DIGEST_CHECK' =>      "hkdf-digest-check",      # uint
+    'PROV_PARAM_TLS13_KDF_DIGEST_CHECK' => "tls13-kdf-digest-check", # uint
+    'PROV_PARAM_TLS1_PRF_DIGEST_CHECK' =>  "tls1-prf-digest-check",  # uint
+    'PROV_PARAM_SSHKDF_DIGEST_CHECK' =>    "sshkdf-digest-check",    # uint
+    'PROV_PARAM_SSKDF_DIGEST_CHECK' =>     "sskdf-digest-check",     # uint
+    'PROV_PARAM_X963KDF_DIGEST_CHECK' =>   "x963kdf-digest-check",   # uint
+    'PROV_PARAM_DSA_SIGN_DISABLED' =>      "dsa-sign-disabled",      # uint
+    'PROV_PARAM_TDES_ENCRYPT_DISABLED' =>  "tdes-encrypt-disabled",  # uint
+    'PROV_PARAM_RSA_PSS_SALTLEN_CHECK' =>  "rsa-pss-saltlen-check",  # uint
+    'PROV_PARAM_RSA_SIGN_X931_PAD_DISABLED' =>  "rsa-sign-x931-pad-disabled",   # uint
+    'PROV_PARAM_RSA_PKCS15_PAD_DISABLED' => "rsa-pkcs15-pad-disabled", # uint
+    'PROV_PARAM_HKDF_KEY_CHECK' =>         "hkdf-key-check",         # uint
+    'PROV_PARAM_KBKDF_KEY_CHECK' =>        "kbkdf-key-check",        # uint
+    'PROV_PARAM_TLS13_KDF_KEY_CHECK' =>    "tls13-kdf-key-check",    # uint
+    'PROV_PARAM_TLS1_PRF_KEY_CHECK' =>     "tls1-prf-key-check",     # uint
+    'PROV_PARAM_SSHKDF_KEY_CHECK' =>       "sshkdf-key-check",       # uint
+    'PROV_PARAM_SSKDF_KEY_CHECK' =>        "sskdf-key-check",        # uint
+    'PROV_PARAM_X963KDF_KEY_CHECK' =>      "x963kdf-key-check",      # uint
+    'PROV_PARAM_X942KDF_KEY_CHECK' =>      "x942kdf-key-check",      # uint
+    'PROV_PARAM_PBKDF2_LOWER_BOUND_CHECK' => "pbkdf2-lower-bound-check", # uint
+    'PROV_PARAM_ECDH_COFACTOR_CHECK' =>    "ecdh-cofactor-check",    # uint
+    'PROV_PARAM_SIGNATURE_DIGEST_CHECK' => "signature-digest-check", # uint
 
 # Self test callback parameters
     'PROV_PARAM_SELF_TEST_PHASE' =>  "st-phase",# utf8_string
@@ -55,6 +80,7 @@ my %params = (
     'OBJECT_PARAM_REFERENCE' =>         "reference",# OCTET_STRING
     'OBJECT_PARAM_DATA' =>              "data",# OCTET_STRING or UTF8_STRING
     'OBJECT_PARAM_DESC' =>              "desc",     # UTF8_STRING
+    'OBJECT_PARAM_INPUT_TYPE' =>        "input-type", # UTF8_STRING
 
 # Algorithm parameters
 # If "engine",or "properties",are specified, they should always be paired
@@ -67,6 +93,17 @@ my %params = (
     'ALG_PARAM_ENGINE' =>       "engine",       # utf8_string
     'ALG_PARAM_MAC' =>          "mac",          # utf8_string
     'ALG_PARAM_PROPERTIES' =>   "properties",   # utf8_string
+    'ALG_PARAM_FIPS_APPROVED_INDICATOR' => 'fips-indicator',   # int, -1, 0 or 1
+
+    # For any operation that deals with AlgorithmIdentifier, they should
+    # implement both of these.
+    # ALG_PARAM_ALGORITHM_ID is intended to be gettable, and is the
+    # implementation's idea of what its full AlgID should look like.
+    # ALG_PARAM_ALGORITHM_ID_PARAMS is intended to be both settable
+    # and gettable, to allow the calling application to pass or get
+    # AlgID parameters to and from the provided implementation.
+    'ALG_PARAM_ALGORITHM_ID' => "algorithm-id", # octet_string (DER)
+    'ALG_PARAM_ALGORITHM_ID_PARAMS' =>  "algorithm-id-params", # octet_string
 
 # cipher parameters
     'CIPHER_PARAM_PADDING' =>              "padding",     # uint
@@ -88,20 +125,30 @@ my %params = (
     'CIPHER_PARAM_NUM' =>                  "num",         # uint
     'CIPHER_PARAM_ROUNDS' =>               "rounds",      # uint
     'CIPHER_PARAM_AEAD_TAG' =>             "tag",         # octet_string
+    'CIPHER_PARAM_PIPELINE_AEAD_TAG' =>    "pipeline-tag",# octet_ptr
     'CIPHER_PARAM_AEAD_TLS1_AAD' =>        "tlsaad",      # octet_string
     'CIPHER_PARAM_AEAD_TLS1_AAD_PAD' =>    "tlsaadpad",   # size_t
     'CIPHER_PARAM_AEAD_TLS1_IV_FIXED' =>   "tlsivfixed",  # octet_string
     'CIPHER_PARAM_AEAD_TLS1_GET_IV_GEN' => "tlsivgen",    # octet_string
     'CIPHER_PARAM_AEAD_TLS1_SET_IV_INV' => "tlsivinv",    # octet_string
     'CIPHER_PARAM_AEAD_IVLEN' =>           '*CIPHER_PARAM_IVLEN',
+    'CIPHER_PARAM_AEAD_IV_GENERATED' => "iv-generated",   # uint
     'CIPHER_PARAM_AEAD_TAGLEN' =>          "taglen",      # size_t
     'CIPHER_PARAM_AEAD_MAC_KEY' =>         "mackey",      # octet_string
     'CIPHER_PARAM_RANDOM_KEY' =>           "randkey",     # octet_string
     'CIPHER_PARAM_RC2_KEYBITS' =>          "keybits",     # size_t
     'CIPHER_PARAM_SPEED' =>                "speed",       # uint
     'CIPHER_PARAM_CTS_MODE' =>             "cts_mode",    # utf8_string
-# For passing the AlgorithmIdentifier parameter in DER form
-    'CIPHER_PARAM_ALGORITHM_ID_PARAMS' =>  "alg_id_param",# octet_string
+    'CIPHER_PARAM_DECRYPT_ONLY' =>         "decrypt-only",  # int, 0 or 1
+    'CIPHER_PARAM_FIPS_ENCRYPT_CHECK' =>   "encrypt-check", # int
+    'CIPHER_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
+    'CIPHER_PARAM_ALGORITHM_ID' =>         '*ALG_PARAM_ALGORITHM_ID',
+    # Historically, CIPHER_PARAM_ALGORITHM_ID_PARAMS_OLD was used.  For the
+    # time being, the old libcrypto functions will use both, so old providers
+    # continue to work.
+    # New providers are encouraged to use CIPHER_PARAM_ALGORITHM_ID_PARAMS.
+    'CIPHER_PARAM_ALGORITHM_ID_PARAMS' =>  '*ALG_PARAM_ALGORITHM_ID_PARAMS',
+    'CIPHER_PARAM_ALGORITHM_ID_PARAMS_OLD' => "alg_id_param", # octet_string
     'CIPHER_PARAM_XTS_STANDARD' =>         "xts_standard",# utf8_string
 
     'CIPHER_PARAM_TLS1_MULTIBLOCK_MAX_SEND_FRAGMENT' =>  "tls1multi_maxsndfrag",# uint
@@ -143,6 +190,10 @@ my %params = (
     'MAC_PARAM_SIZE' =>             "size",                     # size_t
     'MAC_PARAM_BLOCK_SIZE' =>       "block-size",               # size_t
     'MAC_PARAM_TLS_DATA_SIZE' =>    "tls-data-size",            # size_t
+    'MAC_PARAM_FIPS_NO_SHORT_MAC' =>'*PROV_PARAM_NO_SHORT_MAC',
+    'MAC_PARAM_FIPS_KEY_CHECK' =>   '*PKEY_PARAM_FIPS_KEY_CHECK',
+    'MAC_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
+    'MAC_PARAM_FIPS_NO_SHORT_MAC' => '*PROV_PARAM_NO_SHORT_MAC',
 
 # KDF / PRF parameters
     'KDF_PARAM_SECRET' =>       "secret",                   # octet string
@@ -191,6 +242,10 @@ my %params = (
     'KDF_PARAM_ARGON2_LANES' =>   "lanes",                  # uint32_t
     'KDF_PARAM_ARGON2_MEMCOST' => "memcost",                # uint32_t
     'KDF_PARAM_ARGON2_VERSION' => "version",                # uint32_t
+    'KDF_PARAM_FIPS_EMS_CHECK' => "ems_check",              # int
+    'KDF_PARAM_FIPS_DIGEST_CHECK' => '*PKEY_PARAM_FIPS_DIGEST_CHECK',
+    'KDF_PARAM_FIPS_KEY_CHECK' => '*PKEY_PARAM_FIPS_KEY_CHECK',
+    'KDF_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
 
 # Known RAND names
     'RAND_PARAM_STATE' =>                   "state",
@@ -199,6 +254,7 @@ my %params = (
     'RAND_PARAM_TEST_ENTROPY' =>            "test_entropy",
     'RAND_PARAM_TEST_NONCE' =>              "test_nonce",
     'RAND_PARAM_GENERATE' =>                "generate",
+    'RAND_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
 
 # RAND/DRBG names
     'DRBG_PARAM_RESEED_REQUESTS' =>         "reseed_requests",
@@ -216,6 +272,8 @@ my %params = (
     'DRBG_PARAM_CIPHER' =>                  '*ALG_PARAM_CIPHER',
     'DRBG_PARAM_MAC' =>                     '*ALG_PARAM_MAC',
     'DRBG_PARAM_USE_DF' =>                  "use_derivation_function",
+    'DRBG_PARAM_FIPS_DIGEST_CHECK' =>       '*PKEY_PARAM_FIPS_DIGEST_CHECK',
+    'DRBG_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
 
 # DRBG call back parameters
     'DRBG_PARAM_ENTROPY_REQUIRED' =>        "entropy_required",
@@ -250,6 +308,10 @@ my %params = (
     # it for API stability, but please use ASYM_CIPHER_PARAM_IMPLICIT_REJECTION
     # instead.
     'PKEY_PARAM_IMPLICIT_REJECTION' =>  "implicit-rejection",
+    'PKEY_PARAM_FIPS_DIGEST_CHECK' =>   "digest-check",
+    'PKEY_PARAM_FIPS_KEY_CHECK' =>      "key-check",
+    'PKEY_PARAM_ALGORITHM_ID' =>        '*ALG_PARAM_ALGORITHM_ID',
+    'PKEY_PARAM_ALGORITHM_ID_PARAMS' => '*ALG_PARAM_ALGORITHM_ID_PARAMS',
 
 # Diffie-Hellman/DSA Parameters
     'PKEY_PARAM_FFC_P' =>               "p",
@@ -356,6 +418,14 @@ my %params = (
 # EC, X25519 and X448 Key generation parameters
     'PKEY_PARAM_DHKEM_IKM' =>        "dhkem-ikm",
 
+# ML-KEM parameters
+    'PKEY_PARAM_ML_KEM_SEED' => "seed",
+    'PKEY_PARAM_ML_KEM_PREFER_SEED' => "ml-kem.prefer_seed",
+    'PKEY_PARAM_ML_KEM_RETAIN_SEED' => "ml-kem.retain_seed",
+    'PKEY_PARAM_ML_KEM_INPUT_FORMATS' => "ml-kem.input_formats",
+    'PKEY_PARAM_ML_KEM_OUTPUT_FORMATS' => "ml-kem.output_formats",
+    'PKEY_PARAM_ML_KEM_IMPORT_PCT_TYPE' => "ml-kem.import_pct_type",
+
 # Key generation parameters
     'PKEY_PARAM_FFC_TYPE' =>         "type",
     'PKEY_PARAM_FFC_PBITS' =>        "pbits",
@@ -367,6 +437,18 @@ my %params = (
     'PKEY_PARAM_EC_POINT_CONVERSION_FORMAT' => "point-format",
     'PKEY_PARAM_EC_GROUP_CHECK_TYPE' =>        "group-check",
     'PKEY_PARAM_EC_INCLUDE_PUBLIC' =>          "include-public",
+    'PKEY_PARAM_FIPS_SIGN_CHECK' =>            "sign-check",
+    'PKEY_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
+
+# ML_DSA Key generation parameter
+    'PKEY_PARAM_ML_DSA_SEED' =>             "seed",
+    'PKEY_PARAM_ML_DSA_RETAIN_SEED' =>      "ml-dsa.retain_seed",
+    'PKEY_PARAM_ML_DSA_PREFER_SEED' =>      "ml-dsa.prefer_seed",
+    'PKEY_PARAM_ML_DSA_INPUT_FORMATS' =>    "ml-dsa.input_formats",
+    'PKEY_PARAM_ML_DSA_OUTPUT_FORMATS' =>   "ml-dsa.output_formats",
+
+# SLH_DSA Key generation parameters
+    'PKEY_PARAM_SLH_DSA_SEED' =>              "seed",
 
 # Key Exchange parameters
     'EXCHANGE_PARAM_PAD' =>                   "pad",# uint
@@ -377,19 +459,37 @@ my %params = (
     'EXCHANGE_PARAM_KDF_OUTLEN' =>            "kdf-outlen",# size_t
 # The following parameter is an octet_string on set and an octet_ptr on get
     'EXCHANGE_PARAM_KDF_UKM' =>               "kdf-ukm",
+    'EXCHANGE_PARAM_FIPS_DIGEST_CHECK' =>     '*PKEY_PARAM_FIPS_DIGEST_CHECK',
+    'EXCHANGE_PARAM_FIPS_KEY_CHECK' =>        '*PKEY_PARAM_FIPS_KEY_CHECK',
+    'EXCHANGE_PARAM_FIPS_ECDH_COFACTOR_CHECK' => '*PROV_PARAM_ECDH_COFACTOR_CHECK',
+    'EXCHANGE_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
 
 # Signature parameters
-    'SIGNATURE_PARAM_ALGORITHM_ID' =>       "algorithm-id",
-    'SIGNATURE_PARAM_PAD_MODE' =>           '*PKEY_PARAM_PAD_MODE',
-    'SIGNATURE_PARAM_DIGEST' =>             '*PKEY_PARAM_DIGEST',
-    'SIGNATURE_PARAM_PROPERTIES' =>         '*PKEY_PARAM_PROPERTIES',
-    'SIGNATURE_PARAM_PSS_SALTLEN' =>        "saltlen",
-    'SIGNATURE_PARAM_MGF1_DIGEST' =>        '*PKEY_PARAM_MGF1_DIGEST',
-    'SIGNATURE_PARAM_MGF1_PROPERTIES' =>    '*PKEY_PARAM_MGF1_PROPERTIES',
-    'SIGNATURE_PARAM_DIGEST_SIZE' =>        '*PKEY_PARAM_DIGEST_SIZE',
-    'SIGNATURE_PARAM_NONCE_TYPE' =>         "nonce-type",
-    'SIGNATURE_PARAM_INSTANCE' =>           "instance",
-    'SIGNATURE_PARAM_CONTEXT_STRING' =>     "context-string",
+    'SIGNATURE_PARAM_ALGORITHM_ID' =>         '*PKEY_PARAM_ALGORITHM_ID',
+    'SIGNATURE_PARAM_ALGORITHM_ID_PARAMS' =>  '*PKEY_PARAM_ALGORITHM_ID_PARAMS',
+    'SIGNATURE_PARAM_PAD_MODE' =>             '*PKEY_PARAM_PAD_MODE',
+    'SIGNATURE_PARAM_DIGEST' =>               '*PKEY_PARAM_DIGEST',
+    'SIGNATURE_PARAM_PROPERTIES' =>           '*PKEY_PARAM_PROPERTIES',
+    'SIGNATURE_PARAM_PSS_SALTLEN' =>          "saltlen",
+    'SIGNATURE_PARAM_MGF1_DIGEST' =>          '*PKEY_PARAM_MGF1_DIGEST',
+    'SIGNATURE_PARAM_MGF1_PROPERTIES' =>      '*PKEY_PARAM_MGF1_PROPERTIES',
+    'SIGNATURE_PARAM_DIGEST_SIZE' =>          '*PKEY_PARAM_DIGEST_SIZE',
+    'SIGNATURE_PARAM_NONCE_TYPE' =>           "nonce-type",
+    'SIGNATURE_PARAM_INSTANCE' =>             "instance",
+    'SIGNATURE_PARAM_CONTEXT_STRING' =>       "context-string",
+    'SIGNATURE_PARAM_FIPS_DIGEST_CHECK' =>    '*PKEY_PARAM_FIPS_DIGEST_CHECK',
+    'SIGNATURE_PARAM_FIPS_VERIFY_MESSAGE' =>  'verify-message',
+    'SIGNATURE_PARAM_FIPS_KEY_CHECK' =>       '*PKEY_PARAM_FIPS_KEY_CHECK',
+    'SIGNATURE_PARAM_FIPS_SIGN_CHECK' =>      '*PKEY_PARAM_FIPS_SIGN_CHECK',
+    'SIGNATURE_PARAM_FIPS_RSA_PSS_SALTLEN_CHECK' => "rsa-pss-saltlen-check",
+    'SIGNATURE_PARAM_FIPS_SIGN_X931_PAD_CHECK' => "sign-x931-pad-check",
+    'SIGNATURE_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
+    'SIGNATURE_PARAM_SIGNATURE' =>          "signature",
+    'SIGNATURE_PARAM_MESSAGE_ENCODING' =>   "message-encoding",
+    'SIGNATURE_PARAM_DETERMINISTIC' =>      "deterministic",
+    'SIGNATURE_PARAM_MU' =>                 "mu", # int
+    'SIGNATURE_PARAM_TEST_ENTROPY' =>       "test-entropy",
+    'SIGNATURE_PARAM_ADD_RANDOM' =>         "additional-random",
 
 # Asym cipher parameters
     'ASYM_CIPHER_PARAM_DIGEST' =>                   '*PKEY_PARAM_DIGEST',
@@ -405,6 +505,9 @@ my %params = (
     'ASYM_CIPHER_PARAM_TLS_CLIENT_VERSION' =>       "tls-client-version",
     'ASYM_CIPHER_PARAM_TLS_NEGOTIATED_VERSION' =>   "tls-negotiated-version",
     'ASYM_CIPHER_PARAM_IMPLICIT_REJECTION' =>       "implicit-rejection",
+    'ASYM_CIPHER_PARAM_FIPS_RSA_PKCS15_PAD_DISABLED' => '*PROV_PARAM_RSA_PKCS15_PAD_DISABLED',
+    'ASYM_CIPHER_PARAM_FIPS_KEY_CHECK' =>           '*PKEY_PARAM_FIPS_KEY_CHECK',
+    'ASYM_CIPHER_PARAM_FIPS_APPROVED_INDICATOR' =>  '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
 
 # Encoder / decoder parameters
 
@@ -439,6 +542,8 @@ my %params = (
 # KEM parameters
     'KEM_PARAM_OPERATION' =>            "operation",
     'KEM_PARAM_IKME' =>                 "ikme",
+    'KEM_PARAM_FIPS_KEY_CHECK' =>       '*PKEY_PARAM_FIPS_KEY_CHECK',
+    'KEM_PARAM_FIPS_APPROVED_INDICATOR' => '*ALG_PARAM_FIPS_APPROVED_INDICATOR',
 
 # Capabilities
 
@@ -468,6 +573,8 @@ my %params = (
     'CAPABILITY_TLS_SIGALG_SECURITY_BITS' =>     "tls-sigalg-sec-bits",
     'CAPABILITY_TLS_SIGALG_MIN_TLS' =>           "tls-min-tls",
     'CAPABILITY_TLS_SIGALG_MAX_TLS' =>           "tls-max-tls",
+    'CAPABILITY_TLS_SIGALG_MIN_DTLS' =>          "tls-min-dtls",
+    'CAPABILITY_TLS_SIGALG_MAX_DTLS' =>          "tls-max-dtls",
 
 # storemgmt parameters
 
@@ -509,6 +616,11 @@ my %params = (
     'LIBSSL_RECORD_LAYER_PARAM_MAX_FRAG_LEN' =>   "max_frag_len",
     'LIBSSL_RECORD_LAYER_PARAM_MAX_EARLY_DATA' => "max_early_data",
     'LIBSSL_RECORD_LAYER_PARAM_BLOCK_PADDING' =>  "block_padding",
+    'LIBSSL_RECORD_LAYER_PARAM_HS_PADDING' =>     "hs_padding",
+
+# Symmetric Key parametes
+    'SKEY_PARAM_RAW_BYTES' => "raw-bytes",
+    'SKEY_PARAM_KEY_LENGTH' => "key-length",
 );
 
 # Generate string based macros for public consumption

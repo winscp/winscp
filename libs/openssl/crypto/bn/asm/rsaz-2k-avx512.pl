@@ -1,4 +1,4 @@
-# Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2020-2024 The OpenSSL Project Authors. All Rights Reserved.
 # Copyright (c) 2020, Intel Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -393,7 +393,7 @@ $code.=<<___;
 ___
 
 $code.=<<___;
-.data
+.section .rodata align=32
 .align 32
 .Lmask52x4:
     .quad   0xfffffffffffff
@@ -589,7 +589,7 @@ $code.=<<___;
 .size   ossl_extract_multiplier_2x20_win5, .-ossl_extract_multiplier_2x20_win5
 ___
 $code.=<<___;
-.data
+.section .rodata align=32
 .align 32
 .Lones:
     .quad   1,1,1,1

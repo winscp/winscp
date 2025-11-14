@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -45,6 +45,14 @@ int ossl_rsa_pss_params_30_maskgenalg(const RSA_PSS_PARAMS_30 *rsa_pss_params);
 int ossl_rsa_pss_params_30_maskgenhashalg(const RSA_PSS_PARAMS_30 *rsa_pss_params);
 int ossl_rsa_pss_params_30_saltlen(const RSA_PSS_PARAMS_30 *rsa_pss_params);
 int ossl_rsa_pss_params_30_trailerfield(const RSA_PSS_PARAMS_30 *rsa_pss_params);
+
+int ossl_rsa_verify_PKCS1_PSS_mgf1(RSA *rsa, const unsigned char *mHash,
+                                   const EVP_MD *Hash, const EVP_MD *mgf1Hash,
+                                   const unsigned char *EM, int *sLenOut);
+int ossl_rsa_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
+                                        const unsigned char *mHash,
+                                        const EVP_MD *Hash, const EVP_MD *mgf1Hash,
+                                        int *sLenOut);
 
 const char *ossl_rsa_mgf_nid2name(int mgf);
 int ossl_rsa_oaeppss_md2nid(const EVP_MD *md);
@@ -127,6 +135,7 @@ void ossl_rsa_acvp_test_free(RSA_ACVP_TEST *t);
 # else
 # define RSA_ACVP_TEST void
 # endif
+int ossl_rsa_check_factors(RSA *r);
 
 RSA *evp_pkey_get1_RSA_PSS(EVP_PKEY *pkey);
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2018-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -127,7 +127,7 @@ static int test_set_min_max_version(int idx_tst)
 
     testresult = 1;
 
-  end:
+ end:
     SSL_free(ssl);
     SSL_CTX_free(ctx);
     return testresult;

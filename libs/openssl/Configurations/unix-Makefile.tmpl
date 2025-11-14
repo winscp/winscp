@@ -146,7 +146,7 @@ GENERATED_PODS={- # common0.tmpl provides @generated
                        fill_lines(" ", $COLUMNS - 15,
                                   map { my $x = $_;
                                         (
-                                          grep { 
+                                          grep {
                                                  $unified_info{attributes}->{depends}
                                                  ->{$x}->{$_}->{pod} // 0
                                                }
@@ -384,6 +384,7 @@ CFLAGS={- join(' ', @{$config{CFLAGS}}) -}
 CXXFLAGS={- join(' ', @{$config{CXXFLAGS}}) -}
 LDFLAGS= {- join(' ', @{$config{LDFLAGS}}) -}
 EX_LIBS= {- join(' ', @{$config{LDLIBS}}) -}
+OBJCOPY={- $config{OBJCOPY} -}
 
 MAKEDEPEND={- $config{makedepcmd} -}
 
@@ -544,6 +545,11 @@ LANG=C
 {- dependmagic('build_programs', 'Build the openssl executables and scripts'); -}: build_programs_nodep
 
 all: build_sw {- "build_docs" if !$disabled{docs}; -} ## Build software and documentation
+debuginfo: $(SHLIBS)
+	@set -e; for i in $(SHLIBS); do \
+		$(OBJCOPY) --only-keep-debug $$i $$i.debug; \
+		$(OBJCOPY) --strip-debug --add-gnu-debuglink=$$i.debug $$i; \
+	done;
 
 ##@ Documentation
 build_generated_pods: $(GENERATED_PODS)
@@ -814,12 +820,12 @@ install_dev: install_runtime_libs
 		cp $$e "$(DESTDIR)$(PKGCONFIGDIR)/$$fn"; \
 		chmod 644 "$(DESTDIR)$(PKGCONFIGDIR)/$$fn"; \
 	done
-	@$(PERL) $(SRCDIR)/util/mkdir-p.pl $(DESTDIR)$(CMAKECONFIGDIR)
+	@$(PERL) $(SRCDIR)/util/mkdir-p.pl "$(DESTDIR)$(CMAKECONFIGDIR)"
 	@for e in $(INSTALL_EXPORTERS_CMAKE); do \
 		fn=`basename $$e`; \
 		$(ECHO) "install $$e -> $(DESTDIR)$(CMAKECONFIGDIR)/$$fn"; \
-		cp $$e $(DESTDIR)$(CMAKECONFIGDIR)/$$fn; \
-		chmod 644 $(DESTDIR)$(CMAKECONFIGDIR)/$$fn; \
+		cp $$e "$(DESTDIR)$(CMAKECONFIGDIR)/$$fn"; \
+		chmod 644 "$(DESTDIR)$(CMAKECONFIGDIR)/$$fn"; \
 	done
 
 uninstall_dev: uninstall_runtime_libs
@@ -1178,7 +1184,7 @@ generate_buildinfo: generate_doc_buildinfo
 
 .PHONY: doc-nits md-nits
 doc-nits: build_generated_pods ## Evaluate OpenSSL documentation
-	$(PERL) $(SRCDIR)/util/find-doc-nits -c -n -l -e
+	$(PERL) $(SRCDIR)/util/find-doc-nits -c -n -l -e -i
 
 # This uses "mdl", the markdownlint application, which is written in ruby.
 # The source is at https://github.com/markdownlint/markdownlint
@@ -1343,8 +1349,7 @@ errors:
            include/internal/asn1.h
            include/internal/sslconf.h );
    my @cryptoskipheaders = ( @sslheaders_tmpl,
-       qw( include/openssl/asn1_mac.h
-           include/openssl/conf_api.h
+       qw( include/openssl/conf_api.h
            include/openssl/ebcdic.h
            include/openssl/opensslconf.h
            include/openssl/symhacks.h ) );

@@ -273,9 +273,9 @@ static int do_kdf_hkdf_gettables(int expand_only, int has_digest)
             goto err;
     }
 
-    /* Get params returns -2 if an unsupported parameter is requested */
+    /* Get params returns 1 if an unsupported parameter is requested */
     params_get[0] = OSSL_PARAM_construct_end();
-    if (!TEST_int_eq(EVP_KDF_CTX_get_params(kctx, params_get), -2))
+    if (!TEST_int_eq(EVP_KDF_CTX_get_params(kctx, params_get), 1))
         goto err;
     ret = 1;
 err:
@@ -1777,7 +1777,7 @@ static int test_kdf_get_kdf(void)
         || !TEST_ptr(kdf2 = EVP_KDF_fetch(NULL, LN_tls1_prf, NULL))
         || !test_kdfs_same(kdf1, kdf2))
         ok = 0;
-    /* kdf1 is re-used below, so don't free it here */
+    /* kdf1 is reused below, so don't free it here */
     EVP_KDF_free(kdf2);
     kdf2 = NULL;
 

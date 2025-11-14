@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ *  Copyright 2023-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  *  Licensed under the Apache License 2.0 (the "License").  You may not use
  *  this file except in compliance with the License.  You can obtain a copy
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
     unsigned char alpn[] = { 8, 'h', 't', 't', 'p', '/', '1', '.', '0' };
     const char *request_start = "GET / HTTP/1.0\r\nConnection: close\r\nHost: ";
     const char *request_end = "\r\n\r\n";
-    size_t written, readbytes;
+    size_t written, readbytes = 0;
     char buf[160];
     BIO_ADDR *peer_addr = NULL;
     int eof = 0;
@@ -361,7 +361,8 @@ int main(int argc, char *argv[])
         printf("Failed to write hostname in HTTP request\n");
         goto end; /* Cannot retry: error */
     }
-    while (!SSL_write_ex(ssl, request_end, strlen(request_end), &written)) {
+    while (!SSL_write_ex2(ssl, request_end, strlen(request_end),
+                          SSL_WRITE_FLAG_CONCLUDE, &written)) {
         if (handle_io_failure(ssl, 0) == 1)
             continue; /* Retry */
         printf("Failed to write end of HTTP request\n");

@@ -30,7 +30,7 @@ sub verify {
     run(app([@args]));
 }
 
-plan tests => 202;
+plan tests => 203;
 
 # Canonical success
 ok(verify("ee-cert", "sslserver", ["root-cert"], ["ca-cert"]),
@@ -468,6 +468,9 @@ ok(!verify("badalt10-cert", "", ["root-cert"], ["ncca1-cert", "ncca3-cert"], ),
 ok(!verify("bad-othername-cert", "", ["root-cert"], ["nccaothername-cert"], ),
    "CVE-2022-4203 type confusion test");
 
+ok(verify("nc-uri-cert", "", ["root-cert"], ["ncca4-cert"], ),
+   "Name constraints URI with userinfo");
+
 #Check that we get the expected failure return code
 with({ exit_checker => sub { return shift == 2; } },
      sub {
@@ -609,7 +612,7 @@ SKIP: {
 }
 my $foo_file = "cert.pem";
 copy($rootcert, $foo_file);
-ok(vfy_root("-CAstore", $foo_file), "CAstore file");
+ok(vfy_root("-CAstore", $foo_file), "CAstore foo:file");
 my $abs_cert = abs_path($rootcert);
 # Windows file: URIs should have a path part starting with a slash, i.e.
 # file://authority/C:/what/ever/foo.pem and file:///C:/what/ever/foo.pem

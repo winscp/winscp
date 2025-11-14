@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,8 @@ enum {
     CMD_LOOKUP
 };
 
+#define MAX_CMDS    10000
+
 static int get_cid(PACKET *pkt, QUIC_CONN_ID *cid)
 {
     unsigned int cidl;
@@ -72,6 +74,7 @@ int FuzzerTestOneInput(const uint8_t *buf, size_t len)
     OSSL_QUIC_FRAME_NEW_CONN_ID ncid_frame;
     int did_retire;
     void *opaque_out;
+    size_t limit = 0;
 
     if (!PACKET_buf_init(&pkt, buf, len))
         goto err;
@@ -89,6 +92,9 @@ int FuzzerTestOneInput(const uint8_t *buf, size_t len)
 
     while (PACKET_remaining(&pkt) > 0) {
         if (!PACKET_get_1(&pkt, &cmd))
+            goto err;
+
+        if (++limit > MAX_CMDS)
             goto err;
 
         switch (cmd) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -93,6 +93,9 @@ static const OSSL_ALGORITHM base_store[] = {
 
 static const OSSL_ALGORITHM base_rands[] = {
     { PROV_NAMES_SEED_SRC, "provider=base", ossl_seed_src_functions },
+#ifndef OPENSSL_NO_JITTER
+    { PROV_NAMES_JITTER, "provider=base", ossl_jitter_functions },
+#endif
     { NULL, NULL, NULL }
 };
 
@@ -178,6 +181,7 @@ int ossl_base_provider_init(const OSSL_CORE_HANDLE *handle,
                                        (OSSL_LIB_CTX *)c_get_libctx(handle));
     ossl_prov_ctx_set0_handle(*provctx, handle);
     ossl_prov_ctx_set0_core_bio_method(*provctx, corebiometh);
+    ossl_prov_ctx_set0_core_get_params(*provctx, c_get_params);
 
     *out = base_dispatch_table;
 

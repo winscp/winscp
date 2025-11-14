@@ -7,6 +7,8 @@ release. For more details please read the CHANGES file.
 OpenSSL Releases
 ----------------
 
+ - [OpenSSL 3.5](#openssl-35)
+ - [OpenSSL 3.4](#openssl-34)
  - [OpenSSL 3.3](#openssl-33)
  - [OpenSSL 3.2](#openssl-32)
  - [OpenSSL 3.1](#openssl-31)
@@ -18,12 +20,12 @@ OpenSSL Releases
  - [OpenSSL 1.0.0](#openssl-100)
  - [OpenSSL 0.9.x](#openssl-09x)
 
-OpenSSL 3.3
+OpenSSL 3.5
 -----------
 
-### Major changes between OpenSSL 3.3.4 and OpenSSL 3.3.5 [30 Sep 2025]
+### Major changes between OpenSSL 3.5.3 and OpenSSL 3.5.4 [30 Sep 2025]
 
-OpenSSL 3.3.5 is a security patch release. The most severe CVE fixed in this
+OpenSSL 3.5.4 is a security patch release. The most severe CVE fixed in this
 release is Moderate.
 
 This release incorporates the following bug fixes and mitigations:
@@ -37,17 +39,99 @@ This release incorporates the following bug fixes and mitigations:
   * Fix Out-of-bounds read in HTTP client no_proxy handling.
     ([CVE-2025-9232])
 
-### Major changes between OpenSSL 3.3.3 and OpenSSL 3.3.4 [1 Jul 2025]
+  * Reverted the synthesised `OPENSSL_VERSION_NUMBER` change for the release
+    builds, as it broke some exiting applications that relied on the previous
+    3.x semantics, as documented in `OpenSSL_version(3)`.
 
-OpenSSL 3.3.4 is a bug fix release.
+### Major changes between OpenSSL 3.5.2 and OpenSSL 3.5.3 [16 Sep 2025]
+
+OpenSSL 3.5.3 is a bug fix release.
 
 This release incorporates the following bug fixes and mitigations:
 
-  * Miscellaneous minor bug fixes.
+  * Added FIPS 140-3 PCT on DH key generation.
 
-### Major changes between OpenSSL 3.3.2 and OpenSSL 3.3.3 [11 Feb 2025]
+  * Fixed the synthesised `OPENSSL_VERSION_NUMBER`.
 
-OpenSSL 3.3.3 is a security patch release. The most severe CVE fixed in this
+  * Removed PCT on key import in the FIPS provider as it is not required by
+    the standard.
+
+### Major changes between OpenSSL 3.5.1 and OpenSSL 3.5.2 [5 Aug 2025]
+
+OpenSSL 3.5.2 is a bug fix release.
+
+This release incorporates the following bug fixes and mitigations:
+
+  * The FIPS provider now performs a PCT on key import for RSA, EC and ECX.
+
+### Major changes between OpenSSL 3.5.0 and OpenSSL 3.5.1 [1 Jul 2025]
+
+OpenSSL 3.5.1 is a security patch release. The most severe CVE fixed in this
+release is Low.
+
+This release incorporates the following bug fixes and mitigations:
+
+  * Fix x509 application adds trusted use instead of rejected use.
+    ([CVE-2025-4575])
+
+### Major changes between OpenSSL 3.4 and OpenSSL 3.5.0 [8 Apr 2025]
+
+OpenSSL 3.5.0 is a feature release adding significant new functionality to
+OpenSSL.
+
+This release incorporates the following potentially significant or incompatible
+changes:
+
+  * Default encryption cipher for the `req`, `cms`, and `smime` applications
+    changed from `des-ede3-cbc` to `aes-256-cbc`.
+
+  * The default TLS supported groups list has been changed to include and
+    prefer hybrid PQC KEM groups. Some practically unused groups were removed
+    from the default list.
+
+  * The default TLS keyshares have been changed to offer X25519MLKEM768 and
+    and X25519.
+
+  * All `BIO_meth_get_*()` functions were deprecated.
+
+This release adds the following new features:
+
+  * Support for server side QUIC (RFC 9000)
+
+  * Support for 3rd party QUIC stacks including 0-RTT support
+
+  * Support for PQC algorithms (ML-KEM, ML-DSA and SLH-DSA)
+
+  * A new configuration option `no-tls-deprecated-ec` to disable support for
+    TLS groups deprecated in RFC8422
+
+  * A new configuration option `enable-fips-jitter` to make the FIPS provider
+    to use the `JITTER` seed source
+
+  * Support for central key generation in CMP
+
+  * Support added for opaque symmetric key objects (EVP_SKEY)
+
+  * Support for multiple TLS keyshares and improved TLS key establishment group
+    configurability
+
+  * API support for pipelining in provided cipher algorithms
+
+Known issues in 3.5.0
+
+  * <https://github.com/openssl/openssl/issues/27282>
+    Calling SSL_accept on objects returned from SSL_accept_connection
+    results in error.  It is expected that making this call will advance
+    the SSL handshake for the passed connection, but currently it does not.
+    This can be handled by calling SSL_do_handshake instead.  A fix is planned
+    for OpenSSL 3.5.1
+
+OpenSSL 3.4
+-----------
+
+### Major changes between OpenSSL 3.4.0 and OpenSSL 3.4.1 [11 Feb 2025]
+
+OpenSSL 3.4.1 is a security patch release. The most severe CVE fixed in this
 release is High.
 
 This release incorporates the following bug fixes and mitigations:
@@ -57,6 +141,78 @@ This release incorporates the following bug fixes and mitigations:
 
   * Fixed timing side-channel in ECDSA signature computation.
     ([CVE-2024-13176])
+
+### Major changes between OpenSSL 3.3 and OpenSSL 3.4.0 [22 Oct 2024]
+
+OpenSSL 3.4.0 is a feature release adding significant new functionality to
+OpenSSL.
+
+This release incorporates the following potentially significant or incompatible
+changes:
+
+  * Deprecation of TS_VERIFY_CTX_set_* functions and addition of replacement
+    TS_VERIFY_CTX_set0_* functions with improved semantics
+
+  * Redesigned use of OPENSSLDIR/ENGINESDIR/MODULESDIR on Windows such that
+    what were formerly build time locations can now be defined at run time
+    with registry keys
+
+  * The X25519 and X448 key exchange implementation in the FIPS provider
+    is unapproved and has `fips=no` property.
+
+  * SHAKE-128 and SHAKE-256 implementations have no default digest length
+    anymore. That means these algorithms cannot be used with
+    EVP_DigestFinal/_ex() unless the `xoflen` param is set before.
+
+  * Setting `config_diagnostics=1` in the config file will cause errors to
+    be returned from SSL_CTX_new() and SSL_CTX_new_ex() if there is an error
+    in the ssl module configuration.
+
+  * An empty renegotiate extension will be used in TLS client hellos instead
+    of the empty renegotiation SCSV, for all connections with a minimum TLS
+    version > 1.0.
+
+  * Deprecation of SSL_SESSION_get_time(), SSL_SESSION_set_time() and
+    SSL_CTX_flush_sessions() functions in favor of their respective `_ex`
+    functions which are Y2038-safe on platforms with Y2038-safe `time_t`
+
+This release adds the following new features:
+
+  * Support for directly fetched composite signature algorithms such as
+    RSA-SHA2-256 including new API functions
+
+  * FIPS indicators support in the FIPS provider and various updates of the FIPS
+    provider required for future FIPS 140-3 validations
+
+  * Implementation of RFC 9579 (PBMAC1) in PKCS#12
+
+  * An optional additional random seed source RNG `JITTER` using a statically
+    linked jitterentropy library
+
+  * New options `-not_before` and `-not_after` for explicit setting start and
+    end dates of certificates created with the `req` and `x509` apps
+
+  * Support for integrity-only cipher suites TLS_SHA256_SHA256 and
+    TLS_SHA384_SHA384 in TLS 1.3, as defined in RFC 9150
+
+  * Support for retrieving certificate request templates and CRLs in CMP
+
+  * Support for additional X.509v3 extensions related to Attribute Certificates
+
+  * Initial Attribute Certificate (RFC 5755) support
+
+  * Possibility to customize ECC groups initialization to use precomputed values
+    to save CPU time and use of this feature by the P-256 implementation
+
+OpenSSL 3.3
+-----------
+
+### Major changes between OpenSSL 3.3.2 and OpenSSL 3.3.3 [under development]
+
+OpenSSL 3.3.3 is a security patch release. The most severe CVE fixed in this
+release is Low.
+
+This release incorporates the following bug fixes and mitigations:
 
   * Fixed possible OOB memory access with invalid low-level GF(2^m) elliptic
     curve parameters.
@@ -151,6 +307,8 @@ This release adds the following new features:
   * Added X509_STORE_get1_objects to avoid issues with the existing
     X509_STORE_get0_objects API in multi-threaded applications.
 
+  * Support for using certificate profiles and extened delayed delivery in CMP
+
 This release incorporates the following potentially significant or incompatible
 changes:
 
@@ -158,7 +316,7 @@ changes:
 
   * Optimized AES-CTR for ARM Neoverse V1 and V2
 
-  * Enable AES and SHA3 optimisations on Applie Silicon M3-based MacOS systems
+  * Enable AES and SHA3 optimisations on Apple Silicon M3-based MacOS systems
     similar to M1/M2.
 
   * Various optimizations for cryptographic routines using RISC-V vector crypto
@@ -1785,8 +1943,8 @@ OpenSSL 0.9.x
 [CVE-2025-9232]: https://www.openssl.org/news/vulnerabilities.html#CVE-2025-9232
 [CVE-2025-9231]: https://www.openssl.org/news/vulnerabilities.html#CVE-2025-9231
 [CVE-2025-9230]: https://www.openssl.org/news/vulnerabilities.html#CVE-2025-9230
+[CVE-2025-4575]: https://www.openssl.org/news/vulnerabilities.html#CVE-2025-4575
 [CVE-2024-13176]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-13176
-[CVE-2024-12797]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-12797
 [CVE-2024-9143]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-9143
 [CVE-2024-6119]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-6119
 [CVE-2024-5535]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-5535
@@ -1965,3 +2123,6 @@ OpenSSL 0.9.x
 [CHANGES.md]: ./CHANGES.md
 [README-QUIC.md]: ./README-QUIC.md
 [issue tracker]: https://github.com/openssl/openssl/issues
+[CMVP]: https://csrc.nist.gov/projects/cryptographic-module-validation-program
+[ESV]: https://csrc.nist.gov/Projects/cryptographic-module-validation-program/entropy-validations
+[jitterentropy-library]: https://github.com/smuellerDD/jitterentropy-library

@@ -1,4 +1,4 @@
-# Copyright 2021-2023 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2021-2024 The OpenSSL Project Authors. All Rights Reserved.
 # Copyright (c) 2021, Intel Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -4812,7 +4812,7 @@ ___
 }
 
 $code .= <<___;
-.data
+.section .rodata align=16
 .align 16
 POLY:   .quad     0x0000000000000001, 0xC200000000000000
 

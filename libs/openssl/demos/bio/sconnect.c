@@ -16,11 +16,16 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#if !defined(OPENSSL_SYS_WINDOWS)
+#include <unistd.h>
+#else
+#include <windows.h>
+# define sleep(x) Sleep(x*1000)
+#endif
 
 #define HOSTPORT "localhost:4433"
 #define CAFILE "root.pem"
@@ -51,9 +56,10 @@ int main(int argc, char *argv[])
 
     /* Enable trust chain verification */
     SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
-    SSL_CTX_load_verify_locations(ssl_ctx, CAfile, NULL);
+    if (!SSL_CTX_load_verify_locations(ssl_ctx, CAfile, NULL))
+        goto err;
 
-    /* Lets make a SSL structure */
+    /* Let's make an SSL structure */
     ssl = SSL_new(ssl_ctx);
     SSL_set_connect_state(ssl);
 

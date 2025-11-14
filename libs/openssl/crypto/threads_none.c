@@ -151,7 +151,7 @@ int CRYPTO_THREAD_run_once(CRYPTO_ONCE *once, void (*init)(void))
     return 1;
 }
 
-#define OPENSSL_CRYPTO_THREAD_LOCAL_KEY_MAX 256
+# define OPENSSL_CRYPTO_THREAD_LOCAL_KEY_MAX 256
 
 struct thread_local_storage_entry {
     void *data;
@@ -226,6 +226,24 @@ int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock)
     return 1;
 }
 
+int CRYPTO_atomic_add64(uint64_t *val, uint64_t op, uint64_t *ret,
+                        CRYPTO_RWLOCK *lock)
+{
+    *val += op;
+    *ret  = *val;
+
+    return 1;
+}
+
+int CRYPTO_atomic_and(uint64_t *val, uint64_t op, uint64_t *ret,
+                      CRYPTO_RWLOCK *lock)
+{
+    *val &= op;
+    *ret  = *val;
+
+    return 1;
+}
+
 int CRYPTO_atomic_or(uint64_t *val, uint64_t op, uint64_t *ret,
                      CRYPTO_RWLOCK *lock)
 {
@@ -238,6 +256,13 @@ int CRYPTO_atomic_or(uint64_t *val, uint64_t op, uint64_t *ret,
 int CRYPTO_atomic_load(uint64_t *val, uint64_t *ret, CRYPTO_RWLOCK *lock)
 {
     *ret  = *val;
+
+    return 1;
+}
+
+int CRYPTO_atomic_store(uint64_t *dst, uint64_t val, CRYPTO_RWLOCK *lock)
+{
+    *dst = val;
 
     return 1;
 }

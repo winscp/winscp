@@ -96,7 +96,10 @@ const OPTIONS smime_options[] = {
     {"nosigs", OPT_NOSIGS, '-', "Don't verify message signature"},
     {"noverify", OPT_NOVERIFY, '-', "Don't verify signers certificate"},
 
-    {"certfile", OPT_CERTFILE, '<', "Other certificates file"},
+    {"certfile", OPT_CERTFILE, '<',
+     "Extra signer and intermediate CA certificates to include when signing"},
+    {OPT_MORE_STR, 0, 0,
+     "or to use as preferred signer certs and for chain building when verifying"},
     {"recip", OPT_RECIP, '<', "Recipient certificate file for decryption"},
 
     OPT_SECTION("Email"),
@@ -474,14 +477,8 @@ int smime_main(int argc, char **argv)
     }
 
     if (operation == SMIME_ENCRYPT) {
-        if (cipher == NULL) {
-#ifndef OPENSSL_NO_DES
-            cipher = (EVP_CIPHER *)EVP_des_ede3_cbc();
-#else
-            BIO_printf(bio_err, "No cipher selected\n");
-            goto end;
-#endif
-        }
+        if (cipher == NULL)
+            cipher = (EVP_CIPHER *)EVP_aes_256_cbc();
         encerts = sk_X509_new_null();
         if (encerts == NULL)
             goto end;

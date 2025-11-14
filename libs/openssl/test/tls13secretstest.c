@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -11,6 +11,7 @@
 #include <openssl/evp.h>
 
 #include "../ssl/ssl_local.h"
+#include "internal/ssl_unwrap.h"
 #include "testutil.h"
 
 #define IVLEN   12
@@ -159,6 +160,13 @@ const EVP_MD *ssl_handshake_md(SSL_CONNECTION *s)
 
 int ssl_cipher_get_evp_cipher(SSL_CTX *ctx, const SSL_CIPHER *sslc,
                                      const EVP_CIPHER **enc)
+{
+    return 0;
+}
+
+int ssl_cipher_get_evp_md_mac(SSL_CTX *ctx, const SSL_CIPHER *sslc,
+                              const EVP_MD **md,
+                              int *mac_pkey_type, size_t *mac_secret_size)
 {
     return 0;
 }

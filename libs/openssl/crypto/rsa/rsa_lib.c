@@ -159,8 +159,13 @@ void RSA_free(RSA *r)
     CRYPTO_THREAD_lock_free(r->lock);
     CRYPTO_FREE_REF(&r->references);
 
+#ifdef OPENSSL_PEDANTIC_ZEROIZATION
+    BN_clear_free(r->n);
+    BN_clear_free(r->e);
+#else
     BN_free(r->n);
     BN_free(r->e);
+#endif
     BN_clear_free(r->d);
     BN_clear_free(r->p);
     BN_clear_free(r->q);
@@ -899,6 +904,56 @@ int ossl_rsa_get0_all_params(RSA *r, STACK_OF(BIGNUM_const) *primes,
 #endif
 
     return 1;
+}
+
+#define safe_BN_num_bits(_k_)  (((_k_) == NULL) ? 0 : BN_num_bits((_k_)))
+int ossl_rsa_check_factors(RSA *r)
+{
+    int valid = 0;
+    int n, i, bits;
+    STACK_OF(BIGNUM_const) *factors = sk_BIGNUM_const_new_null();
+    STACK_OF(BIGNUM_const) *exps = sk_BIGNUM_const_new_null();
+    STACK_OF(BIGNUM_const) *coeffs = sk_BIGNUM_const_new_null();
+
+    if (factors == NULL || exps == NULL || coeffs == NULL)
+        goto done;
+
+    /*
+     * Simple sanity check for RSA key. All RSA key parameters
+     * must be less-than/equal-to RSA parameter n.
+     */
+    ossl_rsa_get0_all_params(r, factors, exps, coeffs);
+    n = safe_BN_num_bits(RSA_get0_n(r));
+
+    if (safe_BN_num_bits(RSA_get0_d(r)) > n)
+        goto done;
+
+    for (i = 0; i < sk_BIGNUM_const_num(exps); i++) {
+        bits = safe_BN_num_bits(sk_BIGNUM_const_value(exps, i));
+        if (bits > n)
+            goto done;
+    }
+
+    for (i = 0; i < sk_BIGNUM_const_num(factors); i++) {
+        bits = safe_BN_num_bits(sk_BIGNUM_const_value(factors, i));
+        if (bits > n)
+            goto done;
+    }
+
+    for (i = 0; i < sk_BIGNUM_const_num(coeffs); i++) {
+        bits = safe_BN_num_bits(sk_BIGNUM_const_value(coeffs, i));
+        if (bits > n)
+            goto done;
+    }
+
+    valid = 1;
+
+done:
+    sk_BIGNUM_const_free(factors);
+    sk_BIGNUM_const_free(exps);
+    sk_BIGNUM_const_free(coeffs);
+
+    return valid;
 }
 
 #ifndef FIPS_MODULE

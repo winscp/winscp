@@ -58,7 +58,8 @@ CMS_add0_cert(), CMS_add1_cert() and CMS_add0_crl() and CMS_add1_crl() return
 1 for success and 0 for failure.
 
 CMS_get1_certs() and CMS_get1_crls() return the STACK of certificates or CRLs
-or NULL if there are none or an error occurs. The only error which will occur
+or NULL if there are none or an error occurs.
+Besides out-of-memory, the only error which will occur
 in practice is if the I<cms> type is invalid.
 
 =head1 SEE ALSO
@@ -74,7 +75,7 @@ not to throw an error if a certificate to be added is already present.
 
 =head1 COPYRIGHT
 
-Copyright 2008-2023 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2008-2024 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

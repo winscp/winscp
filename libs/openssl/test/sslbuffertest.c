@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,17 @@
 #include <openssl/err.h>
 #include <openssl/engine.h>
 
+#ifndef OPENSSL_NO_QUIC
+/* This test does not link libssl so avoid pulling in QUIC unwrappers. */
+# define OPENSSL_NO_QUIC
+#endif
+
 /* We include internal headers so we can check if the buffers are allocated */
 #include "../ssl/ssl_local.h"
 #include "../ssl/record/record_local.h"
 #include "internal/recordmethod.h"
 #include "../ssl/record/methods/recmethod_local.h"
+#include "internal/ssl_unwrap.h"
 
 #include "internal/packet.h"
 
@@ -140,8 +146,7 @@ static int test_func(int test)
          * bytes from the record header/padding etc.
          */
         for (ret = -1, i = 0, len = 0; len != sizeof(testdata) &&
-                 i < MAX_ATTEMPTS; i++)
-        {
+                                       i < MAX_ATTEMPTS; i++) {
             if (test >= 5 && (!TEST_true(SSL_free_buffers(serverssl))
                               || !TEST_true(checkbuffers(serverssl, 0))))
                 goto end;

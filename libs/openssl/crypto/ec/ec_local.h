@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2024 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -196,6 +196,7 @@ struct ec_method_st {
     int (*ladder_post)(const EC_GROUP *group,
                        EC_POINT *r, EC_POINT *s,
                        EC_POINT *p, BN_CTX *ctx);
+    int (*group_full_init)(EC_GROUP *group, const unsigned char *data);
 };
 
 /*

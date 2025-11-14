@@ -31,17 +31,17 @@
  * a BIO created to read from stdin
  */
 
-int demonstrate_digest(BIO *input)
+static int demonstrate_digest(BIO *input)
 {
     OSSL_LIB_CTX *library_context = NULL;
     int ret = 0;
     const char *option_properties = NULL;
     EVP_MD *message_digest = NULL;
     EVP_MD_CTX *digest_context = NULL;
-    int digest_length;
+    unsigned int digest_length;
     unsigned char *digest_value = NULL;
     unsigned char buffer[512];
-    int ii;
+    unsigned int ii;
 
     library_context = OSSL_LIB_CTX_new();
     if (library_context == NULL) {
@@ -51,7 +51,7 @@ int demonstrate_digest(BIO *input)
 
     /*
      * Fetch a message digest by name
-     * The algorithm name is case insensitive. 
+     * The algorithm name is case insensitive.
      * See providers(7) for details about algorithm fetching
      */
     message_digest = EVP_MD_fetch(library_context,
@@ -85,7 +85,7 @@ int demonstrate_digest(BIO *input)
         goto cleanup;
     }
     /*
-     * Initialize the message digest context to use the fetched 
+     * Initialize the message digest context to use the fetched
      * digest provider
      */
     if (EVP_DigestInit(digest_context, message_digest) != 1) {

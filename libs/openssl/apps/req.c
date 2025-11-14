@@ -30,6 +30,7 @@
 #ifndef OPENSSL_NO_DSA
 # include <openssl/dsa.h>
 #endif
+#include "internal/e_os.h"    /* For isatty() */
 
 #define BITS               "default_bits"
 #define KEYFILE            "default_keyfile"
@@ -43,7 +44,7 @@
 
 #define DEFAULT_KEY_LENGTH 2048
 #define MIN_KEY_LENGTH     512
-#define DEFAULT_DAYS       30 /* default cert validity period in days */
+#define DEFAULT_DAYS       30 /* default certificate validity period in days */
 #define UNSET_DAYS         -2 /* -1 may be used for testing expiration checks */
 #define EXT_COPY_UNSET     -1
 
@@ -80,6 +81,7 @@ static int batch = 0;
 
 typedef enum OPTION_choice {
     OPT_COMMON,
+    OPT_CIPHER,
     OPT_INFORM, OPT_OUTFORM, OPT_ENGINE, OPT_KEYGEN_ENGINE, OPT_KEY,
     OPT_PUBKEY, OPT_NEW, OPT_CONFIG, OPT_KEYFORM, OPT_IN, OPT_OUT,
     OPT_KEYOUT, OPT_PASSIN, OPT_PASSOUT, OPT_NEWKEY,
@@ -87,7 +89,7 @@ typedef enum OPTION_choice {
     OPT_VERIFY, OPT_NOENC, OPT_NODES, OPT_NOOUT, OPT_VERBOSE, OPT_UTF8,
     OPT_NAMEOPT, OPT_REQOPT, OPT_SUBJ, OPT_SUBJECT, OPT_TEXT,
     OPT_X509, OPT_X509V1, OPT_CA, OPT_CAKEY,
-    OPT_MULTIVALUE_RDN, OPT_DAYS, OPT_SET_SERIAL,
+    OPT_MULTIVALUE_RDN, OPT_NOT_BEFORE, OPT_NOT_AFTER, OPT_DAYS, OPT_SET_SERIAL,
     OPT_COPY_EXTENSIONS, OPT_EXTENSIONS, OPT_REQEXTS, OPT_ADDEXT,
     OPT_PRECERT, OPT_MD,
     OPT_SECTION, OPT_QUIET,
@@ -97,6 +99,7 @@ typedef enum OPTION_choice {
 const OPTIONS req_options[] = {
     OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
+    {"cipher", OPT_CIPHER, 's', "Specify the cipher for private key encryption"},
 #ifndef OPENSSL_NO_ENGINE
     {"engine", OPT_ENGINE, 's', "Use engine, possibly a hardware device"},
     {"keygen_engine", OPT_KEYGEN_ENGINE, 's',
@@ -127,7 +130,11 @@ const OPTIONS req_options[] = {
      "Print the subject of the output request or cert"},
     {"multivalue-rdn", OPT_MULTIVALUE_RDN, '-',
      "Deprecated; multi-valued RDNs support is always on."},
-    {"days", OPT_DAYS, 'p', "Number of days cert is valid for"},
+    {"not_before", OPT_NOT_BEFORE, 's',
+     "[CC]YYMMDDHHMMSSZ value for notBefore certificate field"},
+    {"not_after", OPT_NOT_AFTER, 's',
+     "[CC]YYMMDDHHMMSSZ value for notAfter certificate field, overrides -days"},
+    {"days", OPT_DAYS, 'p', "Number of days certificate is valid for"},
     {"set_serial", OPT_SET_SERIAL, 's', "Serial number to use"},
     {"copy_extensions", OPT_COPY_EXTENSIONS, 's',
      "copy extensions from request when using -x509"},
@@ -245,7 +252,7 @@ int req_main(int argc, char **argv)
     LHASH_OF(OPENSSL_STRING) *addexts = NULL;
     X509 *new_x509 = NULL, *CAcert = NULL;
     X509_REQ *req = NULL;
-    EVP_CIPHER *cipher = NULL;
+    const EVP_CIPHER *cipher = NULL;
     int ext_copy = EXT_COPY_UNSET;
     BIO *addext_bio = NULL;
     char *extsect = NULL;
@@ -259,6 +266,7 @@ int req_main(int argc, char **argv)
     char *template = default_config_file, *keyout = NULL;
     const char *keyalg = NULL;
     OPTION_CHOICE o;
+    char *not_before = NULL, *not_after = NULL;
     int days = UNSET_DAYS;
     int ret = 1, gen_x509 = 0, i = 0, newreq = 0, verbose = 0, progress = 1;
     int informat = FORMAT_UNDEF, outformat = FORMAT_PEM, keyform = FORMAT_UNDEF;
@@ -267,9 +275,7 @@ int req_main(int argc, char **argv)
     long newkey_len = -1;
     unsigned long chtype = MBSTRING_ASC, reqflag = 0;
 
-#ifndef OPENSSL_NO_DES
-    cipher = (EVP_CIPHER *)EVP_des_ede3_cbc();
-#endif
+    cipher = (EVP_CIPHER *)EVP_aes_256_cbc();
 
     opt_set_unknown_name("digest");
     prog = opt_init(argc, argv, req_options);
@@ -423,9 +429,15 @@ int req_main(int argc, char **argv)
         case OPT_CAKEY:
             CAkeyfile = opt_arg();
             break;
+        case OPT_NOT_BEFORE:
+            not_before = opt_arg();
+            break;
+        case OPT_NOT_AFTER:
+            not_after = opt_arg();
+            break;
         case OPT_DAYS:
             days = atoi(opt_arg());
-            if (days < -1) {
+            if (days <= UNSET_DAYS) {
                 BIO_printf(bio_err, "%s: -days parameter arg must be >= -1\n",
                            prog);
                 goto end;
@@ -470,7 +482,7 @@ int req_main(int argc, char **argv)
             }
             i = duplicated(addexts, p);
             if (i == 1)
-                goto opthelp;
+                goto end;
             if (i == -1)
                 BIO_printf(bio_err, "Internal error handling -addext %s\n", p);
             if (i < 0 || BIO_printf(addext_bio, "%s\n", p) < 0)
@@ -478,6 +490,13 @@ int req_main(int argc, char **argv)
             break;
         case OPT_PRECERT:
             newreq = precert = 1;
+            break;
+        case OPT_CIPHER:
+            cipher = EVP_get_cipherbyname(opt_arg());
+            if (cipher == NULL) {
+                BIO_printf(bio_err, "Unknown cipher: %s\n", opt_arg());
+                goto opthelp;
+            }
             break;
         case OPT_MD:
             digest = opt_unknown();
@@ -494,14 +513,18 @@ int req_main(int argc, char **argv)
 
     if (!gen_x509) {
         if (days != UNSET_DAYS)
-            BIO_printf(bio_err, "Ignoring -days without -x509; not generating a certificate\n");
+            BIO_printf(bio_err, "Warning: Ignoring -days without -x509; not generating a certificate\n");
+        if (not_before != NULL)
+            BIO_printf(bio_err, "Warning: Ignoring -not_before without -x509; not generating a certificate\n");
+        if (not_after != NULL)
+            BIO_printf(bio_err, "Warning: Ignoring -not_after without -x509; not generating a certificate\n");
         if (ext_copy == EXT_COPY_NONE)
-            BIO_printf(bio_err, "Ignoring -copy_extensions 'none' when -x509 is not given\n");
+            BIO_printf(bio_err, "Warning: Ignoring -copy_extensions 'none' when -x509 is not given\n");
     }
     if (infile == NULL) {
         if (gen_x509)
             newreq = 1;
-        else if (!newreq)
+        else if (!newreq && isatty(fileno_stdin()))
             BIO_printf(bio_err,
                        "Warning: Will read cert request from stdin since no -in option is given\n");
     }
@@ -802,10 +825,11 @@ int req_main(int argc, char **argv)
 
             if (!X509_set_issuer_name(new_x509, issuer))
                 goto end;
-            if (days == UNSET_DAYS) {
+            if (days == UNSET_DAYS)
                 days = DEFAULT_DAYS;
-            }
-            if (!set_cert_times(new_x509, NULL, NULL, days))
+            else if (not_after != NULL)
+                BIO_printf(bio_err,"Warning: -not_after option overriding -days option\n");
+            if (!set_cert_times(new_x509, not_before, not_after, days, 1))
                 goto end;
             if (!X509_set_subject_name(new_x509, n_subj))
                 goto end;

@@ -200,6 +200,7 @@ extern "C" {
 # endif
 
 # ifndef ossl_ssize_t
+#  include <sys/types.h>
 #  define ossl_ssize_t ssize_t
 #  if defined(SSIZE_MAX)
 #   define OSSL_SSIZE_MAX SSIZE_MAX
@@ -288,7 +289,7 @@ typedef uint64_t ossl_uintmax_t;
 # endif
 
 # if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L && \
-     !defined(__cplusplus) 
+     !defined(__cplusplus)
 #  define ossl_noreturn _Noreturn
 # elif defined(__GNUC__) && __GNUC__ >= 2
 #  define ossl_noreturn __attribute__((noreturn))

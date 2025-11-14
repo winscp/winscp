@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -12,6 +12,7 @@
 #include <openssl/safestack.h>
 #include <openssl/encoder.h>
 #include <openssl/decoder.h>
+#include "crypto/decoder.h"
 #include "internal/cryptlib.h"
 #include "internal/passphrase.h"
 #include "internal/property.h"
@@ -108,6 +109,8 @@ struct ossl_decoder_instance_st {
     const char *input_type;      /* Never NULL */
     const char *input_structure; /* May be NULL */
     int input_type_id;
+    int order;                   /* For stable ordering of decoders wrt proqs */
+    int score;                   /* For ordering decoders wrt proqs */
 
     unsigned int flag_input_structure_was_set : 1;
 };
@@ -156,6 +159,9 @@ struct ossl_decoder_ctx_st {
 
     /* For any function that needs a passphrase reader */
     struct ossl_passphrase_data_st pwdata;
+
+    /* Signal that further processing should not continue. */
+    int harderr;
 };
 
 const OSSL_PROPERTY_LIST *

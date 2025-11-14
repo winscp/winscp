@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2011-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -21,7 +21,6 @@
 #include "crypto/rand_pool.h"
 #include "prov/provider_ctx.h"
 #include "prov/providercommon.h"
-#include "prov/fipscommon.h"
 #include "crypto/context.h"
 
 /*
@@ -31,7 +30,7 @@
  *
  * The OpenSSL model is to have new and free functions, and that new
  * does all initialization.  That is not the NIST model, which has
- * instantiation and un-instantiate, and re-use within a new/free
+ * instantiation and un-instantiate, and reuse within a new/free
  * lifecycle.  (No doubt this comes from the desire to support hardware
  * DRBG, where allocation of resources on something like an HSM is
  * a much bigger deal than just re-setting an allocated resource.)
@@ -198,18 +197,12 @@ static size_t get_entropy(PROV_DRBG *drbg, unsigned char **pout, int entropy,
     unsigned int p_str;
 
     if (drbg->parent == NULL)
-#ifdef FIPS_MODULE
-        return ossl_crngt_get_entropy(drbg, pout, entropy, min_len, max_len,
-                                      prediction_resistance);
-#else
         /*
          * In normal use (i.e. OpenSSL's own uses), this is never called.
-         * Outside of the FIPS provider, OpenSSL sets its DRBGs up so that
-         * they always have a parent.  This remains purely for legacy reasons.
+         * This remains purely for legacy reasons.
          */
         return ossl_prov_get_entropy(drbg->provctx, pout, entropy, min_len,
                                      max_len);
-#endif
 
     if (drbg->parent_get_seed == NULL) {
         ERR_raise(ERR_LIB_PROV, PROV_R_PARENT_CANNOT_SUPPLY_ENTROPY_SEED);
@@ -242,7 +235,8 @@ static size_t get_entropy(PROV_DRBG *drbg, unsigned char **pout, int entropy,
      *       a warning in some static code analyzers, but it's
      *       intentional and correct here.
      */
-    bytes = drbg->parent_get_seed(drbg->parent, pout, drbg->strength,
+    bytes = drbg->parent_get_seed(drbg->parent, pout,
+                                  entropy > 0 ? entropy : (int) drbg->strength,
                                   min_len, max_len, prediction_resistance,
                                   (unsigned char *)&drbg, sizeof(drbg));
     ossl_drbg_unlock_parent(drbg);
@@ -252,11 +246,7 @@ static size_t get_entropy(PROV_DRBG *drbg, unsigned char **pout, int entropy,
 static void cleanup_entropy(PROV_DRBG *drbg, unsigned char *out, size_t outlen)
 {
     if (drbg->parent == NULL) {
-#ifdef FIPS_MODULE
-        ossl_crngt_cleanup_entropy(drbg, out, outlen);
-#else
         ossl_prov_cleanup_entropy(drbg->provctx, out, outlen);
-#endif
     } else if (drbg->parent_clear_seed != NULL) {
         if (!ossl_drbg_lock_parent(drbg))
             return;
@@ -428,7 +418,7 @@ int ossl_prov_drbg_instantiate(PROV_DRBG *drbg, unsigned int strength,
         }
 #ifndef PROV_RAND_GET_RANDOM_NONCE
         else { /* parent == NULL */
-            noncelen = prov_drbg_get_nonce(drbg, &nonce, drbg->min_noncelen, 
+            noncelen = prov_drbg_get_nonce(drbg, &nonce, drbg->min_noncelen,
                                            drbg->max_noncelen);
             if (noncelen < drbg->min_noncelen
                     || noncelen > drbg->max_noncelen) {
@@ -935,7 +925,8 @@ int ossl_drbg_get_ctx_params(PROV_DRBG *drbg, OSSL_PARAM params[])
     p = OSSL_PARAM_locate(params, OSSL_DRBG_PARAM_RESEED_TIME_INTERVAL);
     if (p != NULL && !OSSL_PARAM_set_time_t(p, drbg->reseed_time_interval))
         return 0;
-
+    if (!OSSL_FIPS_IND_GET_CTX_PARAM(drbg, params))
+        return 0;
     return 1;
 }
 
@@ -980,7 +971,7 @@ int ossl_drbg_set_ctx_params(PROV_DRBG *drbg, const OSSL_PARAM params[])
 {
     const OSSL_PARAM *p;
 
-    if (params == NULL)
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_DRBG_PARAM_RESEED_REQUESTS);
@@ -990,13 +981,13 @@ int ossl_drbg_set_ctx_params(PROV_DRBG *drbg, const OSSL_PARAM params[])
     p = OSSL_PARAM_locate_const(params, OSSL_DRBG_PARAM_RESEED_TIME_INTERVAL);
     if (p != NULL && !OSSL_PARAM_get_time_t(p, &drbg->reseed_time_interval))
         return 0;
+
     return 1;
 }
 
-/* Confirm digest is allowed to be used with a DRBG */
-int ossl_drbg_verify_digest(ossl_unused OSSL_LIB_CTX *libctx, const EVP_MD *md)
-{
 #ifdef FIPS_MODULE
+static int digest_allowed(const EVP_MD *md)
+{
     /* FIPS 140-3 IG D.R limited DRBG digests to a specific set */
     static const char *const allowed_digests[] = {
         "SHA1",                     /* SHA 1 allowed */
@@ -1005,18 +996,35 @@ int ossl_drbg_verify_digest(ossl_unused OSSL_LIB_CTX *libctx, const EVP_MD *md)
     };
     size_t i;
 
-    if (FIPS_restricted_drbg_digests_enabled(libctx)) {
-        for (i = 0; i < OSSL_NELEM(allowed_digests); i++)
-            if (EVP_MD_is_a(md, allowed_digests[i]))
-                return 1;
-        ERR_raise(ERR_LIB_PROV, PROV_R_DIGEST_NOT_ALLOWED);
-        return 0;
+    for (i = 0; i < OSSL_NELEM(allowed_digests); i++) {
+        if (EVP_MD_is_a(md, allowed_digests[i]))
+            return 1;
     }
+    return 0;
+}
 #endif
+
+/* Confirm digest is allowed to be used with a DRBG */
+int ossl_drbg_verify_digest(PROV_DRBG *drbg, OSSL_LIB_CTX *libctx,
+                            const EVP_MD *md)
+{
+#ifdef FIPS_MODULE
+    int approved = digest_allowed(md);
+
+    if (!approved) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(drbg, OSSL_FIPS_IND_SETTABLE0,
+                                         libctx, "DRBG", "Digest",
+                                         ossl_fips_config_restricted_drbg_digests)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_DIGEST_NOT_ALLOWED);
+            return 0;
+        }
+    }
+#else   /* FIPS_MODULE */
     /* Outside of FIPS, any digests that are not XOF are allowed */
-    if ((EVP_MD_get_flags(md) & EVP_MD_FLAG_XOF) != 0) {
+    if (EVP_MD_xof(md)) {
         ERR_raise(ERR_LIB_PROV, PROV_R_XOF_DIGESTS_NOT_ALLOWED);
         return 0;
     }
+#endif  /* FIPS_MODULE */
     return 1;
 }

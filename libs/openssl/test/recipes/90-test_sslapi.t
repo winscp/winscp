@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -24,6 +24,10 @@ my $provconf = srctop_file("test", "fips-and-base.cnf");
 my $fipsmodcfgnew_filename = "fipsmodule_mod.cnf";
 my $fipsmodcfgnew = result_file($fipsmodcfgnew_filename);
 
+# An interum modified copy of "fipsmodule.cnf"
+my $fipsmodcfgtmp_filename = "fipsmodule_tmp.cnf";
+my $fipsmodcfgtmp = result_file($fipsmodcfgtmp_filename);
+
 # A modified copy of "fips-and-base.cnf"
 my $provconfnew = result_file("fips-and-base-temp.cnf");
 
@@ -41,7 +45,10 @@ ok(run(test(["sslapitest", srctop_dir("test", "certs"),
              srctop_file("test",
                          "recipes",
                          "90-test_sslapi_data",
-                         "dhparams.pem")])),
+                         "dhparams.pem"),
+             srctop_dir("test",
+                        "recipes",
+                        "90-test_sslapi_data")])),
              "running sslapitest");
 
 SKIP: {
@@ -58,7 +65,10 @@ SKIP: {
                  srctop_file("test",
                              "recipes",
                              "90-test_sslapi_data",
-                             "dhparams.pem")])),
+                             "dhparams.pem"),
+                 srctop_dir("test",
+                            "recipes",
+                            "90-test_sslapi_data")])),
                  "running sslapitest with default fips config");
 
     run(test(["fips_version_test", "-config", $provconf, ">=3.1.0"]),
@@ -121,7 +131,10 @@ SKIP: {
     $ENV{OPENSSL_CONF_INCLUDE} = result_dir();
     ok(replace_kv_file($fipsmodcfg,
                        'tls1-prf-ems-check', '0',
-                       $fipsmodcfgnew)
+                       $fipsmodcfgtmp)
+       && replace_kv_file($fipsmodcfgtmp,
+                          'rsa-pkcs15-pad-disabled', '0',
+                          $fipsmodcfgnew)
        && replace_line_file($provconf,
                             $fipsmodcfg_filename, $fipsmodcfgnew_filename,
                             $provconfnew)
@@ -133,7 +146,10 @@ SKIP: {
                     srctop_file("test",
                                 "recipes",
                                 "90-test_sslapi_data",
-                                "dhparams.pem")])),
+                                "dhparams.pem"),
+                    srctop_dir("test",
+                               "recipes",
+                               "90-test_sslapi_data")])),
        "running sslapitest with modified fips config");
 }
 

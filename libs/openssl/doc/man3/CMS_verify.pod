@@ -26,6 +26,8 @@ B<CMS SignedData> structure contained in a structure of type B<CMS_ContentInfo>.
 I<cms> points to the B<CMS_ContentInfo> structure to verify.
 The optional I<certs> parameter refers to a set of certificates
 in which to search for signing certificates.
+It is also used
+as a source of untrusted intermediate CA certificates for chain building.
 I<cms> may contain extra untrusted CA certificates that may be used for
 chain building as well as CRLs that may be used for certificate validation.
 I<store> may be NULL or point to
@@ -160,7 +162,7 @@ CMS_SignedData_verify() was added in OpenSSL 3.2.
 
 =head1 COPYRIGHT
 
-Copyright 2008-2023 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2008-2024 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

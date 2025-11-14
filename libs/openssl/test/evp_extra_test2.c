@@ -27,6 +27,14 @@
 
 #include "testutil.h"
 #include "internal/nelem.h"
+#include "crypto/evp.h"
+#include "../crypto/evp/evp_local.h"
+
+/* Defined in tls-provider.c */
+int tls_provider_init(const OSSL_CORE_HANDLE *handle,
+                      const OSSL_DISPATCH *in,
+                      const OSSL_DISPATCH **out,
+                      void **provctx);
 
 static OSSL_LIB_CTX *mainctx = NULL;
 static OSSL_PROVIDER *nullprov = NULL;
@@ -449,6 +457,52 @@ static int test_dh_paramfromdata(void)
 }
 
 #endif
+
+/* Test that calling EVP_PKEY_Q_keygen() for a non-standard keytype works as expected */
+static int test_new_keytype(void)
+{
+    int ret = 0;
+    EVP_PKEY *key = NULL;
+    OSSL_PROVIDER *tlsprov = NULL;
+    EVP_PKEY_CTX *ctx = NULL;
+    size_t outlen, secretlen, secretlen2;
+    unsigned char *out = NULL, *secret = NULL, *secret2 = NULL;
+
+    /* without tls-provider key should not be create-able */
+    if (TEST_ptr(key = EVP_PKEY_Q_keygen(mainctx, NULL, "XOR")))
+        goto err;
+    /* prepare & load tls-provider */
+    if (!TEST_true(OSSL_PROVIDER_add_builtin(mainctx, "tls-provider",
+                                             tls_provider_init))
+        || !TEST_ptr(tlsprov = OSSL_PROVIDER_load(mainctx, "tls-provider")))
+        goto err;
+    /* now try creating key again, should work this time */
+    if (!TEST_ptr(key = EVP_PKEY_Q_keygen(mainctx, NULL, "XOR")))
+        goto err;
+    /* now do encaps/decaps to validate all is good */
+    if (!TEST_ptr(ctx = EVP_PKEY_CTX_new(key, NULL))
+        || !TEST_int_eq(EVP_PKEY_encapsulate_init(ctx, NULL), 1)
+        || !TEST_int_eq(EVP_PKEY_encapsulate(ctx, NULL, &outlen, NULL, &secretlen), 1))
+        goto err;
+    out = OPENSSL_malloc(outlen);
+    secret = OPENSSL_malloc(secretlen);
+    secret2 = OPENSSL_malloc(secretlen);
+    if (out == NULL || secret == NULL || secret2 == NULL
+        || !TEST_int_eq(EVP_PKEY_encapsulate(ctx, out, &outlen, secret, &secretlen), 1)
+        || !TEST_int_eq(EVP_PKEY_decapsulate_init(ctx, NULL), 1)
+        || !TEST_int_eq(EVP_PKEY_decapsulate(ctx, secret2, &secretlen2, out, outlen), 1)
+        || !TEST_mem_eq(secret, secretlen, secret2, secretlen2))
+        goto err;
+    ret = OSSL_PROVIDER_unload(tlsprov);
+
+err:
+    OPENSSL_free(out);
+    OPENSSL_free(secret);
+    OPENSSL_free(secret2);
+    EVP_PKEY_CTX_free(ctx);
+    EVP_PKEY_free(key);
+    return ret;
+}
 
 #ifndef OPENSSL_NO_EC
 
@@ -1298,6 +1352,46 @@ static int test_evp_md_ctx_copy(void)
     return ret;
 }
 
+static int test_evp_md_ctx_copy2(void)
+{
+    int ret = 0;
+    EVP_MD *md = NULL;
+    OSSL_LIB_CTX *ctx = NULL;
+    EVP_MD_CTX *inctx = NULL, *outctx = NULL;
+    void *origin_algctx = NULL;
+
+    if (!TEST_ptr(ctx = OSSL_LIB_CTX_new())
+            || !TEST_ptr(md = EVP_MD_fetch(ctx, "sha256", NULL)))
+        goto end;
+
+    inctx = EVP_MD_CTX_new();
+    outctx = EVP_MD_CTX_new();
+
+    if (!TEST_ptr(inctx) || !TEST_ptr(outctx))
+        goto end;
+
+    /* init inctx and outctx, now the contexts are from same providers */
+    if (!TEST_true(EVP_DigestInit_ex2(inctx, md, NULL)))
+        goto end;
+    if (!TEST_true(EVP_DigestInit_ex2(outctx, md, NULL)))
+        goto end;
+
+    /*
+     * Test the EVP_MD_CTX_copy_ex function. After copying,
+     * outctx->algctx should be the same as the original.
+     */
+    origin_algctx = outctx->algctx;
+    ret = TEST_true(EVP_MD_CTX_copy_ex(outctx, inctx))
+          && TEST_true(outctx->algctx == origin_algctx);
+
+end:
+    EVP_MD_free(md);
+    EVP_MD_CTX_free(inctx);
+    EVP_MD_CTX_free(outctx);
+    OSSL_LIB_CTX_free(ctx);
+    return ret;
+}
+
 #if !defined OPENSSL_NO_DES && !defined OPENSSL_NO_MD5
 static int test_evp_pbe_alg_add(void)
 {
@@ -1355,6 +1449,7 @@ int setup_tests(void)
     ADD_TEST(evp_test_name_parsing);
     ADD_TEST(test_alternative_default);
     ADD_ALL_TESTS(test_d2i_AutoPrivateKey_ex, OSSL_NELEM(keydata));
+    ADD_TEST(test_new_keytype);
 #ifndef OPENSSL_NO_EC
     ADD_ALL_TESTS(test_d2i_PrivateKey_ex, 2);
     ADD_TEST(test_ec_tofrom_data_select);
@@ -1391,6 +1486,7 @@ int setup_tests(void)
     ADD_TEST(test_rsa_pss_sign);
     ADD_TEST(test_evp_md_ctx_dup);
     ADD_TEST(test_evp_md_ctx_copy);
+    ADD_TEST(test_evp_md_ctx_copy2);
     ADD_ALL_TESTS(test_provider_unload_effective, 2);
 #if !defined OPENSSL_NO_DES && !defined OPENSSL_NO_MD5
     ADD_TEST(test_evp_pbe_alg_add);

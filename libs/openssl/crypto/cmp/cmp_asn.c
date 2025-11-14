@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2007-2025 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright Nokia 2007-2019
  * Copyright Siemens AG 2015-2019
  *
@@ -12,6 +12,7 @@
 #include <openssl/asn1t.h>
 
 #include "cmp_local.h"
+#include "internal/crmf.h"
 
 /* explicit #includes not strictly needed since implied by the above: */
 #include <openssl/cmp.h>
@@ -117,9 +118,17 @@ ASN1_ADB(OSSL_CMP_ITAV) = {
     ADB_ENTRY(NID_id_it_rootCaKeyUpdate,
               ASN1_OPT(OSSL_CMP_ITAV, infoValue.rootCaKeyUpdate,
                        OSSL_CMP_ROOTCAKEYUPDATE)),
+    ADB_ENTRY(NID_id_it_certReqTemplate,
+              ASN1_OPT(OSSL_CMP_ITAV, infoValue.certReqTemplate,
+                       OSSL_CMP_CERTREQTEMPLATE)),
     ADB_ENTRY(NID_id_it_certProfile,
               ASN1_SEQUENCE_OF_OPT(OSSL_CMP_ITAV, infoValue.certProfile,
                                    ASN1_UTF8STRING)),
+    ADB_ENTRY(NID_id_it_crlStatusList,
+              ASN1_SEQUENCE_OF_OPT(OSSL_CMP_ITAV, infoValue.crlStatusList,
+                                   OSSL_CMP_CRLSTATUS)),
+    ADB_ENTRY(NID_id_it_crls,
+              ASN1_SEQUENCE_OF_OPT(OSSL_CMP_ITAV, infoValue.crls, X509_CRL))
 } ASN1_ADB_END(OSSL_CMP_ITAV, 0, infoType, 0,
                &infotypeandvalue_default_tt, NULL);
 
@@ -137,6 +146,33 @@ ASN1_SEQUENCE(OSSL_CMP_ROOTCAKEYUPDATE) = {
     ASN1_EXP_OPT(OSSL_CMP_ROOTCAKEYUPDATE, oldWithNew, X509, 1)
 } ASN1_SEQUENCE_END(OSSL_CMP_ROOTCAKEYUPDATE)
 IMPLEMENT_ASN1_FUNCTIONS(OSSL_CMP_ROOTCAKEYUPDATE)
+
+ASN1_ITEM_TEMPLATE(OSSL_CMP_ATAVS) =
+    ASN1_EX_TEMPLATE_TYPE(ASN1_TFLG_SEQUENCE_OF, 0,
+                          OSSL_CMP_ATAVS, OSSL_CRMF_ATTRIBUTETYPEANDVALUE)
+ASN1_ITEM_TEMPLATE_END(OSSL_CMP_ATAVS)
+IMPLEMENT_ASN1_FUNCTIONS(OSSL_CMP_ATAVS)
+
+ASN1_SEQUENCE(OSSL_CMP_CERTREQTEMPLATE) = {
+    ASN1_SIMPLE(OSSL_CMP_CERTREQTEMPLATE, certTemplate, OSSL_CRMF_CERTTEMPLATE),
+    ASN1_SEQUENCE_OF_OPT(OSSL_CMP_CERTREQTEMPLATE, keySpec,
+                         OSSL_CRMF_ATTRIBUTETYPEANDVALUE)
+} ASN1_SEQUENCE_END(OSSL_CMP_CERTREQTEMPLATE)
+IMPLEMENT_ASN1_FUNCTIONS(OSSL_CMP_CERTREQTEMPLATE)
+
+ASN1_CHOICE(OSSL_CMP_CRLSOURCE) = {
+    ASN1_EXP(OSSL_CMP_CRLSOURCE, value.dpn, DIST_POINT_NAME, 0),
+    ASN1_EXP(OSSL_CMP_CRLSOURCE, value.issuer, GENERAL_NAMES, 1),
+} ASN1_CHOICE_END(OSSL_CMP_CRLSOURCE)
+IMPLEMENT_ASN1_FUNCTIONS(OSSL_CMP_CRLSOURCE)
+#define OSSL_CMP_CRLSOURCE_DPN 0
+#define OSSL_CMP_CRLSOURCE_ISSUER 1
+
+ASN1_SEQUENCE(OSSL_CMP_CRLSTATUS) = {
+    ASN1_SIMPLE(OSSL_CMP_CRLSTATUS, source, OSSL_CMP_CRLSOURCE),
+    ASN1_OPT(OSSL_CMP_CRLSTATUS, thisUpdate, ASN1_TIME)
+} ASN1_SEQUENCE_END(OSSL_CMP_CRLSTATUS)
+IMPLEMENT_ASN1_FUNCTIONS(OSSL_CMP_CRLSTATUS)
 
 OSSL_CMP_ITAV *OSSL_CMP_ITAV_create(ASN1_OBJECT *type, ASN1_TYPE *value)
 {
@@ -339,6 +375,459 @@ int OSSL_CMP_ITAV_get0_rootCaKeyUpdate(const OSSL_CMP_ITAV *itav,
     return 1;
 }
 
+OSSL_CMP_ITAV
+*OSSL_CMP_ITAV_new0_certReqTemplate(OSSL_CRMF_CERTTEMPLATE *certTemplate,
+                                    OSSL_CMP_ATAVS *keySpec)
+{
+    OSSL_CMP_ITAV *itav;
+    OSSL_CMP_CERTREQTEMPLATE *tmpl;
+
+    if (certTemplate == NULL && keySpec != NULL) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_INVALID_ARGUMENT);
+        return NULL;
+    }
+    if ((itav = OSSL_CMP_ITAV_new()) == NULL)
+        return NULL;
+    itav->infoType = OBJ_nid2obj(NID_id_it_certReqTemplate);
+    if (certTemplate == NULL)
+        return itav;
+
+    if ((tmpl = OSSL_CMP_CERTREQTEMPLATE_new()) == NULL) {
+        OSSL_CMP_ITAV_free(itav);
+        return NULL;
+    }
+    itav->infoValue.certReqTemplate = tmpl;
+    tmpl->certTemplate = certTemplate;
+    tmpl->keySpec = keySpec;
+    return itav;
+}
+
+int OSSL_CMP_ITAV_get1_certReqTemplate(const OSSL_CMP_ITAV *itav,
+                                       OSSL_CRMF_CERTTEMPLATE **certTemplate,
+                                       OSSL_CMP_ATAVS **keySpec)
+{
+    OSSL_CMP_CERTREQTEMPLATE *tpl;
+
+    if (itav == NULL || certTemplate == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+        return 0;
+    }
+
+    *certTemplate = NULL;
+    if (keySpec != NULL)
+        *keySpec = NULL;
+
+    if (OBJ_obj2nid(itav->infoType) != NID_id_it_certReqTemplate) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_INVALID_ARGUMENT);
+        return 0;
+    }
+    tpl = itav->infoValue.certReqTemplate;
+    if (tpl == NULL) /* no requirements available */
+        return 1;
+
+    if ((*certTemplate = OSSL_CRMF_CERTTEMPLATE_dup(tpl->certTemplate)) == NULL)
+        return 0;
+    if (keySpec != NULL && tpl->keySpec != NULL) {
+        int i, n = sk_OSSL_CMP_ATAV_num(tpl->keySpec);
+
+        *keySpec = sk_OSSL_CRMF_ATTRIBUTETYPEANDVALUE_new_reserve(NULL, n);
+        if (*keySpec == NULL)
+            goto err;
+        for (i = 0; i < n; i++) {
+            OSSL_CMP_ATAV *atav = sk_OSSL_CMP_ATAV_value(tpl->keySpec, i);
+            ASN1_OBJECT *type = OSSL_CMP_ATAV_get0_type(atav /* may be NULL */);
+            int nid;
+            const char *name;
+
+            if (type == NULL) {
+                ERR_raise_data(ERR_LIB_CMP, CMP_R_INVALID_KEYSPEC,
+                               "keySpec with index %d in certReqTemplate does not exist",
+                               i);
+                goto err;
+            }
+            nid = OBJ_obj2nid(type);
+
+            if (nid != NID_id_regCtrl_algId
+                    && nid != NID_id_regCtrl_rsaKeyLen) {
+                name = OBJ_nid2ln(nid);
+                if (name == NULL)
+                    name = OBJ_nid2sn(nid);
+                if (name == NULL)
+                    name = "<undef>";
+                ERR_raise_data(ERR_LIB_CMP, CMP_R_INVALID_KEYSPEC,
+                               "keySpec with index %d in certReqTemplate has invalid type %s",
+                               i, name);
+                goto err;
+            }
+            OSSL_CMP_ATAV_push1(keySpec, atav);
+        }
+    }
+    return 1;
+
+ err:
+    OSSL_CRMF_CERTTEMPLATE_free(*certTemplate);
+    *certTemplate = NULL;
+    sk_OSSL_CMP_ATAV_pop_free(*keySpec, OSSL_CMP_ATAV_free);
+    if (keySpec != NULL)
+        *keySpec = NULL;
+    return 0;
+}
+
+OSSL_CMP_ATAV *OSSL_CMP_ATAV_create(ASN1_OBJECT *type, ASN1_TYPE *value)
+{
+    OSSL_CMP_ATAV *atav;
+
+    if ((atav = OSSL_CRMF_ATTRIBUTETYPEANDVALUE_new()) == NULL)
+        return NULL;
+    OSSL_CMP_ATAV_set0(atav, type, value);
+    return atav;
+}
+
+void OSSL_CMP_ATAV_set0(OSSL_CMP_ATAV *atav, ASN1_OBJECT *type,
+                        ASN1_TYPE *value)
+{
+    atav->type = type;
+    atav->value.other = value;
+}
+
+ASN1_OBJECT *OSSL_CMP_ATAV_get0_type(const OSSL_CMP_ATAV *atav)
+{
+    if (atav == NULL)
+        return NULL;
+    return atav->type;
+}
+
+OSSL_CMP_ATAV *OSSL_CMP_ATAV_new_algId(const X509_ALGOR *alg)
+{
+    X509_ALGOR *dup;
+    OSSL_CMP_ATAV *res;
+
+    if (alg == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+        return NULL;
+    }
+    if ((dup = X509_ALGOR_dup(alg)) == NULL)
+        return NULL;
+    res = OSSL_CMP_ATAV_create(OBJ_nid2obj(NID_id_regCtrl_algId),
+                               (ASN1_TYPE *)dup);
+    if (res == NULL)
+        X509_ALGOR_free(dup);
+    return res;
+}
+
+X509_ALGOR *OSSL_CMP_ATAV_get0_algId(const OSSL_CMP_ATAV *atav)
+{
+    if (atav == NULL || OBJ_obj2nid(atav->type) != NID_id_regCtrl_algId)
+        return NULL;
+    return atav->value.algId;
+}
+
+OSSL_CMP_ATAV *OSSL_CMP_ATAV_new_rsaKeyLen(int len)
+{
+    ASN1_INTEGER *aint;
+    OSSL_CMP_ATAV *res = NULL;
+
+    if (len <= 0) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_INVALID_ARGUMENT);
+        return NULL;
+    }
+    if ((aint = ASN1_INTEGER_new()) == NULL)
+        return NULL;
+    if (!ASN1_INTEGER_set(aint, len)
+        || (res = OSSL_CMP_ATAV_create(OBJ_nid2obj(NID_id_regCtrl_rsaKeyLen),
+                                       (ASN1_TYPE *)aint)) == NULL)
+        ASN1_INTEGER_free(aint);
+    return res;
+}
+
+int OSSL_CMP_ATAV_get_rsaKeyLen(const OSSL_CMP_ATAV *atav)
+{
+    int64_t val;
+
+    if (atav == NULL || OBJ_obj2nid(atav->type) != NID_id_regCtrl_rsaKeyLen
+            || !ASN1_INTEGER_get_int64(&val, atav->value.rsaKeyLen))
+        return -1;
+    if (val <= 0 || val > INT_MAX)
+        return -2;
+    return (int)val;
+}
+
+ASN1_TYPE *OSSL_CMP_ATAV_get0_value(const OSSL_CMP_ATAV *atav)
+{
+    if (atav == NULL)
+        return NULL;
+    return atav->value.other;
+}
+
+int OSSL_CMP_ATAV_push1(OSSL_CMP_ATAVS **sk_p, const OSSL_CMP_ATAV *atav)
+{
+    int created = 0;
+    OSSL_CMP_ATAV *dup;
+
+    if (sk_p == NULL || atav == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+        goto err;
+    }
+
+    if (*sk_p == NULL) {
+        if ((*sk_p = sk_OSSL_CRMF_ATTRIBUTETYPEANDVALUE_new_null()) == NULL)
+            goto err;
+        created = 1;
+    }
+
+    if ((dup = OSSL_CRMF_ATTRIBUTETYPEANDVALUE_dup((OSSL_CRMF_ATTRIBUTETYPEANDVALUE *)atav)) == NULL)
+        goto err;
+    if (sk_OSSL_CRMF_ATTRIBUTETYPEANDVALUE_push(*sk_p, dup))
+        return 1;
+    OSSL_CRMF_ATTRIBUTETYPEANDVALUE_free(dup);
+
+ err:
+    if (created) {
+        sk_OSSL_CRMF_ATTRIBUTETYPEANDVALUE_free(*sk_p);
+        *sk_p = NULL;
+    }
+    return 0;
+}
+
+OSSL_CMP_ITAV
+*OSSL_CMP_ITAV_new0_crlStatusList(STACK_OF(OSSL_CMP_CRLSTATUS) *crlStatusList)
+{
+    OSSL_CMP_ITAV *itav;
+
+    if ((itav = OSSL_CMP_ITAV_new()) == NULL)
+        return NULL;
+    itav->infoType = OBJ_nid2obj(NID_id_it_crlStatusList);
+    itav->infoValue.crlStatusList = crlStatusList;
+    return itav;
+}
+
+int OSSL_CMP_ITAV_get0_crlStatusList(const OSSL_CMP_ITAV *itav,
+                                     STACK_OF(OSSL_CMP_CRLSTATUS) **out)
+{
+    if (itav == NULL || out == NULL) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_NULL_PARAMETER);
+        return 0;
+    }
+    if (OBJ_obj2nid(itav->infoType) != NID_id_it_crlStatusList) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_INVALID_ARGUMENT);
+        return 0;
+    }
+    *out = itav->infoValue.crlStatusList;
+    return 1;
+}
+
+OSSL_CMP_CRLSTATUS *OSSL_CMP_CRLSTATUS_new1(const DIST_POINT_NAME *dpn,
+                                            const GENERAL_NAMES *issuer,
+                                            const ASN1_TIME *thisUpdate)
+{
+    OSSL_CMP_CRLSOURCE *crlsource;
+    OSSL_CMP_CRLSTATUS *crlstatus;
+
+    if (dpn == NULL && issuer == NULL) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_NULL_PARAMETER);
+        return NULL;
+    }
+    if (dpn != NULL && issuer != NULL) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_INVALID_ARGUMENT);
+        return NULL;
+    }
+
+    if ((crlstatus = OSSL_CMP_CRLSTATUS_new()) == NULL)
+        return NULL;
+    crlsource = crlstatus->source;
+
+    if (dpn != NULL) {
+        crlsource->type = OSSL_CMP_CRLSOURCE_DPN;
+        if ((crlsource->value.dpn = DIST_POINT_NAME_dup(dpn)) == NULL)
+            goto err;
+    } else {
+        crlsource->type = OSSL_CMP_CRLSOURCE_ISSUER;
+        if ((crlsource->value.issuer =
+             sk_GENERAL_NAME_deep_copy(issuer, GENERAL_NAME_dup,
+                                       GENERAL_NAME_free)) == NULL)
+            goto err;
+    }
+
+    if (thisUpdate != NULL
+            && (crlstatus->thisUpdate = ASN1_TIME_dup(thisUpdate)) == NULL)
+        goto err;
+    return crlstatus;
+
+ err:
+    OSSL_CMP_CRLSTATUS_free(crlstatus);
+    return NULL;
+}
+
+static GENERAL_NAMES *gennames_new(const X509_NAME *nm)
+{
+    GENERAL_NAMES *names;
+    GENERAL_NAME *name = NULL;
+
+    if ((names = sk_GENERAL_NAME_new_reserve(NULL, 1)) == NULL)
+        return NULL;
+    if (!GENERAL_NAME_set1_X509_NAME(&name, nm)) {
+        sk_GENERAL_NAME_free(names);
+        return NULL;
+    }
+    (void)sk_GENERAL_NAME_push(names, name); /* cannot fail */
+    return names;
+}
+
+static int gennames_allowed(GENERAL_NAMES *names, int only_DN)
+{
+    if (names == NULL)
+        return 0;
+    if (!only_DN)
+        return 1;
+    return sk_GENERAL_NAME_num(names) == 1
+        && sk_GENERAL_NAME_value(names, 0)->type == GEN_DIRNAME;
+}
+
+OSSL_CMP_CRLSTATUS *OSSL_CMP_CRLSTATUS_create(const X509_CRL *crl,
+                                              const X509 *cert, int only_DN)
+{
+    STACK_OF(DIST_POINT) *crldps = NULL;
+    ISSUING_DIST_POINT *idp = NULL;
+    DIST_POINT_NAME *dpn = NULL;
+    AUTHORITY_KEYID *akid = NULL;
+    GENERAL_NAMES *issuers = NULL;
+    const GENERAL_NAMES *CRLissuer = NULL;
+    const ASN1_TIME *last = crl == NULL ? NULL : X509_CRL_get0_lastUpdate(crl);
+    OSSL_CMP_CRLSTATUS *status = NULL;
+    int i, NID_akid = NID_authority_key_identifier;
+
+    /*
+     * Note:
+     * X509{,_CRL}_get_ext_d2i(..., NID, ..., NULL) return the 1st extension with
+     * given NID that is available, if any. If there are more, this is an error.
+     */
+    if (cert != NULL) {
+        crldps = X509_get_ext_d2i(cert, NID_crl_distribution_points, NULL, NULL);
+        /* if available, take the first suitable element */
+        for (i = 0; i < sk_DIST_POINT_num(crldps); i++) {
+            DIST_POINT *dp = sk_DIST_POINT_value(crldps, i);
+
+            if (dp == NULL)
+                continue;
+            if ((dpn = dp->distpoint) != NULL) {
+                CRLissuer = NULL;
+                break;
+            }
+            if (gennames_allowed(dp->CRLissuer, only_DN) && CRLissuer == NULL)
+                /* don't break because any dp->distpoint in list is preferred */
+                CRLissuer = dp->CRLissuer;
+        }
+    } else {
+        if (crl == NULL) {
+            ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+            return NULL;
+        }
+        idp = X509_CRL_get_ext_d2i(crl,
+                                   NID_issuing_distribution_point, NULL, NULL);
+        if (idp != NULL && idp->distpoint != NULL)
+            dpn = idp->distpoint;
+    }
+
+    if (dpn == NULL && CRLissuer == NULL) {
+        if (cert != NULL) {
+            akid = X509_get_ext_d2i(cert, NID_akid, NULL, NULL);
+            if (akid != NULL && gennames_allowed(akid->issuer, only_DN))
+                CRLissuer = akid->issuer;
+            else
+                CRLissuer = issuers = gennames_new(X509_get_issuer_name(cert));
+        }
+        if (CRLissuer == NULL && crl != NULL) {
+            akid = X509_CRL_get_ext_d2i(crl, NID_akid, NULL, NULL);
+            if (akid != NULL && gennames_allowed(akid->issuer, only_DN))
+                CRLissuer = akid->issuer;
+            else
+                CRLissuer = issuers = gennames_new(X509_CRL_get_issuer(crl));
+        }
+        if (CRLissuer == NULL)
+            goto end;
+    }
+
+    status = OSSL_CMP_CRLSTATUS_new1(dpn, CRLissuer, last);
+ end:
+    sk_DIST_POINT_pop_free(crldps, DIST_POINT_free);
+    ISSUING_DIST_POINT_free(idp);
+    AUTHORITY_KEYID_free(akid);
+    sk_GENERAL_NAME_pop_free(issuers, GENERAL_NAME_free);
+    return status;
+}
+
+int OSSL_CMP_CRLSTATUS_get0(const OSSL_CMP_CRLSTATUS *crlstatus,
+                            DIST_POINT_NAME **dpn, GENERAL_NAMES **issuer,
+                            ASN1_TIME **thisUpdate)
+{
+    OSSL_CMP_CRLSOURCE *crlsource;
+
+    if (crlstatus == NULL || dpn == NULL || issuer == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+        return 0;
+    }
+    if ((crlsource = crlstatus->source) == NULL) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_INVALID_ARGUMENT);
+        return 0;
+    }
+
+    if (crlsource->type == OSSL_CMP_CRLSOURCE_DPN) {
+        *dpn = crlsource->value.dpn;
+        *issuer = NULL;
+    } else if (crlsource->type == OSSL_CMP_CRLSOURCE_ISSUER) {
+        *dpn = NULL;
+        *issuer = crlsource->value.issuer;
+    } else {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_INVALID_ARGUMENT);
+        return 0;
+    }
+    if (thisUpdate != NULL)
+        *thisUpdate = crlstatus->thisUpdate;
+    return 1;
+}
+
+OSSL_CMP_ITAV *OSSL_CMP_ITAV_new_crls(const X509_CRL *crl)
+{
+    OSSL_CMP_ITAV *itav;
+    X509_CRL *crl_copy = NULL;
+    STACK_OF(X509_CRL) *crls = NULL;
+
+    if ((itav = OSSL_CMP_ITAV_new()) == NULL)
+        return NULL;
+
+    if (crl != NULL) {
+        if ((crls = sk_X509_CRL_new_reserve(NULL, 1)) == NULL
+                || (crl_copy = X509_CRL_dup(crl)) == NULL
+                || !sk_X509_CRL_push(crls, crl_copy))
+            goto err;
+        crl_copy = NULL; /* ownership transferred to crls */
+    }
+
+    itav->infoType = OBJ_nid2obj(NID_id_it_crls);
+    itav->infoValue.crls = crls;
+    return itav;
+
+ err:
+    OPENSSL_free(crl_copy);
+    sk_X509_CRL_free(crls);
+    OSSL_CMP_ITAV_free(itav);
+    return NULL;
+}
+
+int OSSL_CMP_ITAV_get0_crls(const OSSL_CMP_ITAV *itav, STACK_OF(X509_CRL) **out)
+{
+    if (itav == NULL || out == NULL) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_NULL_PARAMETER);
+        return 0;
+    }
+    if (OBJ_obj2nid(itav->infoType) != NID_id_it_crls) {
+        ERR_raise(ERR_LIB_CMP, ERR_R_PASSED_INVALID_ARGUMENT);
+        return 0;
+    }
+    *out = itav->infoValue.crls;
+    return 1;
+}
+
 /* get ASN.1 encoded integer, return -2 on error; -1 is valid for certReqId */
 int ossl_cmp_asn1_get_int(const ASN1_INTEGER *a)
 {
@@ -402,7 +891,7 @@ ASN1_CHOICE(OSSL_CMP_CERTORENCCERT) = {
     /* OSSL_CMP_CMPCERTIFICATE is effectively X509 so it is used directly */
     ASN1_EXP(OSSL_CMP_CERTORENCCERT, value.certificate, X509, 0),
     ASN1_EXP(OSSL_CMP_CERTORENCCERT, value.encryptedCert,
-             OSSL_CRMF_ENCRYPTEDVALUE, 1),
+             OSSL_CRMF_ENCRYPTEDKEY, 1),
 } ASN1_CHOICE_END(OSSL_CMP_CERTORENCCERT)
 IMPLEMENT_ASN1_FUNCTIONS(OSSL_CMP_CERTORENCCERT)
 
@@ -410,7 +899,7 @@ ASN1_SEQUENCE(OSSL_CMP_CERTIFIEDKEYPAIR) = {
     ASN1_SIMPLE(OSSL_CMP_CERTIFIEDKEYPAIR, certOrEncCert,
                 OSSL_CMP_CERTORENCCERT),
     ASN1_EXP_OPT(OSSL_CMP_CERTIFIEDKEYPAIR, privateKey,
-                 OSSL_CRMF_ENCRYPTEDVALUE, 0),
+                 OSSL_CRMF_ENCRYPTEDKEY, 0),
     ASN1_EXP_OPT(OSSL_CMP_CERTIFIEDKEYPAIR, publicationInfo,
                  OSSL_CRMF_PKIPUBLICATIONINFO, 1)
 } ASN1_SEQUENCE_END(OSSL_CMP_CERTIFIEDKEYPAIR)

@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -27,8 +27,7 @@
 static OSSL_FUNC_cipher_update_fn tdes_wrap_update;
 static OSSL_FUNC_cipher_cipher_fn tdes_wrap_cipher;
 
-static const unsigned char wrap_iv[8] =
-{
+static const unsigned char wrap_iv[8] = {
     0x4a, 0xdd, 0xa2, 0x2c, 0x79, 0xe8, 0x21, 0x05
 };
 

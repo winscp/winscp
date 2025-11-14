@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -2808,7 +2808,7 @@ static int test_wire_pkt_hdr_actual(int tidx, int repeat, int cipher,
         goto err;
 
     if (!TEST_int_eq(ossl_quic_wire_decode_pkt_hdr(&pkt, t->short_conn_id_len,
-                                                   0, 0, &hdr, &ptrs),
+                                                   0, 0, &hdr, &ptrs, NULL),
                      !expect_fail))
         goto err;
 
@@ -3491,7 +3491,7 @@ static const unsigned char tx_script_5_body[] = {
     0x84, 0x41, 0x4d, 0x31,
     /* Retry Integrity Tag */
     0x43, 0x8e, 0xab, 0xcd, 0xce, 0x24, 0x44, 0xc2, 0x20, 0xe1, 0xe2, 0xc8,
-    0xae, 0xa3, 0x8d, 0x4e, 
+    0xae, 0xa3, 0x8d, 0x4e,
 };
 
 static const unsigned char tx_script_5_dgram[] = {
@@ -3505,7 +3505,7 @@ static const unsigned char tx_script_5_dgram[] = {
     0x9c, 0x49, 0x8f, 0x0c, 0xc8, 0xb2, 0x75, 0x4b, 0x4d, 0x2f, 0xfe, 0x05,
     0x5a, 0xdd, 0x4b, 0xe6, 0x14, 0xb4, 0xd2, 0xc0, 0x93, 0x6e, 0x0e, 0x84,
     0x41, 0x4d, 0x31, 0x43, 0x8e, 0xab, 0xcd, 0xce, 0x24, 0x44, 0xc2, 0x20,
-    0xe1, 0xe2, 0xc8, 0xae, 0xa3, 0x8d, 0x4e, 
+    0xe1, 0xe2, 0xc8, 0xae, 0xa3, 0x8d, 0x4e,
 };
 
 static QUIC_PKT_HDR tx_script_5_hdr = {

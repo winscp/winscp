@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -46,8 +46,7 @@ typedef struct {
     const char *pskid; /* want terminating NUL here */
 } TEST_BASEDATA;
 
-typedef struct
-{
+typedef struct {
     int seq;
     const unsigned char *pt;
     size_t ptlen;
@@ -57,8 +56,7 @@ typedef struct
     size_t expected_ctlen;
 } TEST_AEADDATA;
 
-typedef struct
-{
+typedef struct {
     const unsigned char *context;
     size_t contextlen;
     const unsigned char *expected_secret;

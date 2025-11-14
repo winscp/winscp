@@ -10,6 +10,7 @@
  */
 
 /* This app is disabled when OPENSSL_NO_CMP is defined. */
+#include "internal/e_os.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -94,6 +95,11 @@ static char *opt_oldwithold = NULL;
 static char *opt_newwithnew = NULL;
 static char *opt_newwithold = NULL;
 static char *opt_oldwithnew = NULL;
+static char *opt_crlcert = NULL;
+static char *opt_oldcrl = NULL;
+static char *opt_crlout = NULL;
+static char *opt_template = NULL;
+static char *opt_keyspec = NULL;
 
 /* client authentication */
 static char *opt_ref = NULL;
@@ -118,6 +124,8 @@ static char *opt_profile = NULL;
 /* certificate enrollment */
 static char *opt_newkey = NULL;
 static char *opt_newkeypass = NULL;
+static int opt_centralkeygen = 0;
+static char *opt_newkeyout = NULL;
 static char *opt_subject = NULL;
 static int opt_days = 0;
 static char *opt_reqexts = NULL;
@@ -143,6 +151,12 @@ static int opt_revreason = CRL_REASON_NONE;
 /* credentials format */
 static char *opt_certform_s = "PEM";
 static int opt_certform = FORMAT_PEM;
+/* 
+ * DER format is the preferred choice for saving a CRL because it allows for
+ * more efficient storage, especially when dealing with large CRLs.
+ */
+static char *opt_crlform_s = "DER";
+static int opt_crlform = FORMAT_ASN1;
 static char *opt_keyform_s = NULL;
 static int opt_keyform = FORMAT_UNDEF;
 static char *opt_otherpass = NULL;
@@ -187,6 +201,9 @@ static char *opt_srv_trusted = NULL;
 static char *opt_srv_untrusted = NULL;
 static char *opt_ref_cert = NULL;
 static char *opt_rsp_cert = NULL;
+static char *opt_rsp_key = NULL;
+static char *opt_rsp_keypass = NULL;
+static char *opt_rsp_crl = NULL;
 static char *opt_rsp_extracerts = NULL;
 static char *opt_rsp_capubs = NULL;
 static char *opt_rsp_newwithnew = NULL;
@@ -215,8 +232,10 @@ typedef enum OPTION_choice {
     OPT_CONFIG, OPT_SECTION, OPT_VERBOSITY,
 
     OPT_CMD, OPT_INFOTYPE, OPT_PROFILE, OPT_GENINFO,
+    OPT_TEMPLATE, OPT_KEYSPEC,
 
-    OPT_NEWKEY, OPT_NEWKEYPASS, OPT_SUBJECT,
+    OPT_NEWKEY, OPT_NEWKEYPASS, OPT_CENTRALKEYGEN,
+    OPT_NEWKEYOUT, OPT_SUBJECT,
     OPT_DAYS, OPT_REQEXTS,
     OPT_SANS, OPT_SAN_NODEFAULT,
     OPT_POLICIES, OPT_POLICY_OIDS, OPT_POLICY_OIDS_CRITICAL,
@@ -237,12 +256,13 @@ typedef enum OPTION_choice {
     OPT_IGNORE_KEYUSAGE, OPT_UNPROTECTED_ERRORS, OPT_NO_CACHE_EXTRACERTS,
     OPT_SRVCERTOUT, OPT_EXTRACERTSOUT, OPT_CACERTSOUT,
     OPT_OLDWITHOLD, OPT_NEWWITHNEW, OPT_NEWWITHOLD, OPT_OLDWITHNEW,
+    OPT_CRLCERT, OPT_OLDCRL, OPT_CRLOUT,
 
     OPT_REF, OPT_SECRET, OPT_CERT, OPT_OWN_TRUSTED, OPT_KEY, OPT_KEYPASS,
     OPT_DIGEST, OPT_MAC, OPT_EXTRACERTS,
     OPT_UNPROTECTED_REQUESTS,
 
-    OPT_CERTFORM, OPT_KEYFORM,
+    OPT_CERTFORM, OPT_CRLFORM, OPT_KEYFORM,
     OPT_OTHERPASS,
 #ifndef OPENSSL_NO_ENGINE
     OPT_ENGINE,
@@ -267,7 +287,8 @@ typedef enum OPTION_choice {
     OPT_SRV_REF, OPT_SRV_SECRET,
     OPT_SRV_CERT, OPT_SRV_KEY, OPT_SRV_KEYPASS,
     OPT_SRV_TRUSTED, OPT_SRV_UNTRUSTED,
-    OPT_REF_CERT, OPT_RSP_CERT, OPT_RSP_EXTRACERTS, OPT_RSP_CAPUBS,
+    OPT_REF_CERT, OPT_RSP_CERT, OPT_RSP_KEY, OPT_RSP_KEYPASS,
+    OPT_RSP_CRL, OPT_RSP_EXTRACERTS, OPT_RSP_CAPUBS,
     OPT_RSP_NEWWITHNEW, OPT_RSP_NEWWITHOLD, OPT_RSP_OLDWITHNEW,
     OPT_POLL_COUNT, OPT_CHECK_AFTER,
     OPT_GRANT_IMPLICITCONF,
@@ -302,11 +323,19 @@ const OPTIONS cmp_options[] = {
      "Comma-separated list of OID and value to place in generalInfo PKIHeader"},
     {OPT_MORE_STR, 0, 0,
      "of form <OID>:int:<n> or <OID>:str:<s>, e.g. \'1.2.3.4:int:56789, id-kp:str:name'"},
+    { "template", OPT_TEMPLATE, 's',
+      "File to save certTemplate received in genp of type certReqTemplate"},
+    { "keyspec", OPT_KEYSPEC, 's',
+      "Optional file to save Key specification received in genp of type certReqTemplate"},
 
     OPT_SECTION("Certificate enrollment"),
     {"newkey", OPT_NEWKEY, 's',
      "Private or public key for the requested cert. Default: CSR key or client key"},
     {"newkeypass", OPT_NEWKEYPASS, 's', "New private key pass phrase source"},
+    {"centralkeygen", OPT_CENTRALKEYGEN, '-',
+     "Request central (server-side) key generation. Default is local generation"},
+    {"newkeyout", OPT_NEWKEYOUT, 's',
+     "File to save centrally generated key, in PEM format"},
     {"subject", OPT_SUBJECT, 's',
      "Distinguished Name (DN) of subject to use in the requested cert template"},
     {OPT_MORE_STR, 0, 0,
@@ -428,6 +457,12 @@ const OPTIONS cmp_options[] = {
       "File to save NewWithOld cert received in genp of type rootCaKeyUpdate"},
     { "oldwithnew", OPT_OLDWITHNEW, 's',
       "File to save OldWithNew cert received in genp of type rootCaKeyUpdate"},
+    { "crlcert", OPT_CRLCERT, 's',
+      "certificate to request a CRL for in genm of type crlStatusList"},
+    { "oldcrl", OPT_OLDCRL, 's',
+      "CRL to request update for in genm of type crlStatusList"},
+    { "crlout", OPT_CRLOUT, 's',
+      "File to save new CRL received in genp of type 'crls'"},
 
     OPT_SECTION("Client authentication"),
     {"ref", OPT_REF, 's',
@@ -459,6 +494,8 @@ const OPTIONS cmp_options[] = {
     OPT_SECTION("Credentials format"),
     {"certform", OPT_CERTFORM, 's',
      "Format (PEM or DER) to use when saving a certificate to a file. Default PEM"},
+    {"crlform", OPT_CRLFORM, 's',
+     "Format (PEM or DER) to use when saving a CRL to a file. Default DER"},
     {"keyform", OPT_KEYFORM, 's',
      "Format of the key input (ENGINE, other values ignored)"},
     {"otherpass", OPT_OTHERPASS, 's',
@@ -544,6 +581,14 @@ const OPTIONS cmp_options[] = {
      "Certificate to be expected for rr and any oldCertID in kur messages"},
     {"rsp_cert", OPT_RSP_CERT, 's',
      "Certificate to be returned as mock enrollment result"},
+    {"rsp_key", OPT_RSP_KEY, 's',
+     "Private key for the certificate to be returned as mock enrollment result"},
+    {OPT_MORE_STR, 0, 0,
+     "Key to be returned for central key pair generation"},
+    {"rsp_keypass", OPT_RSP_KEYPASS, 's',
+     "Response private key (and cert) pass phrase source"},
+    {"rsp_crl", OPT_RSP_CRL, 's',
+     "CRL to be returned in genp of type crls"},
     {"rsp_extracerts", OPT_RSP_EXTRACERTS, 's',
      "Extra certificates to be included in mock certification responses"},
     {"rsp_capubs", OPT_RSP_CAPUBS, 's',
@@ -599,9 +644,10 @@ static varref cmp_vars[] = { /* must be in same order as enumerated above! */
     {&opt_config}, {&opt_section}, {(char **)&opt_verbosity},
 
     {&opt_cmd_s}, {&opt_infotype_s}, {&opt_profile}, {&opt_geninfo},
+    {&opt_template}, {&opt_keyspec},
 
-    {&opt_newkey}, {&opt_newkeypass}, {&opt_subject},
-    {(char **)&opt_days}, {&opt_reqexts},
+    {&opt_newkey}, {&opt_newkeypass}, {(char **)&opt_centralkeygen},
+    {&opt_newkeyout}, {&opt_subject}, {(char **)&opt_days}, {&opt_reqexts},
     {&opt_sans}, {(char **)&opt_san_nodefault},
     {&opt_policies}, {&opt_policy_oids}, {(char **)&opt_policy_oids_critical},
     {(char **)&opt_popo}, {&opt_csr},
@@ -623,13 +669,14 @@ static varref cmp_vars[] = { /* must be in same order as enumerated above! */
     {(char **)&opt_no_cache_extracerts},
     {&opt_srvcertout}, {&opt_extracertsout}, {&opt_cacertsout},
     {&opt_oldwithold}, {&opt_newwithnew}, {&opt_newwithold}, {&opt_oldwithnew},
+    {&opt_crlcert}, {&opt_oldcrl}, {&opt_crlout},
 
     {&opt_ref}, {&opt_secret},
     {&opt_cert}, {&opt_own_trusted}, {&opt_key}, {&opt_keypass},
     {&opt_digest}, {&opt_mac}, {&opt_extracerts},
     {(char **)&opt_unprotected_requests},
 
-    {&opt_certform_s}, {&opt_keyform_s},
+    {&opt_certform_s}, {&opt_crlform_s}, {&opt_keyform_s},
     {&opt_otherpass},
 #ifndef OPENSSL_NO_ENGINE
     {&opt_engine},
@@ -652,7 +699,8 @@ static varref cmp_vars[] = { /* must be in same order as enumerated above! */
     {&opt_srv_ref}, {&opt_srv_secret},
     {&opt_srv_cert}, {&opt_srv_key}, {&opt_srv_keypass},
     {&opt_srv_trusted}, {&opt_srv_untrusted},
-    {&opt_ref_cert}, {&opt_rsp_cert}, {&opt_rsp_extracerts}, {&opt_rsp_capubs},
+    {&opt_ref_cert}, {&opt_rsp_cert}, {&opt_rsp_key}, {&opt_rsp_keypass},
+    {&opt_rsp_crl}, {&opt_rsp_extracerts}, {&opt_rsp_capubs},
     {&opt_rsp_newwithnew}, {&opt_rsp_newwithold}, {&opt_rsp_oldwithnew},
 
     {(char **)&opt_poll_count}, {(char **)&opt_check_after},
@@ -1010,6 +1058,19 @@ static int setup_certs(char *files, const char *desc, void *ctx,
     return ok;
 }
 
+static int setup_mock_crlout(void *ctx, const char *file, const char *desc)
+{
+    X509_CRL *crl;
+    int ok;
+
+    if (file == NULL)
+        return 1;
+    if ((crl = load_crl(file, FORMAT_UNDEF, 0, desc)) == NULL)
+        return 0;
+    ok = ossl_cmp_mock_srv_set1_crlOut(ctx, crl);
+    X509_CRL_free(crl);
+    return ok;
+}
 /*
  * parse and transform some options, checking their syntax.
  * Returns 1 on success, 0 on error
@@ -1055,6 +1116,11 @@ static int transform_opts(void)
     if (opt_certform_s != NULL
             && !opt_format(opt_certform_s, OPT_FMT_PEMDER, &opt_certform)) {
         CMP_err("unknown option given for certificate storing format");
+        return 0;
+    }
+    if (opt_crlform_s != NULL
+            && !opt_format(opt_crlform_s, OPT_FMT_PEMDER, &opt_crlform)) {
+        CMP_err("unknown option given for CRL storing format");
         return 0;
     }
 
@@ -1147,11 +1213,28 @@ static OSSL_CMP_SRV_CTX *setup_srv_ctx(ENGINE *engine)
     if (opt_rsp_cert == NULL) {
         CMP_warn("no -rsp_cert given for mock server");
     } else {
-        if (!setup_cert(srv_ctx, opt_rsp_cert, opt_keypass,
+        if (!setup_cert(srv_ctx, opt_rsp_cert, opt_rsp_keypass,
                         "cert the mock server returns on certificate requests",
                         (add_X509_fn_t)ossl_cmp_mock_srv_set1_certOut))
             goto err;
     }
+    if (opt_rsp_key != NULL) {
+        EVP_PKEY *pkey = load_key_pwd(opt_rsp_key, opt_keyform,
+                                      opt_rsp_keypass, engine,
+                                      "private key for enrollment cert");
+
+        if (pkey == NULL
+            || !ossl_cmp_mock_srv_set1_keyOut(srv_ctx, pkey)) {
+            EVP_PKEY_free(pkey);
+            goto err;
+        }
+        EVP_PKEY_free(pkey);
+    }
+    cleanse(opt_rsp_keypass);
+
+    if (!setup_mock_crlout(srv_ctx, opt_rsp_crl,
+                           "CRL to be returned by the mock server"))
+        goto err;
     if (!setup_certs(opt_rsp_extracerts,
                      "CMP extra certificates for mock server", srv_ctx,
                      (add_X509_stack_fn_t)ossl_cmp_mock_srv_set1_chainOut))
@@ -1619,10 +1702,26 @@ static int setup_request_ctx(OSSL_CMP_CTX *ctx, ENGINE *engine)
     if (!set_name(opt_issuer, OSSL_CMP_CTX_set1_issuer, ctx, "issuer"))
         return 0;
     if (opt_cmd == CMP_IR || opt_cmd == CMP_CR || opt_cmd == CMP_KUR) {
-        if (opt_reqin == NULL && opt_newkey == NULL
+        if (opt_reqin == NULL && opt_newkey == NULL && !opt_centralkeygen
             && opt_key == NULL && opt_csr == NULL && opt_oldcert == NULL) {
-            CMP_err("missing -newkey (or -key) to be certified and no -csr, -oldcert, -cert, or -reqin option given, which could provide fallback public key");
+            CMP_err("missing -newkey (or -key) to be certified and no -csr, -oldcert, -cert, or -reqin option given, which could provide fallback public key."
+                    " Neither central key generation is requested.");
             return 0;
+        }
+        if (opt_popo == OSSL_CRMF_POPO_NONE && !opt_centralkeygen) {
+            CMP_info("POPO is disabled, which implies -centralkeygen");
+            opt_centralkeygen = 1;
+        }
+        if (opt_centralkeygen) {
+            if (opt_popo > OSSL_CRMF_POPO_NONE) {
+                CMP_err1("-popo value %d is inconsistent with -centralkeygen", opt_popo);
+                return 0;
+            }
+            if (opt_newkeyout == NULL) {
+                CMP_err("-newkeyout not given, nowhere to save centrally generated key");
+                return 0;
+            }
+            opt_popo = OSSL_CRMF_POPO_NONE;
         }
         if (opt_newkey == NULL
             && opt_popo != OSSL_CRMF_POPO_NONE
@@ -1671,6 +1770,12 @@ static int setup_request_ctx(OSSL_CMP_CTX *ctx, ENGINE *engine)
             CMP_warn1("-policies %s", msg);
         if (opt_policy_oids != NULL)
             CMP_warn1("-policy_oids %s", msg);
+        if (opt_popo != OSSL_CRMF_POPO_NONE - 1)
+            CMP_warn1("-popo %s", msg);
+        if (opt_centralkeygen)
+            CMP_warn1("-popo -1 or -centralkeygen %s", msg);
+        if (opt_newkeyout != NULL)
+            CMP_warn1("-newkeyout %s", msg);
         if (opt_cmd != CMP_P10CR) {
             if (opt_implicit_confirm)
                 CMP_warn1("-implicit_confirm %s, and 'p10cr'", msg);
@@ -1775,13 +1880,14 @@ static int setup_request_ctx(OSSL_CMP_CTX *ctx, ENGINE *engine)
             pkey = load_pubkey(file, format, 0, pass, engine, desc);
             priv = 0;
         }
-        cleanse(opt_newkeypass);
+
         if (pkey == NULL || !OSSL_CMP_CTX_set0_newPkey(ctx, priv, pkey)) {
             EVP_PKEY_free(pkey);
             return 0;
         }
     } else if (opt_reqin != NULL
-               && opt_key == NULL && opt_csr == NULL && opt_oldcert == NULL) {
+               && opt_key == NULL && opt_csr == NULL && opt_oldcert == NULL
+               && !opt_centralkeygen) {
         if (!set_fallback_pubkey(ctx))
             return 0;
     }
@@ -1915,20 +2021,20 @@ static int add_certProfile(OSSL_CMP_CTX *ctx, const char *name)
 
     if ((sk = sk_ASN1_UTF8STRING_new_reserve(NULL, 1)) == NULL)
         return 0;
-   if ((utf8string = ASN1_UTF8STRING_new()) == NULL)
-       goto err;
-   if (!ASN1_STRING_set(utf8string, name, (int)strlen(name))) {
-       ASN1_STRING_free(utf8string);
-       goto err;
-   }
-   /* Due to sk_ASN1_UTF8STRING_new_reserve(NULL, 1), this surely succeeds: */
-   (void)sk_ASN1_UTF8STRING_push(sk, utf8string);
-   if ((itav = OSSL_CMP_ITAV_new0_certProfile(sk)) == NULL)
-       goto err;
-   if (OSSL_CMP_CTX_push0_geninfo_ITAV(ctx, itav))
-       return 1;
-   OSSL_CMP_ITAV_free(itav);
-   return 0;
+    if ((utf8string = ASN1_UTF8STRING_new()) == NULL)
+        goto err;
+    if (!ASN1_STRING_set(utf8string, name, (int)strlen(name))) {
+        ASN1_STRING_free(utf8string);
+        goto err;
+    }
+    /* Due to sk_ASN1_UTF8STRING_new_reserve(NULL, 1), this surely succeeds: */
+    (void)sk_ASN1_UTF8STRING_push(sk, utf8string);
+    if ((itav = OSSL_CMP_ITAV_new0_certProfile(sk)) == NULL)
+        goto err;
+    if (OSSL_CMP_CTX_push0_geninfo_ITAV(ctx, itav))
+        return 1;
+    OSSL_CMP_ITAV_free(itav);
+    return 0;
 
  err:
     sk_ASN1_UTF8STRING_pop_free(sk, ASN1_UTF8STRING_free);
@@ -1973,7 +2079,7 @@ static int handle_opt_geninfo(OSSL_CMP_CTX *ctx)
             if (*ptr != '\0') {
                 if (*ptr != ',') {
                     CMP_err1("Missing ',' or end of -geninfo arg after int at %.40s",
-                        ptr);
+                             ptr);
                     goto err;
                 }
                 ptr++;
@@ -2132,6 +2238,17 @@ static int setup_client_ctx(OSSL_CMP_CTX *ctx, ENGINE *engine)
         if (opt_oldwithnew != NULL)
             CMP_warn1("-oldwithnew %s", msg);
     }
+    if (opt_cmd != CMP_GENM || opt_infotype != NID_id_it_certReqTemplate) {
+        const char *msg = "option is ignored unless -cmd 'genm' and -infotype 'certReqTemplate' is given";
+
+        if (opt_template != NULL)
+            CMP_warn1("-template %s", msg);
+        if (opt_keyspec != NULL)
+            CMP_warn1("-keyspec %s", msg);
+    } else {
+        if (opt_template == NULL)
+            CMP_err("missing -template option for genm with infotype certReqTemplate");
+    }
 
     if (!setup_verification_ctx(ctx))
         goto err;
@@ -2248,6 +2365,18 @@ static int write_cert(BIO *bio, X509 *cert)
     return 0;
 }
 
+static int write_crl(BIO *bio, X509_CRL *crl)
+{
+    if (opt_crlform != FORMAT_PEM && opt_crlform != FORMAT_ASN1) {
+        BIO_printf(bio_err, "error: unsupported type '%s' for writing CRLs\n",
+                   opt_crlform_s);
+        return 0;
+    }
+
+    return opt_crlform == FORMAT_PEM ? PEM_write_bio_X509_CRL(bio, crl)
+                                      : i2d_X509_CRL_bio(bio, crl);
+}
+
 /*
  * If file != NULL writes out a stack of certs to the given file.
  * If certs is NULL, the file is emptied.
@@ -2295,6 +2424,35 @@ static int save_free_certs(STACK_OF(X509) *certs,
     return n;
 }
 
+static int save_crl(X509_CRL *crl,
+                    const char *file, const char *desc)
+{
+    BIO *bio = NULL;
+    int res = 0;
+
+    if (file == NULL)
+        return 1;
+    if (crl != NULL)
+        CMP_info2("received %s, saving to file '%s'", desc, file);
+
+    if ((bio = BIO_new(BIO_s_file())) == NULL
+            || !BIO_write_filename(bio, (char *)file)) {
+        CMP_err2("could not open file '%s' for writing %s",
+                 file, desc);
+        goto end;
+    }
+
+    if (!write_crl(bio, crl)) {
+        CMP_err2("cannot write %s to file '%s'", desc, file);
+        goto end;
+    }
+    res = 1;
+
+ end:
+    BIO_free(bio);
+    return res;
+}
+
 static int delete_file(const char *file, const char *desc)
 {
     if (file == NULL)
@@ -2326,6 +2484,66 @@ static int save_cert_or_delete(X509 *cert, const char *file, const char *desc)
         }
         return save_free_certs(certs, file, desc) >= 0;
     }
+}
+
+static int save_crl_or_delete(X509_CRL *crl, const char *file, const char *desc)
+{
+    if (file == NULL)
+        return 1;
+    return (crl == NULL) ? delete_file(file, desc) : save_crl(crl, file, desc);
+}
+
+static int save_template(const char *file, const OSSL_CRMF_CERTTEMPLATE *tmpl)
+{
+    BIO *bio = BIO_new_file(file, "wb");
+
+    if (bio == NULL) {
+        CMP_err1("error saving certTemplate from genp: cannot open file %s",
+                 file);
+        return 0;
+    }
+    if (!ASN1_i2d_bio_of(OSSL_CRMF_CERTTEMPLATE, i2d_OSSL_CRMF_CERTTEMPLATE,
+                         bio, tmpl)) {
+        CMP_err1("error saving certTemplate from genp: cannot write file %s",
+                 file);
+        BIO_free(bio);
+        return 0;
+    } else {
+        CMP_info1("stored certTemplate from genp to file '%s'", file);
+    }
+    BIO_free(bio);
+    return 1;
+}
+
+static int save_keyspec(const char *file, const OSSL_CMP_ATAVS *keyspec)
+{
+    BIO *bio = BIO_new_file(file, "wb");
+
+    if (bio == NULL) {
+        CMP_err1("error saving keySpec from genp: cannot open file %s", file);
+        return 0;
+    }
+
+    if (!ASN1_i2d_bio_of(OSSL_CMP_ATAVS, i2d_OSSL_CMP_ATAVS, bio, keyspec)) {
+        CMP_err1("error saving keySpec from genp: cannot write file %s", file);
+        BIO_free(bio);
+        return 0;
+    } else {
+        CMP_info1("stored keySpec from genp to file '%s'", file);
+    }
+    BIO_free(bio);
+    return 1;
+}
+
+static const char *nid_name(int nid)
+{
+    const char *name = OBJ_nid2ln(nid);
+
+    if (name == NULL)
+        name = OBJ_nid2sn(nid);
+    if (name == NULL)
+        name = "<unknown OID>";
+    return name;
 }
 
 static int print_itavs(const STACK_OF(OSSL_CMP_ITAV) *itavs)
@@ -2727,6 +2945,15 @@ static int get_opts(int argc, char **argv)
         case OPT_OLDWITHNEW:
             opt_oldwithnew = opt_str();
             break;
+        case OPT_CRLCERT:
+            opt_crlcert = opt_str();
+            break;
+        case OPT_OLDCRL:
+            opt_oldcrl = opt_str();
+            break;
+        case OPT_CRLOUT:
+            opt_crlout = opt_str();
+            break;
 
         case OPT_V_CASES:
             if (!opt_verify(o, vpm))
@@ -2744,12 +2971,23 @@ static int get_opts(int argc, char **argv)
         case OPT_GENINFO:
             opt_geninfo = opt_str();
             break;
-
+        case OPT_TEMPLATE:
+            opt_template = opt_str();
+            break;
+        case OPT_KEYSPEC:
+            opt_keyspec = opt_str();
+            break;
         case OPT_NEWKEY:
             opt_newkey = opt_str();
             break;
         case OPT_NEWKEYPASS:
             opt_newkeypass = opt_str();
+            break;
+        case OPT_CENTRALKEYGEN:
+            opt_centralkeygen = 1;
+            break;
+        case OPT_NEWKEYOUT:
+            opt_newkeyout = opt_str();
             break;
         case OPT_SUBJECT:
             opt_subject = opt_str();
@@ -2821,6 +3059,9 @@ static int get_opts(int argc, char **argv)
             break;
         case OPT_CERTFORM:
             opt_certform_s = opt_str();
+            break;
+        case OPT_CRLFORM:
+            opt_crlform_s = opt_str();
             break;
         case OPT_KEYFORM:
             opt_keyform_s = opt_str();
@@ -2904,6 +3145,15 @@ static int get_opts(int argc, char **argv)
             break;
         case OPT_RSP_CERT:
             opt_rsp_cert = opt_str();
+            break;
+        case OPT_RSP_KEY:
+            opt_rsp_key = opt_str();
+            break;
+        case OPT_RSP_KEYPASS:
+            opt_rsp_keypass = opt_str();
+            break;
+        case OPT_RSP_CRL:
+            opt_rsp_crl = opt_str();
             break;
         case OPT_RSP_EXTRACERTS:
             opt_rsp_extracerts = opt_str();
@@ -3047,6 +3297,71 @@ static int cmp_server(OSSL_CMP_CTX *srv_cmp_ctx)
 }
 #endif
 
+static void print_keyspec(OSSL_CMP_ATAVS *keySpec)
+{
+    const char *desc = "specifications contained in keySpec from genp";
+    BIO *mem;
+    int i;
+    const char *p;
+    long len;
+
+    if (keySpec == NULL) {
+        CMP_info1("No %s", desc);
+        return;
+    }
+
+    mem = BIO_new(BIO_s_mem());
+    if (mem == NULL) {
+        CMP_err1("Out of memory - cannot dump key %s", desc);
+        return;
+    }
+    BIO_printf(mem, "Key %s:\n", desc);
+
+    for (i = 0; i < sk_OSSL_CMP_ATAV_num(keySpec); i++) {
+        OSSL_CMP_ATAV *atav = sk_OSSL_CMP_ATAV_value(keySpec, i);
+        ASN1_OBJECT *type = OSSL_CMP_ATAV_get0_type(atav /* may be NULL */);
+        int nid = OBJ_obj2nid(type);
+
+        switch (nid) {
+        case NID_id_regCtrl_algId:
+            {
+                X509_ALGOR *alg = OSSL_CMP_ATAV_get0_algId(atav);
+                const ASN1_OBJECT *oid;
+                int paramtype;
+                const void *param;
+
+                X509_ALGOR_get0(&oid, &paramtype, &param, alg);
+                BIO_printf(mem, "Key algorithm: ");
+                i2a_ASN1_OBJECT(mem, oid);
+                if (paramtype == V_ASN1_UNDEF || alg->parameter == NULL) {
+                    BIO_printf(mem, "\n");
+                } else {
+                    BIO_printf(mem, " - ");
+                    ASN1_item_print(mem, (ASN1_VALUE *)alg,
+                                    0, ASN1_ITEM_rptr(X509_ALGOR), NULL);
+                }
+            }
+            break;
+        case NID_id_regCtrl_rsaKeyLen:
+            BIO_printf(mem, "Key algorithm: RSA %d\n",
+                       OSSL_CMP_ATAV_get_rsaKeyLen(atav));
+            break;
+        default:
+            BIO_printf(mem, "Invalid key spec: %s\n", nid_name(nid));
+            break;
+        }
+    }
+    BIO_printf(mem, "End of key %s", desc);
+
+    len = BIO_get_mem_data(mem, &p);
+    if (len > INT_MAX)
+        CMP_err1("Info too large - cannot dump key %s", desc);
+    else
+        CMP_info2("%.*s", (int)len, p);
+    BIO_free(mem);
+    return;
+}
+
 static void print_status(void)
 {
     /* print PKIStatusInfo */
@@ -3140,6 +3455,94 @@ static int do_genm(OSSL_CMP_CTX *ctx)
         X509_free(oldwithnew);
     end_upd:
         X509_free(oldwithold);
+        return res;
+    } else if (opt_infotype == NID_id_it_crlStatusList) {
+        X509_CRL *oldcrl = NULL, *crl = NULL;
+        X509 *crlcert = NULL;
+        int res = 0;
+        const char *desc = "CRL from genp of type 'crls'";
+
+        if (opt_oldcrl == NULL && opt_crlcert == NULL) {
+            CMP_err("Missing -oldcrl and no -crlcert given for -infotype crlStatusList");
+            return 0;
+        }
+        if (opt_crlout == NULL) {
+            CMP_err("Missing -crlout for -infotype crlStatusList");
+            return 0;
+        }
+
+        if (opt_crlcert != NULL) {
+            crlcert = load_cert_pwd(opt_crlcert, opt_otherpass,
+                                    "Cert for genm with -infotype crlStatusList");
+            if (crlcert == NULL)
+                goto end_crlupd;
+        }
+
+        if (opt_oldcrl != NULL) {
+            oldcrl = load_crl(opt_oldcrl, FORMAT_UNDEF, 0,
+                              "CRL for genm with -infotype crlStatusList");
+            if (oldcrl == NULL)
+                goto end_crlupd;
+        }
+
+        if (opt_oldcrl != NULL && opt_crlcert != NULL) {
+            if (X509_NAME_cmp(X509_CRL_get_issuer(oldcrl),
+                              X509_get_issuer_name(crlcert))
+                != 0)
+                CMP_warn("-oldcrl and -crlcert have different issuer");
+        }
+
+        if (!OSSL_CMP_get1_crlUpdate(ctx, crlcert, oldcrl, &crl))
+            goto end_crlupd;
+
+        if (crl == NULL)
+            CMP_info("no CRL update available");
+        if (!save_crl_or_delete(crl, opt_crlout, desc))
+            goto end_crlupd;
+
+        res = 1;
+
+    end_crlupd:
+        X509_free(crlcert);
+        X509_CRL_free(oldcrl);
+        X509_CRL_free(crl);
+        return res;
+
+    } else if (opt_infotype == NID_id_it_certReqTemplate) {
+        OSSL_CRMF_CERTTEMPLATE *certTemplate;
+        OSSL_CMP_ATAVS *keySpec;
+        int res = 0;
+
+        if (!OSSL_CMP_get1_certReqTemplate(ctx, &certTemplate, &keySpec))
+            return 0;
+
+        if (certTemplate == NULL) {
+            CMP_warn("no certificate request template available");
+            if (!delete_file(opt_template, "certTemplate from genp"))
+                return 0;
+            if (opt_keyspec != NULL
+                && !delete_file(opt_keyspec, "keySpec from genp"))
+                return 0;
+            return 1;
+        }
+        if (!save_template(opt_template, certTemplate))
+            goto tmpl_end;
+
+        print_keyspec(keySpec);
+        if (opt_keyspec != NULL) {
+            if (keySpec == NULL) {
+                CMP_warn("no key specifications available");
+                if (!delete_file(opt_keyspec, "keySpec from genp"))
+                    goto tmpl_end;
+            } else if (!save_keyspec(opt_keyspec, keySpec)) {
+                goto tmpl_end;
+            }
+        }
+
+        res = 1;
+    tmpl_end:
+        OSSL_CRMF_CERTTEMPLATE_free(certTemplate);
+        sk_OSSL_CMP_ATAV_pop_free(keySpec, OSSL_CMP_ATAV_free);
         return res;
     } else {
         OSSL_CMP_ITAV *req;
@@ -3358,10 +3761,10 @@ int cmp_main(int argc, char **argv)
     if (opt_reqout_only != NULL) {
         const char *msg = "option is ignored since -reqout_only option is given";
 
-#if !defined(OPENSSL_NO_SOCK) && !defined(OPENSSL_NO_HTTP)
+# if !defined(OPENSSL_NO_SOCK) && !defined(OPENSSL_NO_HTTP)
         if (opt_server != NULL)
             CMP_warn1("-server %s", msg);
-#endif
+# endif
         if (opt_use_mock_srv)
             CMP_warn1("-use_mock_srv %s", msg);
         if (opt_reqout != NULL)
@@ -3456,6 +3859,34 @@ int cmp_main(int argc, char **argv)
             if (save_free_certs(OSSL_CMP_CTX_get1_caPubs(cmp_ctx),
                                 opt_cacertsout, "CA") < 0)
                 goto err;
+            if (opt_centralkeygen) {
+                EVP_CIPHER *cipher = NULL;
+                char *pass_string = NULL;
+                BIO *out;
+                int result = 1;
+                EVP_PKEY *new_key = OSSL_CMP_CTX_get0_newPkey(cmp_ctx, 1 /* priv */);
+
+                if (new_key == NULL)
+                    goto err;
+                if ((out = bio_open_owner(opt_newkeyout, FORMAT_PEM, 1)) == NULL)
+                    goto err;
+                if (opt_newkeypass != NULL) {
+                    pass_string = get_passwd(opt_newkeypass,
+                                             "Centrally generated private key password");
+                    cipher = EVP_CIPHER_fetch(app_get0_libctx(), SN_aes_256_cbc, app_get0_propq());
+                }
+
+                CMP_info1("saving centrally generated key to file '%s'", opt_newkeyout);
+                if (PEM_write_bio_PrivateKey(out, new_key, cipher, NULL, 0, NULL,
+                                             (void *)pass_string) <= 0)
+                    result = 0;
+
+                BIO_free(out);
+                clear_free(pass_string);
+                EVP_CIPHER_free(cipher);
+                if (!result)
+                    goto err;
+            }
         }
         if (!OSSL_CMP_CTX_reinit(cmp_ctx))
             goto err;

@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1999-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -28,6 +28,10 @@ int PKCS7_add_attrib_smimecap(PKCS7_SIGNER_INFO *si,
     }
     seq->length = ASN1_item_i2d((ASN1_VALUE *)cap, &seq->data,
                                 ASN1_ITEM_rptr(X509_ALGORS));
+    if (seq->length <= 0 || seq->data == NULL) {
+        ASN1_STRING_free(seq);
+        return 1;
+    }
     if (!PKCS7_add_signed_attribute(si, NID_SMIMECapabilities,
                                     V_ASN1_SEQUENCE, seq)) {
         ASN1_STRING_free(seq);

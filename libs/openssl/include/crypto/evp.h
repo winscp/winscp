@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -226,6 +226,7 @@ struct evp_mac_st {
     OSSL_FUNC_mac_get_params_fn *get_params;
     OSSL_FUNC_mac_get_ctx_params_fn *get_ctx_params;
     OSSL_FUNC_mac_set_ctx_params_fn *set_ctx_params;
+    OSSL_FUNC_mac_init_skey_fn *init_skey;
 };
 
 struct evp_kdf_st {
@@ -285,6 +286,7 @@ struct evp_md_st {
     OSSL_FUNC_digest_squeeze_fn *dsqueeze;
     OSSL_FUNC_digest_digest_fn *digest;
     OSSL_FUNC_digest_freectx_fn *freectx;
+    OSSL_FUNC_digest_copyctx_fn *copyctx;
     OSSL_FUNC_digest_dupctx_fn *dupctx;
     OSSL_FUNC_digest_get_params_fn *get_params;
     OSSL_FUNC_digest_set_ctx_params_fn *set_ctx_params;
@@ -340,6 +342,10 @@ struct evp_cipher_st {
     OSSL_FUNC_cipher_update_fn *cupdate;
     OSSL_FUNC_cipher_final_fn *cfinal;
     OSSL_FUNC_cipher_cipher_fn *ccipher;
+    OSSL_FUNC_cipher_pipeline_encrypt_init_fn *p_einit;
+    OSSL_FUNC_cipher_pipeline_decrypt_init_fn *p_dinit;
+    OSSL_FUNC_cipher_pipeline_update_fn *p_cupdate;
+    OSSL_FUNC_cipher_pipeline_final_fn *p_cfinal;
     OSSL_FUNC_cipher_freectx_fn *freectx;
     OSSL_FUNC_cipher_dupctx_fn *dupctx;
     OSSL_FUNC_cipher_get_params_fn *get_params;
@@ -348,7 +354,9 @@ struct evp_cipher_st {
     OSSL_FUNC_cipher_gettable_params_fn *gettable_params;
     OSSL_FUNC_cipher_gettable_ctx_params_fn *gettable_ctx_params;
     OSSL_FUNC_cipher_settable_ctx_params_fn *settable_ctx_params;
-} /* EVP_CIPHER */ ;
+    OSSL_FUNC_cipher_encrypt_skey_init_fn *einit_skey;
+    OSSL_FUNC_cipher_decrypt_skey_init_fn *dinit_skey;
+} /* EVP_CIPHER */;
 
 /* Macros to code block cipher wrappers */
 
@@ -396,13 +404,12 @@ static int cname##_ecb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out, const uns
 #define BLOCK_CIPHER_func_cbc(cname, cprefix, kstruct, ksched) \
 static int cname##_cbc_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsigned char *in, size_t inl) \
 {\
-        while(inl>=EVP_MAXCHUNK) \
-            {\
+        while(inl>=EVP_MAXCHUNK) {\
             cprefix##_cbc_encrypt(in, out, (long)EVP_MAXCHUNK, &EVP_C_DATA(kstruct,ctx)->ksched, ctx->iv, EVP_CIPHER_CTX_is_encrypting(ctx));\
             inl-=EVP_MAXCHUNK;\
             in +=EVP_MAXCHUNK;\
             out+=EVP_MAXCHUNK;\
-            }\
+        }\
         if (inl)\
             cprefix##_cbc_encrypt(in, out, (long)inl, &EVP_C_DATA(kstruct,ctx)->ksched, ctx->iv, EVP_CIPHER_CTX_is_encrypting(ctx));\
         return 1;\
@@ -414,8 +421,7 @@ static int cname##_cfb##cbits##_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out, 
     size_t chunk = EVP_MAXCHUNK;\
     if (cbits == 1)  chunk >>= 3;\
     if (inl < chunk) chunk = inl;\
-    while (inl && inl >= chunk)\
-    {\
+    while (inl && inl >= chunk) {\
         int num = EVP_CIPHER_CTX_get_num(ctx);\
         cprefix##_cfb##cbits##_encrypt(in, out, (long) \
             ((cbits == 1) \
@@ -726,32 +732,36 @@ struct evp_pkey_st {
         int security_bits;
         int size;
     } cache;
-} /* EVP_PKEY */ ;
+}; /* EVP_PKEY */
 
-#define EVP_PKEY_CTX_IS_SIGNATURE_OP(ctx) \
-    ((ctx)->operation == EVP_PKEY_OP_SIGN \
-     || (ctx)->operation == EVP_PKEY_OP_SIGNCTX \
-     || (ctx)->operation == EVP_PKEY_OP_VERIFY \
-     || (ctx)->operation == EVP_PKEY_OP_VERIFYCTX \
-     || (ctx)->operation == EVP_PKEY_OP_VERIFYRECOVER)
+/* The EVP_PKEY_OP_TYPE_ macros are found in include/openssl/evp.h */
 
-#define EVP_PKEY_CTX_IS_DERIVE_OP(ctx) \
-    ((ctx)->operation == EVP_PKEY_OP_DERIVE)
+# define EVP_PKEY_CTX_IS_SIGNATURE_OP(ctx) \
+    (((ctx)->operation & EVP_PKEY_OP_TYPE_SIG) != 0)
 
-#define EVP_PKEY_CTX_IS_ASYM_CIPHER_OP(ctx) \
-    ((ctx)->operation == EVP_PKEY_OP_ENCRYPT \
-     || (ctx)->operation == EVP_PKEY_OP_DECRYPT)
+# define EVP_PKEY_CTX_IS_DERIVE_OP(ctx) \
+    (((ctx)->operation & EVP_PKEY_OP_TYPE_DERIVE) != 0)
 
-#define EVP_PKEY_CTX_IS_GEN_OP(ctx) \
-    ((ctx)->operation == EVP_PKEY_OP_PARAMGEN \
-     || (ctx)->operation == EVP_PKEY_OP_KEYGEN)
+# define EVP_PKEY_CTX_IS_ASYM_CIPHER_OP(ctx) \
+    (((ctx)->operation & EVP_PKEY_OP_TYPE_CRYPT) != 0)
 
-#define EVP_PKEY_CTX_IS_FROMDATA_OP(ctx) \
-    ((ctx)->operation == EVP_PKEY_OP_FROMDATA)
+# define EVP_PKEY_CTX_IS_GEN_OP(ctx) \
+    (((ctx)->operation & EVP_PKEY_OP_TYPE_GEN) != 0)
 
-#define EVP_PKEY_CTX_IS_KEM_OP(ctx) \
-    ((ctx)->operation == EVP_PKEY_OP_ENCAPSULATE \
-     || (ctx)->operation == EVP_PKEY_OP_DECAPSULATE)
+# define EVP_PKEY_CTX_IS_FROMDATA_OP(ctx) \
+    (((ctx)->operation & EVP_PKEY_OP_TYPE_DATA) != 0)
+
+# define EVP_PKEY_CTX_IS_KEM_OP(ctx) \
+    (((ctx)->operation & EVP_PKEY_OP_TYPE_KEM) != 0)
+
+struct evp_skey_st {
+    /* == Common attributes == */
+    CRYPTO_REF_COUNT references;
+    CRYPTO_RWLOCK *lock;
+
+    void *keydata; /* Alg-specific key data */
+    EVP_SKEYMGMT *skeymgmt; /* Import, export, manage */
+}; /* EVP_SKEY */
 
 void openssl_add_all_ciphers_int(void);
 void openssl_add_all_digests_int(void);
@@ -825,6 +835,8 @@ int evp_keymgmt_gen_set_template(const EVP_KEYMGMT *keymgmt, void *genctx,
                                  void *templ);
 int evp_keymgmt_gen_set_params(const EVP_KEYMGMT *keymgmt, void *genctx,
                                const OSSL_PARAM params[]);
+int evp_keymgmt_gen_get_params(const EVP_KEYMGMT *keymgmt,
+                               void *genctx, OSSL_PARAM params[]);
 void *evp_keymgmt_gen(const EVP_KEYMGMT *keymgmt, void *genctx,
                       OSSL_CALLBACK *cb, void *cbarg);
 void evp_keymgmt_gen_cleanup(const EVP_KEYMGMT *keymgmt, void *genctx);
@@ -853,6 +865,18 @@ void *evp_keymgmt_dup(const EVP_KEYMGMT *keymgmt,
 EVP_KEYMGMT *evp_keymgmt_fetch_from_prov(OSSL_PROVIDER *prov,
                                          const char *name,
                                          const char *properties);
+
+/*
+ * SKEYMGMT provider interface functions
+ */
+void evp_skeymgmt_freedata(const EVP_SKEYMGMT *keymgmt, void *keyddata);
+void *evp_skeymgmt_import(const EVP_SKEYMGMT *skeymgmt, int selection, const OSSL_PARAM params[]);
+int evp_skeymgmt_export(const EVP_SKEYMGMT *skeymgmt, void *keydata,
+                        int selection, OSSL_CALLBACK *param_cb, void *cbarg);
+void *evp_skeymgmt_generate(const EVP_SKEYMGMT *skeymgmt, const OSSL_PARAM params[]);
+EVP_SKEYMGMT *evp_skeymgmt_fetch_from_prov(OSSL_PROVIDER *prov,
+                                           const char *name,
+                                           const char *properties);
 
 /* Pulling defines out of C source files */
 
@@ -968,5 +992,8 @@ int evp_signature_get_number(const EVP_SIGNATURE *signature);
 int evp_pkey_decrypt_alloc(EVP_PKEY_CTX *ctx, unsigned char **outp,
                            size_t *outlenp, size_t expected_outlen,
                            const unsigned char *in, size_t inlen);
+
+int ossl_md2hmacnid(int mdnid);
+int ossl_hmac2mdnid(int hmac_nid);
 
 #endif /* OSSL_CRYPTO_EVP_H */

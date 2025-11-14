@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -50,10 +50,10 @@ static const unsigned char wrap_ct[] = {
  * algorithm implementations. If they are NULL then the default library
  * context and properties are used.
  */
-OSSL_LIB_CTX *libctx = NULL;
-const char *propq = NULL;
+static OSSL_LIB_CTX *libctx = NULL;
+static const char *propq = NULL;
 
-int aes_wrap_encrypt(void)
+static int aes_wrap_encrypt(void)
 {
     int ret = 0;
     EVP_CIPHER_CTX *ctx;
@@ -111,7 +111,7 @@ err:
     return ret;
 }
 
-int aes_wrap_decrypt(void)
+static int aes_wrap_decrypt(void)
 {
     int ret = 0;
     EVP_CIPHER_CTX *ctx;

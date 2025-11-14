@@ -17,6 +17,7 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/self_test.h>
+#include "internal/fips.h"
 #include "internal/param_build_set.h"
 #include <openssl/param_build.h>
 #include "crypto/ecx.h"
@@ -24,6 +25,7 @@
 #include "prov/providercommon.h"
 #include "prov/provider_ctx.h"
 #include "prov/ecx.h"
+#include "prov/securitycheck.h"
 #ifdef S390X_EC_ASM
 # include "s390x_arch.h"
 # include <openssl/sha.h>   /* For SHA512_DIGEST_LENGTH */
@@ -90,6 +92,15 @@ static void *s390x_ecx_keygen448(struct ecx_gen_ctx *gctx);
 static void *s390x_ecd_keygen25519(struct ecx_gen_ctx *gctx);
 static void *s390x_ecd_keygen448(struct ecx_gen_ctx *gctx);
 #endif
+
+#ifdef FIPS_MODULE
+static int ecd_fips140_pairwise_test(const ECX_KEY *ecx, int type, int self_test);
+#endif  /* FIPS_MODULE */
+
+static ossl_inline int ecx_key_type_is_ed(ECX_KEY_TYPE type)
+{
+    return type == ECX_KEY_TYPE_ED25519 || type == ECX_KEY_TYPE_ED448;
+}
 
 static void *x25519_new_key(void *provctx)
 {
@@ -303,6 +314,16 @@ static int ecx_get_params(void *key, OSSL_PARAM params[], int bits, int secbits,
         if (!OSSL_PARAM_set_octet_string(p, ecx->pubkey, ecx->keylen))
             return 0;
     }
+#ifdef FIPS_MODULE
+    {
+        /* X25519 and X448 are not approved */
+        int approved = 0;
+
+        p = OSSL_PARAM_locate(params, OSSL_ALG_PARAM_FIPS_APPROVED_INDICATOR);
+        if (p != NULL && !OSSL_PARAM_set_int(p, approved))
+            return 0;
+    }
+#endif
 
     return key_to_params(ecx, NULL, params, 1);
 }
@@ -350,6 +371,7 @@ static const OSSL_PARAM ecx_gettable_params[] = {
     OSSL_PARAM_int(OSSL_PKEY_PARAM_MAX_SIZE, NULL),
     OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY, NULL, 0),
     ECX_KEY_TYPES(),
+    OSSL_FIPS_IND_GETTABLE_CTX_PARAM()
     OSSL_PARAM_END
 };
 
@@ -399,7 +421,7 @@ static int ecx_set_params(void *key, const OSSL_PARAM params[])
     ECX_KEY *ecxkey = key;
     const OSSL_PARAM *p;
 
-    if (params == NULL)
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY);
@@ -475,7 +497,8 @@ static const OSSL_PARAM *ed448_settable_params(void *provctx)
 }
 
 static void *ecx_gen_init(void *provctx, int selection,
-                          const OSSL_PARAM params[], ECX_KEY_TYPE type)
+                          const OSSL_PARAM params[], ECX_KEY_TYPE type,
+                          const char *algdesc)
 {
     OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(provctx);
     struct ecx_gen_ctx *gctx = NULL;
@@ -487,6 +510,14 @@ static void *ecx_gen_init(void *provctx, int selection,
         gctx->libctx = libctx;
         gctx->type = type;
         gctx->selection = selection;
+#ifdef FIPS_MODULE
+        /* X25519/X448 are not FIPS approved, (ED25519/ED448 are approved) */
+        if (algdesc != NULL
+                && !ossl_FIPS_IND_callback(libctx, algdesc, "KeyGen Init")) {
+            OPENSSL_free(gctx);
+            return NULL;
+        }
+#endif
     } else {
         return NULL;
     }
@@ -500,25 +531,25 @@ static void *ecx_gen_init(void *provctx, int selection,
 static void *x25519_gen_init(void *provctx, int selection,
                              const OSSL_PARAM params[])
 {
-    return ecx_gen_init(provctx, selection, params, ECX_KEY_TYPE_X25519);
+    return ecx_gen_init(provctx, selection, params, ECX_KEY_TYPE_X25519, "X25519");
 }
 
 static void *x448_gen_init(void *provctx, int selection,
                            const OSSL_PARAM params[])
 {
-    return ecx_gen_init(provctx, selection, params, ECX_KEY_TYPE_X448);
+    return ecx_gen_init(provctx, selection, params, ECX_KEY_TYPE_X448, "X448");
 }
 
 static void *ed25519_gen_init(void *provctx, int selection,
                               const OSSL_PARAM params[])
 {
-    return ecx_gen_init(provctx, selection, params, ECX_KEY_TYPE_ED25519);
+    return ecx_gen_init(provctx, selection, params, ECX_KEY_TYPE_ED25519, NULL);
 }
 
 static void *ed448_gen_init(void *provctx, int selection,
                             const OSSL_PARAM params[])
 {
-    return ecx_gen_init(provctx, selection, params, ECX_KEY_TYPE_ED448);
+    return ecx_gen_init(provctx, selection, params, ECX_KEY_TYPE_ED448, NULL);
 }
 
 static int ecx_gen_set_params(void *genctx, const OSSL_PARAM params[])
@@ -682,8 +713,7 @@ static void *ecx_gen(struct ecx_gen_ctx *gctx)
     }
 #ifndef FIPS_MODULE
     if (gctx->dhkem_ikm != NULL && gctx->dhkem_ikmlen != 0) {
-        if (gctx->type == ECX_KEY_TYPE_ED25519
-                || gctx->type == ECX_KEY_TYPE_ED448)
+        if (ecx_key_type_is_ed(gctx->type))
             goto err;
         if (!ossl_ecx_dhkem_derive_private(key, privkey,
                                            gctx->dhkem_ikm, gctx->dhkem_ikmlen))
@@ -871,6 +901,25 @@ static int ecx_key_pairwise_check(const ECX_KEY *ecx, int type)
 }
 
 #ifdef FIPS_MODULE
+/*
+ * FIPS ACVP testing requires the ability to check if the public key is valid
+ * This is not required normally since the ED signature verify does the test
+ * internally.
+ */
+static int ecd_key_pub_check(const ECX_KEY *ecx, int type)
+{
+    switch (type) {
+    case ECX_KEY_TYPE_ED25519:
+        return ossl_ed25519_pubkey_verify(ecx->pubkey, ecx->keylen);
+    case ECX_KEY_TYPE_ED448:
+        return ossl_ed448_pubkey_verify(ecx->pubkey, ecx->keylen);
+    default:
+        return 1;
+    }
+}
+#endif
+
+#ifdef FIPS_MODULE
 static int ecd_key_pairwise_check(const ECX_KEY *ecx, int type)
 {
     return ecd_fips140_pairwise_test(ecx, type, 0);
@@ -898,7 +947,8 @@ static int ecd_key_pairwise_check(const ECX_KEY *ecx, int type)
 }
 #endif
 
-static int ecx_validate(const void *keydata, int selection, int type, size_t keylen)
+static int ecx_validate(const void *keydata, int selection, int type,
+                        size_t keylen)
 {
     const ECX_KEY *ecx = keydata;
     int ok = keylen == ecx->keylen;
@@ -914,8 +964,12 @@ static int ecx_validate(const void *keydata, int selection, int type, size_t key
         return 0;
     }
 
-    if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0)
+    if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0) {
         ok = ok && ecx->haspubkey;
+#ifdef FIPS_MODULE
+        ok = ok && ecd_key_pub_check(ecx, type);
+#endif
+    }
 
     if ((selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) != 0)
         ok = ok && ecx->privkey != NULL;
@@ -923,7 +977,7 @@ static int ecx_validate(const void *keydata, int selection, int type, size_t key
     if ((selection & OSSL_KEYMGMT_SELECT_KEYPAIR) != OSSL_KEYMGMT_SELECT_KEYPAIR)
         return ok;
 
-    if (type == ECX_KEY_TYPE_ED25519 || type == ECX_KEY_TYPE_ED448)
+    if (ecx_key_type_is_ed(type))
         ok = ok && ecd_key_pairwise_check(ecx, type);
     else
         ok = ok && ecx_key_pairwise_check(ecx, type);

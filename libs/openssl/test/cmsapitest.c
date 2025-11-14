@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2018-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -330,6 +330,9 @@ static unsigned char *read_all(BIO *bio, long *p_len)
         buf = tmp;
         ret = BIO_read(bio, buf + *p_len, step);
         if (ret < 0)
+            break;
+
+        if (LONG_MAX - ret < *p_len)
             break;
 
         *p_len += ret;

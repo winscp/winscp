@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2015-2020 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2015-2024 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -10,11 +10,19 @@ use strict;
 use warnings;
 use OpenSSL::Test;
 use OpenSSL::Test::Utils;
+use OpenSSL::Test qw/:DEFAULT srctop_file/;
 
-plan tests => 5;
+plan tests => 6;
 setup("test_rand");
 
-ok(run(test(["rand_test"])));
+ok(run(test(["rand_test", srctop_file("test", "default.cnf")])));
+
+SKIP: {
+    skip "Skipping FIPS test in this build", 1 if disabled('fips');
+
+    ok(run(test(["rand_test", srctop_file("test", "fips.cnf")])));
+}
+
 ok(run(test(["drbgtest"])));
 ok(run(test(["rand_status_test"])));
 

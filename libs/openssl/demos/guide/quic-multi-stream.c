@@ -1,5 +1,5 @@
 /*
- *  Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ *  Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  *  Licensed under the Apache License 2.0 (the "License").  You may not use
  *  this file except in compliance with the License.  You can obtain a copy
@@ -108,8 +108,8 @@ static BIO *create_socket_bio(const char *hostname, const char *port,
     return bio;
 }
 
-int write_a_request(SSL *stream, const char *request_start,
-                    const char *hostname)
+static int write_a_request(SSL *stream, const char *request_start,
+                           const char *hostname)
 {
     const char *request_end = "\r\n\r\n";
     size_t written;

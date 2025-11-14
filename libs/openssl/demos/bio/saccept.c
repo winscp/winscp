@@ -27,13 +27,16 @@
 
 static volatile int done = 0;
 
-void interrupt(int sig)
+static void interrupt(int sig)
 {
     done = 1;
 }
 
-void sigsetup(void)
+static void sigsetup(void)
 {
+#if defined(OPENSSL_SYS_WINDOWS)
+    signal(SIGINT, interrupt);
+#else
     struct sigaction sa;
 
     /*
@@ -43,6 +46,7 @@ void sigsetup(void)
     sa.sa_handler = interrupt;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGINT, &sa, NULL);
+#endif
 }
 
 int main(int argc, char *argv[])

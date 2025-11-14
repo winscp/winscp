@@ -173,7 +173,7 @@ OpenSSL supports a number of different algorithm implementations for
 various machines and, by default, it determines which to use based on the
 processor capabilities and run time feature enquiry.  These environment
 variables can be used to exert more control over this selection process.
-See L<OPENSSL_ia32cap(3)>, L<OPENSSL_s390xcap(3)>.
+See L<OPENSSL_ia32cap(3)>, L<OPENSSL_s390xcap(3)> and L<OPENSSL_riscvcap(3)>.
 
 =item B<NO_PROXY>, B<HTTPS_PROXY>, B<HTTP_PROXY>
 
@@ -187,6 +187,18 @@ Specifies a QUIC qlog output directory. See L<openssl-qlog(7)>.
 =item B<OSSL_QFILTER>
 
 Used to set a QUIC qlog filter specification. See L<openssl-qlog(7)>.
+
+=item B<SSLKEYLOGFILE>
+
+Used to produce the standard format output file for SSL key logging.  Optionally
+set this variable to a filename to log all secrets produced by SSL connections.
+Note, use of the environment variable is predicated on configuring OpenSSL at
+build time with the enable-sslkeylog feature.  The file format standard can be
+found at L<https://datatracker.ietf.org/doc/draft-ietf-tls-keylogfile/>.
+Note: the use of B<SSLKEYLOGFILE> poses an explicit security risk.  By recording
+the exchanged keys during an SSL session, it allows any available party with
+read access to the file to decrypt application traffic sent over that session.
+Use of this feature should be restricted to test and debug environments only.
 
 =back
 

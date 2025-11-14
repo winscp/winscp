@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -53,12 +53,12 @@ static int on_recv_data(nghttp3_conn *h3conn, int64_t stream_id,
                         const uint8_t *data, size_t datalen,
                         void *conn_user_data, void *stream_user_data)
 {
-    ssize_t wr;
+    size_t wr;
 
     /* HTTP response body data - write it to stdout. */
     while (datalen > 0) {
         wr = fwrite(data, 1, datalen, stdout);
-        if (wr < 0)
+        if (ferror(stdout))
             return 1;
 
         data    += wr;

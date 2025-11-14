@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -46,8 +46,7 @@ struct pq_elem_st {
 #endif
 };
 
-struct ossl_pqueue_st
-{
+struct ossl_pqueue_st {
     struct pq_heap_st *heap;
     struct pq_elem_st *elements;
     int (*compare)(const void *, const void *);

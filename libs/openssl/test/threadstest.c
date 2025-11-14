@@ -688,6 +688,52 @@ static int test_atomic(void)
             || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
         goto err;
 
+    ret64 = 0;
+
+    if (CRYPTO_atomic_and(&val64, 5, &ret64, NULL)) {
+        /* This succeeds therefore we're on a platform with lockless atomics */
+        if (!TEST_uint_eq((unsigned int)val64, 1)
+                || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
+            goto err;
+    } else {
+        /* This failed therefore we're on a platform without lockless atomics */
+        if (!TEST_uint_eq((unsigned int)val64, 3)
+                || !TEST_int_eq((unsigned int)ret64, 0))
+            goto err;
+    }
+    val64 = 3;
+    ret64 = 0;
+
+    if (!TEST_true(CRYPTO_atomic_and(&val64, 5, &ret64, lock)))
+        goto err;
+
+    if (!TEST_uint_eq((unsigned int)val64, 1)
+            || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
+        goto err;
+
+    ret64 = 0;
+
+    if (CRYPTO_atomic_add64(&val64, 2, &ret64, NULL)) {
+        /* This succeeds therefore we're on a platform with lockless atomics */
+        if (!TEST_uint_eq((unsigned int)val64, 3)
+                || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
+            goto err;
+    } else {
+        /* This failed therefore we're on a platform without lockless atomics */
+        if (!TEST_uint_eq((unsigned int)val64, 1)
+                || !TEST_int_eq((unsigned int)ret64, 0))
+            goto err;
+    }
+    val64 = 1;
+    ret64 = 0;
+
+    if (!TEST_true(CRYPTO_atomic_add64(&val64, 2, &ret64, lock)))
+        goto err;
+
+    if (!TEST_uint_eq((unsigned int)val64, 3)
+            || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
+        goto err;
+
     testresult = 1;
  err:
     CRYPTO_THREAD_lock_free(lock);
@@ -1149,19 +1195,6 @@ static int test_obj_add(void)
                            1, default_provider);
 }
 
-static void test_lib_ctx_load_config_worker(void)
-{
-    if (!TEST_int_eq(OSSL_LIB_CTX_load_config(multi_libctx, config_file), 1))
-        multi_set_success(0);
-}
-
-static int test_lib_ctx_load_config(void)
-{
-    return thread_run_test(&test_lib_ctx_load_config_worker,
-                           MAXIMUM_THREADS, &test_lib_ctx_load_config_worker,
-                           1, default_provider);
-}
-
 #if !defined(OPENSSL_NO_DGRAM) && !defined(OPENSSL_NO_SOCK)
 static BIO *multi_bio1, *multi_bio2;
 
@@ -1409,7 +1442,6 @@ int setup_tests(void)
     ADD_TEST(test_multi_shared_pkey_release);
     ADD_TEST(test_multi_load_unload_provider);
     ADD_TEST(test_obj_add);
-    ADD_TEST(test_lib_ctx_load_config);
 #if !defined(OPENSSL_NO_DGRAM) && !defined(OPENSSL_NO_SOCK)
     ADD_TEST(test_bio_dgram_pair);
 #endif

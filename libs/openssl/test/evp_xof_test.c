@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -206,14 +206,29 @@ static int shake_kat_digestfinal_test(void)
     EVP_MD_CTX *ctx = NULL;
     unsigned char out[sizeof(shake256_output)];
 
+    /* Test that EVP_DigestFinal without setting XOFLEN fails */
     if (!TEST_ptr(ctx = shake_setup("SHAKE256")))
         return 0;
     if (!TEST_true(EVP_DigestUpdate(ctx, shake256_input,
-                   sizeof(shake256_input)))
-        || !TEST_true(EVP_DigestFinal(ctx, out, &digest_length))
-        || !TEST_uint_eq(digest_length, 32)
-        || !TEST_mem_eq(out, digest_length,
-                        shake256_output, digest_length)
+                   sizeof(shake256_input))))
+        return 0;
+    ERR_set_mark();
+    if (!TEST_false(EVP_DigestFinal(ctx, out, &digest_length))) {
+        ERR_clear_last_mark();
+        return 0;
+    }
+    ERR_pop_to_mark();
+    EVP_MD_CTX_free(ctx);
+
+    /* However EVP_DigestFinalXOF must work */
+    if (!TEST_ptr(ctx = shake_setup("SHAKE256")))
+        return 0;
+    if (!TEST_true(EVP_DigestUpdate(ctx, shake256_input,
+                   sizeof(shake256_input))))
+        return 0;
+    if (!TEST_true(EVP_DigestFinalXOF(ctx, out, sizeof(out)))
+        || !TEST_mem_eq(out, sizeof(out),
+                        shake256_output, sizeof(shake256_output))
         || !TEST_false(EVP_DigestFinalXOF(ctx, out, sizeof(out))))
         goto err;
     ret = 1;
@@ -231,18 +246,24 @@ static int shake_kat_digestfinal_xoflen_test(void)
     int ret = 0;
     unsigned int digest_length = 0;
     EVP_MD_CTX *ctx = NULL;
+    const EVP_MD *md;
     unsigned char out[sizeof(shake256_output)];
     OSSL_PARAM params[2];
     size_t sz = 12;
 
     if (!TEST_ptr(ctx = shake_setup("SHAKE256")))
         return 0;
+    md = EVP_MD_CTX_get0_md(ctx);
 
     memset(out, 0, sizeof(out));
     params[0] = OSSL_PARAM_construct_size_t(OSSL_DIGEST_PARAM_XOFLEN, &sz);
     params[1] = OSSL_PARAM_construct_end();
 
-    if (!TEST_int_eq(EVP_MD_CTX_set_params(ctx, params), 1)
+    if (!TEST_int_eq(EVP_MD_CTX_size(ctx), -1)
+        || !TEST_int_eq(EVP_MD_CTX_set_params(ctx, params), 1)
+        || !TEST_int_eq(EVP_MD_CTX_size(ctx), sz)
+        || !TEST_int_eq(EVP_MD_get_size(md), 0)
+        || !TEST_true(EVP_MD_xof(md))
         || !TEST_true(EVP_DigestUpdate(ctx, shake256_input,
                                        sizeof(shake256_input)))
         || !TEST_true(EVP_DigestFinal(ctx, out, &digest_length))
@@ -479,6 +500,45 @@ err:
     return ret;
 }
 
+/* Test that a squeeze without a preceding absorb works */
+static int shake_squeeze_no_absorb_test(void)
+{
+    int ret = 0;
+    EVP_MD_CTX *ctx = NULL;
+    unsigned char out[1000];
+    unsigned char out2[1000];
+    const char *alg = "SHAKE128";
+
+    if (!TEST_ptr(ctx = shake_setup(alg))
+        || !TEST_true(EVP_DigestFinalXOF(ctx, out, sizeof(out))))
+        goto err;
+
+    if (!TEST_true(EVP_DigestInit_ex2(ctx, NULL, NULL))
+        || !TEST_true(EVP_DigestSqueeze(ctx, out2, sizeof(out2) / 2))
+        || !TEST_true(EVP_DigestSqueeze(ctx, out2 + sizeof(out2) / 2,
+                                        sizeof(out2) / 2)))
+        goto err;
+
+    if (!TEST_mem_eq(out2, sizeof(out2), out, sizeof(out)))
+        goto err;
+    ret = 1;
+
+err:
+    EVP_MD_CTX_free(ctx);
+    return ret;
+}
+
+static int xof_fail_test(void)
+{
+    int ret;
+    EVP_MD *md = NULL;
+
+    ret = TEST_ptr(md = EVP_MD_fetch(NULL, "SHA256", NULL))
+            && TEST_false(EVP_MD_xof(md));
+    EVP_MD_free(md);
+    return ret;
+}
+
 int setup_tests(void)
 {
     ADD_TEST(shake_kat_test);
@@ -488,5 +548,7 @@ int setup_tests(void)
     ADD_ALL_TESTS(shake_squeeze_kat_test, OSSL_NELEM(stride_tests));
     ADD_ALL_TESTS(shake_squeeze_large_test, OSSL_NELEM(stride_tests));
     ADD_ALL_TESTS(shake_squeeze_dup_test, OSSL_NELEM(dupoffset_tests));
+    ADD_TEST(xof_fail_test);
+    ADD_TEST(shake_squeeze_no_absorb_test);
     return 1;
 }
