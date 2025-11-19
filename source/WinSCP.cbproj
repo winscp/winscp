@@ -75,11 +75,11 @@
         <SanitizedProjectName>WinSCP</SanitizedProjectName>
         <UsingDelphiRTL>true</UsingDelphiRTL>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP, WebDAV, S3 and SCP client;FileVersion=6.5.5.0;InternalName=winscp;LegalCopyright=(c) 2000-2025 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=6.5.5.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP, WebDAV, S3 and SCP client;FileVersion=6.5.6.0;InternalName=winscp;LegalCopyright=(c) 2000-2025 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=6.5.6.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>6</VerInfo_MajorVer>
         <VerInfo_MinorVer>5</VerInfo_MinorVer>
-        <VerInfo_Release>5</VerInfo_Release>
+        <VerInfo_Release>6</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <BCC_AllCodeguardOptions>true</BCC_AllCodeguardOptions>
