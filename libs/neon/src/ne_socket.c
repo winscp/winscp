@@ -681,7 +681,7 @@ static int readable_ossl(ne_socket *sock, int secs)
 /* SSL error handling, according to SSL_get_error(3). */
 static int error_ossl(ne_socket *sock, int sret)
 {
-    int errnum = SSL_get_error(sock->ssl, sret);
+    int errnum = SSL_get_error(sock->ssl, sret), reason;
     unsigned long err;
 
     if (errnum == SSL_ERROR_ZERO_RETURN) {
@@ -696,11 +696,12 @@ static int error_ossl(ne_socket *sock, int sret)
     
     /* for all other errors, look at the OpenSSL error stack */
     err = ERR_get_error();
-    NE_DEBUG(NE_DBG_SSL, "ssl: Got OpenSSL error stack %lu\n", err);
+    reason = ERR_GET_REASON(err);
+    NE_DEBUG(NE_DBG_SSL, "ssl: Got OpenSSL error %lu (library=%d, reason=%d)\n",
+             err, ERR_GET_LIB(err), reason);
 
-    if (ERR_GET_LIB(err) == ERR_LIB_SSL) {
-	int reason = ERR_GET_REASON(err);
-
+    switch (ERR_GET_LIB(err)) {
+    case ERR_LIB_SSL:
 #ifdef SSL_R_UNEXPECTED_EOF_WHILE_READING
         /* OpenSSL 3 signals truncation this way. */
 	if (reason == SSL_R_UNEXPECTED_EOF_WHILE_READING) {
@@ -713,6 +714,10 @@ static int error_ossl(ne_socket *sock, int sret)
 	    set_error(sock, _("Secure connection reset"));
 	    return NE_SOCK_RESET;
 	}
+        break;
+    case ERR_LIB_SYS:
+        set_strerror(sock, reason);
+        return MAP_ERR(reason);
     }
 
     if (err == 0) {
