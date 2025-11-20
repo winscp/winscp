@@ -25,8 +25,7 @@ DEFINES=$(DEFINES);OPENSSL_BN_ASM_PART_WORDS;OPENSSL_BN_ASM_MONT;OPENSSL_BN_ASM_
 DEFINES=$(DEFINES);OPENSSL_NO_CAMELLIA;OPENSSL_NO_RC5;OPENSSL_NO_MDC2;OPENSSL_NO_WHIRLPOOL
 DEFINES=$(DEFINES);OPENSSL_NO_SEED;OPENSSL_NO_CAPIENG;OPENSSL_NO_ENGINE;OPENSSL_NO_ZLIB
 DEFINES=$(DEFINES);OPENSSL_NO_QUIC;OPENSSL_NO_BROTLI;OPENSSL_NO_COMP;OPENSSL_NO_COMP_ALG
-DEFINES=$(DEFINES);OPENSSL_NO_TFO
-DEFINES=$(DEFINES);OPENSSL_NO_QLOG
+DEFINES=$(DEFINES);OPENSSL_NO_TFO;OPENSSL_NO_QLOG;OPENSSL_NO_JITTER;OPENSSL_NO_FIPS_JITTER
 DEFINES=$(DEFINES);WINSCP
 
 CFLAG=$(CFLAG) -D$(DEFINES:;= -D)
@@ -71,7 +70,10 @@ O_CRYPTO=  $(OUT_D)\$(CRYPTO).lib
 # Don't touch anything below this point
 ######################################################
 
-INC=-Iinclude -Icommon\include -Iproviders\implementations\include -Iproviders\common\include -I.
+INC=-Iinclude -Icommon\include \
+    -Iproviders\implementations\include -Iproviders\common\include \
+    -Iproviders\fips\include \
+    -I.
 LIB_CFLAGS=$(CFLAG) $(INC)
 LIBS_DEP=$(O_CRYPTO) $(O_SSL)
 
@@ -84,7 +86,7 @@ SSLOBJ= \
     $(OBJ_D)\d1_srtp.obj $(OBJ_D)\d1_lib.obj $(OBJ_D)\d1_msg.obj \
     $(OBJ_D)\ssl_lib.obj $(OBJ_D)\ssl_cert.obj $(OBJ_D)\ssl_sess.obj $(OBJ_D)\ssl_ciph.obj \
     $(OBJ_D)\ssl_stat.obj $(OBJ_D)\ssl_rsa.obj $(OBJ_D)\ssl_asn1.obj $(OBJ_D)\ssl_txt.obj \
-    $(OBJ_D)\ssl_err.obj $(OBJ_D)\ssl_init.obj $(OBJ_D)\ssl_mcnf.obj \
+    $(OBJ_D)\ssl_init.obj $(OBJ_D)\ssl_mcnf.obj \
     $(OBJ_D)\bio_ssl.obj \
     $(OBJ_D)\pqueue.obj $(OBJ_D)\methods.obj \
     $(OBJ_D)\ssl_conf.obj \
@@ -103,7 +105,8 @@ SSLOBJ= \
     $(OBJ_D)\tls13_meth.obj \
     $(OBJ_D)\tls1_meth.obj \
     $(OBJ_D)\ssl3_meth.obj \
-    $(OBJ_D)\tls_multib.obj
+    $(OBJ_D)\tls_multib.obj \
+    $(OBJ_D)\quic_tls.obj
 
 CRYPTOOBJ= \
     $(OBJ_D)\cryptlib.obj $(OBJ_D)\ctype.obj $(OBJ_D)\init.obj $(OBJ_D)\mem.obj \
@@ -117,7 +120,8 @@ CRYPTOOBJ= \
     $(OBJ_D)\core_namemap.obj $(OBJ_D)\core_fetch.obj $(OBJ_D)\asn1_dsa.obj $(OBJ_D)\self_test_core.obj \
     $(OBJ_D)\passphrase.obj $(OBJ_D)\punycode.obj $(OBJ_D)\param_build.obj $(OBJ_D)\params_from_text.obj \
     $(OBJ_D)\trace.obj $(OBJ_D)\der_writer.obj $(OBJ_D)\sleep.obj $(OBJ_D)\deterministic_nonce.obj \
-    $(OBJ_D)\time.obj \
+    $(OBJ_D)\time.obj $(OBJ_D)\ssl_err.obj $(OBJ_D)\defaults.obj $(OBJ_D)\comp_methods.obj \
+    $(OBJ_D)\indicator_core.obj \
     $(OBJ_D)\md4_dgst.obj $(OBJ_D)\md4_one.obj \
     $(OBJ_D)\md5_dgst.obj $(OBJ_D)\md5_one.obj $(OBJ_D)\md5_sha1.obj \
     $(OBJ_D)\cbc128.obj $(OBJ_D)\cfb128.obj $(OBJ_D)\ofb128.obj $(OBJ_D)\ccm128.obj \
@@ -198,7 +202,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\exchange.obj $(OBJ_D)\kem.obj $(OBJ_D)\dh_ctrl.obj $(OBJ_D)\dsa_ctrl.obj \
     $(OBJ_D)\ec_ctrl.obj $(OBJ_D)\legacy_md4.obj $(OBJ_D)\legacy_md5_sha1.obj $(OBJ_D)\legacy_ripemd.obj \
     $(OBJ_D)\kdf_lib.obj $(OBJ_D)\dh_support.obj $(OBJ_D)\pmeth_check.obj $(OBJ_D)\legacy_blake2.obj \
-    $(OBJ_D)\mac_lib.obj $(OBJ_D)\mac_meth.obj \
+    $(OBJ_D)\mac_lib.obj $(OBJ_D)\mac_meth.obj $(OBJ_D)\s_lib.obj $(OBJ_D)\skeymgmt_meth.obj \
     $(OBJ_D)\a_object.obj $(OBJ_D)\a_bitstr.obj $(OBJ_D)\a_utctm.obj $(OBJ_D)\a_gentm.obj \
     $(OBJ_D)\a_time.obj $(OBJ_D)\a_int.obj $(OBJ_D)\a_octet.obj $(OBJ_D)\a_print.obj \
     $(OBJ_D)\a_type.obj $(OBJ_D)\a_dup.obj $(OBJ_D)\a_d2i_fp.obj $(OBJ_D)\a_i2d_fp.obj \
@@ -227,18 +231,21 @@ CRYPTOOBJ= \
     $(OBJ_D)\x_pubkey.obj $(OBJ_D)\x_req.obj $(OBJ_D)\x_attrib.obj $(OBJ_D)\x_name.obj \
     $(OBJ_D)\x_x509.obj $(OBJ_D)\x_x509a.obj $(OBJ_D)\x_crl.obj $(OBJ_D)\t_req.obj \
     $(OBJ_D)\t_x509.obj $(OBJ_D)\t_crl.obj $(OBJ_D)\x_exten.obj $(OBJ_D)\by_store.obj \
-    $(OBJ_D)\v3_bcons.obj $(OBJ_D)\v3_bitst.obj $(OBJ_D)\v3_conf.obj $(OBJ_D)\v3_extku.obj \
-    $(OBJ_D)\v3_ia5.obj $(OBJ_D)\v3_lib.obj $(OBJ_D)\v3_prn.obj $(OBJ_D)\v3_utl.obj \
-    $(OBJ_D)\v3err.obj $(OBJ_D)\v3_genn.obj $(OBJ_D)\v3_san.obj $(OBJ_D)\v3_skid.obj \
-    $(OBJ_D)\v3_akid.obj $(OBJ_D)\v3_pku.obj $(OBJ_D)\v3_int.obj $(OBJ_D)\v3_enum.obj \
-    $(OBJ_D)\v3_sxnet.obj $(OBJ_D)\v3_cpols.obj $(OBJ_D)\v3_crld.obj $(OBJ_D)\v3_purp.obj \
-    $(OBJ_D)\v3_info.obj $(OBJ_D)\v3_akeya.obj $(OBJ_D)\v3_pmaps.obj $(OBJ_D)\v3_pcons.obj \
-    $(OBJ_D)\v3_ncons.obj $(OBJ_D)\v3_pcia.obj $(OBJ_D)\v3_pci.obj $(OBJ_D)\pcy_cache.obj \
-    $(OBJ_D)\pcy_node.obj $(OBJ_D)\pcy_data.obj $(OBJ_D)\pcy_map.obj $(OBJ_D)\pcy_tree.obj \
-    $(OBJ_D)\pcy_lib.obj $(OBJ_D)\v3_asid.obj $(OBJ_D)\v3_addr.obj $(OBJ_D)\v3_tlsf.obj \
-    $(OBJ_D)\v3_admis.obj $(OBJ_D)\v3_utf8.obj $(OBJ_D)\v3_ist.obj $(OBJ_D)\v3_no_rev_avail.obj \
-    $(OBJ_D)\v3_soa_id.obj $(OBJ_D)\v3_ind_iss.obj $(OBJ_D)\v3_no_ass.obj $(OBJ_D)\v3_single_use.obj \
-    $(OBJ_D)\v3_group_ac.obj \
+    $(OBJ_D)\x509_acert.obj $(OBJ_D)\v3_audit_id.obj $(OBJ_D)\v3_bcons.obj $(OBJ_D)\v3_bitst.obj \
+    $(OBJ_D)\v3_conf.obj $(OBJ_D)\v3_extku.obj $(OBJ_D)\v3_ia5.obj $(OBJ_D)\v3_lib.obj \
+    $(OBJ_D)\v3_prn.obj $(OBJ_D)\v3_utl.obj $(OBJ_D)\v3err.obj $(OBJ_D)\v3_genn.obj \
+    $(OBJ_D)\v3_san.obj $(OBJ_D)\v3_skid.obj $(OBJ_D)\v3_akid.obj $(OBJ_D)\v3_pku.obj \
+    $(OBJ_D)\v3_int.obj $(OBJ_D)\v3_enum.obj $(OBJ_D)\v3_sxnet.obj $(OBJ_D)\v3_cpols.obj \
+    $(OBJ_D)\v3_crld.obj $(OBJ_D)\v3_purp.obj $(OBJ_D)\v3_info.obj $(OBJ_D)\v3_akeya.obj \
+    $(OBJ_D)\v3_pmaps.obj $(OBJ_D)\v3_pcons.obj $(OBJ_D)\v3_ncons.obj $(OBJ_D)\v3_pcia.obj \
+    $(OBJ_D)\v3_pci.obj $(OBJ_D)\v3_ac_tgt.obj $(OBJ_D)\pcy_cache.obj $(OBJ_D)\pcy_node.obj \
+    $(OBJ_D)\pcy_data.obj $(OBJ_D)\pcy_map.obj $(OBJ_D)\pcy_tree.obj $(OBJ_D)\pcy_lib.obj \
+    $(OBJ_D)\v3_asid.obj $(OBJ_D)\v3_addr.obj $(OBJ_D)\v3_tlsf.obj $(OBJ_D)\v3_admis.obj \
+    $(OBJ_D)\v3_utf8.obj $(OBJ_D)\v3_ist.obj $(OBJ_D)\v3_no_rev_avail.obj $(OBJ_D)\v3_soa_id.obj \
+    $(OBJ_D)\v3_ind_iss.obj $(OBJ_D)\v3_no_ass.obj $(OBJ_D)\v3_single_use.obj $(OBJ_D)\v3_group_ac.obj \
+    $(OBJ_D)\v3_aaa.obj $(OBJ_D)\v3_attrdesc.obj $(OBJ_D)\v3_attrmap.obj $(OBJ_D)\v3_authattid.obj \
+    $(OBJ_D)\v3_battcons.obj $(OBJ_D)\v3_iobo.obj $(OBJ_D)\v3_rolespec.obj $(OBJ_D)\v3_sda.obj \
+    $(OBJ_D)\v3_timespec.obj $(OBJ_D)\v3_usernotice.obj \
     $(OBJ_D)\conf_err.obj $(OBJ_D)\conf_lib.obj $(OBJ_D)\conf_api.obj $(OBJ_D)\conf_def.obj \
     $(OBJ_D)\conf_mod.obj $(OBJ_D)\conf_mall.obj $(OBJ_D)\conf_sap.obj $(OBJ_D)\conf_ssl.obj \
     $(OBJ_D)\pk7_asn1.obj $(OBJ_D)\pk7_lib.obj $(OBJ_D)\pkcs7err.obj $(OBJ_D)\pk7_doit.obj \
@@ -299,6 +306,13 @@ CRYPTOOBJ= \
     $(OBJ_D)\hpke_util.obj \
     $(OBJ_D)\internal.obj $(OBJ_D)\arch.obj \
     $(OBJ_D)\thread_win.obj \
+    $(OBJ_D)\hashtable.obj $(OBJ_D)\hashfunc.obj \
+    $(OBJ_D)\slh_dsa_key.obj $(OBJ_D)\slh_adrs.obj $(OBJ_D)\slh_dsa_hash_ctx.obj $(OBJ_D)\slh_hash.obj \
+    $(OBJ_D)\slh_params.obj $(OBJ_D)\slh_xmss.obj $(OBJ_D)\slh_dsa.obj $(OBJ_D)\slh_wots.obj \
+    $(OBJ_D)\slh_fors.obj $(OBJ_D)\slh_hypertree.obj \
+    $(OBJ_D)\ml_kem.obj \
+    $(OBJ_D)\ml_dsa_encoders.obj $(OBJ_D)\ml_dsa_key.obj $(OBJ_D)\ml_dsa_params.obj $(OBJ_D)\ml_dsa_key_compress.obj \
+    $(OBJ_D)\ml_dsa_matrix.obj $(OBJ_D)\ml_dsa_ntt.obj $(OBJ_D)\ml_dsa_sample.obj $(OBJ_D)\ml_dsa_sign.obj \
     $(OBJ_D)\prov_running.obj $(OBJ_D)\nullprov.obj $(OBJ_D)\baseprov.obj $(OBJ_D)\defltprov.obj \
     $(OBJ_D)\bio_prov.obj $(OBJ_D)\digest_to_nid.obj $(OBJ_D)\provider_err.obj $(OBJ_D)\provider_ctx.obj \
     $(OBJ_D)\provider_util.obj $(OBJ_D)\provider_seeding.obj $(OBJ_D)\securitycheck.obj $(OBJ_D)\securitycheck_default.obj \
@@ -307,11 +321,12 @@ CRYPTOOBJ= \
     $(OBJ_D)\der_ecx_key.obj $(OBJ_D)\der_rsa_key.obj $(OBJ_D)\der_rsa_sig.obj $(OBJ_D)\der_sm2_key.obj \
     $(OBJ_D)\der_sm2_sig.obj $(OBJ_D)\der_digests_gen.obj $(OBJ_D)\der_dsa_gen.obj $(OBJ_D)\der_ec_gen.obj \
     $(OBJ_D)\der_ecx_gen.obj $(OBJ_D)\der_rsa_gen.obj $(OBJ_D)\der_sm2_gen.obj $(OBJ_D)\der_wrap_gen.obj \
+    $(OBJ_D)\der_ml_dsa_key.obj $(OBJ_D)\der_slh_dsa_key.obj $(OBJ_D)\der_slh_dsa_gen.obj $(OBJ_D)\der_ml_dsa_gen.obj \
     $(OBJ_D)\blake2_prov.obj $(OBJ_D)\blake2b_prov.obj $(OBJ_D)\blake2s_prov.obj $(OBJ_D)\digestcommon.obj \
     $(OBJ_D)\sha2_prov.obj $(OBJ_D)\sha3_prov.obj $(OBJ_D)\sm3_prov.obj $(OBJ_D)\md5_prov.obj \
     $(OBJ_D)\ripemd_prov.obj $(OBJ_D)\md5_sha1_prov.obj $(OBJ_D)\null_prov.obj \
-    $(OBJ_D)\drbg.obj $(OBJ_D)\crngt.obj $(OBJ_D)\drbg_ctr.obj $(OBJ_D)\drbg_hash.obj \
-    $(OBJ_D)\drbg_hmac.obj $(OBJ_D)\seed_src.obj $(OBJ_D)\test_rng.obj \
+    $(OBJ_D)\drbg.obj $(OBJ_D)\drbg_ctr.obj $(OBJ_D)\drbg_hash.obj $(OBJ_D)\drbg_hmac.obj \
+    $(OBJ_D)\seed_src.obj $(OBJ_D)\test_rng.obj \
     $(OBJ_D)\ciphercommon_block.obj $(OBJ_D)\ciphercommon_hw.obj $(OBJ_D)\ciphercommon_gcm.obj $(OBJ_D)\ciphercommon_gcm_hw.obj \
     $(OBJ_D)\ciphercommon_ccm.obj $(OBJ_D)\ciphercommon_ccm_hw.obj $(OBJ_D)\cipher_null.obj $(OBJ_D)\cipher_aes.obj \
     $(OBJ_D)\ciphercommon.obj $(OBJ_D)\cipher_cts.obj $(OBJ_D)\cipher_aes_hw.obj $(OBJ_D)\cipher_aria.obj \
@@ -334,15 +349,19 @@ CRYPTOOBJ= \
     $(OBJ_D)\hmacdrbg_kdf.obj $(OBJ_D)\argon2.obj \
     $(OBJ_D)\dh_exch.obj $(OBJ_D)\ecdh_exch.obj $(OBJ_D)\ecx_exch.obj $(OBJ_D)\kdf_exch.obj \
     $(OBJ_D)\dsa_sig.obj $(OBJ_D)\ecdsa_sig.obj $(OBJ_D)\eddsa_sig.obj $(OBJ_D)\mac_legacy_sig.obj \
-    $(OBJ_D)\rsa_sig.obj $(OBJ_D)\sm2_sig.obj \
+    $(OBJ_D)\rsa_sig.obj $(OBJ_D)\sm2_sig.obj $(OBJ_D)\ml_dsa_sig.obj $(OBJ_D)\slh_dsa_sig.obj \
     $(OBJ_D)\rsa_enc.obj $(OBJ_D)\sm2_enc.obj \
     $(OBJ_D)\rsa_kem.obj $(OBJ_D)\ec_kem.obj $(OBJ_D)\kem_util.obj $(OBJ_D)\ecx_kem.obj \
+    $(OBJ_D)\mlx_kem.obj $(OBJ_D)\ml_kem_kem.obj \
     $(OBJ_D)\dh_kmgmt.obj $(OBJ_D)\dsa_kmgmt.obj $(OBJ_D)\ec_kmgmt.obj $(OBJ_D)\ecx_kmgmt.obj \
-    $(OBJ_D)\kdf_legacy_kmgmt.obj $(OBJ_D)\mac_legacy_kmgmt.obj $(OBJ_D)\rsa_kmgmt.obj \
+    $(OBJ_D)\kdf_legacy_kmgmt.obj $(OBJ_D)\mac_legacy_kmgmt.obj $(OBJ_D)\rsa_kmgmt.obj $(OBJ_D)\mlx_kmgmt.obj \
+    $(OBJ_D)\ml_dsa_kmgmt.obj $(OBJ_D)\ml_kem_kmgmt.obj $(OBJ_D)\slh_dsa_kmgmt.obj \
     $(OBJ_D)\decode_der2key.obj $(OBJ_D)\decode_epki2pki.obj $(OBJ_D)\decode_msblob2key.obj $(OBJ_D)\decode_pem2der.obj \
     $(OBJ_D)\decode_pvk2key.obj $(OBJ_D)\decode_spki2typespki.obj $(OBJ_D)\encode_key2any.obj $(OBJ_D)\encode_key2blob.obj \
-    $(OBJ_D)\encode_key2ms.obj $(OBJ_D)\encode_key2text.obj $(OBJ_D)\endecoder_common.obj \
-    $(OBJ_D)\file_store.obj $(OBJ_D)\file_store_any2obj.obj $(OBJ_D)\winstore_store.obj
+    $(OBJ_D)\encode_key2ms.obj $(OBJ_D)\encode_key2text.obj $(OBJ_D)\endecoder_common.obj $(OBJ_D)\ml_dsa_codecs.obj \
+    $(OBJ_D)\ml_kem_codecs.obj $(OBJ_D)\ml_common_codecs.obj \
+    $(OBJ_D)\file_store.obj $(OBJ_D)\file_store_any2obj.obj $(OBJ_D)\winstore_store.obj \
+    $(OBJ_D)\aes_skmgmt.obj $(OBJ_D)\generic.obj
 
 CRYPTOOBJASM= \
     $(OBJ_D)\des_586.obj \
@@ -384,7 +403,6 @@ SSLSRC= \
     $(SRC_D)\ssl\ssl_rsa.c \
     $(SRC_D)\ssl\ssl_asn1.c \
     $(SRC_D)\ssl\ssl_txt.c \
-    $(SRC_D)\ssl\ssl_err.c \
     $(SRC_D)\ssl\ssl_init.c \
     $(SRC_D)\ssl\ssl_mcnf.c \
     $(SRC_D)\ssl\bio_ssl.c \
@@ -412,7 +430,8 @@ SSLSRC= \
     $(SRC_D)\ssl\record\methods\tls13_meth.c \
     $(SRC_D)\ssl\record\methods\tls1_meth.c \
     $(SRC_D)\ssl\record\methods\ssl3_meth.c \
-    $(SRC_D)\ssl\record\methods\tls_multib.c
+    $(SRC_D)\ssl\record\methods\tls_multib.c \
+    $(SRC_D)\ssl\quic\quic_tls.c
 
 CRYPTOSRC= \
     $(SRC_D)\crypto\cryptlib.c \
@@ -460,6 +479,10 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\sleep.c \
     $(SRC_D)\crypto\deterministic_nonce.c \
     $(SRC_D)\crypto\time.c \
+    $(SRC_D)\crypto\ssl_err.c \
+    $(SRC_D)\crypto\defaults.c \
+    $(SRC_D)\crypto\comp_methods.c \
+    $(SRC_D)\crypto\indicator_core.c \
     $(SRC_D)\crypto\md4\md4_dgst.c \
     $(SRC_D)\crypto\md4\md4_one.c \
     $(SRC_D)\crypto\md5\md5_dgst.c \
@@ -738,6 +761,8 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\evp\legacy_blake2.c \
     $(SRC_D)\crypto\evp\mac_lib.c \
     $(SRC_D)\crypto\evp\mac_meth.c \
+    $(SRC_D)\crypto\evp\s_lib.c \
+    $(SRC_D)\crypto\evp\skeymgmt_meth.c \
     $(SRC_D)\crypto\asn1\a_object.c \
     $(SRC_D)\crypto\asn1\a_bitstr.c \
     $(SRC_D)\crypto\asn1\a_utctm.c \
@@ -846,6 +871,8 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\x509\t_crl.c \
     $(SRC_D)\crypto\x509\x_exten.c \
     $(SRC_D)\crypto\x509\by_store.c \
+    $(SRC_D)\crypto\x509\x509_acert.c \
+    $(SRC_D)\crypto\x509\v3_audit_id.c \
     $(SRC_D)\crypto\x509\v3_bcons.c \
     $(SRC_D)\crypto\x509\v3_bitst.c \
     $(SRC_D)\crypto\x509\v3_conf.c \
@@ -873,6 +900,7 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\x509\v3_ncons.c \
     $(SRC_D)\crypto\x509\v3_pcia.c \
     $(SRC_D)\crypto\x509\v3_pci.c \
+    $(SRC_D)\crypto\x509\v3_ac_tgt.c \
     $(SRC_D)\crypto\x509\pcy_cache.c \
     $(SRC_D)\crypto\x509\pcy_node.c \
     $(SRC_D)\crypto\x509\pcy_data.c \
@@ -891,6 +919,16 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\x509\v3_no_ass.c \
     $(SRC_D)\crypto\x509\v3_single_use.c \
     $(SRC_D)\crypto\x509\v3_group_ac.c \
+    $(SRC_D)\crypto\x509\v3_aaa.c \
+    $(SRC_D)\crypto\x509\v3_attrdesc.c \
+    $(SRC_D)\crypto\x509\v3_attrmap.c \
+    $(SRC_D)\crypto\x509\v3_authattid.c \
+    $(SRC_D)\crypto\x509\v3_battcons.c \
+    $(SRC_D)\crypto\x509\v3_iobo.c \
+    $(SRC_D)\crypto\x509\v3_rolespec.c \
+    $(SRC_D)\crypto\x509\v3_sda.c \
+    $(SRC_D)\crypto\x509\v3_timespec.c \
+    $(SRC_D)\crypto\x509\v3_usernotice.c \
     $(SRC_D)\crypto\conf\conf_err.c \
     $(SRC_D)\crypto\conf\conf_lib.c \
     $(SRC_D)\crypto\conf\conf_api.c \
@@ -1052,6 +1090,27 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\thread\internal.c \
     $(SRC_D)\crypto\thread\arch.c \
     $(SRC_D)\crypto\thread\arch\thread_win.c \
+    $(SRC_D)\crypto\hashtable\hashtable.c \
+    $(SRC_D)\crypto\hashtable\hashfunc.c \
+    $(SRC_D)\crypto\slh_dsa\slh_dsa_key.c \
+    $(SRC_D)\crypto\slh_dsa\slh_adrs.c \
+    $(SRC_D)\crypto\slh_dsa\slh_dsa_hash_ctx.c \
+    $(SRC_D)\crypto\slh_dsa\slh_hash.c \
+    $(SRC_D)\crypto\slh_dsa\slh_params.c \
+    $(SRC_D)\crypto\slh_dsa\slh_xmss.c \
+    $(SRC_D)\crypto\slh_dsa\slh_dsa.c \
+    $(SRC_D)\crypto\slh_dsa\slh_wots.c \
+    $(SRC_D)\crypto\slh_dsa\slh_fors.c \
+    $(SRC_D)\crypto\slh_dsa\slh_hypertree.c \
+    $(SRC_D)\crypto\ml_kem\ml_kem.c \
+    $(SRC_D)\crypto\ml_dsa\ml_dsa_encoders.c \
+    $(SRC_D)\crypto\ml_dsa\ml_dsa_key.c \
+    $(SRC_D)\crypto\ml_dsa\ml_dsa_params.c \
+    $(SRC_D)\crypto\ml_dsa\ml_dsa_key_compress.c \
+    $(SRC_D)\crypto\ml_dsa\ml_dsa_matrix.c \
+    $(SRC_D)\crypto\ml_dsa\ml_dsa_ntt.c \
+    $(SRC_D)\crypto\ml_dsa\ml_dsa_sample.c \
+    $(SRC_D)\crypto\ml_dsa\ml_dsa_sign.c \
     $(SRC_D)\providers\prov_running.c \
     $(SRC_D)\providers\nullprov.c \
     $(SRC_D)\providers\baseprov.c \
@@ -1081,6 +1140,10 @@ CRYPTOSRC= \
     $(SRC_D)\providers\common\der\der_rsa_gen.c \
     $(SRC_D)\providers\common\der\der_sm2_gen.c \
     $(SRC_D)\providers\common\der\der_wrap_gen.c \
+    $(SRC_D)\providers\common\der\der_ml_dsa_key.c \
+    $(SRC_D)\providers\common\der\der_slh_dsa_key.c \
+    $(SRC_D)\providers\common\der\der_slh_dsa_gen.c \
+    $(SRC_D)\providers\common\der\der_ml_dsa_gen.c \
     $(SRC_D)\providers\implementations\digests\blake2_prov.c \
     $(SRC_D)\providers\implementations\digests\blake2b_prov.c \
     $(SRC_D)\providers\implementations\digests\blake2s_prov.c \
@@ -1093,7 +1156,6 @@ CRYPTOSRC= \
     $(SRC_D)\providers\implementations\digests\md5_sha1_prov.c \
     $(SRC_D)\providers\implementations\digests\null_prov.c \
     $(SRC_D)\providers\implementations\rands\drbg.c \
-    $(SRC_D)\providers\implementations\rands\crngt.c \
     $(SRC_D)\providers\implementations\rands\drbg_ctr.c \
     $(SRC_D)\providers\implementations\rands\drbg_hash.c \
     $(SRC_D)\providers\implementations\rands\drbg_hmac.c \
@@ -1185,12 +1247,16 @@ CRYPTOSRC= \
     $(SRC_D)\providers\implementations\signature\mac_legacy_sig.c \
     $(SRC_D)\providers\implementations\signature\rsa_sig.c \
     $(SRC_D)\providers\implementations\signature\sm2_sig.c \
+    $(SRC_D)\providers\implementations\signature\ml_dsa_sig.c \
+    $(SRC_D)\providers\implementations\signature\slh_dsa_sig.c \
     $(SRC_D)\providers\implementations\asymciphers\rsa_enc.c \
     $(SRC_D)\providers\implementations\asymciphers\sm2_enc.c \
     $(SRC_D)\providers\implementations\kem\rsa_kem.c \
     $(SRC_D)\providers\implementations\kem\ec_kem.c \
     $(SRC_D)\providers\implementations\kem\kem_util.c \
     $(SRC_D)\providers\implementations\kem\ecx_kem.c \
+    $(SRC_D)\providers\implementations\kem\mlx_kem.c \
+    $(SRC_D)\providers\implementations\kem\ml_kem_kem.c \
     $(SRC_D)\providers\implementations\keymgmt\dh_kmgmt.c \
     $(SRC_D)\providers\implementations\keymgmt\dsa_kmgmt.c \
     $(SRC_D)\providers\implementations\keymgmt\ec_kmgmt.c \
@@ -1198,6 +1264,10 @@ CRYPTOSRC= \
     $(SRC_D)\providers\implementations\keymgmt\kdf_legacy_kmgmt.c \
     $(SRC_D)\providers\implementations\keymgmt\mac_legacy_kmgmt.c \
     $(SRC_D)\providers\implementations\keymgmt\rsa_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\mlx_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\ml_dsa_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\ml_kem_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\slh_dsa_kmgmt.c \
     $(SRC_D)\providers\implementations\encode_decode\decode_der2key.c \
     $(SRC_D)\providers\implementations\encode_decode\decode_epki2pki.c \
     $(SRC_D)\providers\implementations\encode_decode\decode_msblob2key.c \
@@ -1209,9 +1279,14 @@ CRYPTOSRC= \
     $(SRC_D)\providers\implementations\encode_decode\encode_key2ms.c \
     $(SRC_D)\providers\implementations\encode_decode\encode_key2text.c \
     $(SRC_D)\providers\implementations\encode_decode\endecoder_common.c \
+    $(SRC_D)\providers\implementations\encode_decode\ml_dsa_codecs.c \
+    $(SRC_D)\providers\implementations\encode_decode\ml_kem_codecs.c \
+    $(SRC_D)\providers\implementations\encode_decode\ml_common_codecs.c \
     $(SRC_D)\providers\implementations\storemgmt\file_store.c \
     $(SRC_D)\providers\implementations\storemgmt\file_store_any2obj.c \
-    $(SRC_D)\providers\implementations\storemgmt\winstore_store.c
+    $(SRC_D)\providers\implementations\storemgmt\winstore_store.c \
+    $(SRC_D)\providers\implementations\skeymgmt\aes_skmgmt.c \
+    $(SRC_D)\providers\implementations\skeymgmt\generic.c
 
 $(OBJ_D)\des_586.obj: $(SRC_D)\crypto\des\asm\des_586.asm
     $(ASM) -o$(OBJ_D)\des_586.obj $(SRC_D)\crypto\des\asm\des_586.asm

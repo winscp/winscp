@@ -275,6 +275,46 @@ SKM_DEFINE_STACK_OF_INTERNAL(OSSL_CMP_ITAV, OSSL_CMP_ITAV, OSSL_CMP_ITAV)
 #define sk_OSSL_CMP_ITAV_deep_copy(sk, copyfunc, freefunc) ((STACK_OF(OSSL_CMP_ITAV) *)OPENSSL_sk_deep_copy(ossl_check_const_OSSL_CMP_ITAV_sk_type(sk), ossl_check_OSSL_CMP_ITAV_copyfunc_type(copyfunc), ossl_check_OSSL_CMP_ITAV_freefunc_type(freefunc)))
 #define sk_OSSL_CMP_ITAV_set_cmp_func(sk, cmp) ((sk_OSSL_CMP_ITAV_compfunc)OPENSSL_sk_set_cmp_func(ossl_check_OSSL_CMP_ITAV_sk_type(sk), ossl_check_OSSL_CMP_ITAV_compfunc_type(cmp)))
 
+
+typedef struct ossl_cmp_crlstatus_st OSSL_CMP_CRLSTATUS;
+SKM_DEFINE_STACK_OF_INTERNAL(OSSL_CMP_CRLSTATUS, OSSL_CMP_CRLSTATUS, OSSL_CMP_CRLSTATUS)
+#define sk_OSSL_CMP_CRLSTATUS_num(sk) OPENSSL_sk_num(ossl_check_const_OSSL_CMP_CRLSTATUS_sk_type(sk))
+#define sk_OSSL_CMP_CRLSTATUS_value(sk, idx) ((OSSL_CMP_CRLSTATUS *)OPENSSL_sk_value(ossl_check_const_OSSL_CMP_CRLSTATUS_sk_type(sk), (idx)))
+#define sk_OSSL_CMP_CRLSTATUS_new(cmp) ((STACK_OF(OSSL_CMP_CRLSTATUS) *)OPENSSL_sk_new(ossl_check_OSSL_CMP_CRLSTATUS_compfunc_type(cmp)))
+#define sk_OSSL_CMP_CRLSTATUS_new_null() ((STACK_OF(OSSL_CMP_CRLSTATUS) *)OPENSSL_sk_new_null())
+#define sk_OSSL_CMP_CRLSTATUS_new_reserve(cmp, n) ((STACK_OF(OSSL_CMP_CRLSTATUS) *)OPENSSL_sk_new_reserve(ossl_check_OSSL_CMP_CRLSTATUS_compfunc_type(cmp), (n)))
+#define sk_OSSL_CMP_CRLSTATUS_reserve(sk, n) OPENSSL_sk_reserve(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), (n))
+#define sk_OSSL_CMP_CRLSTATUS_free(sk) OPENSSL_sk_free(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk))
+#define sk_OSSL_CMP_CRLSTATUS_zero(sk) OPENSSL_sk_zero(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk))
+#define sk_OSSL_CMP_CRLSTATUS_delete(sk, i) ((OSSL_CMP_CRLSTATUS *)OPENSSL_sk_delete(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), (i)))
+#define sk_OSSL_CMP_CRLSTATUS_delete_ptr(sk, ptr) ((OSSL_CMP_CRLSTATUS *)OPENSSL_sk_delete_ptr(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_type(ptr)))
+#define sk_OSSL_CMP_CRLSTATUS_push(sk, ptr) OPENSSL_sk_push(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_type(ptr))
+#define sk_OSSL_CMP_CRLSTATUS_unshift(sk, ptr) OPENSSL_sk_unshift(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_type(ptr))
+#define sk_OSSL_CMP_CRLSTATUS_pop(sk) ((OSSL_CMP_CRLSTATUS *)OPENSSL_sk_pop(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk)))
+#define sk_OSSL_CMP_CRLSTATUS_shift(sk) ((OSSL_CMP_CRLSTATUS *)OPENSSL_sk_shift(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk)))
+#define sk_OSSL_CMP_CRLSTATUS_pop_free(sk, freefunc) OPENSSL_sk_pop_free(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk),ossl_check_OSSL_CMP_CRLSTATUS_freefunc_type(freefunc))
+#define sk_OSSL_CMP_CRLSTATUS_insert(sk, ptr, idx) OPENSSL_sk_insert(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_type(ptr), (idx))
+#define sk_OSSL_CMP_CRLSTATUS_set(sk, idx, ptr) ((OSSL_CMP_CRLSTATUS *)OPENSSL_sk_set(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), (idx), ossl_check_OSSL_CMP_CRLSTATUS_type(ptr)))
+#define sk_OSSL_CMP_CRLSTATUS_find(sk, ptr) OPENSSL_sk_find(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_type(ptr))
+#define sk_OSSL_CMP_CRLSTATUS_find_ex(sk, ptr) OPENSSL_sk_find_ex(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_type(ptr))
+#define sk_OSSL_CMP_CRLSTATUS_find_all(sk, ptr, pnum) OPENSSL_sk_find_all(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_type(ptr), pnum)
+#define sk_OSSL_CMP_CRLSTATUS_sort(sk) OPENSSL_sk_sort(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk))
+#define sk_OSSL_CMP_CRLSTATUS_is_sorted(sk) OPENSSL_sk_is_sorted(ossl_check_const_OSSL_CMP_CRLSTATUS_sk_type(sk))
+#define sk_OSSL_CMP_CRLSTATUS_dup(sk) ((STACK_OF(OSSL_CMP_CRLSTATUS) *)OPENSSL_sk_dup(ossl_check_const_OSSL_CMP_CRLSTATUS_sk_type(sk)))
+#define sk_OSSL_CMP_CRLSTATUS_deep_copy(sk, copyfunc, freefunc) ((STACK_OF(OSSL_CMP_CRLSTATUS) *)OPENSSL_sk_deep_copy(ossl_check_const_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_copyfunc_type(copyfunc), ossl_check_OSSL_CMP_CRLSTATUS_freefunc_type(freefunc)))
+#define sk_OSSL_CMP_CRLSTATUS_set_cmp_func(sk, cmp) ((sk_OSSL_CMP_CRLSTATUS_compfunc)OPENSSL_sk_set_cmp_func(ossl_check_OSSL_CMP_CRLSTATUS_sk_type(sk), ossl_check_OSSL_CMP_CRLSTATUS_compfunc_type(cmp)))
+
+
+typedef OSSL_CRMF_ATTRIBUTETYPEANDVALUE OSSL_CMP_ATAV;
+#  define OSSL_CMP_ATAV_free OSSL_CRMF_ATTRIBUTETYPEANDVALUE_free
+typedef STACK_OF(OSSL_CRMF_ATTRIBUTETYPEANDVALUE) OSSL_CMP_ATAVS;
+DECLARE_ASN1_FUNCTIONS(OSSL_CMP_ATAVS)
+#  define stack_st_OSSL_CMP_ATAV stack_st_OSSL_CRMF_ATTRIBUTETYPEANDVALUE
+#  define sk_OSSL_CMP_ATAV_num sk_OSSL_CRMF_ATTRIBUTETYPEANDVALUE_num
+#  define sk_OSSL_CMP_ATAV_value sk_OSSL_CRMF_ATTRIBUTETYPEANDVALUE_value
+#  define sk_OSSL_CMP_ATAV_push sk_OSSL_CRMF_ATTRIBUTETYPEANDVALUE_push
+#  define sk_OSSL_CMP_ATAV_pop_free sk_OSSL_CRMF_ATTRIBUTETYPEANDVALUE_pop_free
+
 typedef struct ossl_cmp_revrepcontent_st OSSL_CMP_REVREPCONTENT;
 typedef struct ossl_cmp_pkisi_st OSSL_CMP_PKISI;
 DECLARE_ASN1_FUNCTIONS(OSSL_CMP_PKISI)
