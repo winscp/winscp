@@ -2225,7 +2225,6 @@ int ne_sock_shutdown(ne_socket *sock, unsigned int flags)
     }
 #endif
 
-    { // WINSCP
 #ifdef _WIN32
     int how = flags == NE_SOCK_RECV ? SD_RECEIVE : (flags == NE_SOCK_SEND ? SD_SEND : SD_BOTH);
 #else
@@ -2239,7 +2238,6 @@ int ne_sock_shutdown(ne_socket *sock, unsigned int flags)
     }
 
     return ret;
-    } // WINSCP
 }
 
 int ne_sock_close(ne_socket *sock)
