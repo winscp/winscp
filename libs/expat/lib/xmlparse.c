@@ -816,7 +816,6 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
   assert(rootParser != NULL);
   assert(increase > 0);
 
-  { // WINSCP
   XmlBigCount newTotal = 0;
   bool tolerable = true;
 
@@ -829,14 +828,12 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
     if (newTotal >= rootParser->m_alloc_tracker.activationThresholdBytes) {
       assert(newTotal > 0);
       // NOTE: This can be +infinity when dividing by zero but not -nan
-      { // WINSCP
       const float amplification
           = (float)newTotal / (float)rootParser->m_accounting.countBytesDirect;
       if (amplification
           > rootParser->m_alloc_tracker.maximumAmplificationFactor) {
         tolerable = false;
       }
-      } // WINSCP
     }
   }
 
@@ -845,7 +842,6 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
   }
 
   return tolerable;
-  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -859,11 +855,9 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
     return NULL;
   }
 
-  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
-  { // WINSCP
   const size_t bytesToAllocate = sizeof(size_t) + EXPAT_MALLOC_PADDING + size;
 
   if ((XmlBigCount)-1 - rootParser->m_alloc_tracker.bytesAllocated
@@ -876,7 +870,6 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
     return NULL; // i.e. signal violation as out-of-memory
   }
 
-  { // WINSCP
   // Actually allocate
   void *const mallocedPtr = parser->m_mem.malloc_fcn(bytesToAllocate);
 
@@ -903,9 +896,6 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
   }
 
   return (char *)mallocedPtr + sizeof(size_t) + EXPAT_MALLOC_PADDING;
-  } // WINSCP
-  } // WINSCP
-  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -920,11 +910,9 @@ expat_free(XML_Parser parser, void *ptr, int sourceLine) {
     return;
   }
 
-  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
-  { // WINSCP
   // Extract size (to the eyes of malloc_fcn/realloc_fcn) and
   // the original pointer returned by malloc/realloc
   void *const mallocedPtr = (char *)ptr - EXPAT_MALLOC_PADDING - sizeof(size_t);
@@ -944,8 +932,6 @@ expat_free(XML_Parser parser, void *ptr, int sourceLine) {
 
   // NOTE: This may be freeing rootParser, so freeing has to come last
   parser->m_mem.free_fcn(mallocedPtr);
-  } // WINSCP
-  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -965,11 +951,9 @@ expat_realloc(XML_Parser parser, void *ptr, size_t size, int sourceLine) {
     return NULL;
   }
 
-  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
-  { // WINSCP
   // Extract original size (to the eyes of the caller) and the original
   // pointer returned by malloc/realloc
   void *mallocedPtr = (char *)ptr - EXPAT_MALLOC_PADDING - sizeof(size_t);
@@ -1025,8 +1009,6 @@ expat_realloc(XML_Parser parser, void *ptr, size_t size, int sourceLine) {
   *(size_t *)mallocedPtr = size;
 
   return (char *)mallocedPtr + sizeof(size_t) + EXPAT_MALLOC_PADDING;
-  } // WINSCP
-  } // WINSCP
 }
 #endif // XML_GE == 1
 
@@ -1037,10 +1019,7 @@ XML_ParserCreate(const XML_Char *encodingName) {
 
 XML_Parser XMLCALL
 XML_ParserCreateNS(const XML_Char *encodingName, XML_Char nsSep) {
-  // WINSCP
-  XML_Char tmp[2];
-  tmp[0] = nsSep;
-  tmp[1] = 0;
+  XML_Char tmp[2] = {nsSep, 0};
   return XML_ParserCreate_MM(encodingName, NULL, tmp);
 }
 
@@ -1295,7 +1274,6 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
     available_buffer
         += EXPAT_SAFE_PTR_DIFF(parser->m_bufferLim, parser->m_bufferEnd);
     // m_lastBufferRequestSize is never assigned a value < 0, so the cast is ok
-    { // WINSCP
     const bool enough
         = (have_now >= 2 * had_before)
           || ((size_t)parser->m_lastBufferRequestSize > available_buffer);
@@ -1304,12 +1282,10 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
       *endPtr = start; // callers may expect this to be set
       return XML_ERROR_NONE;
     }
-    } // WINSCP
   }
 #if defined(XML_TESTING)
   g_bytesScanned += (unsigned)have_now;
 #endif
-  { // WINSCP
   // Run in a loop to eliminate dangerous recursion depths
   enum XML_Error ret;
   *endPtr = start;
@@ -1342,7 +1318,6 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
     }
   }
   return ret;
-  } // WINSCP
 }
 
 static XML_Bool /* only valid for root parser */
@@ -1447,7 +1422,6 @@ parserCreate(const XML_Char *encodingName,
     parser->m_parentParser = parentParser;
   }
 
-  { // WINSCP
   // Record XML_ParserStruct allocation we did a few lines up before
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
@@ -1561,7 +1535,6 @@ parserCreate(const XML_Char *encodingName,
   }
 
   return parser;
-  } // WINSCP
 }
 
 static void
@@ -1864,10 +1837,7 @@ XML_ExternalEntityParserCreate(XML_Parser oldParser, const XML_Char *context,
      would be otherwise.
   */
   if (parser->m_ns) {
-    // WINSCP
-    XML_Char tmp[2];
-    tmp[0] = parser->m_namespaceSeparator;
-    tmp[1] = 0;
+    XML_Char tmp[2] = {parser->m_namespaceSeparator, 0};
     parser = parserCreate(encodingName, &parser->m_mem, tmp, newDtd, oldParser);
   } else {
     parser
@@ -2356,7 +2326,6 @@ XML_SetHashSalt(XML_Parser parser, unsigned long hash_salt) {
   if (parser == NULL)
     return 0;
 
-  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(! rootParser->m_parentParser);
 
@@ -2365,7 +2334,6 @@ XML_SetHashSalt(XML_Parser parser, unsigned long hash_salt) {
     return 0;
   rootParser->m_hash_secret_salt = hash_salt;
   return 1;
-  } // WINSCP
 }
 
 enum XML_Status XMLCALL
@@ -2469,7 +2437,6 @@ XML_Parse(XML_Parser parser, const char *s, int len, int isFinal) {
     return result;
   }
 #endif /* XML_CONTEXT_BYTES == 0 */
-  { // WINSCP
   void *buff = XML_GetBuffer(parser, len);
   if (buff == NULL)
     return XML_STATUS_ERROR;
@@ -2478,7 +2445,6 @@ XML_Parse(XML_Parser parser, const char *s, int len, int isFinal) {
     memcpy(buff, s, len);
   }
   return XML_ParseBuffer(parser, len, isFinal);
-  } // WINSCP
 }
 
 enum XML_Status XMLCALL
@@ -4085,7 +4051,6 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
       return XML_ERROR_NO_MEMORY;
     }
 
-    { // WINSCP
     unsigned int nsAttsSize = 1u << parser->m_nsAttsPower;
     unsigned char oldNsAttsPower = parser->m_nsAttsPower;
     /* size of hash table must be at least 2 * (# of prefixed attributes) */
@@ -4241,7 +4206,6 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
       } else                     /* not prefixed */
         ((XML_Char *)s)[-1] = 0; /* clear flag */
     }
-    } // WINSCP
   }
   /* clear flags for the remaining attributes */
   for (; i < attIndex; i += 2)
@@ -4547,14 +4511,12 @@ addBinding(XML_Parser parser, PREFIX *prefix, const ATTRIBUTE_ID *attId,
       }
 #endif
 
-      { // WINSCP
       XML_Char *temp
           = REALLOC(parser, b->uri, sizeof(XML_Char) * (len + EXPAND_SPARE));
       if (temp == NULL)
         return XML_ERROR_NO_MEMORY;
       b->uri = temp;
       b->uriAlloc = len + EXPAND_SPARE;
-      } // WINSCP
     }
     parser->m_freeBindingList = b->nextTagBinding;
   } else {
@@ -5261,7 +5223,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
   UNUSED_P(account);
 #endif
 
-  { // WINSCP
   /* save one level of indirection */
   DTD *const dtd = parser->m_dtd;
 
@@ -5948,7 +5909,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
               return XML_ERROR_NO_MEMORY;
             }
 
-            { // WINSCP
             char *const new_connector = REALLOC(
                 parser, parser->m_groupConnector, parser->m_groupSize *= 2);
             if (new_connector == NULL) {
@@ -5956,7 +5916,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
               return XML_ERROR_NO_MEMORY;
             }
             parser->m_groupConnector = new_connector;
-            } // WINSCP
           }
 
           if (dtd->scaffIndex) {
@@ -5970,13 +5929,11 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
             }
 #endif
 
-            { // WINSCP
             int *const new_scaff_index = REALLOC(
                 parser, dtd->scaffIndex, parser->m_groupSize * sizeof(int));
             if (new_scaff_index == NULL)
               return XML_ERROR_NO_MEMORY;
             dtd->scaffIndex = new_scaff_index;
-            } // WINSCP
           }
         } else {
           parser->m_groupConnector = MALLOC(parser, parser->m_groupSize = 32);
@@ -6302,7 +6259,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
       tok = XmlPrologTok(enc, s, end, &next);
     }
   }
-  } // WINSCP
   /* not reached */
 }
 
@@ -6451,7 +6407,6 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
   UNUSED_P(s);
   UNUSED_P(end);
   UNUSED_P(nextPtr);
-  { // WINSCP
   ENTITY *entity;
   const char *textStart, *textEnd;
   const char *next;
@@ -6526,7 +6481,6 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
   }
   triggerReenter(parser);
   return XML_ERROR_NONE;
-  } // WINSCP
 }
 
 static enum XML_Error PTRCALL
@@ -6554,7 +6508,6 @@ storeAttributeValue(XML_Parser parser, const ENCODING *enc, XML_Bool isCdata,
       if (! openEntity)
         return XML_ERROR_UNEXPECTED_STATE;
 
-      { // WINSCP
       ENTITY *const entity = openEntity->entity;
       const char *const textStart
           = ((const char *)entity->textPtr) + entity->processed;
@@ -6599,7 +6552,6 @@ storeAttributeValue(XML_Parser parser, const ENCODING *enc, XML_Bool isCdata,
       /* put openEntity back in list of free instances */
       openEntity->next = parser->m_freeAttributeEntities;
       parser->m_freeAttributeEntities = openEntity;
-      } // WINSCP
     }
 
     // Break if an error occurred or there is nothing left to process
@@ -6832,12 +6784,10 @@ storeEntityValue(XML_Parser parser, const ENCODING *enc,
       return XML_ERROR_NO_MEMORY;
   }
 
-  { // WINSCP
   const char *next;
   for (;;) {
     next
         = entityTextPtr; /* XmlEntityValueTok doesn't always set the last arg */
-    { // WINSCP
     int tok = XmlEntityValueTok(enc, entityTextPtr, entityTextEnd, &next);
 
     if (! accountingDiffTolerated(parser, tok, entityTextPtr, next, __LINE__,
@@ -6982,7 +6932,6 @@ storeEntityValue(XML_Parser parser, const ENCODING *enc,
       /* LCOV_EXCL_STOP */
     }
     entityTextPtr = next;
-    } // WINSCP
   }
 endEntityValue:
 #  ifdef XML_DTD
@@ -6993,7 +6942,6 @@ endEntityValue:
     *nextPtr = next;
   }
   return result;
-  } // WINSCP
 }
 
 static enum XML_Error
@@ -7011,7 +6959,6 @@ callStoreEntityValue(XML_Parser parser, const ENCODING *enc,
       if (! openEntity)
         return XML_ERROR_UNEXPECTED_STATE;
 
-      { // WINSCP
       ENTITY *const entity = openEntity->entity;
       const char *const textStart
           = ((const char *)entity->textPtr) + entity->processed;
@@ -7056,7 +7003,6 @@ callStoreEntityValue(XML_Parser parser, const ENCODING *enc,
       /* put openEntity back in list of free instances */
       openEntity->next = parser->m_freeValueEntities;
       parser->m_freeValueEntities = openEntity;
-      } // WINSCP
     }
 
     // Break if an error occurred or there is nothing left to process
@@ -7241,7 +7187,6 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
         return 0;
       }
 
-      { // WINSCP
       int count = type->allocDefaultAtts * 2;
 
       /* Detect and prevent integer overflow.
@@ -7260,7 +7205,6 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
         return 0;
       type->allocDefaultAtts = count;
       type->defaultAtts = temp;
-      } // WINSCP
     }
   }
   att = type->defaultAtts + type->nDefaultAtts;
@@ -7467,7 +7411,6 @@ setContext(XML_Parser parser, const XML_Char *context) {
     return XML_FALSE;
   }
 
-  { // WINSCP
   DTD *const dtd = parser->m_dtd; /* save one level of indirection */
   const XML_Char *s = context;
 
@@ -7524,7 +7467,6 @@ setContext(XML_Parser parser, const XML_Char *context) {
     }
   }
   return XML_TRUE;
-  } // WINSCP
 }
 
 static void FASTCALL
@@ -7927,7 +7869,6 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
         return NULL;
       }
 
-      { // WINSCP
       size_t newSize = (size_t)1 << newPower;
       unsigned long newMask = (unsigned long)newSize - 1;
 
@@ -7936,7 +7877,6 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
         return NULL;
       }
 
-      { // WINSCP
       size_t tsize = newSize * sizeof(NAMED *);
       NAMED **newV = MALLOC(table->parser, tsize);
       if (! newV)
@@ -7965,8 +7905,6 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
           step = PROBE_STEP(h, newMask, newPower);
         i < step ? (i += newSize - step) : (i -= step);
       }
-      } // WINSCP
-      } // WINSCP
     }
   }
   table->v[i] = MALLOC(table->parser, createSize);
@@ -8372,7 +8310,6 @@ build_model(XML_Parser parser) {
     return NULL;
   }
 
-  { // WINSCP
   const size_t allocsize = (dtd->scaffCount * sizeof(XML_Content)
                             + (dtd->contentStringLen * sizeof(XML_Char)));
 
@@ -8432,7 +8369,6 @@ build_model(XML_Parser parser) {
    *
    * - The algorithm repeats until all target array indices have been processed.
    */
-  { // WINSCP
   XML_Content *dest = ret; /* tree node writing location, moves upwards */
   XML_Content *const destLimit = &ret[dtd->scaffCount];
   XML_Content *jobDest = ret; /* next free writing location in target array */
@@ -8475,8 +8411,6 @@ build_model(XML_Parser parser) {
   }
 
   return ret;
-  } // WINSCP
-  } // WINSCP
 }
 
 static ELEMENT_TYPE *
@@ -8552,7 +8486,6 @@ accountingReportStats(XML_Parser originParser, const char *epilog) {
     return;
   }
 
-  { // WINSCP
   const float amplificationFactor
       = accountingGetCurrentAmplification(rootParser);
   fprintf(stderr,
@@ -8561,7 +8494,6 @@ accountingReportStats(XML_Parser originParser, const char *epilog) {
           (void *)rootParser, rootParser->m_accounting.countBytesDirect,
           rootParser->m_accounting.countBytesIndirect,
           (double)amplificationFactor, epilog);
-  } // WINSCP
 }
 
 static void
@@ -8581,7 +8513,6 @@ accountingReportDiff(XML_Parser rootParser,
           bytesMore, (account == XML_ACCOUNT_DIRECT) ? "DIR" : "EXP",
           levelsAwayFromRootParser, source_line, 10, "");
 
-  { // WINSCP
   const char ellipis[] = "[..]";
   const size_t ellipsisLength = sizeof(ellipis) /* because compile-time */ - 1;
   const unsigned int contextLength = 10;
@@ -8605,7 +8536,6 @@ accountingReportDiff(XML_Parser rootParser,
     }
   }
   fprintf(stderr, "\"\n");
-  } // WINSCP
 }
 
 static XML_Bool
@@ -8626,13 +8556,11 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
   if (account == XML_ACCOUNT_NONE)
     return XML_TRUE; /* because these bytes have been accounted for, already */
 
-  { // WINSCP
   unsigned int levelsAwayFromRootParser;
   const XML_Parser rootParser
       = getRootParserOf(originParser, &levelsAwayFromRootParser);
   assert(! rootParser->m_parentParser);
 
-  { // WINSCP
   const int isDirect
       = (account == XML_ACCOUNT_DIRECT) && (originParser == rootParser);
   const ptrdiff_t bytesMore = after - before;
@@ -8646,7 +8574,6 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
     return XML_FALSE;
   *additionTarget += bytesMore;
 
-  { // WINSCP
   const XmlBigCount countBytesOutput
       = rootParser->m_accounting.countBytesDirect
         + rootParser->m_accounting.countBytesIndirect;
@@ -8664,9 +8591,6 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
   }
 
   return tolerated;
-  } // WINSCP
-  } // WINSCP
-  } // WINSCP
 }
 
 unsigned long long
@@ -8690,7 +8614,6 @@ entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
   if (rootParser->m_entity_stats.debugLevel == 0u)
     return;
 
-  { // WINSCP
 #  if defined(XML_UNICODE)
   const char *const entityName = "[..]";
 #  else
@@ -8706,7 +8629,6 @@ entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
       ((int)rootParser->m_entity_stats.currentDepth - 1) * 2, "",
       entity->is_param ? "%" : "&", entityName, action, entity->textLen,
       sourceLine);
-  } // WINSCP
 }
 
 static void
@@ -9272,7 +9194,7 @@ unsignedCharToPrintable(unsigned char c) {
     assert(0); /* never gets here */
     return "dead code";
   }
-  // WINSCP assert(0); /* never gets here */
+  assert(0); /* never gets here */
   // LCOV_EXCL_STOP
 }
 
@@ -9284,13 +9206,10 @@ getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
   if (valueOrNull == NULL) {
     return defaultDebugLevel;
   }
-  { // WINSCP
   const char *const value = valueOrNull;
 
   errno = 0;
-  { // WINSCP
   char *afterValue = NULL;
-
   unsigned long debugLevel = strtoul(value, &afterValue, 10);
   if ((errno != 0) || (afterValue == value) || (afterValue[0] != '\0')) {
     errno = 0;
@@ -9298,6 +9217,4 @@ getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
   }
 
   return debugLevel;
-  } // WINSCP
-  } // WINSCP
 }
