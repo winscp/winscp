@@ -43,7 +43,6 @@
 #define LIBS3_VER_MINOR "1"
 #endif
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -2659,10 +2658,6 @@ void S3_list_multipart_uploads(S3BucketContext *bucketContext,
                                int timeoutMs,
                                const S3ListMultipartUploadsHandler *handler,
                                void *callbackData);
-
-#ifdef WINSCP
-int snprintf_S(char * s, size_t n, const char * format, size_t len, const char * data);
-#endif
 
 #ifdef __cplusplus
 }

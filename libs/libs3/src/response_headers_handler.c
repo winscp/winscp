@@ -75,7 +75,7 @@ void response_headers_handler_add(ResponseHeadersHandler *handler,
     // This sucks, but it shouldn't happen - S3 should not be sending back
     // really long headers.
     if (handler->responsePropertyStringsSize == 
-        (int)(sizeof(handler->responsePropertyStrings) - 1)) { // WINSCP (cast)
+        (sizeof(handler->responsePropertyStrings) - 1)) {
         return;
     }
 
@@ -128,7 +128,7 @@ void response_headers_handler_add(ResponseHeadersHandler *handler,
                       sizeof(S3_METADATA_HEADER_NAME_PREFIX) - 1)) {
         // Make sure there is room for another x-amz-meta header
         if (handler->responseProperties.metaDataCount ==
-            (int)sizeof(handler->responseMetaData)) { // WINSCP (cast)
+            sizeof(handler->responseMetaData)) {
             return;
         }
         // Copy the name in
