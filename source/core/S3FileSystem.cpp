@@ -1847,11 +1847,6 @@ static _di_IXMLNode S3NeedNode(const _di_IXMLNodeList & NodeList, const UnicodeS
   return NeedNode(NodeList, Name, S3Namespace);
 }
 //---------------------------------------------------------------------------
-#define COPY_BUCKET_CONTEXT(BucketContext) \
-  { BucketContext.hostName, BucketContext.bucketName, BucketContext.protocol, BucketContext.uriStyle, \
-    BucketContext.accessKeyId, BucketContext.secretAccessKey, BucketContext.securityToken, BucketContext.authRegion, \
-    BucketContext.service }
-//---------------------------------------------------------------------------
 bool TS3FileSystem::DoLoadFileProperties(
   const UnicodeString & AFileName, const TRemoteFile * File, TS3FileProperties & Properties, bool LoadTags)
 {
@@ -1882,7 +1877,7 @@ bool TS3FileSystem::DoLoadFileProperties(
       RequestParams TaggingRequestParams =
       {
         HttpRequestTypeGET,
-        COPY_BUCKET_CONTEXT(BucketContext),
+        BucketContext,
         KeyBuf.c_str(),
         NULL,
         "tagging",
@@ -2060,7 +2055,7 @@ void __fastcall TS3FileSystem::ChangeFileProperties(const UnicodeString FileName
       RequestParams TaggingRequestParams =
       {
         HttpRequestTypePUT,
-        COPY_BUCKET_CONTEXT(BucketContext),
+        BucketContext,
         KeyBuf.c_str(),
         NULL,
         "tagging",
