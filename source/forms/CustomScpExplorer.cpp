@@ -8000,6 +8000,8 @@ unsigned int __fastcall TCustomScpExplorerForm::MoreMessageDialog(const UnicodeS
     UnicodeString HelpKeyword, const TMessageParams * Params,
     TTerminal * Terminal)
 {
+  // Should test if terminal is the foreground terminal,
+  // otherwise we mix errors from the background operation with the foreground.
   if (((WinConfiguration->ContinueOnError && (FErrorList != NULL)) ||
        (FOnFeedSynchronizeError != NULL)) &&
       (Params != NULL) && (Params->Params & mpAllowContinueOnError) )
