@@ -49,6 +49,9 @@ private:
   typedef std::map<unsigned int, TButton *> TAnswerButtons;
 
   UnicodeString MessageText;
+  TLabel * MainMessageLabel;
+  TLabel * MessageLabel;
+  TStaticText * MessageStaticText;
   TPanel * ContentsPanel;
   TMemo * MessageMemo;
   TPanel * MessageBrowserPanel;
@@ -64,6 +67,7 @@ private:
   void __fastcall ReportButtonSubmit(TObject * Sender, unsigned int & Answer);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall CMShowingChanged(TMessage & Message);
+  void WMGetObject(TMessage & Message);
   void __fastcall UpdateForShiftState();
   TButton * __fastcall CreateButton(
     UnicodeString Name, UnicodeString Caption, unsigned int Answer,

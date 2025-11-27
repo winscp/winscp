@@ -15,6 +15,8 @@
 #include <vssym32.h>
 #include <ComboEdit.hpp>
 #include <GUITools.h>
+#include <initguid.h> // to define the GUIDs in the header below
+#include <Winapi.oleacc.hpp>
 //---------------------------------------------------------------------------
 const UnicodeString ContextSeparator(TraceInitStr(L"\x00BB"));
 const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextSeparator));
@@ -904,6 +906,149 @@ static void __fastcall AfterMonitorDpiChanged(void * AData, TObject * Sender, in
   }
 }
 //---------------------------------------------------------------------------
+static TComPtr<IAccPropServices> AccPropServices;
+//---------------------------------------------------------------------------
+void SetAccessibleName(TWinControl * Control, const UnicodeString & AccName)
+{
+  DebugAssert(Control->HandleAllocated());
+  OleCheck(AccPropServices->SetHwndPropStr(Control->Handle, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_NAME, AccName.c_str()));
+}
+//---------------------------------------------------------------------------
+void SetAccessibleRole(TWinControl * Control, int Role)
+{
+  DebugAssert(Control->HandleAllocated());
+  VARIANT RoleVariant = { .vt = VT_I4, .lVal = Role };
+  OleCheck(AccPropServices->SetHwndProp(Control->Handle, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_ROLE, RoleVariant));
+}
+//---------------------------------------------------------------------------
+static void ControlExposeLabels(TWinControl * Control)
+{
+  std::map<TWinControl *, TLabel *> ControlLabels;
+  for (int Index = 0; Index < Control->ControlCount; Index++)
+  {
+    TControl * Child = Control->Controls[Index];
+    TLabel * Label = dynamic_cast<TLabel *>(Child);
+    if ((Label != nullptr) &&
+        (Label->FocusControl != nullptr))
+    {
+      TWinControl * FocusControl = Label->FocusControl;
+      if (FocusControl->HandleAllocated() &&
+          DebugAlwaysTrue(Label->Parent == FocusControl->Parent))
+      {
+        auto I = ControlLabels.find(FocusControl);
+        if ((Label->Left < FocusControl->Left) ||
+            (Label->Top < FocusControl->Top))
+        {
+          if (DebugAlwaysTrue((I == ControlLabels.end()) || (I->second == nullptr)))
+          {
+            ControlLabels[FocusControl] = Label;
+          }
+        }
+        else
+        {
+          if (I == ControlLabels.end())
+          {
+            ControlLabels.insert(std::make_pair(FocusControl, Label));
+          }
+        }
+      }
+    }
+
+    TWinControl * WinChild = dynamic_cast<TWinControl *>(Child);
+    if (WinChild != nullptr)
+    {
+      ControlExposeLabels(WinChild);
+    }
+  }
+
+  if (!ControlLabels.empty())
+  {
+    for (auto I = ControlLabels.begin(); I != ControlLabels.end(); ++I)
+    {
+      if (DebugAlwaysTrue(I->second != nullptr))
+      {
+        TLabel * Label = I->second;
+        UnicodeString AccName = Label->Caption;
+        if (Label->ShowAccelChar)
+        {
+          AccName = StripHotkey(AccName);
+        }
+        SetAccessibleName(I->first, AccName);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall FormGetObject(TForm * Form, TWndMethod WndProc, TMessage & Message)
+{
+  if (AccPropServices.Get() != nullptr)
+  {
+    ControlExposeLabels(Form);
+
+    // Control ZOrder must be in logical order (we use Tab order for that),
+    // otherwise Narrator tends to read controls which are completelly irrelevant.
+    // It does not solve all Narrator problems, but it's way better.
+    std::unique_ptr<TList> TabControlList(new TList());
+    Form->GetTabControlList(TabControlList.get());
+
+    if ((TabControlList->Count >= 2) && (Form->BorderStyle == bsDialog))
+    {
+      std::vector<HWND> HandlesOrder;
+      HWND Handle = GetWindow(Form->Handle, GW_CHILD);
+      while (Handle != NULL)
+      {
+        HandlesOrder.push_back(Handle);
+        Handle = GetNextWindow(Handle, GW_HWNDNEXT);
+      }
+
+      bool Reorder = false;
+      TWinControl * Control1 = static_cast<TWinControl *>(TabControlList->Items[0]);
+      auto I = std::find(HandlesOrder.begin(), HandlesOrder.end(), Control1->Handle);
+      if (I != HandlesOrder.end())
+      {
+        int Order1 = I - HandlesOrder.begin();
+        int Index = 1;
+        while (Index < TabControlList->Count)
+        {
+          TWinControl * Control2 = static_cast<TWinControl *>(TabControlList->Items[Index]);
+          I = std::find(HandlesOrder.begin(), HandlesOrder.end(), Control2->Handle);
+          if (I != HandlesOrder.end())
+          {
+            int Order2 = I - HandlesOrder.begin();
+            if (Order1 > Order2)
+            {
+              Reorder = true;
+              break;
+            }
+
+            Order1 = Order2;
+            Control1 = Control2;
+            ++Index;
+          }
+          else
+          {
+            break;
+          }
+        }
+      }
+
+      if (Reorder)
+      {
+        // Won't dare to use SetWindowPos to reorder just the pairs of controls not in the right order,
+        // as I'm not sure VCL's internal order cache gets synchronized with that.
+        // Instead we reorder all controls using the only available VCL API.
+        // This would flash main window, had we reordered that (bsDialog check above).
+        for (int Index = 0; Index < TabControlList->Count; Index++)
+        {
+          TWinControl * Control = static_cast<TWinControl *>(TabControlList->Items[Index]);
+          Control->SendToBack();
+        }
+      }
+    }
+  }
+  WndProc(Message);
+}
+//---------------------------------------------------------------------------
 static void __fastcall FormWindowProc(void * Data, TMessage & Message)
 {
   TForm * AForm = static_cast<TForm *>(Data);
@@ -965,6 +1110,10 @@ static void __fastcall FormWindowProc(void * Data, TMessage & Message)
     CheckOperationStatusWindow();
     WndProc(Message);
   }
+  else if (Message.Msg == WM_GETOBJECT)
+  {
+    FormGetObject(AForm, WndProc, Message);
+  }
   else
   {
     WndProc(Message);
@@ -973,10 +1122,12 @@ static void __fastcall FormWindowProc(void * Data, TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall InitializeSystemSettings()
 {
+  AccPropServices.TryCreate(CLSID_AccPropServices, CLSCTX_ALL);
 }
 //---------------------------------------------------------------------------
 void __fastcall FinalizeSystemSettings()
 {
+  AccPropServices.Reset(nullptr);
 }
 //---------------------------------------------------------------------------
 #ifdef _DEBUG

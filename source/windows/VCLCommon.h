@@ -106,5 +106,7 @@ void GiveTBItemPriority(Tb2item::TTBCustomItem * Item);
 void DeleteChildren(TWinControl * Control);
 void AutoSizeLabel(TLabel * Label);
 void AutoSizeLabel(TStaticText * Label);
+void SetAccessibleName(TWinControl * Control, const UnicodeString & Name);
+void SetAccessibleRole(TWinControl * Control, int Role);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

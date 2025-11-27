@@ -7,6 +7,7 @@
 #include <Setup.h>
 #include <WinApi.h>
 #include "MessageDlg.h"
+#include <Winapi.oleacc.hpp>
 //---------------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -335,6 +336,30 @@ void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
+void TMessageForm::WMGetObject(TMessage & Message)
+{
+  TLabel * Label1 = (MainMessageLabel != nullptr) ? MainMessageLabel : DebugNotNull(MessageLabel);
+
+  if (MessageStaticText == nullptr)
+  {
+    MessageStaticText = new TStaticText(this);
+    MessageStaticText->Parent = Label1->Parent;
+    MessageStaticText->TabOrder = 0;
+    MessageStaticText->Caption = EmptyStr;
+    SetAccessibleName(MessageStaticText, NormalizeNewLines(MessageText));
+  }
+
+  // Make Narrator display rectangle around the text it is reading
+  TRect R = Label1->BoundsRect;
+  if ((MainMessageLabel != nullptr) && (MessageLabel != nullptr))
+  {
+    R.Union(MessageLabel->BoundsRect);
+  }
+  MessageStaticText->BoundsRect = R;
+
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -345,6 +370,10 @@ void __fastcall TMessageForm::Dispatch(void * Message)
   else if (M->Msg == CM_SHOWINGCHANGED)
   {
     CMShowingChanged(*M);
+  }
+  else if (M->Msg == WM_GETOBJECT)
+  {
+    WMGetObject(*M);
   }
   else
   {
@@ -379,6 +408,8 @@ void __fastcall TMessageForm::CreateWnd()
 {
   TForm::CreateWnd();
   ApplyColorMode(this);
+  // This makes Narrator read comlete window, including the message text (created in WMGetObject)
+  SetAccessibleRole(this, ROLE_SYSTEM_DIALOG);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::LoadMessageBrowser()
@@ -826,6 +857,15 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     Configuration->Usage->Set(L"ThemeMessageFontSize", Result->Font->Size);
   }
 
+  // create before buttons for correct tab order
+  TPanel * Panel = CreateBlankPanel(Result);
+  Result->ContentsPanel = Panel;
+  Panel->Name = MessagePanelName;
+  Panel->Parent = Result;
+  Panel->ParentBackground = false;
+  Panel->Anchors = TAnchors() << akLeft << akRight << akTop;
+  Panel->Caption = L"";
+
   // make sure we consider sizes of the monitor,
   // that is set in DoFormWindowProc(CM_SHOWINGCHANGED) later.
   Forms::TMonitor * Monitor = FormMonitor(Result);
@@ -933,6 +973,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
         if (Button != NULL)
         {
+          if (ButtonControls.empty())
+          {
+            Result->ActiveControl = Button;
+          }
           ButtonControls.push_back(Button);
 
           Button->Default = (Answer == DefaultAnswer);
@@ -971,14 +1015,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   }
 
   DebugAssert((ButtonHeight > 0) && (ButtonWidths > 0));
-
-  TPanel * Panel = CreateBlankPanel(Result);
-  Result->ContentsPanel = Panel;
-  Panel->Name = MessagePanelName;
-  Panel->Parent = Result;
-  Panel->ParentBackground = false;
-  Panel->Anchors = TAnchors() << akLeft << akRight << akTop;
-  Panel->Caption = L"";
 
   int IconWidth = 0;
   int IconHeight = 0;
@@ -1028,6 +1064,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   {
     Result->MessageText = BodyMsg;
   }
+  Result->MessageStaticText = nullptr;
 
   ApplyTabs(Result->MessageText, L' ', NULL, NULL);
 
@@ -1056,6 +1093,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     UnicodeString LabelName;
     TColor LabelColor = Graphics::clNone;
     HFONT LabelFont = 0;
+    TLabel ** LabelStore = nullptr;
     switch (MessageIndex)
     {
       case 0:
@@ -1063,11 +1101,13 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         LabelName = MainMessageLabelName;
         LabelColor = MainInstructionColor;
         LabelFont = MainInstructionFont;
+        LabelStore = &Result->MainMessageLabel;
         break;
 
       case 1:
         LabelMsg = BodyMsg;
         LabelName = MessageLabelName;
+        LabelStore = &Result->MessageLabel;
         break;
 
       default:
@@ -1075,9 +1115,14 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         break;
     }
 
-    if (!LabelMsg.IsEmpty())
+    if (LabelMsg.IsEmpty())
+    {
+      *LabelStore = nullptr;
+    }
+    else
     {
       TLabel * Message = new TLabel(Panel);
+      *LabelStore = Message;
       Message->Parent = Panel;
       Message->Name = LabelName;
       Message->WordWrap = true;
