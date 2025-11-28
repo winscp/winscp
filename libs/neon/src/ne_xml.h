@@ -78,6 +78,10 @@ typedef struct ne_xml_parser_s ne_xml_parser;
 /* Create an XML parser. */
 ne_xml_parser *ne_xml_create(void);
 
+/* Set character encoding 'encoding' for the parser 'p'. Returns
+ * zero on success, non-zero on failure. */
+int ne_xml_set_encoding(ne_xml_parser *p, const char *encoding);
+
 /* Push a new handler on the stack of parser 'p'. 'cdata' and/or
  * 'endelm' may be NULL; startelm must be non-NULL. */
 void ne_xml_push_handler(ne_xml_parser *p,
@@ -136,9 +140,9 @@ const char *ne_xml_get_attr(ne_xml_parser *parser,
 const char *ne_xml_resolve_nspace(ne_xml_parser *parser, 
                                   const char *prefix, size_t length);
 
-/* Return the encoding of the document being parsed.  May return NULL
- * if no encoding is defined or if the XML declaration has not yet
- * been parsed. */
+/* Return the encoding of the document being parsed as provided by the
+ * declaration. May return NULL if no encoding is defined in the
+ * declaration, or if the XML declaration has not yet been parsed. */
 const char *ne_xml_doc_encoding(const ne_xml_parser *p);
 
 /* Destroy the parser object. */

@@ -897,6 +897,8 @@ void ne_request_destroy(ne_request *req)
     struct interim_handler *ih, *next_ih;
     struct hook *hk, *next_hk;
 
+    NE_DEBUG(NE_DBG_HTTP, "req: Destroy (%s %s).\n", req->method, req->target);
+
     ne_free(req->target);
     ne_free(req->method);
     if (req->target_uri) {
@@ -933,7 +935,6 @@ void ne_request_destroy(ne_request *req)
     if (req->status.reason_phrase)
 	ne_free(req->status.reason_phrase);
 
-    NE_DEBUG(NE_DBG_HTTP, "Request ends.\n");
     ne_free(req);
 }
 
@@ -987,7 +988,6 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
 {
     NE_DEBUG_WINSCP_CONTEXT(req->session);
     ne_socket *const sock = req->session->socket;
-    size_t willread;
     ssize_t readlen;
     
     switch (resp->mode) {
@@ -1030,28 +1030,31 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
             NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "req: Chunk size: %lu\n", chunk_len);
             resp->body.chunk.remain = chunk_len;
 	}
-	willread = resp->body.chunk.remain > *buflen
-            ? *buflen : resp->body.chunk.remain;
+        if (resp->body.chunk.remain < *buflen)
+            *buflen = resp->body.chunk.remain;
 	break;
     case R_CLENGTH:
-	willread = resp->body.clen.remain > (off_t)*buflen 
-            ? *buflen : (size_t)resp->body.clen.remain;
+        if (resp->body.clen.remain < (off_t)*buflen)
+            *buflen = (size_t)resp->body.clen.remain;
 	break;
     case R_TILLEOF:
-	willread = *buflen;
+	/* fill whatever buffer space. */
 	break;
     case R_NO_BODY:
     default:
-	willread = 0;
+	*buflen = 0;
 	break;
     }
-    if (willread == 0) {
-	*buflen = 0;
+
+    NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "req: Reading %" NE_FMT_SIZE_T " bytes "
+             "of response body.\n", *buflen);
+    /* Special case when reaching the end of a known-length response,
+     * *buflen is set to zero and nothing further is read from the
+     * socket. */
+    if (*buflen == 0) {
 	return 0;
     }
-    NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL,
-	     "Reading %" NE_FMT_SIZE_T " bytes of response body.\n", willread);
-    readlen = ne_sock_read(sock, buffer, willread);
+    readlen = ne_sock_read(sock, buffer, *buflen);
 
     /* EOF is only valid when response body is delimited by it.
      * Strictly, an SSL truncation should not be treated as an EOF in
@@ -1093,25 +1096,29 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
 ssize_t ne_read_response_block(ne_request *req, char *buffer, size_t buflen)
 {
     struct body_reader *rdr;
-    size_t readlen = buflen;
     struct ne_response *const resp = &req->resp;
+    ne_session_status_info *const info = &req->session->status;
 
-    if (read_response_block(req, resp, buffer, &readlen))
+    if (read_response_block(req, resp, buffer, &buflen))
 	return -1;
 
-    if (readlen) {
-        req->session->status.sr.progress += readlen;
+    if (buflen) {
+        info->sr.progress += buflen;
+        notify_status(req->session, ne_status_recving);
+    }
+    else if (info->sr.total == -1) {
+        info->sr.total = info->sr.progress;
         notify_status(req->session, ne_status_recving);
     }
 
     for (rdr = req->body_readers; rdr!=NULL; rdr=rdr->next) {
-	if (rdr->use && rdr->handler(rdr->userdata, buffer, readlen) != 0) {
+	if (rdr->use && rdr->handler(rdr->userdata, buffer, buflen) != 0) {
             ne_close_connection(req->session);
             return -1;
         }
     }
     
-    return readlen;
+    return buflen;
 }
 
 /* Build the request string, returning the buffer. */
@@ -1742,6 +1749,44 @@ int ne_read_response_to_fd(ne_request *req, int fd)
     return len == 0 ? NE_OK : NE_ERROR;
 }
 
+int ne_read_response_to_buffer(ne_request *req, char *buf, size_t *buflen)
+{
+    size_t remain = *buflen;
+    ssize_t rlen = -1;
+    char ch, *ptr = buf;
+    int ret = NE_OK;
+
+    while (ret == NE_OK && remain) {
+        rlen = ne_read_response_block(req, ptr, remain);
+        if (rlen > 0) {
+            remain -= rlen;
+            ptr += rlen;
+        }
+        else if (rlen == 0) {
+            *buflen = ptr - buf;
+            break;
+        }
+        else if (rlen < 0) {
+            ret = NE_ERROR;
+        }
+    }
+
+    /* If the buffer was filled, check whether the entire response
+     * body has been read, and fail with NE_FAILED if not. */
+    if (ret == NE_OK && remain == 0 && rlen > 0) {
+        if ((rlen = ne_read_response_block(req, &ch, sizeof ch)) == 0)
+            *buflen = ptr - buf; /* success, entire response read. */
+        else if (rlen < 0)
+            ret = NE_ERROR;
+        else /* rlen > 0 => more response to read, fail */ {
+            ret = NE_FAILED;
+            ne_set_error(req->session, _("Response buffer size too small"));
+        }
+    }
+
+    return ret;
+}
+
 int ne_discard_response(ne_request *req)
 {
     ssize_t len;
@@ -2013,12 +2058,9 @@ static int open_connection(ne_session *sess)
         /* Set up CONNECT tunnel if using an HTTP proxy. */
         if (sess->nexthop->proxy == PROXY_HTTP)
             ret = proxy_tunnel(sess);
-        
-        if (ret == NE_OK) {
-            ret = ne__negotiate_ssl(sess);
-            if (ret != NE_OK)
-                ne_close_connection(sess);
-        }
+
+        if (ret == NE_OK) ret = ne__negotiate_ssl(sess);
+        if (ret != NE_OK) ne_close_connection(sess);
     }
 #endif
     

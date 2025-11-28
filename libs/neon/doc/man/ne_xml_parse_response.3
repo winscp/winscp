@@ -1,0 +1,151 @@
+'\" t
+.\"     Title: ne_xml_parse_response
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 23 November 2025
+.\"    Manual: neon API reference
+.\"    Source: neon 0.36.0
+.\"  Language: English
+.\"
+.TH "NE_XML_PARSE_RESPONS" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_xml_parse_response, ne_xml_dispatch_request, ne_xml_dispatchif_request \- helper functions for parsing XML responses
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_xmlreq\&.h>
+.fi
+.ft
+.HP \w'int\ ne_xml_parse_response('u
+.BI "int ne_xml_parse_response(ne_request\ *" "req" ", ne_xml_parser\ *" "parser" ");"
+.HP \w'int\ ne_xml_dispatch_request('u
+.BI "int ne_xml_dispatch_request(ne_request\ *" "req" ", ne_xml_parser\ *" "parser" ");"
+.HP \w'int\ ne_xml_dispatchif_request('u
+.BI "int ne_xml_dispatchif_request(ne_request\ *" "req" ", ne_xml_parser\ *" "parser" ", ne_accept_response\ " "acceptor" ", void\ *" "userdata" ");"
+.SH "DESCRIPTION"
+.PP
+The
+\fBne_xml_parse_response\fR
+function reads an HTTP response body and processes it using the given XML parser\&. The function must be called
+\fBne_begin_request\fR
+has returned successfully for the request, and then invokes
+\fBne_read_response_block\fR
+until the entire response body has been read\&. On successful return,
+\fBne_end_request\fR
+must be called to finalise response processing\&.
+.PP
+The
+\fBne_xml_dispatch_request\fR
+and
+\fBne_xml_dispatchif_request\fR
+functions is equivalent to calling
+ne_request_dispatch
+to dispatch an HTTP request and process the response, parsing the response body using the given XML parser under certain conditions:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+For
+\fBne_xml_dispatch_request\fR, any
+2xx
+class response with an XML content\-type\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+For
+\fBne_xml_dispatchif_request\fR, if the
+\fIacceptor\fR
+callback returns non\-zero, and the response uses an XML content\-type\&.
+.RE
+.sp
+In both cases, the rules in
+\m[blue]\fBRFC 7303\fR\m[]\&\s-2\u[1]\d\s+2
+are followed to identify XML content\-types, that is
+text/xml,
+application/xml, or any other content\-type ending in a
++xml
+suffix\&. The
+\fIuserdata\fR
+parameter is passed to the
+\fIacceptor\fR
+function\&.
+.PP
+For all three functions:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+the XML parser is invoked repeatedly until the end of the document is reached\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+if an error occurs during XML parsing, the session error string is set to describe the parse error, and the connection is terminated without continuing to process the response\&.\&.
+.RE
+.sp
+.SH "RETURN VALUE"
+.PP
+All functions documented here return zero on success, or an
+NE_* error code
+on failure\&.
+.SH "HISTORY"
+.PP
+\fBne_xml_dispatchif_request\fR
+is available in neon 0\&.36\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+ne_xml_create,
+ne_request_dispatch
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2025 Joe Orton
+.br
+.SH "REFERENCES"
+.IP " 1." 4
+RFC 7303
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc7303
+.RE

@@ -2,12 +2,12 @@
 .\"     Title: ne_ssl_cert_cmp
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 15 July 2025
+.\"      Date: 23 November 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.35.0
+.\"    Source: neon 0.36.0
 .\"  Language: English
 .\"
-.TH "NE_SSL_CERT_CMP" "3" "15 July 2025" "neon 0.35.0" "neon API reference"
+.TH "NE_SSL_CERT_CMP" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_ssl_cert_cmp, ne_ssl_cert_free \- functions to operate on certificate objects
+ne_ssl_cert_cmp, ne_ssl_cert_free, ne_ssl_cert_digest, ne_ssl_cert_hdigest, ne_ssl_cert_validity, ne_ssl_cert_validity_time \- functions to operate on certificate objects
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -40,6 +40,14 @@ ne_ssl_cert_cmp, ne_ssl_cert_free \- functions to operate on certificate objects
 .BI "int ne_ssl_cert_cmp(const\ ne_ssl_certificate\ *" "c1" ", const\ ne_ssl_certificate\ *" "c2" ");"
 .HP \w'void\ ne_ssl_cert_free('u
 .BI "void ne_ssl_cert_free(ne_ssl_certificate\ *" "cert" ");"
+.HP \w'int\ ne_ssl_cert_digest('u
+.BI "int ne_ssl_cert_digest(const\ ne_ssl_certificate\ *" "c1" ", char\ *" "digest" ");"
+.HP \w'char\ *ne_ssl_cert_hdigest('u
+.BI "char *ne_ssl_cert_hdigest(const\ ne_ssl_certificate\ *" "c1" ", unsigned\ int\ " "flags" ");"
+.HP \w'void\ ne_ssl_cert_validity_time('u
+.BI "void ne_ssl_cert_validity_time(const\ ne_ssl_certificate\ *" "cert" ", time_t\ *" "from" ", time_t\ *" "until" ");"
+.HP \w'void\ ne_ssl_cert_validity('u
+.BI "void ne_ssl_cert_validity(const\ ne_ssl_certificate\ *" "cert" ", char\ *" "from" ", char\ *" "until" ");"
 .SH "DESCRIPTION"
 .PP
 The
@@ -49,6 +57,57 @@ function can be used to compare two certificate objects; it returns zero if they
 The
 \fBne_ssl_cert_free\fR
 function can be used to destroy a certificate object when it is no longer needed\&.
+.PP
+The
+\fBne_ssl_cert_digest\fR
+function writes a human\-readable fingerprint as a NUL\-terminated string to the
+\fIdigest\fR
+buffer provided, in the format "aa:bb\&.\&.\&.:ff"\&. The
+\fIdigest\fR
+buffer must be at least
+NE_SSL_DIGESTLEN
+bytes in length\&.
+.PP
+The
+\fBne_ssl_cert_hdigest\fR
+function returns a human\-readable fingerprint for the certificate object\&. The
+\fIflags\fR
+parameter specifies the hash formatting options as if passed to
+ne_strhash\&. The returned string is malloc\-allocated and must be freed after use\&.
+.PP
+The
+\fBne_ssl_cert_validity_time\fR
+function retrieves both the time from which the certificate is valid from and until\&. Each time is returned through the
+\fIfrom\fR
+and
+\fIuntil\fR
+parameters, which are written as
+(time_t)\-1
+if either time cannot be represented as a
+time_t
+value\&. The
+\fBne_ssl_cert_validity\fR
+function similarly writes the validity times to the string buffers provided, using RFC 1123\-style date formatting (not localized)\&. The output parameters must be at least
+NE_SSL_VDATELEN
+bytes in length\&. Either parameter can be passed as
+NULL\&.
+.SH "RETURN VALUE"
+.PP
+\fBne_ssl_cert_cmp\fR
+returns 0 if the certificates are the same, and non\-zero otherwise\&.
+\fBne_ssl_cert_digest\fR
+returns 0 on success or non\-zero on error\&. The return value of
+\fBne_ssl_cert_hdigest\fR
+is a NUL\-terminated malloc\-allocated string, or
+NULL
+if the hash cannot be created\&.
+.SH "HISTORY"
+.PP
+\fBne_ssl_cert_hdigest\fR
+is available in in neon 0\&.32\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+ne_strhash
 .SH "COPYRIGHT"
 .br
 Copyright \(co 2001-2025 Joe Orton

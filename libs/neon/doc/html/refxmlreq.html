@@ -1,0 +1,38 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>ne_xml_parse_response</title><link rel="stylesheet" type="text/css" href="manual.css"><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot"><link rel="home" href="index.html" title="neon HTTP/WebDAV client library"><link rel="up" href="ref.html" title="neon API reference"><link rel="prev" href="refxml.html" title="ne_xml_create"><link rel="next" href="biblio.html" title="Bibliography"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">ne_xml_parse_response</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="refxml.html">Prev</a> </td><th width="60%" align="center">neon API reference</th><td width="20%" align="right"> <a accesskey="n" href="biblio.html">Next</a></td></tr></table><hr></div><div class="refentry"><a name="refxmlreq"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ne_xml_parse_response, ne_xml_dispatch_request, ne_xml_dispatchif_request — helper functions for parsing XML responses</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="funcsynopsis"><pre class="funcsynopsisinfo">#include &lt;ne_xmlreq.h&gt;</pre><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">int <b class="fsfunc">ne_xml_parse_response</b>(</code>ne_request *<var xmlns="" class="pdparam">req</var>, ne_xml_parser *<var xmlns="" class="pdparam">parser</var><code xmlns="">)</code>;</code></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">int <b class="fsfunc">ne_xml_dispatch_request</b>(</code>ne_request *<var xmlns="" class="pdparam">req</var>, ne_xml_parser *<var xmlns="" class="pdparam">parser</var><code xmlns="">)</code>;</code></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">int <b class="fsfunc">ne_xml_dispatchif_request</b>(</code>ne_request *<var xmlns="" class="pdparam">req</var>, ne_xml_parser *<var xmlns="" class="pdparam">parser</var>, ne_accept_response <var xmlns="" class="pdparam">acceptor</var>, void *<var xmlns="" class="pdparam">userdata</var><code xmlns="">)</code>;</code></div></div></div><div class="refsect1"><a name="id4772"></a><h2>Description</h2><p>The <code class="function">ne_xml_parse_response</code> function
+    reads an HTTP response body and processes it using the given XML
+    parser. The function must be called
+    <code class="function">ne_begin_request</code> has returned successfully
+    for the request, and then invokes
+    <code class="function">ne_read_response_block</code> until the entire
+    response body has been read. On successful return,
+    <code class="function">ne_end_request</code> must be called to finalise
+    response processing.</p><p>The <code class="function">ne_xml_dispatch_request</code> and
+    <code class="function">ne_xml_dispatchif_request</code> functions is
+    equivalent to calling <a class="xref" href="refreq.html#ne_request_dispatch">ne_request_dispatch</a> to
+    dispatch an HTTP request and process the response, parsing the
+    response body using the given XML parser under certain conditions:
+
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">For
+      <code class="function">ne_xml_dispatch_request</code>, any
+      <code class="literal">2xx</code> class response with an XML
+      content-type.</li><li class="listitem">For
+      <code class="function">ne_xml_dispatchif_request</code>, if the
+      <code class="parameter">acceptor</code> callback returns non-zero,
+      and the response uses an XML content-type.</li></ul></div><p>
+
+    In both cases, the rules in <a class="ulink" href="https://www.rfc-editor.org/rfc/rfc7303" target="_top">RFC 7303</a> are
+    followed to identify XML content-types, that is
+    <code class="literal">text/xml</code>, <code class="literal">application/xml</code>,
+    or any other content-type ending in a <code class="literal">+xml</code>
+    suffix. The <code class="parameter">userdata</code> parameter is passed to
+    the <code class="parameter">acceptor</code> function.</p><p>For all three functions:
+
+    </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">the XML parser is invoked repeatedly until
+      the end of the document is reached.</li><li class="listitem">if an error occurs during XML parsing, the
+      session error string is set to describe the parse error, and the
+      connection is terminated without continuing to process the
+      response..</li></ul></div><p>
+
+    </p></div><div class="refsect1"><a name="id4804"></a><h2>Return value</h2><p>All functions documented here return zero on success, or an
+    <a class="xref" href="refreq.html#error-codes" title="Error codes">NE_* error code</a> on failure.</p></div><div class="refsect1"><a name="id4808"></a><h2>History</h2><p><code class="function">ne_xml_dispatchif_request</code> is available
+    in neon 0.36.0 and later.</p></div><div class="refsect1"><a name="id4812"></a><h2>See also</h2><p><a class="xref" href="refxml.html#ne_xml_create">ne_xml_create</a>, <a class="xref" href="refreq.html#ne_request_dispatch">ne_request_dispatch</a></p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="refxml.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ref.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="biblio.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ne_xml_create </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Bibliography</td></tr></table></div></body></html>

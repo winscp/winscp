@@ -15,7 +15,6 @@
       <refsynopsisdiv>
 	
 	<funcsynopsis>
-
 	  <funcsynopsisinfo>#include &lt;ne_request.h&gt;</funcsynopsisinfo>
 
 	  <funcprototype>
@@ -106,30 +105,21 @@ any processing of the response headers and message body.</para>
 returns a pointer to a request object (and never &null;).</para>
 
 	<para>The <function>ne_request_dispatch</function> function
-returns zero if the request was dispatched successfully, and a
-non-zero error code otherwise.</para>
-
+	returns zero if the request was dispatched successfully, and a
+	non-zero error code code otherwise, as described in the
+	following section.</para>
       </refsect1>
 
-      <refsect1>
-	<title>Notes</title>
+      <refsect1 id="error-codes" xreflabel="NE_* error code">
+	<title>Error codes</title>
 
-	<para>The <parameter>path</parameter>,
-	<parameter>method</parameter> and
-	<parameter>target</parameter> parameters of
-	<function>ne_request_create</function> are used directly in
-	request data without validation, so must not be taken from
-	untrusted sources. For example, allowing insertion of
-	unescaped CR, LF or other control characters in these
-	parameters may result in unexpected or insecure behaviour.</para>
-
-        <para>&neon; does not impose any length restrictions on
-        request input data.</para>
-
-      </refsect1>
-
-      <refsect1>
-	<title>Errors</title>
+        <para>Error codes have a non-zero value, and correspond to an
+        <literal>NE_*</literal> macro definition, as listed below.
+        Future versions of &neon; may introduce additional error code
+        definitions. Functions which return an error code and have an
+        associated session object set the session error string (see
+        <xref linkend="ne_get_error"/>) unless documented
+        otherwise.</para>
 
 	<variablelist>
 	  <varlistentry><term><errorcode>NE_ERROR</errorcode></term>
@@ -162,7 +152,28 @@ non-zero error code otherwise.</para>
 	      <simpara>A timeout occurred while waiting for the server to respond.</simpara>
 	    </listitem>
 	  </varlistentry>
+	  <varlistentry><term><errorcode>NE_REDIRECT</errorcode></term>
+	    <listitem>
+	      <simpara>A valid redirect was retuerned. <emphasis>Note:</emphasis> Only returned if redirect handling is registered for the session using <xref linkend="ne_redirect_register"/>.</simpara>
+	    </listitem>
+	  </varlistentry>
 	</variablelist>
+      </refsect1>
+
+      <refsect1>
+	<title>Notes</title>
+
+	<para>The <parameter>path</parameter>,
+	<parameter>method</parameter> and
+	<parameter>target</parameter> parameters of
+	<function>ne_request_create</function> are used directly in
+	request data without validation, so must not be taken from
+	untrusted sources. For example, allowing insertion of
+	unescaped CR, LF or other control characters in these
+	parameters may result in unexpected or insecure behaviour.</para>
+
+        <para>&neon; does not impose any length restrictions on
+        request input data.</para>
 
       </refsect1>
 
@@ -187,7 +198,7 @@ ne_request_destroy(req);</programlisting>
 	<para><xref linkend="ne_get_error"/>, <xref
 linkend="ne_set_error"/>, <xref linkend="ne_get_status"/>, <xref
 linkend="ne_add_request_header"/>, <xref
-linkend="ne_set_request_body_buffer"/>, <xref linkend="ne_set_request_flag"/>.</para>
+linkend="ne_set_request_body_buffer"/>, <xref linkend="ne_set_request_flag"/>, <xref linkend="ne_redirect_register"/>.</para>
 
       </refsect1>
 

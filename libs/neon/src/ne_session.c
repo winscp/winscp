@@ -84,7 +84,8 @@ void ne_session_destroy(ne_session *sess)
     NE_DEBUG_WINSCP_CONTEXT(sess);
     struct hook *hk;
 
-    NE_DEBUG(NE_DBG_HTTP, "sess: Destroying session.\n");
+    NE_DEBUG(NE_DBG_HTTP, "sess: Destroying session (connected=%d).\n",
+             sess->connected);
 
     /* Run the destroy hooks. */
     for (hk = sess->destroy_sess_hooks; hk != NULL; hk = hk->next) {

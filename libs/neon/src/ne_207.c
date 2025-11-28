@@ -381,23 +381,18 @@ int ne_simple_request(ne_session *sess, ne_request *req)
     ne_207_set_response_handlers(p207, start_response, end_response);
     ne_207_set_propstat_handlers(p207, NULL, end_propstat);
 
-    ret = ne_xml_dispatch_request(req, p);
-
+    /* Parse XML responses for 207 only. */
+    ret = ne_xml_dispatchif_request(req, p, ne_accept_207, NULL);
     if (ret == NE_OK) {
-	if (ne_get_status(req)->code == 207) {
-	    if (ne_xml_failed(p)) { 
-		/* The parse was invalid */
-		ne_set_error(sess, "%s", ne_xml_get_error(p));
-		ret = NE_ERROR;
-	    } else if (ctx.is_error) {
-		/* If we've actually got any error information
-		 * from the 207, then set that as the error */
-		ne_set_error(sess, "%s", ctx.buf->data);
-		ret = NE_ERROR;
-	    }
-	} else if (ne_get_status(req)->klass != 2) {
-	    ret = NE_ERROR;
-	}
+        if (ctx.is_error) {
+            /* Catch any error parsed in the 207 case here. */
+            ne_set_error(sess, "%s", ctx.buf->data);
+            ret = NE_ERROR;
+            NE_DEBUG(NE_DBG_XML, "207: Returning error %s\n", ctx.buf->data);
+        }
+        else if (ne_get_status(req)->klass != 2) {
+            ret = NE_ERROR;
+        }
     }
 
     ne_207_destroy(p207);

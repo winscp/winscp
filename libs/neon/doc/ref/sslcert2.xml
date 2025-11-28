@@ -8,6 +8,10 @@
   <refnamediv>
     <refname id="ne_ssl_cert_cmp">ne_ssl_cert_cmp</refname>
     <refname id="ne_ssl_cert_free">ne_ssl_cert_free</refname>
+    <refname id="ne_ssl_cert_digest">ne_ssl_cert_digest</refname>
+    <refname id="ne_ssl_cert_hdigest">ne_ssl_cert_hdigest</refname>
+    <refname id="ne_ssl_cert_validity">ne_ssl_cert_validity</refname>
+    <refname id="ne_ssl_cert_validity_time">ne_ssl_cert_validity_time</refname>
     <refpurpose>functions to operate on certificate objects</refpurpose>
   </refnamediv>
   
@@ -28,6 +32,31 @@
         <paramdef>ne_ssl_certificate *<parameter>cert</parameter></paramdef>
       </funcprototype>
 
+      <funcprototype>
+        <funcdef>int <function>ne_ssl_cert_digest</function></funcdef>
+        <paramdef>const ne_ssl_certificate *<parameter>c1</parameter></paramdef>
+        <paramdef>char *<parameter>digest</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>char *<function>ne_ssl_cert_hdigest</function></funcdef>
+        <paramdef>const ne_ssl_certificate *<parameter>c1</parameter></paramdef>
+        <paramdef>unsigned int <parameter>flags</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>void <function>ne_ssl_cert_validity_time</function></funcdef>
+        <paramdef>const ne_ssl_certificate *<parameter>cert</parameter></paramdef>
+        <paramdef>time_t *<parameter>from</parameter></paramdef>
+        <paramdef>time_t *<parameter>until</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>void <function>ne_ssl_cert_validity</function></funcdef>
+        <paramdef>const ne_ssl_certificate *<parameter>cert</parameter></paramdef>
+        <paramdef>char *<parameter>from</parameter></paramdef>
+        <paramdef>char *<parameter>until</parameter></paramdef>
+      </funcprototype>
     </funcsynopsis>
 
   </refsynopsisdiv>
@@ -43,7 +72,56 @@
     used to destroy a certificate object when it is no longer
     needed.</para>
 
+    <para>The <function>ne_ssl_cert_digest</function> function writes
+    a human-readable fingerprint as a NUL-terminated string to the
+    <parameter>digest</parameter> buffer provided, in the format
+    "aa:bb...:ff". The <parameter>digest</parameter> buffer must be at
+    least <literal>NE_SSL_DIGESTLEN</literal> bytes in length.</para>
+
+    <para>The <function>ne_ssl_cert_hdigest</function> function
+    returns a human-readable fingerprint for the certificate
+    object. The <parameter>flags</parameter> parameter specifies the
+    hash formatting options as if passed to <xref linkend="ne_strhash"/>. The
+    returned string is malloc-allocated and must be freed after use.</para>
+
+    <para>The <function>ne_ssl_cert_validity_time</function> function
+    retrieves both the time from which the certificate is valid from
+    and until. Each time is returned through the
+    <parameter>from</parameter> and <parameter>until</parameter>
+    parameters, which are written as <literal>(time_t)-1</literal> if
+    either time cannot be represented as a <literal>time_t</literal>
+    value. The <function>ne_ssl_cert_validity</function> function
+    similarly writes the validity times to the string buffers
+    provided, using RFC 1123-style date formatting (not
+    localized). The output parameters must be at least
+    <literal>NE_SSL_VDATELEN</literal> bytes in length. Either
+    parameter can be passed as &null;.</para>
   </refsect1>
 
+  <refsect1>
+    <title>Return value</title>
+
+    <para><function>ne_ssl_cert_cmp</function> returns 0 if the
+    certificates are the same, and non-zero otherwise.
+    <function>ne_ssl_cert_digest</function> returns 0 on success or
+    non-zero on error. The return value of
+    <function>ne_ssl_cert_hdigest</function> is a NUL-terminated
+    malloc-allocated string, or &null; if the hash cannot be
+    created.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_ssl_cert_hdigest</function> is available in
+    in &neon; 0.32.0 and later.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+
+    <para><xref linkend="ne_strhash"/></para>
+  </refsect1>
 </refentry>
 

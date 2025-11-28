@@ -2,12 +2,12 @@
 .\"     Title: ne_request_create
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 15 July 2025
+.\"      Date: 23 November 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.35.0
+.\"    Source: neon 0.36.0
 .\"  Language: English
 .\"
-.TH "NE_REQUEST_CREATE" "3" "15 July 2025" "neon 0.35.0" "neon API reference"
+.TH "NE_REQUEST_CREATE" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -117,20 +117,13 @@ NULL)\&.
 .PP
 The
 \fBne_request_dispatch\fR
-function returns zero if the request was dispatched successfully, and a non\-zero error code otherwise\&.
-.SH "NOTES"
+function returns zero if the request was dispatched successfully, and a non\-zero error code code otherwise, as described in the following section\&.
+.SH "ERROR CODES"
 .PP
-The
-\fIpath\fR,
-\fImethod\fR
-and
-\fItarget\fR
-parameters of
-\fBne_request_create\fR
-are used directly in request data without validation, so must not be taken from untrusted sources\&. For example, allowing insertion of unescaped CR, LF or other control characters in these parameters may result in unexpected or insecure behaviour\&.
-.PP
-neon does not impose any length restrictions on request input data\&.
-.SH "ERRORS"
+Error codes have a non\-zero value, and correspond to an
+NE_*
+macro definition, as listed below\&. Future versions of neon may introduce additional error code definitions\&. Functions which return an error code and have an associated session object set the session error string (see
+ne_get_error) unless documented otherwise\&.
 .PP
 \fBNE_ERROR\fR
 .RS 4
@@ -161,6 +154,26 @@ A connection to the server could not be established\&.
 .RS 4
 A timeout occurred while waiting for the server to respond\&.
 .RE
+.PP
+\fBNE_REDIRECT\fR
+.RS 4
+A valid redirect was retuerned\&.
+\fINote:\fR
+Only returned if redirect handling is registered for the session using
+ne_redirect_register\&.
+.RE
+.SH "NOTES"
+.PP
+The
+\fIpath\fR,
+\fImethod\fR
+and
+\fItarget\fR
+parameters of
+\fBne_request_create\fR
+are used directly in request data without validation, so must not be taken from untrusted sources\&. For example, allowing insertion of unescaped CR, LF or other control characters in these parameters may result in unexpected or insecure behaviour\&.
+.PP
+neon does not impose any length restrictions on request input data\&.
 .SH "EXAMPLE"
 .PP
 An example of applying a
@@ -189,7 +202,8 @@ ne_set_error,
 ne_get_status,
 ne_add_request_header,
 ne_set_request_body_buffer,
-ne_set_request_flag\&.
+ne_set_request_flag,
+ne_redirect_register\&.
 .SH "COPYRIGHT"
 .br
 Copyright \(co 2001-2025 Joe Orton

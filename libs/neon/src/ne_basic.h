@@ -41,6 +41,14 @@ int ne_put(ne_session *sess, const char *path, int fd);
 int ne_putbuf(ne_session *sess, const char *path,
               const char *buf, size_t buflen);
 
+/* Perform a GET request on resource at 'path', for 2xx responses
+ * writing the entity body which is returned to 'buffer', of maximum
+ * length *buflen.  On return, *buflen is updated to reflect the
+ * number of bytes received. If the response content length exceeds
+ * the maximum, NE_FAILED is returned. */
+int ne_getbuf(ne_session *sess, const char *path,
+              char *buf, size_t *buflen);
+
 #define NE_DEPTH_ZERO (0)
 #define NE_DEPTH_ONE (1)
 #define NE_DEPTH_INFINITE (2)

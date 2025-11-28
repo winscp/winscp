@@ -1,0 +1,93 @@
+'\" t
+.\"     Title: ne_read_response_to_fd
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 23 November 2025
+.\"    Manual: neon API reference
+.\"    Source: neon 0.36.0
+.\"  Language: English
+.\"
+.TH "NE_READ_RESPONSE_TO_" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_read_response_to_fd, ne_read_response_to_buffer \- read a response body
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_request\&.h>
+.fi
+.ft
+.HP \w'int\ ne_read_response_to_fd('u
+.BI "int ne_read_response_to_fd(ne_request\ *" "req" ", int\ " "fd" ");"
+.HP \w'int\ ne_read_response_to_buffer('u
+.BI "int ne_read_response_to_buffer(ne_request\ *" "req" ", char\ *" "data" ", size_t\ *" "buflen" ");"
+.SH "DESCRIPTION"
+.PP
+To read an HTTP response body the functions
+\fBne_read_response_to_fd\fR
+and
+\fBne_read_response_to_buffer\fR
+can be used\&. These functions are wrappers for
+\fBne_read_response_block\fR
+and must be called only after
+\fBne_begin_request\fR
+has been called successfully for the request\&.
+.PP
+The
+\fBne_read_response_to_fd\fR
+function writes the response body content to the file descriptor passed as the
+\fIfd\fR
+parameter\&.
+.PP
+The
+\fBne_read_response_to_buffer\fR
+function writes the response body content to the buffer passed as the
+\fIbuf\fR
+parameter, which has length passed via the *\fIbuflen\fR
+parameter\&. On success, the *\fIbuflen\fR
+is updated with the number of bytes written to the buffer\&.
+.PP
+After the response body has been read successfully,
+\fBne_end_request\fR
+must be called\&. If a failure occurs while reading the response body, the connection must be closed using
+ne_close_connection\&.
+.SH "RETURN VALUE"
+.PP
+Both functions return zero on success, or an
+NE_* error code
+on failure\&. The
+\fBne_read_response_to_buffer\fR
+function returns
+NE_FAILED
+if the response message length is larger than the buffer length\&.
+.SH "HISTORY"
+.PP
+\fBne_read_response_to_buffer\fR
+is available in neon 0\&.36\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+ne_request_create,
+ne_set_error
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2025 Joe Orton
+.br
