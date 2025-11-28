@@ -57,6 +57,7 @@
 <!ENTITY refreq SYSTEM "ref/req.xml">
 <!ENTITY refreqhdr SYSTEM "ref/reqhdr.xml">
 <!ENTITY refresphdr SYSTEM "ref/resphdr.xml">
+<!ENTITY refrespbody SYSTEM "ref/respbody.xml">
 <!ENTITY refreqflags SYSTEM "ref/reqflags.xml">
 <!ENTITY refreqtarget SYSTEM "ref/reqtgt.xml">
 <!ENTITY refred SYSTEM "ref/redir.xml">
@@ -82,7 +83,7 @@
 <!ENTITY refiaddr SYSTEM "ref/iaddr.xml">
 <!ENTITY refclicert SYSTEM "ref/clicert.xml">
 <!ENTITY refxml SYSTEM "ref/xml.xml">
-
+<!ENTITY refxmlreq SYSTEM "ref/xmlreq.xml">
 ]>
 
 <book>
@@ -191,6 +192,7 @@ ignoring the WebDAV support if desired.</para>
     &refreq; <!-- ne_request_create -->
     &refreqhdr; <!-- ne_add_request_header -->
     &refresphdr; <!-- ne_add_request_header -->
+    &refrespbody; <!-- ne_read_response_to_fd -->
     &refopts; <!-- ne_set_useragent -->
     &refreqflags; <!-- ne_set_request_flag -->
     &refreqbody; <!-- ne_set_request_body_buffer -->
@@ -212,6 +214,7 @@ ignoring the WebDAV support if desired.</para>
     &reftok; <!-- ne_token -->
     &refvers; <!-- ne_version_match -->
     &refxml; <!-- ne_xml_parser -->
+    &refxmlreq; <!-- ne_xml_parse_response -->
 
     <!-- REFEND -->
     <!-- ******************************************************************* -->

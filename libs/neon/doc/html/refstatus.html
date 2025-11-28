@@ -6,7 +6,7 @@ typedef struct {
     int code;
     int klass;
     char *reason_phrase;
-} <em class="type">ne_status</em>;</pre></div></div><div class="refsect1"><a name="id4396"></a><h2>Description</h2><p>The <em class="type">ne_status</em> type represents an HTTP
+} <em class="type">ne_status</em>;</pre></div></div><div class="refsect1"><a name="id4571"></a><h2>Description</h2><p>The <em class="type">ne_status</em> type represents an HTTP
 	response status; used in response messages giving a result of
 	request.  The <em class="structfield"><code>major_version</code></em> and
 	<em class="structfield"><code>minor_version</code></em> fields give the
@@ -25,8 +25,8 @@ typedef struct {
 	for HTTP/1.1 (see <a class="ulink" href="https://www.rfc-editor.org/rfc/rfc9110#name-status-codes" target="_top">RFC
 	9110 ẞ15</a>):</p><div class="variablelist"><table border="0" class="variablelist"><colgroup><col align="left" valign="top"><col></colgroup><tbody><tr><td><p><span class="term"><code class="literal">1xx</code></span></p></td><td>Informational response.</td></tr><tr><td><p><span class="term"><code class="literal">2xx</code></span></p></td><td>Success: the operation was successful</td></tr><tr><td><p><span class="term"><code class="literal">3xx</code></span></p></td><td>Redirection</td></tr><tr><td><p><span class="term"><code class="literal">4xx</code></span></p></td><td>Client
 	    error: the request made was incorrect in some
-	    manner.</td></tr><tr><td><p><span class="term"><code class="literal">5xx</code></span></p></td><td>Server error</td></tr></tbody></table></div></div><div class="refsect1"><a name="id4437"></a><h2>Notes</h2><p>The
+	    manner.</td></tr><tr><td><p><span class="term"><code class="literal">5xx</code></span></p></td><td>Server error</td></tr></tbody></table></div></div><div class="refsect1"><a name="id4612"></a><h2>Notes</h2><p>The
       <em class="structfield"><code>klass</code></em> field is named
       <span class="quote">“<span class="quote">klass</span>”</span> not <span class="quote">“<span class="quote">class</span>”</span> so that the header
       can be used from a C++ program, in which <span class="quote">“<span class="quote">class</span>”</span> is
-      a reserved word.</p></div><div class="refsect1"><a name="id4444"></a><h2>See also</h2><p><a class="xref" href="refgetst.html#ne_get_status">ne_get_status</a>.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="refclicert.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ref.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="reftok.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ne_ssl_client_cert </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> ne_token</td></tr></table></div></body></html>
+      a reserved word.</p></div><div class="refsect1"><a name="id4619"></a><h2>See also</h2><p><a class="xref" href="refgetst.html#ne_get_status">ne_get_status</a>.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="refclicert.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ref.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="reftok.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ne_ssl_client_cert </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> ne_token</td></tr></table></div></body></html>

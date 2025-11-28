@@ -512,6 +512,18 @@ ne_xml_parser *ne_xml_create(void)
     return p;
 }
 
+int ne_xml_set_encoding(ne_xml_parser *p, const char *encoding)
+{
+#ifdef HAVE_EXPAT
+    if (XML_SetEncoding(p->parser, encoding))
+        return 0;
+#else
+    if (xmlCtxtResetPush(p->parser, NULL, 0, NULL, encoding) == 0)
+        return 0;
+#endif
+    return 1;
+}
+
 void ne_xml_push_handler(ne_xml_parser *p,
 			 ne_xml_startelm_cb *startelm_cb, 
 			 ne_xml_cdata_cb *cdata_cb, 

@@ -17,13 +17,6 @@
 
 # Tests needed for the neon-test common test code.
 
-AC_DEFUN([NE_FORMAT_TIMET], [
-NEON_FORMAT(time_t, [
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif])
-])
-
 AC_DEFUN([NEON_TEST], [
 
 AC_REQUIRE([NEON_COMMON_CHECKS])

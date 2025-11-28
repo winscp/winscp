@@ -2,12 +2,12 @@
 .\"     Title: ne_buffer_append
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 15 July 2025
+.\"      Date: 23 November 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.35.0
+.\"    Source: neon 0.36.0
 .\"  Language: English
 .\"
-.TH "NE_BUFFER_APPEND" "3" "15 July 2025" "neon 0.35.0" "neon API reference"
+.TH "NE_BUFFER_APPEND" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_buffer_append, ne_buffer_zappend, ne_buffer_concat \- append data to a string buffer
+ne_buffer_append, ne_buffer_zappend, ne_buffer_qappend, ne_buffer_concat, ne_buffer_snprintf \- append data to a string buffer
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -40,8 +40,12 @@ ne_buffer_append, ne_buffer_zappend, ne_buffer_concat \- append data to a string
 .BI "void ne_buffer_append(ne_buffer\ *" "buf" ", const\ char\ *" "string" ", size_t\ " "len" ");"
 .HP \w'void\ ne_buffer_zappend('u
 .BI "void ne_buffer_zappend(ne_buffer\ *" "buf" ", const\ char\ *" "string" ");"
+.HP \w'void\ ne_buffer_qappend('u
+.BI "void ne_buffer_qappend(ne_buffer\ *" "buf" ", const\ char\ *" "string" ", size_t\ " "len" ");"
 .HP \w'void\ ne_buffer_concat('u
-.BI "void ne_buffer_concat(ne_buffer\ *" "buf" ", const\ char\ *" "str" ", \&.\&.\&.);"
+.BI "void ne_buffer_concat(ne_buffer\ *" "buf" ", \&.\&.\&.);"
+.HP \w'size_t\ ne_buffer_snprintf('u
+.BI "size_t ne_buffer_snprintf(ne_buffer\ *" "buf" ", size_t\ " "max" ", const\ char\ *" "format" ", \&.\&.\&.);"
 .SH "DESCRIPTION"
 .PP
 The
@@ -62,17 +66,44 @@ must be passed a
 NUL\-terminated string\&.
 .PP
 The
+\fBne_buffer_qappend\fR
+function behaves similarly to
+\fBne_buffer_append\fR, except that any non\-ASCII characters or ASCII control characters are escaped using C\-style hex escaping\&. For example, the C string
+"foo<TAB>bar", where TAB represents ASCII character 9, would be appended as
+"foo\ex09bar"\&. Any
+NUL
+bytes within the length specified are also escaped\&. This function is useful to make strings from untrusted sources safe for logging or output in a user interface\&.
+.PP
+The
 \fBne_buffer_concat\fR
-function takes a variable\-length argument list following
-\fIstr\fR; each argument must be a
+function takes a variable\-length argument list; each argument must be a
 \fBchar *\fR
 pointer to a
 NUL\-terminated string\&. A
 NULL
-pointer must be given as the last argument to mark the end of the list\&. The strings (including
-\fIstr\fR) are appended to the buffer in the order given\&. None of the strings passed to
+pointer must be given as the last argument to mark the end of the list\&. The strings are appended to the buffer in the order given\&. None of the strings passed to
 \fBne_buffer_concat\fR
 are modified\&.
+.PP
+The
+\fBne_buffer_snprintf\fR
+function behaves like
+\fBsnprintf\fR, appending the output string formatted according to the
+\fIformat\fR
+parameter\&. At most
+\fImax\fR
+bytes are written including the trailing
+NUL
+terminator\&.
+.SH "RETURN VALUE"
+.PP
+The
+\fBne_buffer_snprintf\fR
+function returns the number of bytes appended
+\fIexcluding\fR
+the trailing
+NUL
+terminator\&.
 .SH "EXAMPLES"
 .PP
 The following code will output "Hello, world\&. And goodbye\&."\&.
@@ -83,7 +114,8 @@ The following code will output "Hello, world\&. And goodbye\&."\&.
 .nf
 ne_buffer *buf = ne_buffer_create();
 ne_buffer_zappend(buf, "Hello");
-ne_buffer_concat(buf, ", world\&. ", "And ", "goodbye\&.", NULL);
+ne_buffer_concat(buf, ", world\&. ", "And ", NULL);
+ne_buffer_snprintf(buf, 10, "%s\&.", "goodbye");
 puts(buf\->data);
 ne_buffer_destroy(buf);
 .fi

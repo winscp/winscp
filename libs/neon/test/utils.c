@@ -77,6 +77,15 @@ int double_serve_sstring(ne_socket *s, void *userdata)
     return OK;
 }
 
+int serve_buffer(ne_socket *s, void *userdata)
+{
+    ne_buffer *buf = userdata;
+    CALL(discard_request(s));
+    CALL(discard_body(s));
+    ONN("failed to send response", server_send(s, buf->data, buf->used-1));
+    return OK;
+}
+
 int sleepy_server(ne_socket *sock, void *userdata)
 {
     sleep(10);

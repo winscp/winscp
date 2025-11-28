@@ -28,8 +28,8 @@ NE_BEGIN_DECLS
 
 /* Return a copy of a path string with anything not allowed in the URI
  * "pchar" rule, or the forward-slash character, percent-escaped. This
- * is equivalent to calling ne_path_escape() with the NE_PATH_NONPC
- * flag set. Returns a malloc-allocated string and never NULL. */
+ * is equivalent to calling ne_path_escapef() with the NE_PATH_NONPC
+ * flag. Returns a malloc-allocated string and never NULL. */
 char *ne_path_escape(const char *path)
     ne_attribute((nonnull));
 

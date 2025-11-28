@@ -77,6 +77,9 @@ struct double_serve_args {
 /* Serve a struct string. */
 int serve_sstring(ne_socket *sock, void *ud);
 
+/* Serve a ne_buffer *. */
+int serve_buffer(ne_socket *sock, void *ud);
+
 /* Discards an HTTP request, serves response ->first, discards another
  * HTTP request, then serves response ->second. */
 int double_serve_sstring(ne_socket *s, void *userdata);

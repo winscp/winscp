@@ -1,3 +1,23 @@
+Changes in release 0.36.0:
+* Interface changes:
+ - API and ABI backwards-compatible with 0.27.x and later
+* New interfaces and features:
+ - ne_xml.h: add ne_xml_set_encoding()
+ - ne_xmlreq.h: add ne_xml_dispatchif_request(); this and
+   ne_xml_dispatch_request() both invoke ne_xml_set_encoding()
+   with the charset= from the Content-Type, if present
+ - ne_request.h: add ne_read_response_to_buffer()
+ - ne_basic.h: add ne_getbuf()
+* Bug fixes:
+ - fix ne_simple_request() failures on non-207 XML responses (#208)
+ - invoke the notifier callback again at the end of a chunked response
+ - fix a failure case where a proxy connection could get reused after
+   SSL proxy tunnel setup failed at the proxy
+ - fix ne_sock_* OpenSSL 3.4 error handling on Windows (#213)
+ - ne_get_content_type() updated for RFC 7303: default charset
+   for text/ media types is removed
+* Various documentation updates.
+
 Changes in release 0.35.0:
 * Interface changes:
  - API and ABI backwards-compatible with 0.27.x and later

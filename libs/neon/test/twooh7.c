@@ -52,13 +52,13 @@
     RESP(s2, rd2)                             \
     "</d:multistatus>"
 
-static int errors(void)
+static int simples(void)
 {
     static const struct {
         int status;
         const char *ctype;
         const char *body;
-        const char *expect;
+        const char *expect; /* NULL for success cases. */
     } ts[] = {
         { 207, "application/xml",
           MS_207_1("<d:status>HTTP/1.1 423 Locked</d:status>", ""),
@@ -78,7 +78,11 @@ static int errors(void)
                    "<d:responsedescription>The thing was locked</d:responsedescription>",
                    "<d:status>HTTP/1.1 404 Gone</d:status>",
                  "<d:responsedescription>No such thingy</d:responsedescription>"),
-          "such thingy" }
+          "such thingy" },
+        /* Test that 201 responses are NOT parsed. */
+        { 201, "application/xml", "<malformed-xml>", NULL },
+        /* Test that non-2xx response is also an error. */
+        { 404, "application/xml", "<malformed-xml>", "404" }
     };
     unsigned n;
 
@@ -100,17 +104,23 @@ static int errors(void)
         req = ne_request_create(sess, "SIMPLE", "/");
 
         ret = ne_simple_request(sess, req);
-        ONN("ne_simple_request didn't fail", ret == NE_OK);
 
-        err = ne_strclean(ne_strdup(ne_get_error(sess)));
-        ONV(strcmp(err, ne_get_error(sess)),
-            ("error string wasn't cleaned: %s", ne_get_error(sess)));
-        NE_DEBUG(NE_DBG_HTTP, "test: got error string: %s\n", err);
-        ne_free(err);
+        if (ts[n].expect) {
+            ONN("ne_simple_request didn't fail", ret == NE_OK);
 
-        ONV(strstr(ne_get_error(sess), ts[n].expect) == NULL,
-            ("error string didn't match: '%s' - expected '%s'",
-             ne_get_error(sess), ts[n].expect));
+            err = ne_strclean(ne_strdup(ne_get_error(sess)));
+            ONV(strcmp(err, ne_get_error(sess)),
+                ("error string wasn't cleaned: %s", ne_get_error(sess)));
+            NE_DEBUG(NE_DBG_HTTP, "test: got error string: %s\n", err);
+            ne_free(err);
+
+            ONV(strstr(ne_get_error(sess), ts[n].expect) == NULL,
+                ("error string didn't match: '%s' - expected '%s'",
+                 ne_get_error(sess), ts[n].expect));
+        }
+        else {
+            ONREQ(ret);
+        }
 
         ne_session_destroy(sess);
         CALL(await_server());
@@ -391,7 +401,7 @@ static int two_oh_seven(void)
 }
 
 ne_test tests[] = {
-    T(errors),
+    T(simples),
     T(two_oh_seven),
     T(NULL)
 };

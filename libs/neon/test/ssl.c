@@ -1365,24 +1365,33 @@ static int auth_tunnel_creds(void)
 
 static int auth_tunnel_fail(void)
 {
-    ne_session *sess = ne_session_create("https", "localhost", 443);
+    ne_session *sess;
     int ret;
 
-    CALL(spawn_server(7777, single_serve_string,
-                      "HTTP/1.1 407 Nyaaaaah\r\n"
-                      "Proxy-Authenticate: GaBoogle\r\n"
-                      "Connection: close\r\n"
-                      "\r\n"));
-    
-    ne_session_proxy(sess, "localhost", 7777);
+    CALL(proxied_session_server(&sess, "https", "localhost", 7777,
+                                single_serve_string,
+                                "HTTP/1.1 407 Nyaaaaah\r\n"
+                                "Proxy-Authenticate: GaBoogle\r\n"
+                                "Content-Length: 0\r\n"
+                                "\r\n"
+                                "HTTP/1.1 200 OK\r\n"
+                                "Content-Length: 0\r\n"
+                                "\r\n"));
 
     ne_set_proxy_auth(sess, apt_creds, NULL);
-     
-    ret = any_request(sess, "/bar");
-    ONV(ret != NE_PROXYAUTH, ("bad error code for tunnel failure: %d", ret));
 
+    /* First request: should fail and the auth failure should
+     * propagate back to the session error string. */
+    ret = any_request(sess, "/foo");
+    ONV(ret != NE_PROXYAUTH, ("bad error code for tunnel failure: %d", ret));
     ONV(strstr(ne_get_error(sess), "GaBoogle") == NULL,
         ("bad error string for tunnel failure: %s", ne_get_error(sess)));
+
+    /* Second request must fail to connect, the connection should have
+     * been closed. */
+    ret = any_request(sess, "/bar");
+    ONV(ret != NE_CONNECT,
+        ("second attempt should fail to connect, got: %d", ret));
 
     return destroy_and_wait(sess);
 }

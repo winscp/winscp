@@ -244,7 +244,15 @@ int ne_discard_response(ne_request *req);
 
 /* Read response blocks until end of response, writing content to the
  * given file descriptor.  Returns NE_ERROR on error. */
-int ne_read_response_to_fd(ne_request *req, int fd);
+int ne_read_response_to_fd(ne_request *req, int fd)
+    ne_attribute((nonnull));
+
+/* Read response blocks until the end of the response, writing content
+ * to the buffer of length *buflen. On success, *buflen is updated
+ * with the number of bytes read. If the buffer is too small to
+ * contain the response, NE_FAILED is returned. */
+int ne_read_response_to_buffer(ne_request *req, char *buf, size_t *buflen)
+    ne_attribute((nonnull));
 
 /* Defined request flags: */
 typedef enum ne_request_flag_e {
