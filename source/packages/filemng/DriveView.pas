@@ -42,17 +42,6 @@ uses
   DiscMon, IEDriveInfo, IEListView, BaseUtils, CustomDirView,
   CustomDriveView, System.Generics.Collections, CompThread;
 
-const
-  msThreadChangeDelay = 50;
-
-  ErrorNodeNA = '%s: Node not assigned';
-
-  // Flags used by TDriveView.RefreshRootNodes:
-  dvdsFloppy          = 8;  // Include floppy drives
-  dvdsRereadAllways   = 16; // Refresh drivestatus in any case
-
-  WM_USER_SUBDIRREADER = WM_USER_SHCHANGENOTIFY + 1;
-
 type
   EInvalidDirName  = class(Exception);
   ENodeNotAssigned = class(Exception);
@@ -445,8 +434,12 @@ implementation
 uses
   PasTools, UITypes, SyncObjs, IOUtils, System.DateUtils;
 
-type
-  PInt = ^Integer;
+const
+  msThreadChangeDelay = 50;
+
+  ErrorNodeNA = '%s: Node not assigned';
+
+  WM_USER_SUBDIRREADER = WM_USER_SHCHANGENOTIFY + 1;
 
 procedure Register;
 begin
