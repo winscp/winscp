@@ -148,8 +148,6 @@ type
     FConfirmOverwrite: Boolean;
     FWatchDirectory: Boolean;
     FDirectory: string;
-    FShowVolLabel: Boolean;
-    FVolDisplayStyle: TVolumeDisplayStyle;
     FChangeFlag: Boolean;
     FLastDir: string;
     FValidateFlag: Boolean;
@@ -212,7 +210,6 @@ type
   protected
     procedure SetSelected(Node: TTreeNode);
     procedure SetWatchDirectory(Value: Boolean);
-    procedure SetShowVolLabel(ShowIt: Boolean);
     procedure SetDirView(Value: TDirView);
     procedure SetDirectory(Value: string); override;
     function  DoScanDir(FromNode: TTreeNode): Boolean;
@@ -276,7 +273,6 @@ type
     function GetDriveStatus(Drive: string): TDriveStatus;
     function GetDriveTypetoNode(Node: TTreeNode): Integer;  // Returns DRIVE_CDROM etc..
     function GetDriveToNode(Node: TTreeNode): string;
-    function GetDriveText(Drive: string): string;
     procedure ScanDrive(Drive: string);
     function GetDrives: TStrings;
 
@@ -332,8 +328,6 @@ type
     property WatchDirectory: Boolean read FWatchDirectory write SetWatchDirectory default False;
     // Linked component TDirView:
     property DirView: TDirView read FDirView write SetDirView;
-    // Show the volume labels of drives:
-    property ShowVolLabel: Boolean read FShowVolLabel write SetShowVolLabel default True;
     // Additional events:
     property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
       write FOnDisplayContextMenu;
@@ -834,7 +828,6 @@ begin
   FDelayedNodeTimer.Interval := 250;
   FDelayedNodeTimer.OnTimer := DelayedNodeTimer;
 
-  FShowVolLabel := True;
   FChangeFlag := False;
   FLastDir := EmptyStr;
   FValidateFlag := False;
@@ -1446,21 +1439,6 @@ begin
   end; // IconEmpty
   TNodeData(Node.Data).IconEmpty := False;
 end; // SetImageIndex
-
-function TDriveView.GetDriveText(Drive: string): string;
-begin
-  if FShowVolLabel and (Length(DriveInfo.GetPrettyName(Drive)) > 0) then
-  begin
-    case FVolDisplayStyle of
-      doPrettyName:  Result := DriveInfo.GetPrettyName(Drive);
-      doDisplayName: Result := DriveInfo.GetDisplayName(Drive);
-    end;
-  end
-    else
-  begin
-    Result := DriveInfo.GetSimpleName(Drive);
-  end;
-end;
 
 function CompareDrive(List: TStringList; Index1, Index2: Integer): Integer;
 var
@@ -2619,19 +2597,11 @@ begin
   if (not Assigned(Node)) or (not Assigned(Node.Data)) then
     raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['GetDisplayName']));
 
-  if not Assigned(Node.Parent) then Result := GetDriveText(GetDriveToNode(Node))
+  if not Assigned(Node.Parent) then Result := DriveInfo.GetPrettyName(GetDriveToNode(Node))
     else
   begin
     Result := GetDirName(Node);
   end;
-end;
-
-procedure TDriveView.SetShowVolLabel(ShowIt: Boolean);
-begin
-  if ShowIt = FShowVolLabel then
-    Exit;
-  FShowVolLabel := ShowIt;
-  RefreshRootNodes(True);
 end;
 
 procedure TDriveView.DisplayContextMenu(Node: TTreeNode; Point: TPoint);

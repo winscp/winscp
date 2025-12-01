@@ -569,11 +569,10 @@ begin
     if Length(Get(Drive).PrettyName) = 0 then
       ReadDriveStatus(Drive, dsDisplayName);
     Result := Get(Drive).PrettyName;
-  end
-    else
-  begin
-    Result := GetSimpleName(Drive);
   end;
+
+  if Length(Result) = 0 then
+    Result := GetSimpleName(Drive);
 end; {TDriveInfo.GetPrettyName}
 
 function TDriveInfo.GetSimpleName(Drive: string): string;

@@ -40,9 +40,6 @@ uses
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
   FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, System.Generics.Collections, Winapi.ShellAPI;
 
-type
-  TVolumeDisplayStyle = (doPrettyName, doDisplayName); // Diplaytext of drive node
-
 const
   msThreadChangeDelay = 10; // TDiscMonitor: change delay
   MaxWaitTimeOut = 10; // TFileDeleteThread: wait nn seconds for deleting files or directories
