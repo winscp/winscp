@@ -335,9 +335,9 @@ void CFtpListResult::AddData(const char * Data, int Size)
   }
 
   bool Found;
-  int Pos;
-  int FirstLineEnd;
-  int Count;
+  int Pos = 0; // shut up
+  int FirstLineEnd = 0; // shut up
+  int Count = 0; // shut up
   bool Restart = true;
 
   do
@@ -423,18 +423,17 @@ void CFtpListResult::AddLine(t_directory::t_direntry & direntry)
   if (m_server.nTimeZoneOffset &&
     direntry.date.hasdate && direntry.date.hastime && !direntry.date.utc)
   {
-    SYSTEMTIME st = {0};
-    st.wYear = direntry.date.year;
-    st.wMonth = direntry.date.month;
-    st.wDay = direntry.date.day;
-    st.wHour = direntry.date.hour;
-    st.wMinute = direntry.date.minute;
-    st.wSecond = direntry.date.second;
+    SYSTEMTIME st = {};
+    st.wYear = static_cast<WORD>(direntry.date.year);
+    st.wMonth = static_cast<WORD>(direntry.date.month);
+    st.wDay = static_cast<WORD>(direntry.date.day);
+    st.wHour = static_cast<WORD>(direntry.date.hour);
+    st.wMinute = static_cast<WORD>(direntry.date.minute);
+    st.wSecond = static_cast<WORD>(direntry.date.second);
 
     FILETIME ft;
     SystemTimeToFileTime(&st, &ft);
     _int64 nFt = ((_int64)ft.dwHighDateTime << 32) + ft.dwLowDateTime;
-    _int64 nFt2 = nFt;
     nFt += ((_int64)m_server.nTimeZoneOffset) * 10000000 * 60;
     ft.dwHighDateTime = static_cast<unsigned long>(nFt >> 32);
     ft.dwLowDateTime = static_cast<unsigned long>(nFt & 0xFFFFFFFF);
@@ -876,7 +875,7 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
   return TRUE;
 }
 
-BOOL CFtpListResult::parseAsEPLF(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsEPLF(const char *line, const int, t_directory::t_direntry &direntry)
 {
   t_directory::t_direntry dir;
   const char *str = strstr(line, "\t");

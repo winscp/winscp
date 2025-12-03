@@ -72,8 +72,8 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
 // in objconv
 
 #define AES_CBC_VTABLE(impl_c, impl_display, bits)                      \
-    const char ssh_aes ## bits ## _cbc ## impl_c ## ssh2_id[] = "aes" #bits "-cbc"; /*WINSCP*/ \
-    const char ssh_aes ## bits ## _cbc ## impl_c ## text_name[] = "AES-" #bits " CBC (" impl_display ")"; /*WINSCP*/ \
+    static const char ssh_aes ## bits ## _cbc ## impl_c ## ssh2_id[] = "aes" #bits "-cbc"; /*WINSCP*/ \
+    static const char ssh_aes ## bits ## _cbc ## impl_c ## text_name[] = "AES-" #bits " CBC (" impl_display ")"; /*WINSCP*/ \
     const ssh_cipheralg ssh_aes ## bits ## _cbc ## impl_c = {           \
         /*WINSCP*/ \
         /*.new =*/ aes ## impl_c ## _new,                                   \
@@ -96,8 +96,8 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
     }
 
 #define AES_SDCTR_VTABLE(impl_c, impl_display, bits)                    \
-    const char ssh_aes ## bits ## _sdctr ## impl_c ## ssh2_id[] = "aes" #bits "-ctr"; /*WINSCP*/ \
-    const char ssh_aes ## bits ## _sdctr ## impl_c ## text_name[] = "AES-" #bits " SDCTR (" impl_display ")"; /*WINSCP*/ \
+    static const char ssh_aes ## bits ## _sdctr ## impl_c ## ssh2_id[] = "aes" #bits "-ctr"; /*WINSCP*/ \
+    static const char ssh_aes ## bits ## _sdctr ## impl_c ## text_name[] = "AES-" #bits " SDCTR (" impl_display ")"; /*WINSCP*/ \
     const ssh_cipheralg ssh_aes ## bits ## _sdctr ## impl_c = {         \
         /*WINSCP*/ \
         /*.new =*/ aes ## impl_c ## _new,                                   \
@@ -120,8 +120,8 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
     }
 
 #define AES_GCM_VTABLE(impl_c, impl_display, bits)                      \
-    const char ssh_aes ## bits ## _gcm ## impl_c ## ssh2_id[] = "aes" #bits "-gcm@openssh.com"; /*WINSCP*/ \
-    const char ssh_aes ## bits ## _gcm ## impl_c ## text_name[] = "AES-" #bits " GCM (" impl_display ")"; /*WINSCP*/ \
+    static const char ssh_aes ## bits ## _gcm ## impl_c ## ssh2_id[] = "aes" #bits "-gcm@openssh.com"; /*WINSCP*/ \
+    static const char ssh_aes ## bits ## _gcm ## impl_c ## text_name[] = "AES-" #bits " GCM (" impl_display ")"; /*WINSCP*/ \
     const ssh_cipheralg ssh_aes ## bits ## _gcm ## impl_c = {           \
         /*.new =*/ aes ## impl_c ## _new,                                   \
         /*.free =*/ aes ## impl_c ## _free,                                 \

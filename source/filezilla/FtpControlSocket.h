@@ -93,7 +93,7 @@ public:
   BOOL RemoveActiveTransfer();
   BOOL SpeedLimitAddTransferredBytes(enum transferDirection direction, _int64 nBytesTransferred);
 
-  _int64 GetSpeedLimit(enum transferDirection direction, CTime & time);
+  _int64 GetSpeedLimit(enum transferDirection direction);
 
   _int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting);
 
@@ -170,7 +170,7 @@ protected:
   static _int64 m_CurrentTransferLimit[2];
   static CCriticalSectionWrapper m_SpeedLimitSync;
   _int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, _int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction);
-  _int64 GetSpeedLimit(CTime & time, int valType, int valValue);
+  _int64 GetSpeedLimit(int valType, int valValue);
 
   void SetDirectoryListing(t_directory * pDirectory, bool bSetWorkingDir = true);
   int CheckOverwriteFile();
@@ -220,8 +220,8 @@ protected:
     class COpData //Base class which will store operation specific parameters.
     {
     public:
-      COpData() {};
-      virtual ~COpData() {};
+      COpData() {}
+      virtual ~COpData() {}
     };
     COpData * pData;
   public:

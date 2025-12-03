@@ -21,6 +21,9 @@ DEF_WINDOWS_FUNCTION(SetSecurityInfo);
 DEF_WINDOWS_FUNCTION(SetEntriesInAclA);
 
 #ifdef MPEXT
+
+#include "puttyexp.h"
+
 void win_secur_cleanup(void)
 {
     if (usersid)

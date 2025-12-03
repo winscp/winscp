@@ -750,6 +750,8 @@ void ssh_gss_init(void)
 
 #ifdef WINSCP
 
+#include "puttyexp.h"
+
 void wingss_cleanup(void)
 {
     if (libraries_to_never_unload != NULL)

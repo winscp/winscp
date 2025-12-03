@@ -30,11 +30,12 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <AllPackageLibs>rtl.lib</AllPackageLibs>
+        <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_EnableBatchCompilation>true</BCC_EnableBatchCompilation>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
-        <BCC_UserSuppliedOptions>-Wno-typedef-redefinition</BCC_UserSuppliedOptions>
+        <BCC_UserSuppliedOptions>-Wno-typedef-redefinition -Wno-padded -Wno-cast-align -Wno-missing-braces -Wno-sign-compare -Wno-conversion -Wno-unused-macros -Wno-comma -Wno-covered-switch-default -Wno-cast-qual -Wno-language-extension-token -Wno-unused-parameter -Wno-c11-extensions -Wno-missing-field-initializers -Wno-shadow -Wno-sometimes-uninitialized -Wno-unused-variable -Wno-missing-noreturn -Wno-unreachable-code -Wno-switch-enum -Wno-conditional-uninitialized -Wno-format-nonliteral</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <Defines>SECURITY_WIN32;WINSCP;MPEXT;PLATFORM_HAS_SMEMCLR;_WINDOWS;$(Defines)</Defines>

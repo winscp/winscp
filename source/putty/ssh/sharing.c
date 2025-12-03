@@ -626,6 +626,7 @@ static void share_remove_channel(struct ssh_sharing_connstate *cs,
     sfree(chan);
 }
 
+#ifndef WINSCP
 static struct share_xchannel *share_add_xchannel(
     struct ssh_sharing_connstate *cs, unsigned upstream_id, unsigned server_id)
 {
@@ -645,6 +646,7 @@ static struct share_xchannel *share_add_xchannel(
     }
     return xc;
 }
+#endif
 
 static struct share_xchannel *share_find_xchannel_by_upstream(
     struct ssh_sharing_connstate *cs, unsigned upstream_id)

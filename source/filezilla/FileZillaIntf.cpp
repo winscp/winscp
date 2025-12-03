@@ -260,7 +260,7 @@ bool __fastcall TFileZillaIntf::PostMessage(WPARAM wParam, LPARAM lParam)
   return DoPostMessage(Type, wParam, lParam);
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyContact(TFtpsCertificateData::TContact & Dest,
+static void __fastcall CopyContact(TFtpsCertificateData::TContact & Dest,
   const t_SslCertData::t_Contact& Source)
 {
   Dest.Organization = Source.Organization;
@@ -273,7 +273,7 @@ void __fastcall CopyContact(TFtpsCertificateData::TContact & Dest,
   Dest.Other = Source.Other;
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyValidityTime(TFtpsCertificateData::TValidityTime & Dest,
+static void __fastcall CopyValidityTime(TFtpsCertificateData::TValidityTime & Dest,
   const t_SslCertData::t_validTime& Source)
 {
   Dest.Year = Source.y;
@@ -284,7 +284,7 @@ void __fastcall CopyValidityTime(TFtpsCertificateData::TValidityTime & Dest,
   Dest.Sec = Source.s;
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyFileTime(TRemoteFileTime & Dest, const t_directory::t_direntry::t_date & Source)
+static void __fastcall CopyFileTime(TRemoteFileTime & Dest, const t_directory::t_direntry::t_date & Source)
 {
   Dest.Year = Source.year;
   Dest.Month = Source.month;

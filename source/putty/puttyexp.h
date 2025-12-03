@@ -42,7 +42,7 @@ void select_result(WPARAM wParam, LPARAM lParam);
 // from sshaes.c
 
 typedef void AESContext;
-AESContext * aes_make_context();
+AESContext * aes_make_context(void);
 void aes_free_context(AESContext * ctx);
 void aes_iv(AESContext * ctx, const void * iv);
 void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen);
@@ -57,11 +57,11 @@ void call_aesold_encrypt(void * ctx, unsigned int * block);
 
 // from winmisc.c
 
-void win_misc_cleanup();
+void win_misc_cleanup(void);
 
 // from misc.c
 
-const char * get_putty_version();
+const char * get_putty_version(void);
 
 // from winsecur.c
 

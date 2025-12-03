@@ -13,11 +13,22 @@
 
 #ifdef WINSCP
 #define HAVE_AES_NI 1
+#define HAVE_SHA_NI 0 // to be enabled
+#define HAVE_CLMUL 0 // to be enabled
+#define HAVE_NEON_CRYPTO 0
+#define HAVE_NEON_SHA512 0
+#define HAVE_NEON_PMULL 0
+#define HAVE_ARM_DIT 0
 #define HAVE_WMEMCHR 1
 #define HAVE_CMAKE_H 0
 #define HAVE_NO_STDINT_H 0
-#define HAVE_ARM_DIT 0
 #define HAVE_STRTOUMAX 1
+#define HAVE_ADDDLLDIRECTORY 1
+#define HAVE_GETNAMEDPIPECLIENTPROCESSID 1
+#define HAVE_AFUNIX_H 0 // maybe have, but we are not using them in WINSCP anyway
+#define SSH 1
+#define OTHERBACKENDS 0
+#define SERIAL 0
 #endif
 
 #ifndef WINSCP

@@ -464,7 +464,10 @@ static bool handle_ready_callback(struct callback_set * callback_set, void *vctx
         node->prev->next = node->next;
         node->next->prev = node->prev;
         node->next = node->prev = node;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
         if (handle_ready(container_of(node, struct handle, u.g.ready_node))) // WINSCP
+#pragma clang diagnostic pop
         {
             result = true; // WINSCP
         }

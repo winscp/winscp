@@ -30,12 +30,13 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <_TCHARMapping>wchar_t</_TCHARMapping>
+        <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_EnableBatchCompilation>true</BCC_EnableBatchCompilation>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_PCHName_Clang>filezilla\FileZillaPCH.h</BCC_PCHName_Clang>
         <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
-        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-dangling-else -Wno-extra-tokens</BCC_UserSuppliedOptions>
+        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-dangling-else -Wno-extra-tokens -Wno-reserved-id-macro -Wno-old-style-cast -Wno-language-extension-token -Wno-global-constructors -Wno-sign-conversion -Wno-zero-as-null-pointer-constant -Wno-c++98-compat-pedantic -Wno-padded -Wno-sign-compare -Wno-deprecated -Wno-cast-align -Wno-shadow -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-format-nonliteral -Wno-implicit-fallthrough</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <Defines>WINSCP;WIN32;UNICODE;$(Defines)</Defines>

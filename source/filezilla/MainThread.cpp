@@ -71,7 +71,7 @@ BOOL CMainThread::IsConnected()
   return bConnected;
 }
 
-void CMainThread::OnTimer(WPARAM wParam, LPARAM lParam)
+void CMainThread::OnTimer(WPARAM wParam, LPARAM)
 {
   if (!m_pControlSocket)
     return;

@@ -2833,11 +2833,6 @@ static unsigned int ssh2_transport_winscp_query(PacketProtocolLayer *ppl, int qu
     }
 }
 
-void call_ssh_timer(Backend * be)
-{
-    // TODO
-}
-
 // WINSCP
 void get_hostkey_algs(int type, int * count, cp_ssh_keyalg ** sign_keys)
 {

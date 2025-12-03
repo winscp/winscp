@@ -85,6 +85,7 @@ _int64 CTransferSocket::GetTransferSize(CFtpControlSocket::transferDirection dir
 // Member-Funktion CTransferSocket
 void CTransferSocket::OnReceive(int nErrorCode)
 {
+  DebugUsedParam(nErrorCode);
   if (GetState() != connected && GetState() != attached && GetState() != closed)
     return;
   if (m_nTransferState == STATE_WAITING)
@@ -248,6 +249,7 @@ void CTransferSocket::SetBuffers()
 
 void CTransferSocket::OnAccept(int nErrorCode)
 {
+  DebugUsedParam(nErrorCode);
   m_bListening=FALSE;
   CAsyncSocketEx tmp;
   Accept(tmp);
@@ -353,6 +355,7 @@ void CTransferSocket::Start()
 
 void CTransferSocket::OnClose(int nErrorCode)
 {
+  DebugUsedParam(nErrorCode);
   if (m_nTransferState == STATE_WAITING)
   {
     m_nNotifyWaiting |= FD_CLOSE;
@@ -436,6 +439,7 @@ void CTransferSocket::SetActive()
 
 void CTransferSocket::OnSend(int nErrorCode)
 {
+  DebugUsedParam(nErrorCode);
   if (m_nTransferState == STATE_WAITING)
   {
     m_nNotifyWaiting |= FD_WRITE;
@@ -855,11 +859,11 @@ void CTransferSocket::WriteData(const char * buffer, int len)
 {
   if (m_OnTransferOut != NULL)
   {
-    m_OnTransferOut(NULL, reinterpret_cast<const unsigned char *>(m_pBuffer), len);
+    m_OnTransferOut(NULL, reinterpret_cast<const unsigned char *>(buffer), len);
   }
   else
   {
-    m_pFile->Write(m_pBuffer, len);
+    m_pFile->Write(buffer, len);
   }
 }
 

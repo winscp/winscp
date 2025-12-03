@@ -232,7 +232,7 @@ int CAsyncSocketExLayer::SendNext(const void *lpBuf, int nBufLen, int nFlags /*=
   if (!m_pNextLayer)
   {
     DebugAssert(m_pOwnerSocket);
-    int sent = send(m_pOwnerSocket->GetSocketHandle(), (LPSTR)lpBuf, nBufLen, nFlags);
+    int sent = send(m_pOwnerSocket->GetSocketHandle(), (LPCSTR)lpBuf, nBufLen, nFlags);
     return sent;
   }
   else
@@ -286,7 +286,7 @@ BOOL CAsyncSocketExLayer::ConnectNext(LPCTSTR lpszHostAddress, UINT nHostPort)
     SOCKADDR_IN sockAddr;
     memset(&sockAddr,0,sizeof(sockAddr));
 
-    LPSTR lpszAscii = T2A((LPTSTR)lpszHostAddress);
+    LPSTR lpszAscii = T2A(lpszHostAddress);
     sockAddr.sin_family = AF_INET;
     sockAddr.sin_addr.s_addr = inet_addr(lpszAscii);
 
@@ -347,7 +347,7 @@ BOOL CAsyncSocketExLayer::ConnectNext(LPCTSTR lpszHostAddress, UINT nHostPort)
       if (m_nFamily == AF_UNSPEC)
       {
         m_pOwnerSocket->m_SocketData.hSocket = hSocket;
-        m_pOwnerSocket->AttachHandle(hSocket);
+        m_pOwnerSocket->AttachHandle();
         if (!m_pOwnerSocket->AsyncSelect(m_lEvent))
         {
           m_pOwnerSocket->Close();
@@ -446,8 +446,8 @@ BOOL CAsyncSocketExLayer::GetPeerNameNext( CString& rPeerAddress, UINT& rPeerPor
   }
   else
   {
-    SOCKADDR* sockAddr;
-    int nSockAddrLen;
+    SOCKADDR* sockAddr = nullptr;
+    int nSockAddrLen = 0;
 
     if (m_nFamily == AF_INET6)
     {
@@ -460,31 +460,36 @@ BOOL CAsyncSocketExLayer::GetPeerNameNext( CString& rPeerAddress, UINT& rPeerPor
       nSockAddrLen = sizeof(SOCKADDR_IN);
     }
 
-    memset(sockAddr, 0, nSockAddrLen);
-
-    BOOL bResult = GetPeerName(sockAddr, &nSockAddrLen);
+    BOOL bResult = (sockAddr != nullptr);
 
     if (bResult)
     {
-      if (m_nFamily == AF_INET6)
+      memset(sockAddr, 0, nSockAddrLen);
+
+      bResult = GetPeerName(sockAddr, &nSockAddrLen);
+
+      if (bResult)
       {
-        rPeerPort = ntohs(((SOCKADDR_IN6*)sockAddr)->sin6_port);
-        LPTSTR buf = Inet6AddrToString(((SOCKADDR_IN6*)sockAddr)->sin6_addr);
-        rPeerAddress = buf;
-        delete [] buf;
+        if (m_nFamily == AF_INET6)
+        {
+          rPeerPort = ntohs(((SOCKADDR_IN6*)sockAddr)->sin6_port);
+          LPTSTR buf = Inet6AddrToString(((SOCKADDR_IN6*)sockAddr)->sin6_addr);
+          rPeerAddress = buf;
+          delete [] buf;
+        }
+        else if (m_nFamily == AF_INET)
+        {
+          rPeerPort = ntohs(((SOCKADDR_IN*)sockAddr)->sin_port);
+          rPeerAddress = inet_ntoa(((SOCKADDR_IN*)sockAddr)->sin_addr);
+        }
+        else
+        {
+          delete sockAddr;
+          return FALSE;
+        }
       }
-      else if (m_nFamily == AF_INET)
-      {
-        rPeerPort = ntohs(((SOCKADDR_IN*)sockAddr)->sin_port);
-        rPeerAddress = inet_ntoa(((SOCKADDR_IN*)sockAddr)->sin_addr);
-      }
-      else
-      {
-        delete sockAddr;
-        return FALSE;
-      }
+      delete sockAddr;
     }
-    delete sockAddr;
 
     return bResult;
   }
@@ -527,8 +532,8 @@ BOOL CAsyncSocketExLayer::GetSockNameNext( CString& rSockAddress, UINT& rSockPor
     return m_pNextLayer->GetSockName(rSockAddress, rSockPort);
   else
   {
-    SOCKADDR* sockAddr;
-    int nSockAddrLen;
+    SOCKADDR* sockAddr = nullptr;
+    int nSockAddrLen = 0;
 
     if (m_nFamily == AF_INET6)
     {
@@ -541,31 +546,36 @@ BOOL CAsyncSocketExLayer::GetSockNameNext( CString& rSockAddress, UINT& rSockPor
       nSockAddrLen = sizeof(SOCKADDR_IN);
     }
 
-    memset(sockAddr, 0, nSockAddrLen);
-
-    BOOL bResult = GetSockName(sockAddr, &nSockAddrLen);
+    BOOL bResult = (sockAddr != nullptr);
 
     if (bResult)
     {
-      if (m_nFamily == AF_INET6)
+      memset(sockAddr, 0, nSockAddrLen);
+
+      bResult = GetSockName(sockAddr, &nSockAddrLen);
+
+      if (bResult)
       {
-        rSockPort = ntohs(((SOCKADDR_IN6*)sockAddr)->sin6_port);
-        LPTSTR buf = Inet6AddrToString(((SOCKADDR_IN6*)sockAddr)->sin6_addr);
-        rSockAddress = buf;
-        delete [] buf;
+        if (m_nFamily == AF_INET6)
+        {
+          rSockPort = ntohs(((SOCKADDR_IN6*)sockAddr)->sin6_port);
+          LPTSTR buf = Inet6AddrToString(((SOCKADDR_IN6*)sockAddr)->sin6_addr);
+          rSockAddress = buf;
+          delete [] buf;
+        }
+        else if (m_nFamily == AF_INET)
+        {
+          rSockPort = ntohs(((SOCKADDR_IN*)sockAddr)->sin_port);
+          rSockAddress = inet_ntoa(((SOCKADDR_IN*)sockAddr)->sin_addr);
+        }
+        else
+        {
+          delete sockAddr;
+          return FALSE;
+        }
       }
-      else if (m_nFamily == AF_INET)
-      {
-        rSockPort = ntohs(((SOCKADDR_IN*)sockAddr)->sin_port);
-        rSockAddress = inet_ntoa(((SOCKADDR_IN*)sockAddr)->sin_addr);
-      }
-      else
-      {
-        delete sockAddr;
-        return FALSE;
-      }
+      delete sockAddr;
     }
-    delete sockAddr;
 
     return bResult;
   }
@@ -750,7 +760,7 @@ BOOL CAsyncSocketExLayer::CreateNext(UINT nSocketPort, int nSocketType, long lEv
       return FALSE;
     }
     m_pOwnerSocket->m_SocketData.hSocket=hSocket;
-    m_pOwnerSocket->AttachHandle(hSocket);
+    m_pOwnerSocket->AttachHandle();
     if (!m_pOwnerSocket->AsyncSelect(lEvent))
     {
       m_pOwnerSocket->Close();
@@ -836,7 +846,7 @@ BOOL CAsyncSocketExLayer::AcceptNext( CAsyncSocketEx& rConnectedSocket, SOCKADDR
       return FALSE;
     DebugCheck(rConnectedSocket.InitAsyncSocketExInstance());
     rConnectedSocket.m_SocketData.hSocket=hTemp;
-    rConnectedSocket.AttachHandle(hTemp);
+    rConnectedSocket.AttachHandle();
     rConnectedSocket.SetFamily(GetFamily());
     rConnectedSocket.SetState(connected);
   }
@@ -893,7 +903,7 @@ bool CAsyncSocketExLayer::SetFamily(int nFamily)
 
 bool CAsyncSocketExLayer::TryNextProtocol()
 {
-  m_pOwnerSocket->DetachHandle(m_pOwnerSocket->m_SocketData.hSocket);
+  m_pOwnerSocket->DetachHandle();
   closesocket(m_pOwnerSocket->m_SocketData.hSocket);
   m_pOwnerSocket->m_SocketData.hSocket = INVALID_SOCKET;
 
@@ -905,10 +915,10 @@ bool CAsyncSocketExLayer::TryNextProtocol()
     if (m_pOwnerSocket->m_SocketData.hSocket == INVALID_SOCKET)
       continue;
 
-    m_pOwnerSocket->AttachHandle(m_pOwnerSocket->m_SocketData.hSocket);
+    m_pOwnerSocket->AttachHandle();
     if (!m_pOwnerSocket->AsyncSelect(m_lEvent))
     {
-      m_pOwnerSocket->DetachHandle(m_pOwnerSocket->m_SocketData.hSocket);
+      m_pOwnerSocket->DetachHandle();
       closesocket(m_pOwnerSocket->m_SocketData.hSocket);
       m_pOwnerSocket->m_SocketData.hSocket = INVALID_SOCKET;
       continue;
@@ -918,7 +928,7 @@ bool CAsyncSocketExLayer::TryNextProtocol()
     {
       if (WSAAsyncSelect(m_pOwnerSocket->m_SocketData.hSocket, m_pOwnerSocket->GetHelperWindowHandle(), m_pOwnerSocket->m_SocketData.nSocketIndex+WM_SOCKETEX_NOTIFY, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE))
       {
-        m_pOwnerSocket->DetachHandle(m_pOwnerSocket->m_SocketData.hSocket);
+        m_pOwnerSocket->DetachHandle();
         closesocket(m_pOwnerSocket->m_SocketData.hSocket);
         m_pOwnerSocket->m_SocketData.hSocket = INVALID_SOCKET;
         continue;
@@ -929,7 +939,7 @@ bool CAsyncSocketExLayer::TryNextProtocol()
     m_nFamily = m_nextAddr->ai_family;
     if (!m_pOwnerSocket->Bind(m_nSocketPort, m_lpszSocketAddress))
     {
-      m_pOwnerSocket->DetachHandle(m_pOwnerSocket->m_SocketData.hSocket);
+      m_pOwnerSocket->DetachHandle();
       closesocket(m_pOwnerSocket->m_SocketData.hSocket);
       m_pOwnerSocket->m_SocketData.hSocket = INVALID_SOCKET;
       continue;
@@ -937,7 +947,7 @@ bool CAsyncSocketExLayer::TryNextProtocol()
 
     if (connect(m_pOwnerSocket->GetSocketHandle(), m_nextAddr->ai_addr, m_nextAddr->ai_addrlen) == SOCKET_ERROR && WSAGetLastError() != WSAEWOULDBLOCK)
     {
-      m_pOwnerSocket->DetachHandle(m_pOwnerSocket->m_SocketData.hSocket);
+      m_pOwnerSocket->DetachHandle();
       closesocket(m_pOwnerSocket->m_SocketData.hSocket);
       m_pOwnerSocket->m_SocketData.hSocket = INVALID_SOCKET;
       continue;

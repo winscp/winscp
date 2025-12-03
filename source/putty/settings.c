@@ -1093,6 +1093,7 @@ bool do_defaults(const char *session, Conf *conf)
     return load_settings(session, conf);
 }
 
+#ifndef WINSCP
 static int sessioncmp(const void *av, const void *bv)
 {
     const char *a = *(const char *const *) av;
@@ -1115,7 +1116,6 @@ static int sessioncmp(const void *av, const void *bv)
 
 bool sesslist_demo_mode = false;
 
-#ifndef WINSCP
 void get_sesslist(struct sesslist *list, bool allocate)
 {
     int i;

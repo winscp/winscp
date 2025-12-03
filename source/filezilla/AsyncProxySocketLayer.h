@@ -129,7 +129,7 @@ private:
   char *m_pStrBuffer;    // Recvbuffer needed by HTTP1.1 proxy
   int m_nProxyOpState;  // State of an operation
   int m_nProxyOpID;    // Currently active operation (0 if none)
-  int m_nProxyPeerPort;  // Port of the server you are connected to, retrieve via GetPeerName
+  unsigned short m_nProxyPeerPort;  // Port of the server you are connected to, retrieve via GetPeerName
   ULONG m_nProxyPeerIp;  // IP of the server you are connected to, retrieve via GetPeerName
   typedef struct
   {

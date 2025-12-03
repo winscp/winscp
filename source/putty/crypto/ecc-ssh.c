@@ -32,7 +32,7 @@
 #include "ecc.h"
 
 #ifdef MPEXT
-int ec_curve_cleanup = 0;
+static int ec_curve_cleanup = 0;
 
 static void finalize_common(struct ec_curve * curve)
 {
@@ -2024,6 +2024,8 @@ bool ec_ed_alg_and_curve_by_bits(
 }
 
 #ifdef MPEXT
+
+#include "puttyexp.h"
 
 void ec_cleanup(void)
 {

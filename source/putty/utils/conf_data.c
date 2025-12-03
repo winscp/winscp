@@ -11,7 +11,12 @@
 #define VALUE(eval, sval) { eval, sval, false }
 #define VALUE_OBSOLETE(eval, sval) { eval, sval, true }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-variable-declarations" // WINSCP
+
 #include "conf-enums.h"
+
+#pragma clang diagnostic pop
 
 bool conf_enum_map_to_storage(const ConfSaveEnumType *etype,
                               int confval, int *storageval_out)

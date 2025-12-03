@@ -26,7 +26,7 @@ BOOL GetLength64(CString filename, _int64 &size)
 BOOL PASCAL GetFileStatus(LPCTSTR lpszFileName, CFileStatus& rStatus)
 {
   WIN32_FIND_DATA findFileData;
-  HANDLE hFind = FindFirstFile((LPTSTR)lpszFileName, &findFileData);
+  HANDLE hFind = FindFirstFile(lpszFileName, &findFileData);
   if (hFind == INVALID_HANDLE_VALUE)
   {
     return FALSE;

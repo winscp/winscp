@@ -8,7 +8,7 @@
 //---------------------------------------------------------------------------
 #include "FileZillaPCH.h"
 #include "AsyncSslSocketLayer.h"
-#include "FilezillaTools.h"
+#include "FileZillaTools.h"
 
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
@@ -124,7 +124,7 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
     if (numread > 0)
     {
       //Store it in the network input bio and process data
-      int numwritten = BIO_write(m_nbio, buffer, numread);
+      BIO_write(m_nbio, buffer, numread);
       BIO_ctrl(m_nbio, BIO_CTRL_FLUSH, 0, NULL);
 
       // I have no idea why this call is needed, but without it, connections
@@ -821,7 +821,6 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   m_Tools->SetupSsl(m_ssl);
 
   //Init SSL connection
-  void *ssl_sessionid = NULL;
   m_Main = main;
   m_sessionreuse = sessionreuse;
   if ((m_Main != NULL) && m_sessionreuse)
@@ -1224,7 +1223,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
   }
 }
 
-bool AsnTimeToValidTime(ASN1_TIME * AsnTime, t_SslCertData::t_validTime & ValidTime)
+static bool AsnTimeToValidTime(ASN1_TIME * AsnTime, t_SslCertData::t_validTime & ValidTime)
 {
   int i = AsnTime->length;
   const char * v = (const char *)AsnTime->data;

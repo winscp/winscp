@@ -67,7 +67,7 @@ to tim.kosse@gmx.de
 #define FD_FORCEREAD (1<<15)
 //---------------------------------------------------------------------------
 #include <winsock2.h>
-#include <Ws2tcpip.h>
+#include <ws2tcpip.h>
 //---------------------------------------------------------------------------
 class CAsyncSocketExHelperWindow;
 class CAsyncSocketExLayer;
@@ -216,10 +216,10 @@ protected:
   HWND GetHelperWindowHandle();
 
   // Attaches socket handle to helper window
-  void AttachHandle(SOCKET hSocket);
+  void AttachHandle();
 
   // Detaches socket handle to helper window
-  void DetachHandle(SOCKET hSocket);
+  void DetachHandle();
 
   // Critical section for thread synchronization
   static CCriticalSectionWrapper m_sGlobalCriticalSection;
@@ -281,10 +281,10 @@ protected:
   // Pending callbacks
   std::list<t_callbackMsg> m_pendingCallbacks;
 
-  virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg) {};
-  virtual bool LoggingSocketMessage(int nMessageType) { return true; };
-  virtual int GetSocketOptionVal(int OptionID) const { DebugFail(); return 0; };
-  virtual void ConfigureSocket() {};
+  virtual void LogSocketMessageRaw(int, LPCTSTR) {}
+  virtual bool LoggingSocketMessage(int) { return true; }
+  virtual int GetSocketOptionVal(int) const { DebugFail(); return 0; }
+  virtual void ConfigureSocket() {}
 };
 //---------------------------------------------------------------------------
 #define LAYERCALLBACK_STATECHANGE 0

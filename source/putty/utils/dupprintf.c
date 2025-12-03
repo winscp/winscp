@@ -51,7 +51,7 @@
 #if defined _WINDOWS && \
     !defined __MINGW32__ && \
     !defined __WINE__ && \
-    _MSC_VER < 1900
+    (!defined _MSC_VER || _MSC_VER < 1900) // WINSCP
 #define vsnprintf _vsnprintf
 #endif
 

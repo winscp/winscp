@@ -1994,7 +1994,7 @@ static int key_type_s_internal(BinarySource *src)
         return SSH_KEYTYPE_SSH1_PUBLIC;
 
     BinarySource_REWIND(src);
-    if (find_pubkey_alg_len(get_nonchars(src, " \n")) > 0 &&
+    if (find_pubkey_alg_len(get_nonchars(src, " \n")) != NULL && // WINSCP test fix
         get_chars(src, " ").len == 1 &&
         get_chars(src, "0123456789ABCDEFGHIJKLMNOPQRSTUV"
                   "WXYZabcdefghijklmnopqrstuvwxyz+/=").len > 0 &&

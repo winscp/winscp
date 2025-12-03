@@ -2865,8 +2865,8 @@ Socket *platform_start_subprocess(const char *cmd, Plug *plug,
 
 #ifdef WINSCP
 extern CRITICAL_SECTION putty_section;
-void putty_initialize();
-void putty_finalize();
+void putty_initialize(void);
+void putty_finalize(void);
 void pktin_free_queue_callback(void *vctx);
 #define WINSCP_PUTTY_SECTION_ENTER EnterCriticalSection(&putty_section);
 #define WINSCP_PUTTY_SECTION_LEAVE LeaveCriticalSection(&putty_section);

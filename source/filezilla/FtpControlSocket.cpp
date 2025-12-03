@@ -2,13 +2,13 @@
 #include "FileZillaPCH.h"
 #include "FtpControlSocket.h"
 #include "MainThread.h"
-#include "transfersocket.h"
-#include "asyncproxysocketlayer.h"
+#include "TransferSocket.h"
+#include "AsyncProxySocketLayer.h"
 #include "AsyncSslSocketLayer.h"
 #ifndef MPEXT_NO_GSS
 #include "AsyncGssSocketLayer.h"
 #endif
-#include "filezillaapi.h"
+#include "FileZillaApi.h"
 #include <WideStrUtils.hpp>
 
 class CFtpControlSocket::CFileTransferData : public CFtpControlSocket::t_operation::COpData
@@ -25,14 +25,14 @@ public:
     bUseAbsolutePaths = FALSE;
     bTriedPortPasvOnce = FALSE;
     askOnResumeFail = false;
-  };
+  }
   ~CFileTransferData()
   {
     if (pDirectoryListing)
       delete pDirectoryListing;
     pDirectoryListing=0;
     delete pFileSize;
-  };
+  }
   CString rawpwd;
   t_transferfile transferfile;
   t_transferdata transferdata;
@@ -1159,6 +1159,7 @@ BOOL CFtpControlSocket::SendAuthSsl()
 #define BUFFERSIZE 4096
 void CFtpControlSocket::OnReceive(int nErrorCode)
 {
+  DebugUsedParam(nErrorCode);
   m_LastRecvTime = CTime::CreateForCurrentTime();
 
   if (!m_pOwner->IsConnected())
@@ -2526,6 +2527,7 @@ void CFtpControlSocket::TransferEnd(int nMode)
 
 void CFtpControlSocket::OnClose(int nErrorCode)
 {
+  DebugUsedParam(nErrorCode);
   ShowStatus(IDS_STATUSMSG_DISCONNECTED, FZ_LOG_ERROR);
   if (m_pTransferSocket)
   {
@@ -5678,7 +5680,6 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
             ResetOperation(FZ_REPLY_ERROR);
             continue;
           }
-          break;
         }
         delete [] iter->str;
         continue;
@@ -5702,7 +5703,7 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
   return 0;
 }
 
-_int64 CFtpControlSocket::GetSpeedLimit(CTime &time, int valType, int valValue)
+_int64 CFtpControlSocket::GetSpeedLimit(int valType, int valValue)
 {
   int type = GetOptionVal(valType);
 
@@ -5712,13 +5713,12 @@ _int64 CFtpControlSocket::GetSpeedLimit(CTime &time, int valType, int valValue)
   return ( _int64)1000000000000;  // I hope that when there will be something with 1000GB/s then I'll change it :)
 }
 
-_int64 CFtpControlSocket::GetSpeedLimit(enum transferDirection direction, CTime &time)
+_int64 CFtpControlSocket::GetSpeedLimit(enum transferDirection direction)
 {
   if (direction == download)
-    return GetSpeedLimit(time, OPTION_SPEEDLIMIT_DOWNLOAD_TYPE, OPTION_SPEEDLIMIT_DOWNLOAD_VALUE);
+    return GetSpeedLimit(OPTION_SPEEDLIMIT_DOWNLOAD_TYPE, OPTION_SPEEDLIMIT_DOWNLOAD_VALUE);
   else
-    return GetSpeedLimit(time, OPTION_SPEEDLIMIT_UPLOAD_TYPE, OPTION_SPEEDLIMIT_UPLOAD_VALUE);
-  return ( _int64)1000000000000;
+    return GetSpeedLimit(OPTION_SPEEDLIMIT_UPLOAD_TYPE, OPTION_SPEEDLIMIT_UPLOAD_VALUE);
 }
 
 _int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _int64 &curLimit, std::list<CFtpControlSocket::t_ActiveList>::iterator &iter, enum transferDirection direction)
@@ -5771,7 +5771,7 @@ _int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _i
     if (ableToRead > 0)
       ableToRead = 0;
 
-    curLimit = GetSpeedLimit(direction, curTime);
+    curLimit = GetSpeedLimit(direction);
     __int64 nMax = curLimit / m_InstanceList[direction].size();
     _int64 nLeft = 0;
     int nCount = 0;
@@ -5821,8 +5821,7 @@ _int64 CFtpControlSocket::GetAbleToTransferSize(enum transferDirection direction
   if (iter == m_InstanceList[direction].end())
   {
     t_ActiveList item;
-    CTime time = CTime::CreateForCurrentTime();
-    item.nBytesAvailable = GetSpeedLimit(direction, time) / (m_InstanceList[direction].size() + 1);
+    item.nBytesAvailable = GetSpeedLimit(direction) / (m_InstanceList[direction].size() + 1);
     item.nBytesTransferred = 0;
     item.pOwner = this;
     m_InstanceList[direction].push_back(item);
@@ -5923,8 +5922,7 @@ BOOL CFtpControlSocket::ParsePwdReply(CString& rawpwd)
 
 BOOL CFtpControlSocket::ParsePwdReply(CString& rawpwd, CServerPath & realPath)
 {
-  CListData *pData = static_cast<CListData *>(m_Operation.pData);
-  DebugAssert(pData);
+  DebugAssert(m_Operation.pData);
 
   int pos1 = rawpwd.Find(L'"');
   int pos2 = rawpwd.ReverseFind(L'"');
@@ -6063,6 +6061,7 @@ CString CFtpControlSocket::GetReply()
 
 void CFtpControlSocket::OnSend(int nErrorCode)
 {
+  DebugUsedParam(nErrorCode);
   if (!m_sendBufferLen || !m_sendBuffer || m_awaitsReply)
     return;
 

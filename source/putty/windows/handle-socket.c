@@ -209,6 +209,9 @@ static void sk_handle_write_eof(Socket *s)
     handle_write_eof(hs->send_h);
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
+
 static void handle_socket_unfreeze(void *hsv)
 {
     HandleSocket *hs = (HandleSocket *)hsv;
@@ -553,3 +556,5 @@ void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
     queue_toplevel_callback(sk_handle_connect_success_callback, hs);
     } // WINSCP
 }
+
+#pragma clang diagnostic pop

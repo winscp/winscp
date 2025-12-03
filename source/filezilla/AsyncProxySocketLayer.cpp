@@ -273,7 +273,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       }
       else
       {
-        command[len]=strlen(lpszAsciiHost);
+        command[len]=static_cast<char>(strlen(lpszAsciiHost));
         strcpy(&command[len+1], lpszAsciiHost);
         len += strlen(lpszAsciiHost) + 1;
       }
@@ -336,7 +336,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         }
         else
         {
-          command[len]=strlen(lpszAsciiHost);
+          command[len]=static_cast<char>(strlen(lpszAsciiHost));
           strcpy(&command[len+1],lpszAsciiHost);
           len+=strlen(lpszAsciiHost)+1;
         }
@@ -583,7 +583,7 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
   SOCKADDR_IN sockAddr;
   memset(&sockAddr,0,sizeof(sockAddr));
 
-  LPCSTR lpszAscii = T2A((LPTSTR)lpszHostAddress);
+  LPCSTR lpszAscii = T2A(lpszHostAddress);
   sockAddr.sin_family = AF_INET;
   sockAddr.sin_addr.s_addr = inet_addr(lpszAscii);
 
@@ -622,7 +622,7 @@ BOOL CAsyncProxySocketLayer::Connect( const SOCKADDR* lpSockAddr, int nSockAddrL
     return ConnectNext(lpSockAddr, nSockAddrLen );
   }
 
-  LPSOCKADDR_IN sockAddr=(LPSOCKADDR_IN)lpSockAddr;
+  const SOCKADDR_IN * sockAddr=reinterpret_cast<const SOCKADDR_IN*>(lpSockAddr);
 
   //Save server details
   m_nProxyPeerIp=sockAddr->sin_addr.S_un.S_addr;

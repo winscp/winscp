@@ -13,11 +13,13 @@
 #include "transport2.h"
 #include "mpint.h"
 
+#ifndef WINSCP
 /*
  * Another copy of the symbol defined in mpunsafe.c. See the comment
  * there.
  */
 const int deliberate_symbol_clash = 12345;
+#endif
 
 void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 {

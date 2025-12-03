@@ -47,6 +47,7 @@ struct StripCtrlCharsImpl {
     StripCtrlChars public;
 };
 
+#ifndef WINSCP
 static void stripctrl_locale_BinarySink_write(
     BinarySink *bs, const void *vp, size_t len);
 static void stripctrl_term_BinarySink_write(
@@ -63,7 +64,6 @@ static StripCtrlCharsImpl *stripctrl_new_common(
     return scc;
 }
 
-#ifndef WINSCP
 StripCtrlChars *stripctrl_new(
     BinarySink *bs_out, bool permit_cr, wchar_t substitution)
 {
