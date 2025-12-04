@@ -494,7 +494,7 @@
         <CppCompile Include="putty\utils\smemeq.c">
             <BuildOrder>110</BuildOrder>
         </CppCompile>
-        <CppCompile Include="putty\utils\spr_get_error_message.c">
+        <CppCompile Include="putty\utils\spr_get_err_message.c">
             <BuildOrder>111</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\ssh2_pick_fingerprint.c">
@@ -602,7 +602,7 @@
         <CppCompile Include="putty\windows\utils\security_p.c">
             <BuildOrder>150</BuildOrder>
         </CppCompile>
-        <CppCompile Include="putty\windows\utils\win_strerror.c">
+        <CppCompile Include="putty\windows\utils\win_strerr.c">
             <BuildOrder>152</BuildOrder>
         </CppCompile>
         <BuildConfiguration Include="Base">
