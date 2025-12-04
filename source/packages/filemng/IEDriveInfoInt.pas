@@ -1,4 +1,4 @@
-unit IEDriveInfo;
+unit IEDriveInfoInt;
 
 {==================================================================
 
@@ -34,7 +34,7 @@ uses
   BaseUtils, System.Generics.Collections, Vcl.Graphics, Winapi.Messages;
 
 const
-  {Flags used by TDriveInfo.ReadDriveStatus and TDriveView.RefreshRootNodes:}
+  {Flags used by TDriveInfoInt.ReadDriveStatus and TDriveView.RefreshRootNodes:}
   dsValid = 0;        {checks only whether drive is still valid}
   dsImageIndex = 1;   {Fetch imageindex, if not allready fetched}
   dsSize = 2;         {Fetch disk size and serialnumber}
@@ -81,7 +81,7 @@ type
   TDriveNotification = (dnRefresh, dnRemoving);
   TDriveNotificationEvent = procedure(Notification: TDriveNotification; Drive: string) of object;
 
-  TDriveInfo = class(TObject)
+  TDriveInfoInt = class(TObject)
   private
     FData: TObjectDictionary<string, TDriveInfoRec>;
     FNoDrives: DWORD;
@@ -110,10 +110,12 @@ type
     procedure UpdateDriveNotifications(Drive: string);
     procedure UpdateDrivesNotifications;
     procedure ProcessThreadResults;
-    constructor Create;
     procedure ReadAsynchronous;
     procedure DoReadDriveStatus(Drive: string; Flags: Integer);
     procedure DriveRemoving(Drive: string);
+
+  protected
+    constructor Create;
 
   public
     function Get(Drive: string): TDriveInfoRec;
@@ -149,9 +151,11 @@ function GetNetWorkConnected(Drive: string): Boolean;
 function IsRootPath(Path: string): Boolean;
 function GetThumbnail(Path: string; Size: TSize): TBitmap;
 
-{Central drive information object instance of TDriveInfo}
+{Central drive information object instance of TDriveInfoInt}
 var
-  DriveInfo : TDriveInfo;
+  DriveInfo : TDriveInfoInt = nil;
+
+procedure DriveInfoInit(ADriveInfo: TDriveInfoInt);
 
 resourceString
   ErrorInvalidDrive = '%s is a invalid drive letter.';
@@ -217,7 +221,7 @@ begin
   end;
 end;
 
-constructor TDriveInfo.Create;
+constructor TDriveInfoInt.Create;
 begin
   inherited;
 
@@ -227,17 +231,17 @@ begin
   FData := TObjectDictionary<string, TDriveInfoRec>.Create([doOwnsValues]);
   FHandlers := TList<TDriveNotificationEvent>.Create;
   FChangeNotify := 0;
-end; {TDriveInfo.Create}
+end; {TDriveInfoInt.Create}
 
-destructor TDriveInfo.Destroy;
+destructor TDriveInfoInt.Destroy;
 begin
   Assert(FHandlers.Count = 0);
   FHandlers.Free;
   FData.Free;
   inherited;
-end; {TDriveInfo.Destroy}
+end; {TDriveInfoInt.Destroy}
 
-procedure TDriveInfo.NeedData;
+procedure TDriveInfoInt.NeedData;
 begin
   if not FLoaded then
   begin
@@ -248,7 +252,7 @@ begin
   ProcessThreadResults;
 end;
 
-procedure TDriveInfo.ProcessThreadResults;
+procedure TDriveInfoInt.ProcessThreadResults;
 var
   I: Integer;
   Drive: Char;
@@ -269,7 +273,7 @@ begin
   end;
 end;
 
-function TDriveInfo.DoAnyValidPath(DriveType: Integer; CanBeHidden: Boolean; var Path: string): Boolean;
+function TDriveInfoInt.DoAnyValidPath(DriveType: Integer; CanBeHidden: Boolean; var Path: string): Boolean;
 var
   Drive: TRealDrive;
   DriveInfoRec: TDriveInfoRec;
@@ -291,7 +295,7 @@ begin
   Result := False;
 end;
 
-function TDriveInfo.AnyValidPath: string;
+function TDriveInfoInt.AnyValidPath: string;
 begin
   if (not DoAnyValidPath(DRIVE_FIXED, False, Result)) and
      (not DoAnyValidPath(DRIVE_FIXED, True, Result)) and
@@ -301,19 +305,19 @@ begin
   end;
 end;
 
-function TDriveInfo.IsRealDrive(Drive: string): Boolean;
+function TDriveInfoInt.IsRealDrive(Drive: string): Boolean;
 begin
   Result := (Length(Drive) = 1);
   Assert((not Result) or ((Drive[1] >= FirstDrive) and (Drive[1] <= LastDrive)));
 end;
 
-function TDriveInfo.IsFixedDrive(Drive: string): Boolean;
+function TDriveInfoInt.IsFixedDrive(Drive: string): Boolean;
 begin
   Result := True;
   if IsRealDrive(Drive) and (Drive[1] < FirstFixedDrive) then Result := False;
 end;
 
-function TDriveInfo.GetDriveKey(Path: string): string;
+function TDriveInfoInt.GetDriveKey(Path: string): string;
 begin
   Result := ExtractFileDrive(Path);
   if (Length(Result) = 2) and (Result[2] = DriveDelim) then
@@ -331,7 +335,7 @@ begin
   end;
 end;
 
-function TDriveInfo.GetDriveRoot(Drive: string): string;
+function TDriveInfoInt.GetDriveRoot(Drive: string): string;
 begin
   if IsRealDrive(Drive) then
   begin
@@ -344,7 +348,7 @@ begin
   end;
 end;
 
-function TDriveInfo.GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
+function TDriveInfoInt.GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
 var
   FileInfo: TShFileInfo;
   Path: PChar;
@@ -380,7 +384,7 @@ begin
   Result := @FFolders[Folder];
 end;
 
-procedure TDriveInfo.SetHonorDrivePolicy(Value: Integer);
+procedure TDriveInfoInt.SetHonorDrivePolicy(Value: Integer);
 var
   Drive: TRealDrive;
 begin
@@ -397,19 +401,19 @@ begin
   end;
 end;
 
-function TDriveInfo.GetFirstFixedDrive: Char;
+function TDriveInfoInt.GetFirstFixedDrive: Char;
 begin
   if UseABDrives then Result := FirstDrive
     else Result := SystemDrive;
 end;
 
-function TDriveInfo.GetDriveBitMask(Drive: string): Integer;
+function TDriveInfoInt.GetDriveBitMask(Drive: string): Integer;
 begin
   Assert(IsRealDrive(Drive));
   Result := (1 shl (Ord(Drive[1]) - Ord('A')));
 end;
 
-procedure TDriveInfo.ReadDriveBasicStatus(Drive: string);
+procedure TDriveInfoInt.ReadDriveBasicStatus(Drive: string);
 var
   ValidDriveType: Boolean;
   InaccessibleByDrivePolicy, HiddenByDrivePolicy: Boolean;
@@ -433,7 +437,7 @@ begin
   end;
 end;
 
-procedure TDriveInfo.ResetDrive(Drive: string);
+procedure TDriveInfoInt.ResetDrive(Drive: string);
 begin
   with FData[Drive] do
   begin
@@ -449,7 +453,7 @@ begin
   end;
 end;
 
-function TDriveInfo.ReadDriveMask(Reg: TRegistry; ValueName: string): DWORD;
+function TDriveInfoInt.ReadDriveMask(Reg: TRegistry; ValueName: string): DWORD;
 var
   DataInfo: TRegDataInfo;
 begin
@@ -468,7 +472,7 @@ begin
   end;
 end;
 
-procedure TDriveInfo.Load;
+procedure TDriveInfoInt.Load;
 var
   Drive: TRealDrive;
   Reg: TRegistry;
@@ -503,7 +507,7 @@ begin
     FFolders[Folder].Valid := False;
 end;
 
-procedure TDriveInfo.ReadAsynchronous;
+procedure TDriveInfoInt.ReadAsynchronous;
 var
   Drive: TRealDrive;
   Drives: string;
@@ -523,7 +527,7 @@ begin
   end;
 end;
 
-function TDriveInfo.AddDrive(Drive: string): TDriveInfoRec;
+function TDriveInfoInt.AddDrive(Drive: string): TDriveInfoRec;
 begin
   Result := TDriveInfoRec.Create;
   FData.Add(Drive, Result);
@@ -534,7 +538,7 @@ begin
     ReadDriveBasicStatus(Drive);
 end;
 
-function TDriveInfo.GetImageIndex(Drive: string): Integer;
+function TDriveInfoInt.GetImageIndex(Drive: string): Integer;
 begin
   NeedData;
 
@@ -546,9 +550,9 @@ begin
       ReadDriveStatus(Drive, dsImageIndex);
     Result := Get(Drive).ImageIndex;
   end;
-end; {TDriveInfo.GetImageIndex}
+end; {TDriveInfoInt.GetImageIndex}
 
-function TDriveInfo.GetDisplayName(Drive: string): string;
+function TDriveInfoInt.GetDisplayName(Drive: string): string;
 begin
   if Get(Drive).Valid then
   begin
@@ -560,9 +564,9 @@ begin
   begin
     Result := GetSimpleName(Drive);
   end;
-end; {TDriveInfo.GetDisplayname}
+end; {TDriveInfoInt.GetDisplayname}
 
-function TDriveInfo.GetPrettyName(Drive: string): string;
+function TDriveInfoInt.GetPrettyName(Drive: string): string;
 begin
   if Get(Drive).Valid then
   begin
@@ -573,15 +577,15 @@ begin
 
   if Length(Result) = 0 then
     Result := GetSimpleName(Drive);
-end; {TDriveInfo.GetPrettyName}
+end; {TDriveInfoInt.GetPrettyName}
 
-function TDriveInfo.GetSimpleName(Drive: string): string;
+function TDriveInfoInt.GetSimpleName(Drive: string): string;
 begin
   Result := Drive;
   if IsRealDrive(Result) then Result := Result + ':';
 end;
 
-function TDriveInfo.Get(Drive: string): TDriveInfoRec;
+function TDriveInfoInt.Get(Drive: string): TDriveInfoRec;
 begin
   NeedData;
 
@@ -594,9 +598,9 @@ begin
     Result := AddDrive(Drive);
     DriveRefresh;
   end;
-end; {TDriveInfo.GetData}
+end; {TDriveInfoInt.GetData}
 
-procedure TDriveInfo.ReadDriveStatus(Drive: string; Flags: Integer);
+procedure TDriveInfoInt.ReadDriveStatus(Drive: string; Flags: Integer);
 begin
   // Among other, this makes sure the pending drive-ready status from the background thread are collected,
   // before we overwrite it with fresh status here.
@@ -604,7 +608,7 @@ begin
   DoReadDriveStatus(Drive, Flags);
 end;
 
-procedure TDriveInfo.DoReadDriveStatus(Drive: string; Flags: Integer);
+procedure TDriveInfoInt.DoReadDriveStatus(Drive: string; Flags: Integer);
 var
   FileInfo: TShFileInfo;
   DriveRoot: string;
@@ -733,9 +737,9 @@ begin
       ResetDrive(Drive);
     end;
   end;
-end; {TDriveInfo.ReadDriveStatus}
+end; {TDriveInfoInt.ReadDriveStatus}
 
-procedure TDriveInfo.OverrideDrivePolicy(Drive: string);
+procedure TDriveInfoInt.OverrideDrivePolicy(Drive: string);
 var
   Mask: DWORD;
 begin
@@ -748,7 +752,7 @@ begin
   DriveRefresh;
 end;
 
-procedure TDriveInfo.AddHandler(Handler: TDriveNotificationEvent);
+procedure TDriveInfoInt.AddHandler(Handler: TDriveNotificationEvent);
 var
   ChangeNotifyEntry: TSHChangeNotifyEntry;
   Dummy: string;
@@ -775,7 +779,7 @@ begin
   end;
 end;
 
-procedure TDriveInfo.RemoveHandler(Handler: TDriveNotificationEvent);
+procedure TDriveInfoInt.RemoveHandler(Handler: TDriveNotificationEvent);
 begin
   if (FHandlers.Remove(Handler) >= 0) and (FHandlers.Count = 0) then
   begin
@@ -788,7 +792,7 @@ begin
   end;
 end;
 
-procedure TDriveInfo.InvokeHandlers(DriveNotification: TDriveNotification; Drive: string);
+procedure TDriveInfoInt.InvokeHandlers(DriveNotification: TDriveNotification; Drive: string);
 var
   Handler: TDriveNotificationEvent;
 begin
@@ -841,7 +845,7 @@ function SHChangeNotification_Lock(hChange: THandle; dwProcId: DWORD;
   var PPidls: PPItemIDList; var plEvent: Longint): THANDLE; stdcall;
 external 'shell32.dll' name 'SHChangeNotification_Lock';
 
-procedure TDriveInfo.InternalWndProc(var Msg: TMessage);
+procedure TDriveInfoInt.InternalWndProc(var Msg: TMessage);
 var
   DeviceType: DWORD;
   UnitMask: DWORD;
@@ -935,7 +939,7 @@ begin
   end;
 end;
 
-procedure TDriveInfo.DriveRemoving(Drive: string);
+procedure TDriveInfoInt.DriveRemoving(Drive: string);
 begin
   FData[Drive].DriveReady := False;
   UpdateDriveNotifications(Drive);
@@ -943,12 +947,12 @@ begin
   InvokeHandlers(dnRemoving, Drive);
 end;
 
-procedure TDriveInfo.CancelDriveRefresh;
+procedure TDriveInfoInt.CancelDriveRefresh;
 begin
   KillTimer(InternalWindowHandle, 1);
 end;
 
-procedure TDriveInfo.ScheduleDriveRefresh;
+procedure TDriveInfoInt.ScheduleDriveRefresh;
 begin
   CancelDriveRefresh;
   // Delay refreshing drives for a sec.
@@ -960,7 +964,7 @@ begin
   SetTimer(InternalWindowHandle, 1, MSecsPerSec, nil);
 end;
 
-procedure TDriveInfo.UpdateDriveNotifications(Drive: string);
+procedure TDriveInfoInt.UpdateDriveNotifications(Drive: string);
 var
   NeedNotifications: Boolean;
   Path: string;
@@ -1020,7 +1024,7 @@ begin
   end;
 end;
 
-procedure TDriveInfo.UpdateDrivesNotifications;
+procedure TDriveInfoInt.UpdateDrivesNotifications;
 var
   Drive: string;
 begin
@@ -1028,12 +1032,12 @@ begin
     UpdateDriveNotifications(Drive);
 end;
 
-procedure TDriveInfo.DriveRefresh;
+procedure TDriveInfoInt.DriveRefresh;
 begin
   InvokeHandlers(dnRefresh, '');
 end;
 
-procedure TDriveInfo.SubscribeDriveNotifications(Drive: string);
+procedure TDriveInfoInt.SubscribeDriveNotifications(Drive: string);
 begin
   Get(Drive).SubscribeDriveNotifications := True;
   UpdateDriveNotifications(Drive);
@@ -1196,13 +1200,17 @@ begin
   end;
 end;
 
-initialization
+procedure DriveInfoInit(ADriveInfo: TDriveInfoInt);
+begin
   InitializeCriticalSection(ThreadLock);
   if not Assigned(DriveInfo) then
   begin
-    DriveInfo := TDriveInfo.Create;
+    DriveInfo := ADriveInfo;
     InternalWindowHandle := Classes.AllocateHWnd(DriveInfo.InternalWndProc);
   end;
+end;
+
+initialization
 
 finalization
   if Assigned(DriveInfo) then

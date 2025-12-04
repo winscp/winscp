@@ -12,7 +12,7 @@
 #include <DragExt.h>
 #include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
-#include "DriveView.hpp"
+#include "DriveView.h"
 //---------------------------------------------------------------------------
 TWinConfiguration * WinConfiguration = NULL;
 //---------------------------------------------------------------------------

@@ -43,7 +43,7 @@
         <DCC_EXPLICIT_STRING_CAST_LOSS>true</DCC_EXPLICIT_STRING_CAST_LOSS>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <DCC_UnitSearchPath>packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-        <Defines>$(Define);$(Defines)</Defines>
+        <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_Description>Toolbar2000 Components (Jordan Russell)</ILINK_Description>
         <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>

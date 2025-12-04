@@ -53,7 +53,7 @@
         <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-        <Defines>DESIGN_ONLY;$(Defines)</Defines>
+        <Defines>UNICODE;DESIGN_ONLY;$(Defines)</Defines>
         <DesignOnlyPackage>true</DesignOnlyPackage>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_Description>WinSCP components</ILINK_Description>
@@ -96,6 +96,24 @@
         <TASM_Debugging>None</TASM_Debugging>
     </PropertyGroup>
     <ItemGroup>
+        <CppCompile Include="components\DirView.cpp">
+            <DependentOn>components\DirView.h</DependentOn>
+            <BuildOrder>14</BuildOrder>
+        </CppCompile>
+        <ResFiles Include="components\DirView.dcr">
+            <BuildOrder>13</BuildOrder>
+        </ResFiles>
+        <CppCompile Include="components\DriveView.cpp">
+            <DependentOn>components\DriveView.h</DependentOn>
+            <BuildOrder>11</BuildOrder>
+        </CppCompile>
+        <ResFiles Include="components\DriveView.dcr">
+            <BuildOrder>12</BuildOrder>
+        </ResFiles>
+        <CppCompile Include="components\IEDriveInfo.cpp">
+            <DependentOn>components\IEDriveInfo.h</DependentOn>
+            <BuildOrder>15</BuildOrder>
+        </CppCompile>
         <CppCompile Include="components\ThemePageControl.cpp">
             <DependentOn>components\ThemePageControl.h</DependentOn>
             <BuildOrder>11</BuildOrder>

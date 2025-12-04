@@ -17,15 +17,6 @@
 
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-namespace Unixdriveview
-{
-  void __fastcall PACKAGE Register()
-  {
-    TComponentClass classes[] = { __classid(TUnixDriveView) };
-    RegisterComponents(L"Scp", classes, LENOF(classes) - 1);
-  }
-}
-//---------------------------------------------------------------------------
 __fastcall TUnixDriveView::TUnixDriveView(TComponent * Owner) :
   TCustomUnixDriveView(Owner)
 {

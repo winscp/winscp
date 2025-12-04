@@ -7,7 +7,6 @@
 #include <memory>
 #include <PasTools.hpp>
 #include <TBXOfficeXPTheme.hpp>
-#include <TBX.hpp>
 #include <StrUtils.hpp>
 #include <CustomWinConfiguration.h>
 #include "ThemePageControl.h"
@@ -20,15 +19,6 @@
 //---------------------------------------------------------------------------
 #define IDS_UTIL_TAB            L"TAB"
 //---------------------------------------------------------------------------
-namespace Themepagecontrol
-{
-  void __fastcall PACKAGE Register()
-  {
-    TComponentClass classes[] = { __classid(TThemePageControl), __classid(TThemeTabSheet) };
-    RegisterComponents(L"Scp", classes, LENOF(classes) - 1);
-  }
-}
-//----------------------------------------------------------------------------------------------------------
 __fastcall TThemeTabSheet::TThemeTabSheet(TComponent * Owner) :
   TTabSheet(Owner)
 {

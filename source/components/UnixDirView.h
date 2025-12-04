@@ -96,8 +96,8 @@ protected:
 public:
   __fastcall TUnixDirView(TComponent* Owner);
   virtual __fastcall ~TUnixDirView();
-  virtual void __fastcall CreateDirectory(UnicodeString DirName);
-  void __fastcall CreateDirectoryEx(UnicodeString DirName, const TRemoteProperties * Properties);
+  virtual void __fastcall CreateDir(UnicodeString DirName);
+  void __fastcall CreateDirEx(UnicodeString DirName, const TRemoteProperties * Properties);
   virtual void __fastcall DisplayPropertiesMenu();
   virtual void __fastcall ExecuteHomeDirectory();
   virtual void __fastcall ExecuteParentDirectory();

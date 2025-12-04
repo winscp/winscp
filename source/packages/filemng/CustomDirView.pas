@@ -11,7 +11,7 @@ uses
   Windows, Messages, Classes, Graphics, Controls,
   Forms, ComCtrls, ShellAPI, ComObj, ShlObj, Dialogs,
   ActiveX, CommCtrl, Extctrls, ImgList, Menus, FileCtrl,
-  PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo,
+  PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfoInt,
   IEListView, PathLabel, SysUtils, PasTools;
 
 const
@@ -379,7 +379,7 @@ type
     procedure ExecuteParentDirectory; virtual; abstract;
     procedure ExecuteRootDirectory; virtual; abstract;
     procedure ExecuteCurrentFile();
-    procedure CreateDirectory(DirName: string); virtual; abstract;
+    procedure CreateDir(DirName: string); virtual; abstract;
     function FindFileItem(FileName: string): TListItem;
     procedure HistoryGo(Index: Integer);
     function ItemIsDirectory(Item: TListItem): Boolean; virtual; abstract;
@@ -1566,7 +1566,7 @@ begin
         if not Existed then
         begin
           if Dir then
-            CreateDir(FallbackPath)
+            SysUtils.CreateDir(FallbackPath)
           else
             TFile.WriteAllText(FallbackPath, '');
         end;

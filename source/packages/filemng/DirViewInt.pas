@@ -1,4 +1,4 @@
-unit DirView;
+unit DirViewInt;
 {===============================================================
  Component TDirView / Version 2.6, January 2000
  ===============================================================
@@ -83,12 +83,12 @@ type
   TDirViewFileIconForName = procedure(Sender: TObject; var FileName: string) of object;
 
 type
-  TDirView = class;
+  TDirViewInt = class;
 
   // TIconUpdateThread (Fetch shell icons via thread)
   TIconUpdateThread = class(TCompThread)
   private
-    FOwner: TDirView;
+    FOwner: TDirViewInt;
     FSyncIcon: Integer;
     FSyncThumbnail: TBitmap;
     FCurrentIndex: Integer;
@@ -96,20 +96,20 @@ type
     FCurrentItemData: TFileRec;
 
   protected
-    constructor Create(Owner: TDirView);
+    constructor Create(Owner: TDirViewInt);
     procedure Execute; override;
 
   public
     destructor Destroy; override;
   end;
 
-  // WORKAROUND: TQueue<Integer>.Create fails when TDirView is created in IDE, while TQueue<TIconUpdateSchedule>.Create works
+  // WORKAROUND: TQueue<Integer>.Create fails when TDirViewInt is created in IDE, while TQueue<TIconUpdateSchedule>.Create works
   TIconUpdateSchedule = record
     Index: Integer;
   end;
 
-  // TDirView
-  TDirView = class(TCustomDirView)
+  // TDirViewInt
+  TDirViewInt = class(TCustomDirView)
   private
     FConfirmDelete: Boolean;
     FConfirmOverwrite: Boolean;
@@ -266,7 +266,7 @@ type
     procedure TerminateThreads;
 
     // Create a new subdirectory:
-    procedure CreateDirectory(DirName: string); override;
+    procedure CreateDir(DirName: string); override;
     // Delete all selected files:
 
     // Check, if file or files still exists:
@@ -365,9 +365,7 @@ type
     // The only way to make Items stored automatically and survive handle recreation.
     // Though we should implement custom persisting to avoid publishing this
     property Items;
-  end; // TDirView
-
-procedure Register;
+  end; // TDirViewInt
 
 // Returns True, if the specified extension matches one of the extensions in ExtList:
 function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
@@ -387,7 +385,7 @@ uses
   PIDL, Forms, Dialogs,
   ComObj,
   ActiveX, ImgList,
-  ShellDialogs, IEDriveInfo,
+  ShellDialogs, IEDriveInfoInt,
   FileChanges, Math, PasTools, StrUtils, Types, UITypes;
 
 var
@@ -395,11 +393,6 @@ var
 
 var
   DaylightHack: Boolean;
-
-procedure Register;
-begin
-  RegisterComponents('DriveDir', [TDirView]);
-end;
 
 function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
 begin
@@ -608,7 +601,7 @@ end;
 
 // TIconUpdateThread
 
-constructor TIconUpdateThread.Create(Owner: TDirView);
+constructor TIconUpdateThread.Create(Owner: TDirViewInt);
 begin
   inherited Create(True);
   FOwner := Owner;
@@ -669,9 +662,9 @@ begin
   end;
 end;
 
-// TDirView
+// TDirViewInt
 
-constructor TDirView.Create(AOwner: TComponent);
+constructor TDirViewInt.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
@@ -713,7 +706,7 @@ begin
   FLastPath := nil;
 end;
 
-destructor TDirView.Destroy;
+destructor TDirViewInt.Destroy;
 begin
   FreeAndNil(FIconUpdateQueue);
   FreeAndNil(FIconUpdateQueueDeferred);
@@ -729,7 +722,7 @@ begin
   FPath := '';
 end;
 
-procedure TDirView.WMDestroy(var Msg: TWMDestroy);
+procedure TDirViewInt.WMDestroy(var Msg: TWMDestroy);
 begin
   Selected := nil;
   ClearItems;
@@ -737,7 +730,7 @@ begin
   inherited;
 end;
 
-procedure TDirView.TerminateThreads;
+procedure TDirViewInt.TerminateThreads;
 begin
   StopIconUpdateThread;
   StopWatchThread;
@@ -748,7 +741,7 @@ begin
   end;
 end;
 
-function TDirView.GetHomeDirectory: string;
+function TDirViewInt.GetHomeDirectory: string;
 begin
   if FHomeDirectory <> '' then Result := FHomeDirectory
     else
@@ -762,17 +755,17 @@ begin
   end;
 end;
 
-function TDirView.GetIsRoot: Boolean;
+function TDirViewInt.GetIsRoot: Boolean;
 begin
   Result := IsRootPath(Path);
 end;
 
-function TDirView.GetPath: string;
+function TDirViewInt.GetPath: string;
 begin
   Result := FPath;
 end;
 
-procedure TDirView.PathChanged;
+procedure TDirViewInt.PathChanged;
 var
   Expanded: string;
 begin
@@ -789,7 +782,7 @@ begin
   FLastPath.AddOrSetValue(DriveInfo.GetDriveKey(Expanded), Expanded);
 end;
 
-procedure TDirView.SetPath(Value: string);
+procedure TDirViewInt.SetPath(Value: string);
 const
   LongPathPrefix = '\\?\';
 var
@@ -853,7 +846,7 @@ begin
   end;
 end;
 
-procedure TDirView.OpenFallbackPath(Value: string);
+procedure TDirViewInt.OpenFallbackPath(Value: string);
 var
   APath: string;
 begin
@@ -876,7 +869,7 @@ begin
   end;
 end;
 
-procedure TDirView.SetLoadEnabled(Value: Boolean);
+procedure TDirViewInt.SetLoadEnabled(Value: Boolean);
 begin
   if Value <> LoadEnabled then
   begin
@@ -889,29 +882,29 @@ begin
   end;
 end;
 
-function TDirView.GetPathName: string;
+function TDirViewInt.GetPathName: string;
 begin
   if IsRoot then Result := IncludeTrailingBackslash(Path)
     else Result := Path;
 end;
 
-function TDirView.GetFileRec(Index: Integer): PFileRec;
+function TDirViewInt.GetFileRec(Index: Integer): PFileRec;
 begin
   if Index > Pred(Items.Count) then Result := nil
     else Result := Items[index].Data;
 end;
 
-function TDirView.HiddenCount: Integer;
+function TDirViewInt.HiddenCount: Integer;
 begin
   Result := FHiddenCount;
 end;
 
-function TDirView.FilteredCount: Integer;
+function TDirViewInt.FilteredCount: Integer;
 begin
   Result := FFilteredCount;
 end;
 
-function TDirView.AddItem(SRec: SysUtils.TSearchRec): TListItem;
+function TDirViewInt.AddItem(SRec: SysUtils.TSearchRec): TListItem;
 var
   PItem: PFileRec;
   Item: TListItem;
@@ -959,7 +952,7 @@ begin
   Result := Item;
 end;
 
-procedure TDirView.AddParentDirItem;
+procedure TDirViewInt.AddParentDirItem;
 var
   PItem: PFileRec;
   Item: TListItem;
@@ -999,7 +992,7 @@ begin
   PItem^.Empty := False;
 end;
 
-procedure TDirView.LoadFromRecycleBin(Dir: string);
+procedure TDirViewInt.LoadFromRecycleBin(Dir: string);
 var
   PIDLRecycleLocal: PItemIDList;
   PCurrList: PItemIDList;
@@ -1094,7 +1087,7 @@ begin
   end;
 end;
 
-function TDirView.GetShellFolder(Dir: string): iShellFolder;
+function TDirViewInt.GetShellFolder(Dir: string): iShellFolder;
 var
   Eaten: ULONG;
   Attr: ULONG;
@@ -1121,34 +1114,34 @@ begin
   end;
 end;
 
-function TDirView.ItemIsDirectory(Item: TListItem): Boolean;
+function TDirViewInt.ItemIsDirectory(Item: TListItem): Boolean;
 begin
   Result :=
     (Assigned(Item) and Assigned(Item.Data) and
     PFileRec(Item.Data)^.IsDirectory);
 end;
 
-function TDirView.ItemIsFile(Item: TListItem): Boolean;
+function TDirViewInt.ItemIsFile(Item: TListItem): Boolean;
 begin
   Result :=
     (Assigned(Item) and Assigned(Item.Data) and
      (not PFileRec(Item.Data)^.IsParentDir));
 end;
 
-function TDirView.ItemIsParentDirectory(Item: TListItem): Boolean;
+function TDirViewInt.ItemIsParentDirectory(Item: TListItem): Boolean;
 begin
   Result :=
     (Assigned(Item) and Assigned(Item.Data) and
     PFileRec(Item.Data)^.IsParentDir);
 end;
 
-function TDirView.ItemIsRecycleBin(Item: TListItem): Boolean;
+function TDirViewInt.ItemIsRecycleBin(Item: TListItem): Boolean;
 begin
   Result := (Assigned(Item) and Assigned(Item.Data) and
     PFileRec(Item.Data)^.IsRecycleBin);
 end;
 
-function TDirView.ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean;
+function TDirViewInt.ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean;
 var
   FileRec: PFileRec;
 begin
@@ -1164,7 +1157,7 @@ begin
        FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks, False)));
 end;
 
-function TDirView.FileMatches(FileName: string; const SearchRec: TSearchRec): Boolean;
+function TDirViewInt.FileMatches(FileName: string; const SearchRec: TSearchRec): Boolean;
 var
   Directory: Boolean;
   FileSize: Int64;
@@ -1196,7 +1189,7 @@ begin
   end;
 end;
 
-function TDirView.ItemOverlayIndexes(Item: TListItem): Word;
+function TDirViewInt.ItemOverlayIndexes(Item: TListItem): Word;
 begin
   Result := inherited ItemOverlayIndexes(Item);
   if Assigned(Item) and Assigned(Item.Data) then
@@ -1206,7 +1199,7 @@ begin
   end;
 end;
 
-procedure TDirView.Load(DoFocusSomething: Boolean);
+procedure TDirViewInt.Load(DoFocusSomething: Boolean);
 begin
   try
     StopIconUpdateThread;
@@ -1230,7 +1223,7 @@ begin
   end;
 end;
 
-procedure TDirView.LoadFiles;
+procedure TDirViewInt.LoadFiles;
 var
   SRec: SysUtils.TSearchRec;
   DosError: Integer;
@@ -1330,7 +1323,7 @@ begin
   end;
 end;
 
-procedure TDirView.Reload2;
+procedure TDirViewInt.Reload2;
 type
   PEFileRec = ^TEFileRec;
   TEFileRec = record
@@ -1561,7 +1554,7 @@ begin
   end;
 end;
 
-procedure TDirView.PerformItemDragDropOperation(Item: TListItem; Effect: Integer; Paste: Boolean);
+procedure TDirViewInt.PerformItemDragDropOperation(Item: TListItem; Effect: Integer; Paste: Boolean);
 var
   TargetPath: string;
 begin
@@ -1586,13 +1579,13 @@ begin
     PerformDragDropFileOperation(TargetPath, Effect);
 end;
 
-procedure TDirView.ReLoad(CacheIcons: Boolean);
+procedure TDirViewInt.ReLoad(CacheIcons: Boolean);
 begin
   if not FLoadEnabled then FDirty := True
     else inherited;
 end;
 
-function TDirView.GetAttrString(Attr: Integer): string;
+function TDirViewInt.GetAttrString(Attr: Integer): string;
 const
   Attrs: array[1..5] of Integer =
     (FILE_ATTRIBUTE_COMPRESSED, FILE_ATTRIBUTE_ARCHIVE,
@@ -1616,7 +1609,7 @@ begin
   end;
 end;
 
-function TDirView.GetFileInfo(
+function TDirViewInt.GetFileInfo(
   CanUsePIDL: Boolean; PIDL: PItemIDList; Path: string; CanTimeout: Boolean;
   dwFileAttributes: DWORD; var psfi: TSHFileInfoW; uFlags: UINT): DWORD_PTR;
 var
@@ -1650,7 +1643,7 @@ begin
   end;
 end;
 
-procedure TDirView.DoFetchIcon(
+procedure TDirViewInt.DoFetchIcon(
   FilePath: string; IsSpecialExt: Boolean; CanTimeout: Boolean; FileRec: PFileRec; var ImageIndex: Integer; var TypeName: string);
 var
   Eaten: ULONG;
@@ -1732,7 +1725,7 @@ begin
   end;
 end;
 
-procedure TDirView.GetDisplayData(Item: TListItem; FetchIcon: Boolean);
+procedure TDirViewInt.GetDisplayData(Item: TListItem; FetchIcon: Boolean);
 var
   FileInfo: TShFileInfo;
   IsSpecialExt: Boolean;
@@ -1783,12 +1776,12 @@ begin
   end;
 end;
 
-function TDirView.GetDirOK: Boolean;
+function TDirViewInt.GetDirOK: Boolean;
 begin
   Result := FDirOK;
 end;
 
-function TDirView.ItemFullFileName(Item: TListItem): string;
+function TDirViewInt.ItemFullFileName(Item: TListItem): string;
 begin
   if Assigned(Item) and Assigned(Item.Data) then
   begin
@@ -1810,14 +1803,14 @@ begin
   Result := EmptyStr;
 end;
 
-function TDirView.ItemFileNameOnly(Item: TListItem): string;
+function TDirViewInt.ItemFileNameOnly(Item: TListItem): string;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   Result := PFileRec(Item.Data)^.FileName;
   SetLength(Result, Length(Result) - Length(ItemFileExt(Item)));
 end;
 
-function TDirView.ItemFileExt(Item: TListItem): string;
+function TDirViewInt.ItemFileExt(Item: TListItem): string;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   Result := ExtractFileExt(PFileRec(Item.Data)^.FileName);
@@ -1827,8 +1820,8 @@ function CompareFileType(I1, I2: TListItem; P1, P2: PFileRec): Integer;
 var
   Key1, Key2: string;
 begin
-  if P1.Empty then TDirView(I1.ListView).GetDisplayData(I1, False);
-  if P2.Empty then TDirView(I2.ListView).GetDisplayData(I2, False);
+  if P1.Empty then TDirViewInt(I1.ListView).GetDisplayData(I1, False);
+  if P2.Empty then TDirViewInt(I2.ListView).GetDisplayData(I2, False);
   if P1.IsDirectory then
   begin
     Key1 := P1.TypeName + ' ' + P1.DisplayName;
@@ -1839,7 +1832,7 @@ begin
     Key1 := P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName;
     Key2 := P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName;
   end;
-  Result := CompareLogicalTextPas(Key1, Key2, TDirView(I1.ListView).NaturalOrderNumericalSorting);
+  Result := CompareLogicalTextPas(Key1, Key2, TDirViewInt(I1.ListView).NaturalOrderNumericalSorting);
 end;
 
 function CompareFileTime(P1, P2: PFileRec): Integer;
@@ -1862,7 +1855,7 @@ begin
   if P.CalculatedSize >= 0 then Result := P.CalculatedSize;
 end;
 
-function CompareFile(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+function CompareFile(I1, I2: TListItem; AOwner: TDirViewInt): Integer; stdcall;
 var
   ConsiderDirection: Boolean;
   P1, P2: PFileRec;
@@ -1962,7 +1955,7 @@ begin
   end;
 end;
 
-procedure TDirView.SortItems;
+procedure TDirViewInt.SortItems;
 begin
   if HandleAllocated then
   begin
@@ -1976,7 +1969,7 @@ begin
   end
 end;
 
-procedure TDirView.ValidateFile(Item : TListItem);
+procedure TDirViewInt.ValidateFile(Item : TListItem);
 var
   Index: Integer;
 begin
@@ -1990,7 +1983,7 @@ begin
   end;
 end;
 
-procedure TDirView.ValidateFile(FileName: TFileName);
+procedure TDirViewInt.ValidateFile(FileName: TFileName);
 var
   FilePath: string;
 begin
@@ -2001,7 +1994,7 @@ begin
     ValidateFile(FindFileItem(ExtractFileName(FileName)));
 end;
 
-procedure TDirView.ValidateSelectedFiles;
+procedure TDirViewInt.ValidateSelectedFiles;
 var
   FileList: TStrings;
   i: Integer;
@@ -2050,7 +2043,7 @@ begin
   end;
 end;
 
-procedure TDirView.CreateDirectory(DirName: string);
+procedure TDirViewInt.CreateDir(DirName: string);
 var
   SRec: SysUtils.TSearchRec;
   Item: TListItem;
@@ -2067,7 +2060,7 @@ begin
   StopIconUpdateThread;
   try
     // create the physical directory:
-    Win32Check(Windows.CreateDirectory(PChar(ApiPath(DirName)), nil));
+    Win32Check(CreateDirectory(PChar(ApiPath(DirName)), nil));
 
     if IncludeTrailingBackslash(ExtractFilePath(ExpandFileName(DirName))) =
          IncludeTrailingBackslash(Path) then
@@ -2099,7 +2092,7 @@ begin
   end;
 end;
 
-procedure TDirView.DisplayContextMenu(Where: TPoint);
+procedure TDirViewInt.DisplayContextMenu(Where: TPoint);
 var
   FileList: TStringList;
   Index: Integer;
@@ -2270,7 +2263,7 @@ begin
   end;
 end;
 
-procedure TDirView.GetDisplayInfo(ListItem: TListItem;
+procedure TDirViewInt.GetDisplayInfo(ListItem: TListItem;
   var DispInfo: TLVItem);
 var
   Value: string;
@@ -2336,7 +2329,7 @@ begin
   end;
 end;
 
-function TDirView.ItemColor(Item: TListItem): TColor;
+function TDirViewInt.ItemColor(Item: TListItem): TColor;
 begin
   if PFileRec(Item.Data).Attr and FILE_ATTRIBUTE_COMPRESSED <> 0 then
   begin
@@ -2351,7 +2344,7 @@ begin
   Result := clDefaultItemColor;
 end;
 
-function TDirView.ItemThumbnail(Item: TListItem; Size: TSize): TBitmap;
+function TDirViewInt.ItemThumbnail(Item: TListItem; Size: TSize): TBitmap;
 var
   ItemData: PFileRec;
 begin
@@ -2378,7 +2371,7 @@ begin
   end;
 end;
 
-procedure TDirView.StartFileDeleteThread;
+procedure TDirViewInt.StartFileDeleteThread;
 var
   Files: TStringList;
 begin
@@ -2391,7 +2384,7 @@ begin
   end;
 end;
 
-procedure TDirView.IconUpdateEnqueue(ListItem: TListItem);
+procedure TDirViewInt.IconUpdateEnqueue(ListItem: TListItem);
 var
   Schedule: TIconUpdateSchedule;
 begin
@@ -2405,7 +2398,7 @@ begin
   StartIconUpdateThread;
 end;
 
-function TDirView.IconUpdatePeek: Integer;
+function TDirViewInt.IconUpdatePeek: Integer;
 begin
   if FIconUpdateQueue.Count > 0 then
     Result := FIconUpdateQueue.Peek.Index
@@ -2415,7 +2408,7 @@ begin
     Result := -1;
 end;
 
-procedure TDirView.IconUpdateDequeue;
+procedure TDirViewInt.IconUpdateDequeue;
 begin
   if FIconUpdateQueue.Count > 0 then
     FIconUpdateQueue.Dequeue
@@ -2425,12 +2418,12 @@ begin
   Assert(FIconUpdateSet.Count = FIconUpdateQueue.Count + FIconUpdateQueueDeferred.Count);
 end;
 
-function TDirView.ThumbnailNeeded(ItemData: PFileRec): Boolean;
+function TDirViewInt.ThumbnailNeeded(ItemData: PFileRec): Boolean;
 begin
   Result := (not Assigned(ItemData.Thumbnail)) and (ItemData.ThumbnailSize <> ThumbnailNotNeeded);
 end;
 
-procedure TDirView.DoFetchIconUpdate;
+procedure TDirViewInt.DoFetchIconUpdate;
 var
   Item: TListItem;
   ItemData: PFileRec;
@@ -2499,7 +2492,7 @@ begin
   end;
 end;
 
-procedure TDirView.DoUpdateIcon;
+procedure TDirViewInt.DoUpdateIcon;
 var
   Item: TListItem;
   ItemData: PFileRec;
@@ -2554,7 +2547,7 @@ begin
   end;
 end;
 
-procedure TDirView.StartIconUpdateThread;
+procedure TDirViewInt.StartIconUpdateThread;
 begin
   if DirOK and UseIconUpdateThread then
   begin
@@ -2564,7 +2557,7 @@ begin
   end;
 end;
 
-procedure TDirView.StopIconUpdateThread;
+procedure TDirViewInt.StopIconUpdateThread;
 begin
   if Assigned(FIconUpdateThread) then
   begin
@@ -2581,7 +2574,7 @@ begin
   end;
 end;
 
-procedure TDirView.StopWatchThread;
+procedure TDirViewInt.StopWatchThread;
 begin
   if Assigned(FDiscMonitor) then
   begin
@@ -2589,7 +2582,7 @@ begin
   end;
 end;
 
-procedure TDirView.StartWatchThread;
+procedure TDirViewInt.StartWatchThread;
 begin
   if (Length(Path) > 0) and WatchForChanges and DirOK then
   begin
@@ -2613,7 +2606,7 @@ begin
   end;
 end;
 
-procedure TDirView.TimerOnTimer(Sender: TObject);
+procedure TDirViewInt.TimerOnTimer(Sender: TObject);
 begin
   if not Loading then
   begin
@@ -2624,7 +2617,7 @@ begin
   end;
 end;
 
-procedure TDirView.ChangeDetected(Sender: TObject; const Directory: string;
+procedure TDirViewInt.ChangeDetected(Sender: TObject; const Directory: string;
   var SubdirsChanged: Boolean);
 begin
   // avoid prolonging the actual update with each change, as if continous change
@@ -2637,19 +2630,19 @@ begin
   end;
 end;
 
-procedure TDirView.ChangeInvalid(Sender: TObject; const Directory: string;
+procedure TDirViewInt.ChangeInvalid(Sender: TObject; const Directory: string;
   const ErrorStr: string);
 begin
   FDiscMonitor.Close;
 end;
 
-function TDirView.WatchThreadActive: Boolean;
+function TDirViewInt.WatchThreadActive: Boolean;
 begin
   Result := WatchForChanges and Assigned(FDiscMonitor) and
     FDiscMonitor.Active and FDiscMonitor.Enabled;
 end;
 
-procedure TDirView.SetChangeInterval(Value: Cardinal);
+procedure TDirViewInt.SetChangeInterval(Value: Cardinal);
 begin
   if Value > 0 then
   begin
@@ -2658,18 +2651,18 @@ begin
   end;
 end;
 
-procedure TDirView.SetDirColProperties(Value: TDirViewColProperties);
+procedure TDirViewInt.SetDirColProperties(Value: TDirViewColProperties);
 begin
   if Value <> ColProperties then
     ColProperties := Value;
 end;
 
-function TDirView.GetDirColProperties: TDirViewColProperties;
+function TDirViewInt.GetDirColProperties: TDirViewColProperties;
 begin
   Result := TDirViewColProperties(ColProperties);
 end;
 
-procedure TDirView.SetWatchForChanges(Value: Boolean);
+procedure TDirViewInt.SetWatchForChanges(Value: Boolean);
 begin
   if WatchForChanges <> Value then
   begin
@@ -2682,7 +2675,7 @@ begin
   end;
 end;
 
-procedure TDirView.DisplayPropertiesMenu;
+procedure TDirViewInt.DisplayPropertiesMenu;
 var
   FileList: TStringList;
   Index: Integer;
@@ -2724,7 +2717,7 @@ begin
   end;
 end;
 
-procedure TDirView.ExecuteFile(Item: TListItem);
+procedure TDirViewInt.ExecuteFile(Item: TListItem);
 var
   DefDir: string;
   FileName: string;
@@ -2763,7 +2756,7 @@ begin
   end;
 end;
 
-procedure TDirView.ExecuteDrive(Drive: string);
+procedure TDirViewInt.ExecuteDrive(Drive: string);
 var
   APath: string;
   DriveRoot: string;
@@ -2802,12 +2795,12 @@ begin
     Path := APath;
 end;
 
-procedure TDirView.ExecuteHomeDirectory;
+procedure TDirViewInt.ExecuteHomeDirectory;
 begin
   Path := HomeDirectory;
 end;
 
-procedure TDirView.ExecuteParentDirectory;
+procedure TDirViewInt.ExecuteParentDirectory;
 begin
   if Valid then
   begin
@@ -2822,7 +2815,7 @@ begin
   end;
 end;
 
-procedure TDirView.ExecuteRootDirectory;
+procedure TDirViewInt.ExecuteRootDirectory;
 begin
   if Valid then
   begin
@@ -2835,7 +2828,7 @@ begin
   end;
 end;
 
-procedure TDirView.Delete(Item: TListItem);
+procedure TDirViewInt.Delete(Item: TListItem);
 begin
   if Assigned(Item) and Assigned(Item.Data) and not (csRecreating in ControlState) then
   begin
@@ -2853,7 +2846,7 @@ begin
   inherited Delete(Item);
 end;
 
-procedure TDirView.InternalEdit(const HItem: TLVItem);
+procedure TDirViewInt.InternalEdit(const HItem: TLVItem);
 var
   Item: TListItem;
   Info: string;
@@ -2926,7 +2919,7 @@ begin
   end;
 end;
 
-function TDirView.ItemFileName(Item: TListItem): string;
+function TDirViewInt.ItemFileName(Item: TListItem): string;
 begin
   if Assigned(Item) and Assigned(Item.Data) then
     Result := ExtractFileName(PFileRec(Item.Data)^.FileName)
@@ -2934,21 +2927,21 @@ begin
     Result := '';
 end;
 
-function TDirView.ItemFileSize(Item: TListItem): Int64;
+function TDirViewInt.ItemFileSize(Item: TListItem): Int64;
 begin
   Result := 0;
   if Assigned(Item) and Assigned(Item.Data) then
     Result := GetItemFileSize(PFileRec(Item.Data));
 end;
 
-function TDirView.ItemFileTime(Item: TListItem;
+function TDirViewInt.ItemFileTime(Item: TListItem;
   var Precision: TDateTimePrecision): TDateTime;
 begin
   Result := FileTimeToDateTime(PFileRec(Item.Data)^.FileTime);
   Precision := tpMillisecond;
 end;
 
-function TDirView.ItemImageIndex(Item: TListItem;
+function TDirViewInt.ItemImageIndex(Item: TListItem;
   Cache: Boolean): Integer;
 begin
   if Assigned(Item) and Assigned(Item.Data) then
@@ -2969,19 +2962,19 @@ begin
     else Result := -1;
 end;
 
-procedure TDirView.Notification(AComponent: TComponent; Operation: TOperation);
+procedure TDirViewInt.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited Notification(AComponent, Operation);
   if (Operation = opRemove) and (AComponent = FDriveView) then
     FDriveView := nil;
 end;
 
-procedure TDirView.ReloadDirectory;
+procedure TDirViewInt.ReloadDirectory;
 begin
   Reload(True);
 end;
 
-procedure TDirView.ResetItemImage(Index: Integer);
+procedure TDirViewInt.ResetItemImage(Index: Integer);
 var
   LVI: TLVItem;
 begin
@@ -2999,7 +2992,7 @@ end;
 
 // Drag&Drop handling
 
-procedure TDirView.SignalFileDelete(Sender: TObject; Files: TStringList);
+procedure TDirViewInt.SignalFileDelete(Sender: TObject; Files: TStringList);
 // Called by TFileDeleteThread, when a file was deleted by the Drag&Drop target window:
 var
   Index: Integer;
@@ -3009,7 +3002,7 @@ begin
       ValidateFile(Files[Index]);
 end;
 
-procedure TDirView.DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
+procedure TDirViewInt.DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
   AMinCustCmd: Integer; grfKeyState: Longint; pt: TPoint);
 begin
   if Assigned(FDriveView) then
@@ -3026,7 +3019,7 @@ begin
   inherited;
 end;
 
-procedure TDirView.DDMenuDone(Sender: TObject; AMenu: HMenu);
+procedure TDirViewInt.DDMenuDone(Sender: TObject; AMenu: HMenu);
 begin
   if not WatchThreadActive then
   begin
@@ -3042,7 +3035,7 @@ begin
   inherited;
 end;
 
-procedure TDirView.DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint;
+procedure TDirViewInt.DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint;
   Point: TPoint; dwEffect: Longint);
 begin
   // Not sure why is this here. There's no "disable" counterparty.
@@ -3055,7 +3048,7 @@ begin
   inherited;
 end;
 
-procedure TDirView.AddToDragFileList(FileList: TFileList; Item: TListItem);
+procedure TDirViewInt.AddToDragFileList(FileList: TFileList; Item: TListItem);
 begin
   Assert(Assigned(Item));
   if IsRecycleBin then
@@ -3075,7 +3068,7 @@ begin
     else inherited;
 end;
 
-procedure TDirView.DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint;
+procedure TDirViewInt.DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint;
   DragStatus: TDragDetectStatus);
 var
   WasWatchThreadActive: Boolean;
@@ -3090,7 +3083,7 @@ begin
   end;
 end;
 
-procedure TDirView.DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer);
+procedure TDirViewInt.DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer);
 begin
   if DragDropFilesEx.OwnerIsSource and
      (dwEffect = DROPEFFECT_COPY) and (not Assigned(DropTarget)) then
@@ -3123,7 +3116,7 @@ begin
   inherited;
 end;
 
-procedure TDirView.PerformDragDropFileOperation(TargetPath: string; Effect: Integer);
+procedure TDirViewInt.PerformDragDropFileOperation(TargetPath: string; Effect: Integer);
 var
   Index: Integer;
   SourcePath: string;
@@ -3163,8 +3156,8 @@ begin
               DriveView.StopWatchThread;
 
             if (DropSourceControl <> Self) and
-               (DropSourceControl is TDirView) then
-                TDirView(DropSourceControl).StopWatchThread;
+               (DropSourceControl is TDirViewInt) then
+                TDirViewInt(DropSourceControl).StopWatchThread;
 
             if DropFiles(
                  DragDropFilesEx, Effect, FFileOperator, TargetPath, IsRecycleBin,
@@ -3192,11 +3185,11 @@ begin
           end;
 
           if Assigned(DropSourceControl) and
-             (DropSourceControl is TDirView) and
+             (DropSourceControl is TDirViewInt) and
              (DropSourceControl <> Self) and
              (Effect = DROPEFFECT_MOVE) then
           begin
-            TDirView(DropSourceControl).ValidateSelectedFiles;
+            TDirViewInt(DropSourceControl).ValidateSelectedFiles;
           end;
 
           if Assigned(FDriveView) and SourceIsDirectory then
@@ -3228,8 +3221,8 @@ begin
             FDriveView.StartWatchThread;
           Sleep(0);
           WatchForChanges := OldWatchForChanges;
-          if (DropSourceControl <> Self) and (DropSourceControl is TDirView) then
-            TDirView(DropSourceControl).StartWatchThread;
+          if (DropSourceControl <> Self) and (DropSourceControl is TDirViewInt) then
+            TDirViewInt(DropSourceControl).StartWatchThread;
           Screen.Cursor := OldCursor;
         end;
       end;
@@ -3237,14 +3230,14 @@ begin
   end;
 end;
 
-procedure TDirView.DDError(ErrorNo: TDDError);
+procedure TDirViewInt.DDError(ErrorNo: TDDError);
 begin
   if Assigned(OnDDError) then OnDDError(Self, ErrorNo)
     else
   raise EDragDrop.Create(Format(SDragDropError, [Ord(ErrorNo)]));
 end;
 
-procedure TDirView.ClearCutState;
+procedure TDirViewInt.ClearCutState;
 begin
   // This is all far from perfect, as the clipboard can change for number of other reasons.
   // We should better monitor the clipboard changes (the way we do in TImportSessionsDialog).
@@ -3266,7 +3259,7 @@ begin
   end;
 end;
 
-procedure TDirView.EmptyClipboard;
+procedure TDirViewInt.EmptyClipboard;
 begin
   if Windows.OpenClipBoard(0) then
   begin
@@ -3276,7 +3269,7 @@ begin
   end;
 end;
 
-function TDirView.DoCopyToClipboard(Focused: Boolean; Cut: Boolean; Operation: TClipBoardOperation): Boolean;
+function TDirViewInt.DoCopyToClipboard(Focused: Boolean; Cut: Boolean; Operation: TClipBoardOperation): Boolean;
 var
   Item: TListItem;
   SaveCursor: TCursor;
@@ -3311,17 +3304,17 @@ begin
   end;
 end;
 
-function TDirView.CopyToClipBoard(Focused: Boolean): Boolean;
+function TDirViewInt.CopyToClipBoard(Focused: Boolean): Boolean;
 begin
   Result := DoCopyToClipboard(Focused, False, cboCopy);
 end;
 
-function TDirView.CutToClipBoard(Focused: Boolean): Boolean;
+function TDirViewInt.CutToClipBoard(Focused: Boolean): Boolean;
 begin
   Result := DoCopyToClipboard(Focused, True, cboCut);
 end;
 
-function TDirView.PasteFromClipBoard(TargetPath: string): Boolean;
+function TDirViewInt.PasteFromClipBoard(TargetPath: string): Boolean;
 var
   Effect: LongInt;
 begin
@@ -3336,23 +3329,23 @@ begin
   end;
 end;
 
-function TDirView.DragCompleteFileList: Boolean;
+function TDirViewInt.DragCompleteFileList: Boolean;
 begin
   Result := inherited DragCompleteFileList and
     (FDriveType <> DRIVE_REMOVABLE);
 end;
 
-function TDirView.NewColProperties: TCustomListViewColProperties;
+function TDirViewInt.NewColProperties: TCustomListViewColProperties;
 begin
   Result := TDirViewColProperties.Create(Self);
 end;
 
-function TDirView.SortAscendingByDefault(Index: Integer): Boolean;
+function TDirViewInt.SortAscendingByDefault(Index: Integer): Boolean;
 begin
   Result := not (TDirViewCol(Index) in [dvSize, dvChanged]);
 end;
 
-procedure TDirView.SetItemImageIndex(Item: TListItem; Index: Integer);
+procedure TDirViewInt.SetItemImageIndex(Item: TListItem; Index: Integer);
 begin
   Assert(Assigned(Item));
   var PItem := PFileRec(Item.Data);
@@ -3363,7 +3356,7 @@ begin
   end;
 end;
 
-procedure TDirView.SetItemCalculatedSize(Item: TListItem; ASize: Int64);
+procedure TDirViewInt.SetItemCalculatedSize(Item: TListItem; ASize: Int64);
 var
   OldSize: Int64;
 begin

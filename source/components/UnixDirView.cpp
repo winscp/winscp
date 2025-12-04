@@ -27,15 +27,6 @@
 #define ASSERT_VALID_ITEM
 #endif
 //---------------------------------------------------------------------------
-namespace Unixdirview
-{
-  void __fastcall PACKAGE Register()
-  {
-    TComponentClass classes[] = { __classid(TUnixDirView) };
-    RegisterComponents(L"Scp", classes, LENOF(classes) - 1);
-  }
-}
-//---------------------------------------------------------------------------
 #ifndef DESIGN_ONLY
 #define HOMEDIRECTORY L""
 #endif
@@ -1015,12 +1006,12 @@ int __fastcall TUnixDirView::FilteredCount()
   return FFilteredCount;
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::CreateDirectory(UnicodeString DirName)
+void __fastcall TUnixDirView::CreateDir(UnicodeString DirName)
 {
-  CreateDirectoryEx(DirName, NULL);
+  CreateDirEx(DirName, NULL);
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::CreateDirectoryEx(UnicodeString DirName, const TRemoteProperties * Properties)
+void __fastcall TUnixDirView::CreateDirEx(UnicodeString DirName, const TRemoteProperties * Properties)
 {
 #ifndef DESIGN_ONLY
   DebugAssert(Terminal);

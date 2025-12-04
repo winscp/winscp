@@ -16,14 +16,14 @@
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
 #include <ToolWin.hpp>
-#include <DirView.hpp>
+#include <DirView.h>
 #include <PathLabel.hpp>
 
 #include <WinInterface.h>
 
 #include "HistoryComboBox.h"
 #include "CustomDriveView.hpp"
-#include "DriveView.hpp"
+#include "DriveView.h"
 #include "UnixDriveView.h"
 #include "TB2Dock.hpp"
 #include "TB2Item.hpp"
@@ -37,6 +37,8 @@
 #include "TBXToolPals.hpp"
 #include "ThemePageControl.h"
 #include <Vcl.AppEvnts.hpp>
+#include "DriveViewInt.hpp"
+#include "DirViewInt.hpp"
 //---------------------------------------------------------------------------
 class TScpCommanderForm : public TCustomScpExplorerForm
 {

@@ -32,6 +32,8 @@
 #pragma link "TBXStatusBars"
 #pragma link "TBXToolPals"
 #pragma link "ThemePageControl"
+#pragma link "DriveViewInt"
+#pragma link "DirViewInt"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 class TSynchronizedBrowsingGuard
@@ -1421,7 +1423,7 @@ void __fastcall TScpCommanderForm::CreateLocalDirectory(const UnicodeString & Pa
   {
     CreateLocalDirectory(Dir);
   }
-  LocalDirView->CreateDirectory(Path);
+  LocalDirView->CreateDir(Path);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SynchronizeBrowsingRemote(

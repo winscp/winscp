@@ -44,7 +44,7 @@
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <DCC_UnitSearchPath>packages\jcl;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-        <Defines>WINSCP;$(Defines)</Defines>
+        <Defines>UNICODE;WINSCP;$(Defines)</Defines>
         <DynamicRTL>true</DynamicRTL>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>

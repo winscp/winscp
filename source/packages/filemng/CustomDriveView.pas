@@ -5,7 +5,7 @@ interface
 uses
   Classes, ComCtrls, CommCtrl, Windows, Controls, Forms, ShlObj, Messages,
     Graphics,
-  DragDrop, CustomDirView, IEDriveInfo, DragDropFilesEx, PasTools;
+  DragDrop, CustomDirView, IEDriveInfoInt, DragDropFilesEx, PasTools;
 
 type
   {Types uses by the function IterateSubTree:}

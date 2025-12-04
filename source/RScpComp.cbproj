@@ -51,7 +51,7 @@
         <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>RScpComp</SanitizedProjectName>
         <SubProcessesNumber>8</SubProcessesNumber>
-        <TLIB_PageSize>64</TLIB_PageSize>
+        <TLIB_PageSize>128</TLIB_PageSize>
         <UsingDelphiRTL>true</UsingDelphiRTL>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -83,6 +83,18 @@
         <TASM_Debugging>None</TASM_Debugging>
     </PropertyGroup>
     <ItemGroup>
+        <CppCompile Include="components\DirView.cpp">
+            <DependentOn>components\DirView.h</DependentOn>
+            <BuildOrder>4</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="components\DriveView.cpp">
+            <DependentOn>components\DriveView.h</DependentOn>
+            <BuildOrder>3</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="components\IEDriveInfo.cpp">
+            <DependentOn>components\IEDriveInfo.h</DependentOn>
+            <BuildOrder>5</BuildOrder>
+        </CppCompile>
         <CppCompile Include="components\ThemePageControl.cpp">
             <DependentOn>components\ThemePageControl.h</DependentOn>
             <BuildOrder>3</BuildOrder>

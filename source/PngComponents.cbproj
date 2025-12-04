@@ -45,7 +45,7 @@
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
         <DCC_UnitSearchPath>packages\png;packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-        <Defines>WINSCP;$(Defines)</Defines>
+        <Defines>UNICODE;WINSCP;$(Defines)</Defines>
         <DynamicRTL>true</DynamicRTL>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_Description>Png Components</ILINK_Description>

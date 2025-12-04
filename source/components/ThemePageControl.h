@@ -3,6 +3,7 @@
 #define ThemePageControlH
 //---------------------------------------------------------------------------
 #include <ComCtrls.hpp>
+#include <TBX.hpp>
 //---------------------------------------------------------------------------
 enum TThemeTabSheetButtons { ttbNone, ttbClose, ttbDropDown };
 enum TThemeTabCaptionTruncation { tttNone, tttEllipsis, tttNoText };

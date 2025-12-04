@@ -44,7 +44,7 @@
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <DCC_UnitSearchPath>packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_UNSAFE_TYPE>true</DCC_UNSAFE_TYPE>
-        <Defines>$(Defines)</Defines>
+        <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_Description>Drag and Drop Components</ILINK_Description>
         <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>

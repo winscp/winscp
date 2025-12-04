@@ -45,7 +45,7 @@
         <DCC_TYPEINFO_IMPLICITLY_ADDED>false</DCC_TYPEINFO_IMPLICITLY_ADDED>
         <DCC_UnitSearchPath>packages\my;packages\dragndrop;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_UNSAFE_TYPE>true</DCC_UNSAFE_TYPE>
-        <Defines>$(Defines)</Defines>
+        <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_Description>Filemanager Toolset</ILINK_Description>
         <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
@@ -106,23 +106,15 @@
             <BuildOrder>50</BuildOrder>
             <BuildOrder>0</BuildOrder>
         </DelphiCompile>
-        <ResFiles Include="packages\filemng\DirView.dcr">
-            <BuildOrder>-1</BuildOrder>
-            <BuildOrder>11</BuildOrder>
-        </ResFiles>
-        <DelphiCompile Include="packages\filemng\DirView.pas">
-            <BuildOrder>8</BuildOrder>
-            <BuildOrder>18</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="packages\filemng\DirViewColProperties.pas">
             <BuildOrder>44</BuildOrder>
             <BuildOrder>4</BuildOrder>
         </DelphiCompile>
-        <ResFiles Include="packages\filemng\DriveView.dcr">
-            <BuildOrder>-1</BuildOrder>
-            <BuildOrder>17</BuildOrder>
-        </ResFiles>
-        <DelphiCompile Include="packages\filemng\DriveView.pas">
+        <DelphiCompile Include="packages\filemng\DirViewInt.pas">
+            <BuildOrder>8</BuildOrder>
+            <BuildOrder>18</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\filemng\DriveViewInt.pas">
             <BuildOrder>14</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="packages\filemng\FileChanges.pas">
@@ -137,7 +129,7 @@
             <BuildOrder>20</BuildOrder>
             <BuildOrder>19</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="packages\filemng\IEDriveInfo.pas">
+        <DelphiCompile Include="packages\filemng\IEDriveInfoInt.pas">
             <BuildOrder>38</BuildOrder>
             <BuildOrder>22</BuildOrder>
         </DelphiCompile>

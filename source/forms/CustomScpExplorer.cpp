@@ -4725,7 +4725,7 @@ void __fastcall TCustomScpExplorerForm::CreateRemoteDirectory(
   DebugAssert(!IsLocalBrowserMode());
   Properties.Valid = Properties.Valid << vpEncrypt;
   Properties.Encrypt = GUIConfiguration->CurrentCopyParam.EncryptNewFiles;
-  RemoteDirView->CreateDirectoryEx(Path, &Properties);
+  RemoteDirView->CreateDirEx(Path, &Properties);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
@@ -4751,7 +4751,7 @@ void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
     }
     else
     {
-      DirView(Side)->CreateDirectory(Name);
+      DirView(Side)->CreateDir(Name);
     }
   }
 }

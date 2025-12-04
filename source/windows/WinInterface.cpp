@@ -8,6 +8,7 @@
 #include <Glyphs.h>
 #include <Custom.h>
 #include <HistoryComboBox.h>
+#include <IEDriveInfo.h>
 
 #include "JclDebug.hpp"
 #include "JclHookExcept.hpp"
@@ -1492,6 +1493,7 @@ void __fastcall WinInitialize()
   Application->OnGetMainFormHandle = MakeMethod<TGetHandleEvent>(nullptr, AppGetMainFormHandle);
   THistoryComboBox::OnLoadHistory = MakeMethod<THistoryComboHistoryEvent>(nullptr, LoadHistory);
   THistoryComboBox::OnSaveHistory = MakeMethod<THistoryComboHistoryEvent>(nullptr, SaveHistory);
+  DriveInfoRequire();
 }
 //---------------------------------------------------------------------------
 void __fastcall WinFinalize()
