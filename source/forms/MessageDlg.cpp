@@ -1068,18 +1068,12 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
   ApplyTabs(Result->MessageText, L' ', NULL, NULL);
 
-  // Windows XP (not sure about Vista) does not support Hair space.
-  // For Windows XP, we still keep the existing hack by using hard-coded spaces
-  // in resource string
-  if (IsWin7())
-  {
-    // Have to be padding with spaces (the smallest space defined, hair space = 1px),
-    // as tabs actually do not tab, just expand to 8 spaces.
-    // Otherwise we would have to do custom drawing
-    // (using GetTabbedTextExtent and TabbedTextOut)
-    const wchar_t HairSpace = L'\x200A';
-    ApplyTabs(BodyMsg, HairSpace, CalculateWidthOnCanvas, Result->Canvas);
-  }
+  // Have to be padding with spaces (the smallest space defined, hair space = 1px),
+  // as tabs actually do not tab, just expand to 8 spaces.
+  // Otherwise we would have to do custom drawing
+  // (using GetTabbedTextExtent and TabbedTextOut)
+  const wchar_t HairSpace = L'\x200A';
+  ApplyTabs(BodyMsg, HairSpace, CalculateWidthOnCanvas, Result->Canvas);
 
   DebugAssert(MainMsg.Pos(L"\t") == 0);
 

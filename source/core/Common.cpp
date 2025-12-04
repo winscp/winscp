@@ -1691,9 +1691,7 @@ struct TDateTimeParams
   long BaseDifferenceSec;
   // All Current* are actually global, not per-year and
   // are valid for Year 0 (current) only
-  double CurrentDaylightDifference;
   long CurrentDaylightDifferenceSec;
-  double CurrentDifference;
   long CurrentDifferenceSec;
   double StandardDifference;
   long StandardDifferenceSec;
@@ -1705,8 +1703,6 @@ struct TDateTimeParams
   TDateTime DaylightDate;
   UnicodeString StandardName;
   UnicodeString DaylightName;
-  // This is actually global, not per-year
-  bool DaylightHack;
 
   bool HasDST() const
   {
@@ -1796,12 +1792,8 @@ static const TDateTimeParams * __fastcall GetDateTimeParams(unsigned short Year)
 
     Result->CurrentDifferenceSec = TZI.Bias +
       Result->CurrentDaylightDifferenceSec;
-    Result->CurrentDifference =
-      double(Result->CurrentDifferenceSec) / MinsPerDay;
     Result->CurrentDifferenceSec *= SecsPerMin;
 
-    Result->CurrentDaylightDifference =
-      double(Result->CurrentDaylightDifferenceSec) / MinsPerDay;
     Result->CurrentDaylightDifferenceSec *= SecsPerMin;
 
     Result->DaylightDifferenceSec = TZI.DaylightBias * SecsPerMin;
@@ -1821,8 +1813,6 @@ static const TDateTimeParams * __fastcall GetDateTimeParams(unsigned short Year)
 
     Result->StandardName = TZI.StandardName;
     Result->DaylightName = TZI.DaylightName;
-
-    Result->DaylightHack = !IsWin7();
   }
 
   return Result;
@@ -1895,11 +1885,6 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall UsesDaylightHack()
-{
-  return GetDateTimeParams(0)->DaylightHack;
-}
-//---------------------------------------------------------------------------
 TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
 {
   DebugAssert(int(EncodeDateVerbose(1970, 1, 1)) == UnixDateDelta);
@@ -1907,23 +1892,7 @@ TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
   TDateTime Result = UnixDateDelta + (double(TimeStamp) / SecsPerDay);
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(Result));
-
-  if (Params->DaylightHack)
-  {
-    if ((DSTMode == dstmWin) || (DSTMode == dstmUnix))
-    {
-      const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
-      Result -= CurrentParams->CurrentDifference;
-    }
-    else if (DSTMode == dstmKeep)
-    {
-      Result -= Params->BaseDifference;
-    }
-  }
-  else
-  {
-    Result -= Params->BaseDifference;
-  }
+  Result -= Params->BaseDifference;
 
   if ((DSTMode == dstmUnix) || (DSTMode == dstmKeep))
   {
@@ -2124,24 +2093,20 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
   __int64 UnixTimeStamp = ::DateTimeToUnix(DateTime);
 
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
-  if (!Params->DaylightHack)
-  {
-    // We should probably use reversed code of FileTimeToDateTime here instead of custom implementation
+  // We should probably use reversed code of FileTimeToDateTime here instead of custom implementation
 
-    // We are incrementing and decrementing BaseDifferenceSec because it
-    // can actually change between years
-    // (as it did in Belarus from GMT+2 to GMT+3 between 2011 and 2012)
+  // We are incrementing and decrementing BaseDifferenceSec because it
+  // can actually change between years
+  // (as it did in Belarus from GMT+2 to GMT+3 between 2011 and 2012)
 
-    UnixTimeStamp += (IsDateInDST(DateTime) ?
-      Params->DaylightDifferenceSec : Params->StandardDifferenceSec) +
-      Params->BaseDifferenceSec;
+  UnixTimeStamp += (IsDateInDST(DateTime) ?
+    Params->DaylightDifferenceSec : Params->StandardDifferenceSec) +
+    Params->BaseDifferenceSec;
 
-    const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
-    UnixTimeStamp -=
-      CurrentParams->CurrentDaylightDifferenceSec +
-      CurrentParams->BaseDifferenceSec;
-
-  }
+  const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
+  UnixTimeStamp -=
+    CurrentParams->CurrentDaylightDifferenceSec +
+    CurrentParams->BaseDifferenceSec;
 
   FILETIME Result;
   (*(__int64*)&(Result) = (__int64(UnixTimeStamp) + 11644473600LL) * 10000000LL);
@@ -2163,18 +2128,9 @@ TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
   else
   {
     SYSTEMTIME SysTime;
-    if (!UsesDaylightHack())
-    {
-      SYSTEMTIME UniverzalSysTime;
-      FileTimeToSystemTime(&FileTime, &UniverzalSysTime);
-      SystemTimeToTzSpecificLocalTime(NULL, &UniverzalSysTime, &SysTime);
-    }
-    else
-    {
-      FILETIME LocalFileTime;
-      FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
-      FileTimeToSystemTime(&LocalFileTime, &SysTime);
-    }
+    SYSTEMTIME UniverzalSysTime;
+    FileTimeToSystemTime(&FileTime, &UniverzalSysTime);
+    SystemTimeToTzSpecificLocalTime(NULL, &UniverzalSysTime, &SysTime);
     Result = SystemTimeToDateTimeVerbose(SysTime);
   }
   return Result;
@@ -2185,39 +2141,16 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
 {
   __int64 Result = ((*(const __int64*)&(FileTime)) / 10000000LL - 11644473600LL);
 
-  if (UsesDaylightHack())
+  if (DSTMode == dstmWin)
   {
-    if ((DSTMode == dstmUnix) || (DSTMode == dstmKeep))
-    {
-      FILETIME LocalFileTime;
-      SYSTEMTIME SystemTime;
-      FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
-      FileTimeToSystemTime(&LocalFileTime, &SystemTime);
-      TDateTime DateTime = SystemTimeToDateTimeVerbose(SystemTime);
-      const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
-      Result += (IsDateInDST(DateTime) ?
-        Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
-
-      if (DSTMode == dstmKeep)
-      {
-        const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
-        Result -= CurrentParams->CurrentDaylightDifferenceSec;
-      }
-    }
-  }
-  else
-  {
-    if (DSTMode == dstmWin)
-    {
-      FILETIME LocalFileTime;
-      SYSTEMTIME SystemTime;
-      FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
-      FileTimeToSystemTime(&LocalFileTime, &SystemTime);
-      TDateTime DateTime = SystemTimeToDateTimeVerbose(SystemTime);
-      const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
-      Result -= (IsDateInDST(DateTime) ?
-        Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
-    }
+    FILETIME LocalFileTime;
+    SYSTEMTIME SystemTime;
+    FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
+    FileTimeToSystemTime(&LocalFileTime, &SystemTime);
+    TDateTime DateTime = SystemTimeToDateTimeVerbose(SystemTime);
+    const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
+    Result -= (IsDateInDST(DateTime) ?
+      Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
   }
 
   return Result;
@@ -2230,12 +2163,6 @@ TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
   DateTime += DSTDifferenceForTime(DateTime);
   DateTime += Params->BaseDifference;
 
-  if (Params->DaylightHack)
-  {
-    const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
-    DateTime += CurrentParams->CurrentDaylightDifference;
-  }
-
   return DateTime;
 }
 //---------------------------------------------------------------------------
@@ -2245,12 +2172,6 @@ TDateTime __fastcall ConvertTimestampFromUTC(TDateTime DateTime)
   const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
   DateTime -= DSTDifferenceForTime(DateTime);
   DateTime -= Params->BaseDifference;
-
-  if (Params->DaylightHack)
-  {
-    const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
-    DateTime -= CurrentParams->CurrentDaylightDifference;
-  }
 
   return DateTime;
 }
@@ -2288,34 +2209,9 @@ double __fastcall DSTDifferenceForTime(TDateTime DateTime)
 //---------------------------------------------------------------------------
 TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode)
 {
-  const TDateTimeParams * Params = GetDateTimeParams(DecodeYear(DateTime));
-
-  if (Params->DaylightHack)
+  if (DSTMode == dstmWin)
   {
-    if ((DSTMode == dstmWin) || (DSTMode == dstmUnix))
-    {
-      const TDateTimeParams * CurrentParams = GetDateTimeParams(0);
-      DateTime = DateTime - CurrentParams->CurrentDaylightDifference;
-    }
-
-    if (!IsDateInDST(DateTime))
-    {
-      if (DSTMode == dstmWin)
-      {
-        DateTime = DateTime - Params->DaylightDifference;
-      }
-    }
-    else
-    {
-      DateTime = DateTime - Params->StandardDifference;
-    }
-  }
-  else
-  {
-    if (DSTMode == dstmWin)
-    {
-      DateTime = DateTime + DSTDifferenceForTime(DateTime);
-    }
+    DateTime = DateTime + DSTDifferenceForTime(DateTime);
   }
 
   return DateTime;
@@ -3034,11 +2930,6 @@ bool IsWin64()
   }
 
   return (Result > 0);
-}
-//---------------------------------------------------------------------------
-bool __fastcall IsWin7()
-{
-  return CheckWin32Version(6, 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWin8()

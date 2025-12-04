@@ -180,13 +180,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 8
           Top = 164
           Width = 438
-          Height = 96
+          Height = 73
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Daylight saving time'
           TabOrder = 1
           DesignSize = (
             438
-            96)
+            73)
           object DSTModeUnixCheck: TRadioButton
             Left = 11
             Top = 23
@@ -207,20 +207,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 1
             OnClick = DataChange
           end
-          object DSTModeKeepCheck: TRadioButton
-            Left = 11
-            Top = 69
-            Width = 418
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Preser&ve remote timestamp'
-            TabOrder = 2
-            OnClick = DataChange
-          end
         end
         object PuttyGroup: TGroupBox
           Left = 8
-          Top = 266
+          Top = 243
           Width = 438
           Height = 103
           Anchors = [akLeft, akTop, akRight]

@@ -150,7 +150,6 @@ bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value);
 bool IsWin64();
-bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
 bool IsWin10Build(int BuildNumber);
@@ -258,9 +257,8 @@ enum TDSTMode
 {
   dstmWin =  0, //
   dstmUnix = 1, // adjust UTC time to Windows "bug"
-  dstmKeep = 2
+  dstmKeep = 2  // deprecated, behaves like dstmUnix
 };
-bool __fastcall UsesDaylightHack();
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day);
 TDateTime __fastcall EncodeTimeVerbose(Word Hour, Word Min, Word Sec, Word MSec);
 double __fastcall DSTDifferenceForTime(TDateTime DateTime);

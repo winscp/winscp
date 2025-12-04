@@ -9,9 +9,6 @@ uses
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 
-{$EXTERNALSYM IsWin7}
-function IsWin7: Boolean;
-
 {$EXTERNALSYM IsWin8}
 function IsWin8: Boolean;
 
@@ -169,11 +166,6 @@ const
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 begin
   Result := ComponentClass.Create(Owner);
-end;
-
-function IsWin7: Boolean;
-begin
-  Result := CheckWin32Version(6, 1);
 end;
 
 function IsWin8: Boolean;
@@ -1078,26 +1070,15 @@ begin
   Result := 0;
 end;
 
-var
-  FindexAdvancedSupport: Boolean = False;
-
 // VCLCOPY (with FindFirstFile replaced by FindFirstFileEx)
 function FindFirstEx(
   const Path: string; Attr: Integer; var F: TSearchRec; AdditionalFlags: DWORD; SearchOp: _FINDEX_SEARCH_OPS): Integer;
 const
   faSpecial = faHidden or faSysFile or faDirectory;
-var
-  FindexInfoLevel: TFindexInfoLevels;
 begin
   F.ExcludeAttr := not Attr and faSpecial;
   // FindExInfoBasic = do not retrieve cAlternateFileName, which we do not use
-  if FindexAdvancedSupport then FindexInfoLevel := FindExInfoBasic
-    else
-  begin
-    FindexInfoLevel := FindExInfoStandard;
-    AdditionalFlags := AdditionalFlags and (not FIND_FIRST_EX_LARGE_FETCH_PAS);
-  end;
-  F.FindHandle := FindFirstFileEx(PChar(Path), FindexInfoLevel, @F.FindData, SearchOp, nil, AdditionalFlags);
+  F.FindHandle := FindFirstFileEx(PChar(Path), FindExInfoBasic, @F.FindData, SearchOp, nil, AdditionalFlags);
   if F.FindHandle <> INVALID_HANDLE_VALUE then
   begin
     Result := FindMatchingFileEx(F);
@@ -1210,7 +1191,6 @@ var
   OSVersionInfo: TOSVersionInfoEx;
   SetDefaultDllDirectories: function(DirectoryFlags: DWORD): BOOL; stdcall;
 initialization
-  FindexAdvancedSupport := IsWin7;
   // Translated from PuTTY's dll_hijacking_protection().
   // Inno Setup does not use LOAD_LIBRARY_SEARCH_USER_DIRS and falls back to SetDllDirectory.
   Lib := LoadLibrary(kernel32);

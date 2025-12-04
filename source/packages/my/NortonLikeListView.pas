@@ -23,7 +23,6 @@ type
     FLastDeletedItem: TListItem; // aby sme nepocitali smazany item 2x
     FFocusingItem: Boolean;
     FManageSelection: Boolean;
-    FForceUpdateOnItemUnfocus: Boolean;
     FFirstSelected: Integer;
     FLastSelected: Integer;
     FFocused: TDateTime;
@@ -142,12 +141,6 @@ begin
   FManageSelection := True;
   FFocused := 0;
   FIgnoreSetFocusFrom := INVALID_HANDLE_VALUE;
-  // On Windows 7 we have to force item update when it looses focus,
-  // otherwise some remnants of focus rectangle remain
-  // Doing the same on WinXP makes list view down from the item flicker,
-  // so we avoid this there.
-  // Not sure about Vista
-  FForceUpdateOnItemUnfocus := IsWin7;
   FNextCharToIgnore := 0;
   FDarkMode := False;
 end;
@@ -473,11 +466,12 @@ begin
             if Valid and (not FClearingItems) and
                (uChanged = LVIF_STATE) and (Item <> FLastDeletedItem) then
             begin
-              if FForceUpdateOnItemUnfocus and
-                 (NortonLike <> nlOff) and
+             // Since Windows 7 we have to force item update when it looses focus,
+             // otherwise some remnants of focus rectangle remain
+             // Not sure about Vista
+              if (NortonLike <> nlOff) and
                  ((uOldState and LVIS_FOCUSED) > (uNewState and LVIS_FOCUSED)) then
               begin
-                // force update, otherwise some remnants of focus rectangle remain
                 Item.Update;
               end;
               if (uOldState and LVIS_SELECTED) <> (uNewState and LVIS_SELECTED) then

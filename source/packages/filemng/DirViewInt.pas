@@ -391,9 +391,6 @@ uses
 var
   ThumbnailNotNeeded: TSize;
 
-var
-  DaylightHack: Boolean;
-
 function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
 begin
   Result := (Length(Ext) = 3) and (Pos(Ext, FileExtList) <> 0);
@@ -403,7 +400,6 @@ function FileTimeToDateTime(FileTime: TFileTime): TDateTime;
 var
   SysTime: TSystemTime;
   UniverzalSysTime: TSystemTime;
-  LocalFileTime: TFileTime;
 begin
   // duplicated in Common.cpp
 
@@ -415,16 +411,8 @@ begin
   end
     else
   begin
-    if not DaylightHack then
-    begin
-      FileTimeToSystemTime(FileTime, UniverzalSysTime);
-      SystemTimeToTzSpecificLocalTime(nil, UniverzalSysTime, SysTime);
-    end
-      else
-    begin
-      FileTimeToLocalFileTime(FileTime, LocalFileTime);
-      FileTimeToSystemTime(LocalFileTime, SysTime);
-    end;
+    FileTimeToSystemTime(FileTime, UniverzalSysTime);
+    SystemTimeToTzSpecificLocalTime(nil, UniverzalSysTime, SysTime);
     Result := SystemTimeToDateTime(SysTime);
   end;
 end;
@@ -3370,5 +3358,4 @@ end;
 // =================================================================
 
 initialization
-  DaylightHack := (not IsWin7);
 end.

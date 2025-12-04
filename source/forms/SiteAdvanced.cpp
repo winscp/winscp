@@ -120,11 +120,8 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
         DSTModeWinCheck->Checked = true;
         break;
 
-      case dstmKeep:
-        DSTModeKeepCheck->Checked = true;
-        break;
-
       default:
+      case dstmKeep: // deprecated
       case dstmUnix:
         DSTModeUnixCheck->Checked = true;
         break;
@@ -544,10 +541,6 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   if (DSTModeUnixCheck->Checked)
   {
     SessionData->DSTMode = dstmUnix;
-  }
-  else if (DSTModeKeepCheck->Checked)
-  {
-    SessionData->DSTMode = dstmKeep;
   }
   else
   {
@@ -1022,7 +1015,6 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(EOLTypeCombo, (SftpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
     EnableControl(EOLTypeLabel, EOLTypeCombo->Enabled);
     EnableControl(DSTModeGroup, (SftpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
-    EnableControl(DSTModeKeepCheck, UsesDaylightHack() && DSTModeGroup->Enabled);
     EnableControl(UtfCombo, (SftpProtocol || FtpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
     EnableControl(UtfLabel, UtfCombo->Enabled);
     // should be enabled for fsSFTP (SCP fallback) too, but it would cause confusion

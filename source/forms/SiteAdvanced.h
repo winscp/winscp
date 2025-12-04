@@ -153,7 +153,6 @@ __published:
   TGroupBox *TunnelOptionsGroup;
   TLabel *Label21;
   TComboBox *TunnelLocalPortNumberEdit;
-  TRadioButton *DSTModeKeepCheck;
   TGroupBox *ConnectionGroup;
   TCheckBox *FtpPasvModeCheck;
   TTabSheet *RecycleBinSheet;

@@ -1183,21 +1183,16 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   // See https://stackoverflow.com/q/15750842/850848
   if (NortonLikeListView != NULL)
   {
-    // It should not be a problem to call the LVM_QUERYINTERFACE
-    // on earlier versions of Windows. It should be noop.
-    if (IsWin7())
+    IListView_Win7 * ListViewIntf = NULL;
+    SendMessage(NortonLikeListView->Handle, LVM_QUERYINTERFACE, reinterpret_cast<WPARAM>(&IID_IListView_Win7), reinterpret_cast<LPARAM>(&ListViewIntf));
+    if (ListViewIntf != NULL)
     {
-      IListView_Win7 * ListViewIntf = NULL;
-      SendMessage(NortonLikeListView->Handle, LVM_QUERYINTERFACE, reinterpret_cast<WPARAM>(&IID_IListView_Win7), reinterpret_cast<LPARAM>(&ListViewIntf));
-      if (ListViewIntf != NULL)
-      {
-        ListViewIntf->SetSelectionFlags(1, 1);
-        ListViewIntf->Release();
-      }
-      else
-      {
-        DebugAssert(IsWine());
-      }
+      ListViewIntf->SetSelectionFlags(1, 1);
+      ListViewIntf->Release();
+    }
+    else
+    {
+      DebugAssert(IsWine());
     }
   }
 
