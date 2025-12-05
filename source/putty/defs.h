@@ -63,6 +63,7 @@
 #define SCNu64 "I64u"
 #define SIZEx "Ix"
 #define SIZEu "Iu"
+uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 /* Also, define a LEGACY_WINDOWS flag to enable other workarounds */
 #define LEGACY_WINDOWS
 #else

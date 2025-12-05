@@ -141,7 +141,6 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
     /* MIT Kerberos GSSAPI implementation */
     module = NULL;
     putty_registry_pass(true);
-    { // WINSCP
     HKEY regkey = open_regkey_ro(HKEY_LOCAL_MACHINE,
                                  "SOFTWARE\\MIT\\Kerberos");
     if (regkey) {
@@ -156,7 +155,6 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
                 sfree(dllPath);
             }
 
-            { // WINSCP
             char *dllfile = dupcat(bindir, "\\gssapi"MIT_KERB_SUFFIX".dll");
             module = LoadLibraryEx(dllfile, NULL,
                                    LOAD_LIBRARY_SEARCH_SYSTEM32 |
@@ -182,7 +180,6 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
             sfree(dllfile);
             sfree(bindir);
             sfree(installdir);
-            } // WINSCP
         }
         close_regkey(regkey);
     }
@@ -242,7 +239,6 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
      * Custom GSSAPI DLL.
      */
     module = NULL;
-    { // WINSCP
     Filename *customlib = conf_get_filename(conf, CONF_ssh_gss_custom);
     if (!filename_is_null(customlib)) {
         const wchar_t *path = customlib->wpath;
@@ -311,8 +307,6 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
 
 
     return list;
-    } // WINSCP
-    } // WINSCP
 }
 
 void ssh_gss_cleanup(struct ssh_gss_liblist *list)
@@ -406,39 +400,6 @@ static Ssh_gss_stat ssh_sspi_acquire_cred(struct ssh_gss_library *lib,
     return SSH_GSS_OK;
 }
 
-#ifdef MPEXT
-static SecBuffer ssh_gss_init_sec_buffer(unsigned long buffersize,
-  unsigned long buffertype, void * buffer)
-{
-  SecBuffer result;
-  result.cbBuffer = buffersize;
-  result.BufferType = buffertype;
-  result.pvBuffer = buffer;
-  return result;
-}
-
-static SecBufferDesc ssh_gss_init_sec_buffer_desc(unsigned long version,
-  unsigned long bufferscount, PSecBuffer buffers)
-{
-  SecBufferDesc result;
-  result.ulVersion = version;
-  result.cBuffers = bufferscount;
-  result.pBuffers = buffers;
-  return result;
-}
-
-#define MPEXT_INIT_SEC_BUFFER(BUFFERSIZE, BUFFERTYPE, BUFFER) \
-  ssh_gss_init_sec_buffer(BUFFERSIZE, BUFFERTYPE, BUFFER)
-#define MPEXT_INIT_SEC_BUFFERDESC(VERSION, BUFFERSCOUNT, BUFFERS) \
-  ssh_gss_init_sec_buffer_desc(VERSION, BUFFERSCOUNT, BUFFERS)
-
-#else
-#define MPEXT_INIT_SEC_BUFFER(BUFFERSIZE, BUFFERTYPE, BUFFER) \
-  {BUFFERSIZE, BUFFERTYPE, BUFFER}
-#define MPEXT_INIT_SEC_BUFFERDESC(VERSION, BUFFERSCOUNT, BUFFERS) \
-  {VERSION, BUFFERSCOUNT, BUFFERS}
-#endif
-
 static void localexp_to_exp_lifetime(TimeStamp *localexp,
                                      time_t *expiry, unsigned long *lifetime)
 {
@@ -502,10 +463,10 @@ static Ssh_gss_stat ssh_sspi_init_sec_context(struct ssh_gss_library *lib,
                                               unsigned long *lifetime)
 {
     winSsh_gss_ctx *winctx = (winSsh_gss_ctx *) *ctx;
-    SecBuffer wsend_tok = MPEXT_INIT_SEC_BUFFER(send_tok->length,SECBUFFER_TOKEN,send_tok->value);
-    SecBuffer wrecv_tok = MPEXT_INIT_SEC_BUFFER(recv_tok->length,SECBUFFER_TOKEN,recv_tok->value);
-    SecBufferDesc output_desc = MPEXT_INIT_SEC_BUFFERDESC(SECBUFFER_VERSION,1,&wsend_tok);
-    SecBufferDesc input_desc  = MPEXT_INIT_SEC_BUFFERDESC(SECBUFFER_VERSION,1,&wrecv_tok);
+    SecBuffer wsend_tok = {send_tok->length,SECBUFFER_TOKEN,send_tok->value};
+    SecBuffer wrecv_tok = {recv_tok->length,SECBUFFER_TOKEN,recv_tok->value};
+    SecBufferDesc output_desc = {SECBUFFER_VERSION,1,&wsend_tok};
+    SecBufferDesc input_desc  = {SECBUFFER_VERSION,1,&wrecv_tok};
     unsigned long flags=ISC_REQ_MUTUAL_AUTH|ISC_REQ_REPLAY_DETECT|
         ISC_REQ_CONFIDENTIALITY|ISC_REQ_ALLOCATE_MEMORY;
     ULONG ret_flags=0;

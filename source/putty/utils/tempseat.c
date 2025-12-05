@@ -331,36 +331,35 @@ static bool tempseat_eof(Seat *seat)
  */
 
 static const struct SeatVtable tempseat_vt = {
-    // WINSCP
-    /*.output =*/ tempseat_output,
-    /*.eof =*/ tempseat_eof,
-    /*.sent =*/ nullseat_sent,
-    /*.banner =*/ tempseat_banner,
-    /*.get_userpass_input =*/ tempseat_get_userpass_input,
-    /*.notify_session_started =*/ tempseat_notify_session_started,
-    /*.notify_remote_exit =*/ tempseat_notify_remote_exit,
-    /*.notify_remote_disconnect =*/ tempseat_notify_remote_disconnect,
-    /*.connection_fatal =*/ tempseat_connection_fatal,
-    /*.nonfatal =*/ tempseat_nonfatal,
-    /*.update_specials_menu =*/ tempseat_update_specials_menu,
-    /*.get_ttymode =*/ tempseat_get_ttymode,
-    /*.set_busy_status =*/ tempseat_set_busy_status,
-    /*.confirm_ssh_host_key =*/ tempseat_confirm_ssh_host_key,
-    /*.confirm_weak_crypto_primitive =*/ tempseat_confirm_weak_crypto_primitive,
-    /*.confirm_weak_cached_hostkey =*/ tempseat_confirm_weak_cached_hostkey,
-    /*.prompt_descriptions =*/ tempseat_prompt_descriptions,
-    /*.is_utf8 =*/ tempseat_is_utf8,
-    /*.echoedit_update =*/ tempseat_echoedit_update,
-    /*.get_x_display =*/ tempseat_get_x_display,
-    /*.get_windowid =*/ tempseat_get_windowid,
-    /*.get_window_pixel_size =*/ tempseat_get_window_pixel_size,
-    /*.stripctrl_new =*/ tempseat_stripctrl_new,
-    /*.set_trust_status =*/ tempseat_set_trust_status,
-    /*.can_set_trust_status =*/ tempseat_can_set_trust_status,
-    /*.has_mixed_input_stream =*/ tempseat_has_mixed_input_stream,
-    /*.verbose =*/ tempseat_verbose,
-    /*.interactive =*/ tempseat_interactive,
-    /*.get_cursor_position =*/ tempseat_get_cursor_position,
+    .output = tempseat_output,
+    .eof = tempseat_eof,
+    .sent = nullseat_sent,
+    .banner = tempseat_banner,
+    .get_userpass_input = tempseat_get_userpass_input,
+    .notify_session_started = tempseat_notify_session_started,
+    .notify_remote_exit = tempseat_notify_remote_exit,
+    .notify_remote_disconnect = tempseat_notify_remote_disconnect,
+    .connection_fatal = tempseat_connection_fatal,
+    .nonfatal = tempseat_nonfatal,
+    .update_specials_menu = tempseat_update_specials_menu,
+    .get_ttymode = tempseat_get_ttymode,
+    .set_busy_status = tempseat_set_busy_status,
+    .confirm_ssh_host_key = tempseat_confirm_ssh_host_key,
+    .confirm_weak_crypto_primitive = tempseat_confirm_weak_crypto_primitive,
+    .confirm_weak_cached_hostkey = tempseat_confirm_weak_cached_hostkey,
+    .prompt_descriptions = tempseat_prompt_descriptions,
+    .is_utf8 = tempseat_is_utf8,
+    .echoedit_update = tempseat_echoedit_update,
+    .get_x_display = tempseat_get_x_display,
+    .get_windowid = tempseat_get_windowid,
+    .get_window_pixel_size = tempseat_get_window_pixel_size,
+    .stripctrl_new = tempseat_stripctrl_new,
+    .set_trust_status = tempseat_set_trust_status,
+    .can_set_trust_status = tempseat_can_set_trust_status,
+    .has_mixed_input_stream = tempseat_has_mixed_input_stream,
+    .verbose = tempseat_verbose,
+    .interactive = tempseat_interactive,
+    .get_cursor_position = tempseat_get_cursor_position,
 };
 
 Seat *tempseat_new(Seat *realseat)
@@ -383,14 +382,14 @@ bool is_tempseat(Seat *seat)
 
 Seat *tempseat_get_real(Seat *seat)
 {
-    pinitassert(seat->vt == &tempseat_vt);
+    assert(seat->vt == &tempseat_vt);
     TempSeat *ts = container_of(seat, TempSeat, seat);
     return ts->realseat;
 }
 
 void tempseat_free(Seat *seat)
 {
-    pinitassert(seat->vt == &tempseat_vt);
+    assert(seat->vt == &tempseat_vt);
     TempSeat *ts = container_of(seat, TempSeat, seat);
     bufchain_clear(&ts->output);
     while (ts->outchunk_head) {
@@ -403,7 +402,7 @@ void tempseat_free(Seat *seat)
 
 void tempseat_flush(Seat *seat)
 {
-    pinitassert(seat->vt == &tempseat_vt);
+    assert(seat->vt == &tempseat_vt);
     TempSeat *ts = container_of(seat, TempSeat, seat);
 
     /* Empty the output bufchains into the real seat, taking care to
@@ -411,7 +410,7 @@ void tempseat_flush(Seat *seat)
     while (bufchain_size(&ts->output)) {
         ptrlen pl = bufchain_prefix(&ts->output);
 
-        pinitassert(ts->outchunk_head);
+        assert(ts->outchunk_head);
         struct output_chunk *chunk = ts->outchunk_head;
 
         if (pl.len > chunk->size)

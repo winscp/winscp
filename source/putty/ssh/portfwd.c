@@ -303,9 +303,7 @@ static void pfd_receive(Plug *plug, int urgent, const char *data, size_t len)
 
                 /* Search the method list for AUTH_NONE, which is the
                  * only one this client code can speak */
-                { // WINSCP
-                size_t i;
-                for (i = 0; i < methods.len; i++) {
+                for (size_t i = 0; i < methods.len; i++) {
                     unsigned char this_method =
                         ((const unsigned char *)methods.ptr)[i];
                     if (this_method == SOCKS5_AUTH_NONE) {
@@ -333,7 +331,6 @@ static void pfd_receive(Plug *plug, int urgent, const char *data, size_t len)
                 pf->socks_state = SOCKS_5_CONNECT;
                 pf->socksbuf_consumed = src->pos;
                 break;
-                } // WINSCP
 
               case SOCKS_5_CONNECT:
                 /* SOCKS 5 connect message */
@@ -422,12 +419,10 @@ static void pfd_sent(Plug *plug, size_t bufsize)
 }
 
 static const PlugVtable PortForwarding_plugvt = {
-    // WINSCP
-    /*.log =*/ nullplug_log,
-    /*.closing =*/ pfd_closing,
-    /*.receive =*/ pfd_receive,
-    /*.sent =*/ pfd_sent,
-    NULL,
+    .log = nullplug_log,
+    .closing = pfd_closing,
+    .receive = pfd_receive,
+    .sent = pfd_sent,
 };
 
 static void pfd_chan_free(Channel *chan);
@@ -440,29 +435,28 @@ static void pfd_set_input_wanted(Channel *chan, bool wanted);
 static char *pfd_log_close_msg(Channel *chan);
 
 static const ChannelVtable PortForwarding_channelvt = {
-    // WINSCP
-    /*.free =*/ pfd_chan_free,
-    /*.open_confirmation =*/ pfd_open_confirmation,
-    /*.open_failed =*/ pfd_open_failure,
-    /*.send =*/ pfd_send,
-    /*.send_eof =*/ pfd_send_eof,
-    /*.set_input_wanted =*/ pfd_set_input_wanted,
-    /*.log_close_msg =*/ pfd_log_close_msg,
-    /*.want_close =*/ chan_default_want_close,
-    /*.rcvd_exit_status =*/ chan_no_exit_status,
-    /*.rcvd_exit_signal =*/ chan_no_exit_signal,
-    /*.rcvd_exit_signal_numeric =*/ chan_no_exit_signal_numeric,
-    /*.run_shell =*/ chan_no_run_shell,
-    /*.run_command =*/ chan_no_run_command,
-    /*.run_subsystem =*/ chan_no_run_subsystem,
-    /*.enable_x11_forwarding =*/ chan_no_enable_x11_forwarding,
-    /*.enable_agent_forwarding =*/ chan_no_enable_agent_forwarding,
-    /*.allocate_pty =*/ chan_no_allocate_pty,
-    /*.set_env =*/ chan_no_set_env,
-    /*.send_break =*/ chan_no_send_break,
-    /*.send_signal =*/ chan_no_send_signal,
-    /*.change_window_size =*/ chan_no_change_window_size,
-    /*.request_response =*/ chan_no_request_response,
+    .free = pfd_chan_free,
+    .open_confirmation = pfd_open_confirmation,
+    .open_failed = pfd_open_failure,
+    .send = pfd_send,
+    .send_eof = pfd_send_eof,
+    .set_input_wanted = pfd_set_input_wanted,
+    .log_close_msg = pfd_log_close_msg,
+    .want_close = chan_default_want_close,
+    .rcvd_exit_status = chan_no_exit_status,
+    .rcvd_exit_signal = chan_no_exit_signal,
+    .rcvd_exit_signal_numeric = chan_no_exit_signal_numeric,
+    .run_shell = chan_no_run_shell,
+    .run_command = chan_no_run_command,
+    .run_subsystem = chan_no_run_subsystem,
+    .enable_x11_forwarding = chan_no_enable_x11_forwarding,
+    .enable_agent_forwarding = chan_no_enable_agent_forwarding,
+    .allocate_pty = chan_no_allocate_pty,
+    .set_env = chan_no_set_env,
+    .send_break = chan_no_send_break,
+    .send_signal = chan_no_send_signal,
+    .change_window_size = chan_no_change_window_size,
+    .request_response = chan_no_request_response,
 };
 
 Channel *portfwd_raw_new(ConnectionLayer *cl, Plug **plug, bool start_ready)
@@ -548,12 +542,9 @@ static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)
 }
 
 static const PlugVtable PortListener_plugvt = {
-    // WINSCP
-    /*.log =*/ nullplug_log,
-    /*.closing =*/ pfl_closing,
-    NULL,
-    NULL,
-    /*.accepting =*/ pfl_accepting,
+    .log = nullplug_log,
+    .closing = pfl_closing,
+    .accepting = pfl_accepting,
 };
 
 /*
@@ -627,7 +618,7 @@ static void pfl_terminate(struct PortListener *pl)
 
 static void pfd_set_input_wanted(Channel *chan, bool wanted)
 {
-    pinitassert(chan->vt == &PortForwarding_channelvt);
+    assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
     pf->input_wanted = wanted;
     sk_set_frozen(pf->s, !pf->input_wanted);
@@ -635,7 +626,7 @@ static void pfd_set_input_wanted(Channel *chan, bool wanted)
 
 static void pfd_chan_free(Channel *chan)
 {
-    pinitassert(chan->vt == &PortForwarding_channelvt);
+    assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
     pfd_close(pf);
 }
@@ -646,21 +637,21 @@ static void pfd_chan_free(Channel *chan)
 static size_t pfd_send(
     Channel *chan, bool is_stderr, const void *data, size_t len)
 {
-    pinitassert(chan->vt == &PortForwarding_channelvt);
+    assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
     return sk_write(pf->s, data, len);
 }
 
 static void pfd_send_eof(Channel *chan)
 {
-    pinitassert(chan->vt == &PortForwarding_channelvt);
+    assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
     sk_write_eof(pf->s);
 }
 
 static void pfd_open_confirmation(Channel *chan)
 {
-    pinitassert(chan->vt == &PortForwarding_channelvt);
+    assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
 
     pf->ready = true;
@@ -676,7 +667,7 @@ static void pfd_open_confirmation(Channel *chan)
 
 static void pfd_open_failure(Channel *chan, const char *errtext)
 {
-    pinitassert(chan->vt == &PortForwarding_channelvt);
+    assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
 
     logeventf(pf->cl->logctx,
@@ -890,7 +881,6 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
                                   address_family == '6' ? ADDRTYPE_IPV6 :
                                   ADDRTYPE_UNSPEC);
 
-            { // WINSCP
             PortFwdRecord *existing = add234(mgr->forwardings, pfr);
             if (existing != pfr) {
                 if (existing->status == DESTROY) {
@@ -910,7 +900,6 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
             } else {
                 pfr->status = CREATE;
             }
-            } // WINSCP
         } else {
             sfree(saddr);
             sfree(host);
@@ -1070,7 +1059,6 @@ bool portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
     pfr->remote = NULL;
     pfr->addressfamily = ADDRTYPE_UNSPEC;
 
-    { // WINSCP
     PortFwdRecord *existing = add234(mgr->forwardings, pfr);
     if (existing != pfr) {
         /*
@@ -1079,9 +1067,7 @@ bool portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
         pfr_free(pfr);
         return false;
     }
-    } // WINSCP
 
-    { // WINSCP
     char *err = pfl_listen(keyhost, keyport, host, port,
                            mgr->cl, conf, &pfr->local, pfr->addressfamily);
     logeventf(mgr->cl->logctx,
@@ -1094,7 +1080,6 @@ bool portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
         pfr_free(pfr);
         return false;
     }
-    } // WINSCP
 
     return true;
 }
@@ -1113,7 +1098,6 @@ bool portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port)
     pfr_key.remote = NULL;
     pfr_key.addressfamily = ADDRTYPE_UNSPEC;
 
-    { // WINSCP
     PortFwdRecord *pfr = del234(mgr->forwardings, &pfr_key);
 
     if (!pfr)
@@ -1122,7 +1106,6 @@ bool portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port)
     logeventf(mgr->cl->logctx, "Closing listening port %s:%d", host, port);
 
     pfr_free(pfr);
-    } // WINSCP
     return true;
 }
 

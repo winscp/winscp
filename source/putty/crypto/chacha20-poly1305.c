@@ -774,7 +774,7 @@ static void poly1305_init(struct poly1305 *ctx)
 
 static void poly1305_key(struct poly1305 *ctx, ptrlen key)
 {
-    pinitassert(key.len == 32);             /* Takes a 256 bit key */
+    assert(key.len == 32);             /* Takes a 256 bit key */
 
     unsigned char key_copy[16];
     memcpy(key_copy, key.ptr, 16);
@@ -959,20 +959,18 @@ static const char *poly_text_name(ssh2_mac *mac)
 }
 
 const ssh2_macalg ssh2_poly1305 = {
-    // WINSCP
-    /*.new =*/ poly_ssh2_new,
-    /*.free =*/ poly_ssh2_free,
-    /*.setkey =*/ poly_setkey,
-    /*.start =*/ poly_start,
-    /*.genresult =*/ poly_genresult,
-    /*.next_message =*/ nullmac_next_message,
-    /*.text_name =*/ poly_text_name,
-    /*.name =*/ "",
-    /*.etm_name =*/ "", /* Not selectable individually, just part of
+    .new = poly_ssh2_new,
+    .free = poly_ssh2_free,
+    .setkey = poly_setkey,
+    .start = poly_start,
+    .genresult = poly_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = poly_text_name,
+    .name = "",
+    .etm_name = "", /* Not selectable individually, just part of
                      * ChaCha20-Poly1305 */
-    /*.len =*/ 16,
-    /*.keylen =*/ 0,
-    NULL, // WINSCP
+    .len = 16,
+    .keylen = 0,
 };
 
 static ssh_cipher *ccp_new(const ssh_cipheralg *alg)
@@ -1056,24 +1054,22 @@ static void ccp_decrypt_length(ssh_cipher *cipher, void *blk, int len,
 }
 
 const ssh_cipheralg ssh2_chacha20_poly1305 = {
-    // WINSCP
-    /*.new =*/ ccp_new,
-    /*.free =*/ ccp_free,
-    /*.setiv =*/ ccp_iv,
-    /*.setkey =*/ ccp_key,
-    /*.encrypt =*/ ccp_encrypt,
-    /*.decrypt =*/ ccp_decrypt,
-    /*.encrypt_length =*/ ccp_encrypt_length,
-    /*.decrypt_length =*/ ccp_decrypt_length,
-    /*.next_message =*/ nullcipher_next_message,
-    /*.ssh2_id =*/ "chacha20-poly1305@openssh.com",
-    /*.blksize =*/ 1,
-    /*.real_keybits =*/ 512,
-    /*.padded_keybytes =*/ 64,
-    /*.flags =*/ SSH_CIPHER_SEPARATE_LENGTH,
-    /*.text_name =*/ "ChaCha20",
-    /*.required_mac =*/ &ssh2_poly1305,
-    NULL, // WINSCP
+    .new = ccp_new,
+    .free = ccp_free,
+    .setiv = ccp_iv,
+    .setkey = ccp_key,
+    .encrypt = ccp_encrypt,
+    .decrypt = ccp_decrypt,
+    .encrypt_length = ccp_encrypt_length,
+    .decrypt_length = ccp_decrypt_length,
+    .next_message = nullcipher_next_message,
+    .ssh2_id = "chacha20-poly1305@openssh.com",
+    .blksize = 1,
+    .real_keybits = 512,
+    .padded_keybytes = 64,
+    .flags = SSH_CIPHER_SEPARATE_LENGTH,
+    .text_name = "ChaCha20",
+    .required_mac = &ssh2_poly1305,
 };
 
 static const ssh_cipheralg *const ccp_list[] = {

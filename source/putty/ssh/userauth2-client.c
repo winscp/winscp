@@ -143,16 +143,14 @@ static ptrlen workaround_rsa_sha2_cert_userauth(
     struct ssh2_userauth_state *s, ptrlen id);
 
 static const PacketProtocolLayerVtable ssh2_userauth_vtable = {
-    // WINSCP
-    /*.free =*/ ssh2_userauth_free,
-    /*.process_queue =*/ ssh2_userauth_process_queue,
-    /*.get_specials =*/ ssh2_userauth_get_specials,
-    /*.special_cmd =*/ ssh2_userauth_special_cmd,
-    /*.reconfigure =*/ ssh2_userauth_reconfigure,
-    /*.queued_data_size =*/ ssh_ppl_default_queued_data_size,
-    /*.final_output =*/ ssh2_userauth_final_output,
-    /*.name =*/ "ssh-userauth",
-    NULL, // WINSCP
+    .free = ssh2_userauth_free,
+    .process_queue = ssh2_userauth_process_queue,
+    .get_specials = ssh2_userauth_get_specials,
+    .special_cmd = ssh2_userauth_special_cmd,
+    .reconfigure = ssh2_userauth_reconfigure,
+    .queued_data_size = ssh_ppl_default_queued_data_size,
+    .final_output = ssh2_userauth_final_output,
+    .name = "ssh-userauth",
 };
 
 PacketProtocolLayer *ssh2_userauth_new(
@@ -217,8 +215,7 @@ static void ssh2_userauth_free(PacketProtocolLayer *ppl)
         ssh_ppl_free(s->successor_layer);
 
     if (s->agent_keys) {
-        size_t i; // WINSCP
-        for (i = 0; i < s->agent_keys_len; i++) {
+        for (size_t i = 0; i < s->agent_keys_len; i++) {
             strbuf_free(s->agent_keys[i].blob);
             strbuf_free(s->agent_keys[i].comment);
         }
@@ -264,7 +261,6 @@ static void ssh2_userauth_handle_banner_packet(struct ssh2_userauth_state *s,
     if (!s->show_banner)
         return;
 
-    { // WINSCP
     ptrlen string = get_string(pktin);
     if (string.len > BANNER_LIMIT - bufchain_size(&s->banner))
         string.len = BANNER_LIMIT - bufchain_size(&s->banner);
@@ -281,7 +277,6 @@ static void ssh2_userauth_handle_banner_packet(struct ssh2_userauth_state *s,
         put_datapl(s->banner_scc, string);
     else
         put_datapl(&s->banner_bs, string);
-    } // WINSCP
 }
 
 static void ssh2_userauth_filter_queue(struct ssh2_userauth_state *s)
@@ -312,12 +307,10 @@ static bool ssh2_userauth_signflags(struct ssh2_userauth_state *s,
 {
     *signflags = 0;                    /* default */
 
-    { // WINSCP
     const ssh_keyalg *alg = find_pubkey_alg(*algname);
     if (!alg)
         return false;          /* we don't know how to upgrade this */
 
-    { // WINSCP
     unsigned supported_flags = ssh_keyalg_supported_flags(alg);
 
     if (s->ppl.bpp->ext_info_rsa_sha512_ok &&
@@ -332,8 +325,6 @@ static bool ssh2_userauth_signflags(struct ssh2_userauth_state *s,
 
     *algname = ssh_keyalg_alternate_ssh_id(alg, *signflags);
     return true;
-    } // WINSCP
-    } // WINSCP
 }
 
 static void authplugin_plug_log(Plug *plug, Socket *sock, PlugLogType type,
@@ -375,11 +366,10 @@ static void authplugin_plug_sent(Plug *plug, size_t bufsize)
 }
 
 static const PlugVtable authplugin_plugvt = {
-    /*.log =*/ authplugin_plug_log,
-    /*.closing =*/ authplugin_plug_closing,
-    /*.receive =*/ authplugin_plug_receive,
-    /*.sent =*/ authplugin_plug_sent,
-    NULL, // WINSCP
+    .log = authplugin_plug_log,
+    .closing = authplugin_plug_closing,
+    .receive = authplugin_plug_receive,
+    .sent = authplugin_plug_sent,
 };
 
 static strbuf *authplugin_newmsg(uint8_t type)
@@ -405,11 +395,9 @@ static bool authplugin_expect_msg(struct ssh2_userauth_state *s,
         *type = PLUGIN_EOF;
         return true;
     }
-    { // WINSCP
     uint8_t len[4];
     if (!bufchain_try_fetch(&s->authplugin_bc, len, 4))
         return false;
-    { // WINSCP
     size_t size = GET_32BIT_MSB_FIRST(len);
     if (bufchain_size(&s->authplugin_bc) - 4 < size)
         return false;
@@ -428,8 +416,6 @@ static bool authplugin_expect_msg(struct ssh2_userauth_state *s,
     if (get_err(src))
         *type = PLUGIN_NOTYPE;
     return true;
-    } // WINSCP
-    } // WINSCP
 }
 
 static void authplugin_bad_packet(struct ssh2_userauth_state *s,
@@ -459,13 +445,11 @@ static void authplugin_bad_packet(struct ssh2_userauth_state *s,
     }
     if (fmt) {
         put_dataz(msg, " (");
-        { // WINSCP
         va_list ap;
         va_start(ap, fmt);
         put_fmt(msg, fmt, ap);
         va_end(ap);
         put_dataz(msg, ")");
-        } // WINSCP
     }
     ssh_sw_abort(s->ppl.ssh, "%s", msg->s);
     strbuf_free(msg);
@@ -541,7 +525,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
         ppl_logevent(WINSCP_BOM "Reading certificate file \"%s\"",
                      filename_to_str(s->detached_cert_file));
-        { // WINSCP
         int keytype = key_type(s->detached_cert_file);
         if (!(keytype == SSH_KEYTYPE_SSH2_PUBLIC_RFC4716 ||
               keytype == SSH_KEYTYPE_SSH2_PUBLIC_OPENSSH)) {
@@ -549,7 +532,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             goto cert_load_done;
         }
 
-        { // WINSCP
         const char *error;
         bool success = ppk_loadpub_f(
             s->detached_cert_file, &algname,
@@ -560,7 +542,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             goto cert_load_done;
         }
 
-        { // WINSCP
         const ssh_keyalg *certalg = find_pubkey_alg(algname);
         if (!certalg) {
             cert_error = dupprintf(
@@ -595,9 +576,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             strbuf_free(cert_blob);
         sfree(algname);
         sfree(comment);
-        } // WINSCP
-        } // WINSCP
-        } // WINSCP
     }
 
     /*
@@ -625,9 +603,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             /*
              * Check that the agent response is well formed.
              */
-            { // WINSCP
-            size_t i; // WINSCP
-            for (i = 0; i < nkeys; i++) {
+            for (size_t i = 0; i < nkeys; i++) {
                 get_string(s->asrc);   /* blob */
                 get_string(s->asrc);   /* comment */
                 if (get_err(s->asrc)) {
@@ -635,7 +611,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     goto done_agent_query;
                 }
             }
-            } // WINSCP
 
             /*
              * Copy the list of public-key blobs out of the Pageant
@@ -644,20 +619,15 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             BinarySource_REWIND_TO(s->asrc, origpos);
             s->agent_keys_len = nkeys;
             s->agent_keys = snewn(s->agent_keys_len, agent_key);
-            { // WINSCP
-            size_t i; // WINSCP
-            for (i = 0; i < nkeys; i++) {
+            for (size_t i = 0; i < nkeys; i++) {
                 s->agent_keys[i].blob = strbuf_dup(get_string(s->asrc));
                 s->agent_keys[i].comment = strbuf_dup(get_string(s->asrc));
 
-                { // WINSCP
                 /* Also, extract the algorithm string from the start
                  * of the public-key blob. */
                 s->agent_keys[i].algorithm = pubkey_blob_to_alg_name(
                     ptrlen_from_strbuf(s->agent_keys[i].blob));
-                } // WINSCP
             }
-            } // WINSCP
 
             ppl_logevent("Pageant has %"SIZEu" SSH-2 keys", nkeys);
 
@@ -716,14 +686,12 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
         put_stringz(amsg, s->username ? s->username : "");
         authplugin_send_free(s, amsg);
 
-        { // WINSCP
         BinarySource src[1];
         unsigned type;
         crMaybeWaitUntilV(authplugin_expect_msg(s, &type, src));
         switch (type) {
           case PLUGIN_INIT_RESPONSE: {
             s->authplugin_version = get_uint32(src);
-            { // WINSCP
             ptrlen username = get_string(src);
             if (get_err(src)) {
                 ssh_sw_abort(s->ppl.ssh, "Received malformed "
@@ -742,7 +710,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 ppl_logevent("Authentication plugin set username '%s'",
                              s->default_username);
             }
-            } // WINSCP
             break;
           }
           case PLUGIN_INIT_FAILURE: {
@@ -768,7 +735,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                                   "PLUGIN_INIT_FAILURE");
             return;
         }
-        } // WINSCP
     }
 
     /*
@@ -888,8 +854,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
              * anti-spoofing header lines.
              */
             ssh2_userauth_print_banner(s);
-                { // WINSCP
-                } // WINSCP
 
             if (pktin && pktin->type == SSH2_MSG_USERAUTH_SUCCESS) {
                 ppl_logevent("Access granted");
@@ -995,15 +959,13 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 /*
                  * Scan it for method identifiers we know about.
                  */
-                { // WINSCP
                 bool srv_pubkey = false, srv_passwd = false;
                 bool srv_keyb_inter = false;
 #ifndef NO_GSSAPI
                 bool srv_gssapi = false, srv_gssapi_keyex_auth = false;
 #endif
 
-                ptrlen method; // WINSCP
-                for (; get_commasep_word(&methods, &method) ;) {
+                for (ptrlen method; get_commasep_word(&methods, &method) ;) {
                     if (ptrlen_eq_string(method, "publickey"))
                         srv_pubkey = true;
                     else if (ptrlen_eq_string(method, "password"))
@@ -1032,7 +994,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     srv_gssapi_keyex_auth &&
                     s->shgss->libs->nlibraries > 0 && s->shgss->ctx;
 #endif
-                } // WINSCP
             }
 
             s->ppl.bpp->pls->actx = SSH2_PKTCTX_NOAUTH;
@@ -1066,7 +1027,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  * Attempt public-key authentication using a key from Pageant.
                  */
                 s->agent_keyalg = s->agent_keys[s->agent_key_index].algorithm;
-                { // WINSCP
                 char *alg_tmp = mkstr(s->agent_keyalg);
                 const char *newalg = alg_tmp;
                 if (ssh2_userauth_signflags(s, &s->signflags, &newalg))
@@ -1177,7 +1137,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 /* Do we have any keys left to try? */
                 if (++s->agent_key_index >= s->agent_key_limit)
                     s->done_agent = true;
-                } // WINSCP
 
             } else if (s->can_pubkey && s->publickey_blob &&
                        s->privatekey_available && !s->tried_pubkey_config) {
@@ -1194,7 +1153,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  *
                  * First, try to upgrade its algorithm.
                  */
-                { // WINSCP
                 const char *newalg = s->publickey_algorithm;
                 if (ssh2_userauth_signflags(s, &s->signflags, &newalg)) {
                     sfree(s->publickey_algorithm);
@@ -1368,7 +1326,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     sfree(key);
                     s->is_trivial_auth = false;
                 }
-                } // WINSCP
 
 #ifndef NO_GSSAPI
             } else if (s->can_gssapi && !s->tried_gssapi) {
@@ -1606,7 +1563,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     put_stringz(amsg, "keyboard-interactive");
                     authplugin_send_free(s, amsg);
 
-                    { // WINSCP
                     BinarySource src[1];
                     unsigned type;
                     crMaybeWaitUntilV(authplugin_expect_msg(s, &type, src));
@@ -1656,7 +1612,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             "PLUGIN_PROTOCOL_REJECT");
                         return;
                     }
-                    } // WINSCP
                 } else {
                     s->authplugin_ki_active = false;
                 }
@@ -1744,7 +1699,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         put_datapl(amsg, get_data(pktin, get_avail(pktin)));
                         authplugin_send_free(s, amsg);
 
-                        { // WINSCP
                         BinarySource src[1];
                         unsigned type;
                         while (true) {
@@ -1775,13 +1729,11 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             /*
                              * Send the responses on to the plugin.
                              */
-                            { // WINSCP
                             strbuf *amsg = authplugin_newmsg(
                                 PLUGIN_KI_USER_RESPONSE);
                             ssh2_userauth_ki_write_responses(
                                 s, BinarySink_UPCAST(amsg));
                             authplugin_send_free(s, amsg);
-                            } // WINSCP
                         }
 
                         if (type != PLUGIN_KI_SERVER_RESPONSE) {
@@ -1803,7 +1755,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                          */
                         crMaybeWaitUntilV(
                             (pktin = ssh2_userauth_pop(s)) != NULL);
-                        } // WINSCP
                     }
                 }
 
@@ -1841,13 +1792,11 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         BinarySource_BARE_INIT(
                             src, get_ptr(pktin), get_avail(pktin));
                         get_string(pktin); /* skip methods */
-                        { // WINSCP
                         bool partial_success = get_bool(pktin);
                         if (!get_err(src)) {
                             plugin_msg = partial_success ?
                                 PLUGIN_AUTH_SUCCESS : PLUGIN_AUTH_FAILURE;
                         }
-                        } // WINSCP
                     }
 
                     if (plugin_msg >= 0) {
@@ -1863,7 +1812,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 }
             } else if (s->can_passwd) {
                 s->is_trivial_auth = false;
-                { // WINSCP
                 /*
                  * Plain old password authentication.
                  */
@@ -2108,7 +2056,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  */
                 smemclr(s->password, strlen(s->password));
                 sfree(s->password);
-                } // WINSCP
 
             } else {
                 ssh_bpp_queue_disconnect(
@@ -2166,7 +2113,6 @@ static void ssh2_userauth_print_banner(struct ssh2_userauth_state *s)
             seat_set_trust_status(s->ppl.seat, false);
         }
 
-        { // WINSCP
         bool mid_line = false;
         while (bufchain_size(&s->banner) > 0) {
             // WINSCP: consume banner buffer before calling seat_banner_pl.
@@ -2193,7 +2139,6 @@ static void ssh2_userauth_print_banner(struct ssh2_userauth_state *s)
             seat_antispoof_msg(ppl_get_iseat(&s->ppl),
                                "End of banner message from server");
         }
-        } // WINSCP
     }
 }
 
@@ -2219,11 +2164,8 @@ static bool ssh2_userauth_ki_setup_prompts(
      * Get any prompt(s) from the packet.
      */
     s->num_prompts = get_uint32(src);
-    { // WINSCP
-    uint32_t i; // WINSCP
-    for (i = 0; i < s->num_prompts; i++) {
+    for (uint32_t i = 0; i < s->num_prompts; i++) {
         s->is_trivial_auth = false;
-        { // WINSCP
         ptrlen prompt = get_string(src);
         bool echo = get_bool(src);
 
@@ -2247,9 +2189,7 @@ static bool ssh2_userauth_ki_setup_prompts(
             put_datapl(sb, prompt);
         }
         add_prompt(s->cur_prompt, strbuf_to_str(sb), echo);
-        } // WINSCP
     }
-    } // WINSCP
 
     /*
      * Make the header strings. This includes the 'name' (optional
@@ -2330,11 +2270,8 @@ static void ssh2_userauth_ki_write_responses(
     struct ssh2_userauth_state *s, BinarySink *bs)
 {
     put_uint32(bs, s->num_prompts);
-    { // WINSCP
-    uint32_t i;
-    for (i = 0; i < s->num_prompts; i++)
+    for (uint32_t i = 0; i < s->num_prompts; i++)
         put_stringz(bs, prompt_get_result_ref(s->cur_prompt->prompts[i]));
-    } // WINSCP
 
     /*
      * Free the prompts structure from this iteration. If there's
@@ -2424,7 +2361,6 @@ static void ssh2_userauth_add_alg_and_publickey(
          * base public key.
          */
 
-        { // WINSCP
         const ssh_keyalg *certalg = pubkey_blob_to_alg(detached_cert_pl);
         assert(certalg); /* we checked this before setting s->detached_blob */
         assert(certalg->is_certificate); /* and this too */
@@ -2551,7 +2487,6 @@ static void ssh2_userauth_add_alg_and_publickey(
         /* And if we did, don't fall through to the alternative below */
         if (done)
             return;
-        } // WINSCP
     }
 
     /* In all other cases, basically just put in what we were given -
@@ -2717,8 +2652,7 @@ static void ssh2_userauth_final_output(PacketProtocolLayer *ppl)
      * in our queue just before the server closed the connection, and
      * add them to our banner buffer.
      */
-    PktIn *pktin; // WINSCP
-    for (pktin = pq_first(s->ppl.in_pq); pktin != NULL;
+    for (PktIn *pktin = pq_first(s->ppl.in_pq); pktin != NULL;
          pktin = pq_next(s->ppl.in_pq, pktin)) {
         if (pktin->type == SSH2_MSG_USERAUTH_BANNER)
             ssh2_userauth_handle_banner_packet(s, pktin);

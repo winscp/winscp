@@ -43,20 +43,11 @@ static Ssh_gss_stat ssh_gssapi_acquire_cred(struct ssh_gss_library *lib,
                                             time_t *expiry)
 {
     struct gssapi_functions *gss = &lib->u.gssapi;
-    #ifdef MPEXT
-    gss_OID_set_desc k5only;
-    #else
     gss_OID_set_desc k5only = { 1, GSS_MECH_KRB5 };
-    #endif
     gss_cred_id_t cred;
     OM_uint32 dummy;
     OM_uint32 time_rec;
     gssapi_ssh_gss_ctx *gssctx = snew(gssapi_ssh_gss_ctx);
-
-    #ifdef MPEXT
-    k5only.count = 1;
-    k5only.elements = GSS_MECH_KRB5;
-    #endif
 
     gssctx->ctx = GSS_C_NO_CONTEXT;
     gssctx->expiry = 0;

@@ -19,7 +19,10 @@ static bool sha256_sw_available(void)
 
 static inline uint32_t ror(uint32_t x, unsigned y)
 {
-    return (x << (31 & /*WINSCP*/(uint32_t)(-(int32_t)y))) | (x >> (31 & y));
+    #pragma warning(push)
+    #pragma warning(suppress: 4146) // WINSCP VS
+    return (x << (31 & -y)) | (x >> (31 & y));
+    #pragma warning(pop)
 }
 
 static inline uint32_t Ch(uint32_t ctrl, uint32_t if1, uint32_t if0)
@@ -158,11 +161,8 @@ static void sha256_sw_digest(ssh_hash *hash, uint8_t *digest)
     sha256_sw *s = container_of(hash, sha256_sw, hash);
 
     sha256_block_pad(&s->blk, BinarySink_UPCAST(s));
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < 8; i++)
+    for (size_t i = 0; i < 8; i++)
         PUT_32BIT_MSB_FIRST(digest + 4*i, s->core[i]);
-    } // WINSCP
 }
 
 SHA256_VTABLE(sw, "unaccelerated");

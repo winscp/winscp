@@ -338,7 +338,6 @@ void ssh_check_frozen(Ssh *ssh)
     if (!ssh->s)
         return;
 
-    { // WINSCP
     bool prev_frozen = ssh->socket_frozen;
     ssh->socket_frozen = (ssh->logically_frozen ||
                           bufchain_size(&ssh->in_raw) > SSH_MAX_BACKLOG);
@@ -350,7 +349,6 @@ void ssh_check_frozen(Ssh *ssh)
          */
         queue_idempotent_callback(&ssh->bpp->ic_in_raw);
     }
-    } // WINSCP
 }
 
 void ssh_conn_processed_data(Ssh *ssh)
@@ -717,25 +715,19 @@ static char *ssh_close_warn_text(Backend *be)
     Ssh *ssh = container_of(be, Ssh, backend);
     if (!ssh->connshare)
         return NULL;
-    { // WINSCP
     int ndowns = share_ndownstreams(ssh->connshare);
     if (ndowns == 0)
         return NULL;
-    { // WINSCP
     char *msg = dupprintf("This will also close %d downstream connection%s.",
                           ndowns, ndowns==1 ? "" : "s");
     return msg;
-    } // WINSCP
-    } // WINSCP
 }
 
 static const PlugVtable Ssh_plugvt = {
-    // WINSCP
-    /*.log =*/ ssh_socket_log,
-    /*.closing =*/ ssh_closing,
-    /*.receive =*/ ssh_receive,
-    /*.sent =*/ ssh_sent,
-    // NULL
+    .log = ssh_socket_log,
+    .closing = ssh_closing,
+    .receive = ssh_receive,
+    .sent = ssh_sent,
 };
 
 static char *ssh_description(Interactor *itr)
@@ -763,11 +755,10 @@ static void ssh_set_seat(Interactor *itr, Seat *seat)
 }
 
 static const InteractorVtable Ssh_interactorvt = {
-    // WINSCP
-    /*.description =*/ ssh_description,
-    /*.logpolicy =*/ ssh_logpolicy,
-    /*.get_seat =*/ ssh_get_seat,
-    /*.set_seat =*/ ssh_set_seat,
+    .description = ssh_description,
+    .logpolicy = ssh_logpolicy,
+    .get_seat = ssh_get_seat,
+    .set_seat = ssh_set_seat,
 };
 
 /*
@@ -938,10 +929,7 @@ bool ssh_is_bare(Ssh *ssh)
  * because it might be called early due to plink -shareexists */
 static void dummy_sharing_no_more_downstreams(ConnectionLayer *cl) {}
 static const ConnectionLayerVtable dummy_connlayer_vtable = {
-    // WINSCP
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    /*.sharing_no_more_downstreams =*/ dummy_sharing_no_more_downstreams,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+    .sharing_no_more_downstreams = dummy_sharing_no_more_downstreams,
 };
 
 /*
@@ -987,7 +975,6 @@ static char *ssh_init(const BackendVtable *vt, Seat *seat,
     ssh->cl_dummy.vt = &dummy_connlayer_vtable;
     ssh->cl_dummy.logctx = ssh->logctx = logctx;
 
-    { // WINSCP
     char *loghost;
 
     ssh_hostport_setup(host, port, ssh->conf,
@@ -997,7 +984,6 @@ static char *ssh_init(const BackendVtable *vt, Seat *seat,
     random_ref(); /* do this now - may be needed by sharing setup code */
     ssh->need_random_unref = true;
 
-    { // WINSCP
     char *conn_err = connect_to_host(
         ssh, host, port, loghost, realhost, nodelay, keepalive);
     if (conn_err) {
@@ -1011,8 +997,6 @@ static char *ssh_init(const BackendVtable *vt, Seat *seat,
     }
 
     return NULL;
-    } // WINSCP
-    } // WINSCP
 }
 
 static void ssh_free(Backend *be)
@@ -1300,59 +1284,54 @@ void ssh_got_fallback_cmd(Ssh *ssh)
 }
 
 const BackendVtable ssh_backend = {
-    // WINSCP
-    /*.init =*/ ssh_init,
-    /*.free =*/ ssh_free,
-    /*.reconfig =*/ ssh_reconfig,
-    /*.send =*/ ssh_send,
-    /*.sendbuffer =*/ ssh_sendbuffer,
-    /*.size =*/ ssh_size,
-    /*.special =*/ ssh_special,
-    /*.get_specials =*/ ssh_get_specials,
-    /*.connected =*/ ssh_connected,
-    /*.exitcode =*/ ssh_return_exitcode,
-    /*.sendok =*/ ssh_sendok,
-    /*.ldisc_option_state =*/ ssh_ldisc,
-    /*.provide_ldisc =*/ ssh_provide_ldisc,
-    /*.unthrottle =*/ ssh_unthrottle,
-    /*.cfg_info =*/ ssh_cfg_info,
-    /*.test_for_upstream =*/ ssh_test_for_upstream,
-    /*.close_warn_text =*/ ssh_close_warn_text,
-    /*.id =*/ "ssh",
-    /*.displayname_tc =*/ "SSH",
-    /*.displayname_lc =*/ "SSH", /* proper name, so capitalise it anyway */
-    /*.protocol =*/ PROT_SSH,
-    /*.default_port =*/ 22,
-    /*.flags =*/ BACKEND_SUPPORTS_NC_HOST | BACKEND_NOTIFIES_SESSION_START,
-    0, 0, // WINSCP
+    .init = ssh_init,
+    .free = ssh_free,
+    .reconfig = ssh_reconfig,
+    .send = ssh_send,
+    .sendbuffer = ssh_sendbuffer,
+    .size = ssh_size,
+    .special = ssh_special,
+    .get_specials = ssh_get_specials,
+    .connected = ssh_connected,
+    .exitcode = ssh_return_exitcode,
+    .sendok = ssh_sendok,
+    .ldisc_option_state = ssh_ldisc,
+    .provide_ldisc = ssh_provide_ldisc,
+    .unthrottle = ssh_unthrottle,
+    .cfg_info = ssh_cfg_info,
+    .test_for_upstream = ssh_test_for_upstream,
+    .close_warn_text = ssh_close_warn_text,
+    .id = "ssh",
+    .displayname_tc = "SSH",
+    .displayname_lc = "SSH", /* proper name, so capitalise it anyway */
+    .protocol = PROT_SSH,
+    .flags = BACKEND_SUPPORTS_NC_HOST | BACKEND_NOTIFIES_SESSION_START,
+    .default_port = 22,
 };
 
 const BackendVtable sshconn_backend = {
-    // WINSCP
-    /*.init =*/ ssh_init,
-    /*.free =*/ ssh_free,
-    /*.reconfig =*/ ssh_reconfig,
-    /*.send =*/ ssh_send,
-    /*.sendbuffer =*/ ssh_sendbuffer,
-    /*.size =*/ ssh_size,
-    /*.special =*/ ssh_special,
-    /*.get_specials =*/ ssh_get_specials,
-    /*.connected =*/ ssh_connected,
-    /*.exitcode =*/ ssh_return_exitcode,
-    /*.sendok =*/ ssh_sendok,
-    /*.ldisc_option_state =*/ ssh_ldisc,
-    /*.provide_ldisc =*/ ssh_provide_ldisc,
-    /*.unthrottle =*/ ssh_unthrottle,
-    /*.cfg_info =*/ ssh_cfg_info,
-    /*.test_for_upstream =*/ ssh_test_for_upstream,
-    /*.close_warn_text =*/ ssh_close_warn_text,
-    /*.id =*/ "ssh-connection",
-    /*.displayname_tc =*/ "Bare ssh-connection",
-    /*.displayname_lc =*/ "bare ssh-connection",
-    /*.protocol =*/ PROT_SSHCONN,
-    0, // WINSCP
-    /*.flags =*/ BACKEND_SUPPORTS_NC_HOST | BACKEND_NOTIFIES_SESSION_START,
-    0, 0, // WINSCP
+    .init = ssh_init,
+    .free = ssh_free,
+    .reconfig = ssh_reconfig,
+    .send = ssh_send,
+    .sendbuffer = ssh_sendbuffer,
+    .size = ssh_size,
+    .special = ssh_special,
+    .get_specials = ssh_get_specials,
+    .connected = ssh_connected,
+    .exitcode = ssh_return_exitcode,
+    .sendok = ssh_sendok,
+    .ldisc_option_state = ssh_ldisc,
+    .provide_ldisc = ssh_provide_ldisc,
+    .unthrottle = ssh_unthrottle,
+    .cfg_info = ssh_cfg_info,
+    .test_for_upstream = ssh_test_for_upstream,
+    .close_warn_text = ssh_close_warn_text,
+    .id = "ssh-connection",
+    .displayname_tc = "Bare ssh-connection",
+    .displayname_lc = "bare ssh-connection",
+    .protocol = PROT_SSHCONN,
+    .flags = BACKEND_SUPPORTS_NC_HOST | BACKEND_NOTIFIES_SESSION_START,
 };
 
 #ifdef MPEXT

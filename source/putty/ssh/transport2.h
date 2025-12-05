@@ -59,7 +59,6 @@ struct kexinit_algorithm_list {
     X(HK_RSA, ssh_rsa_sha512)                                   \
     X(HK_RSA, ssh_rsa_sha256)                                   \
     X(HK_RSA, ssh_rsa)                                          \
-    /* WINSCP */ \
     X(HK_ED25519, opensshcert_ssh_ecdsa_ed25519)                \
     /* OpenSSH defines no certified version of Ed448 */         \
     X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp256)                 \

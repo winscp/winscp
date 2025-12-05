@@ -104,7 +104,6 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
     data[0] = 0;
     data[1] = 2;
 
-    { // WINSCP
     size_t npad = key->bytes - length - 3;
     /*
      * Generate a sequence of nonzero padding bytes. We do this in a
@@ -130,12 +129,10 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
     mp_free(tmp);
     for (i = 2; i < key->bytes - length - 1; i++) {
         mp_mul_integer_into(randval, randval, 255);
-        { // WINSCP
         uint8_t byte = mp_get_byte(randval, random_bits / 8);
         assert(byte != 255);
         data[i] = byte + 1;
         mp_reduce_mod_2to(randval, random_bits);
-        } // WINSCP
     }
     mp_free(randval);
     data[key->bytes - length - 1] = 0;
@@ -153,7 +150,6 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
     mp_free(b2);
 
     return true;
-    } // WINSCP
 }
 
 /*
@@ -183,16 +179,12 @@ static mp_int *crt_modpow(mp_int *base, mp_int *exp, mp_int *mod,
     /*
      * Do the two modpows.
      */
-    { // WINSCP
     mp_int *base_mod_p = mp_mod(base, p);
     presult = mp_modpow(base_mod_p, pexp, p);
     mp_free(base_mod_p);
-    } // WINSCP
-    { // WINSCP
     mp_int *base_mod_q = mp_mod(base, q);
     qresult = mp_modpow(base_mod_q, qexp, q);
     mp_free(base_mod_q);
-    } // WINSCP
 
     /*
      * Recombine the results. We want a value which is congruent to
@@ -206,10 +198,8 @@ static mp_int *crt_modpow(mp_int *base, mp_int *exp, mp_int *mod,
      *
      * (If presult-qresult < 0, we add p to it to keep it positive.)
      */
-    { // WINSCP
     unsigned presult_too_small = mp_cmp_hs(qresult, presult);
     mp_cond_add_into(presult, presult, p, presult_too_small);
-    } // WINSCP
 
     diff = mp_sub(presult, qresult);
     multiplier = mp_mul(iqmp, q);
@@ -261,8 +251,7 @@ bool rsa_ssh1_decrypt_pkcs1(mp_int *input, RSAKey *key,
 
     {
         mp_int *b = rsa_ssh1_decrypt(input, key);
-        size_t i; // WINSCP
-        for (i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;) {
+        for (size_t i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;) {
             put_byte(data, mp_get_byte(b, i));
         }
         mp_free(b);
@@ -294,13 +283,11 @@ static void append_hex_to_strbuf(strbuf *sb, mp_int *x)
     if (sb->len > 0)
         put_byte(sb, ',');
     put_data(sb, "0x", 2);
-    { // WINSCP
     char *hex = mp_get_hex(x);
     size_t hexlen = strlen(hex);
     put_data(sb, hex, hexlen);
     smemclr(hex, hexlen);
     sfree(hex);
-    } // WINSCP
 }
 
 char *rsastr_fmt(RSAKey *key)
@@ -332,13 +319,10 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
      */
 
     ssh_hash *hash = ssh_hash_new(&ssh_md5);
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;)
+    for (size_t i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;)
         put_byte(hash, mp_get_byte(key->modulus, i));
-    for (i = (mp_get_nbits(key->exponent) + 7) / 8; i-- > 0 ;)
+    for (size_t i = (mp_get_nbits(key->exponent) + 7) / 8; i-- > 0 ;)
         put_byte(hash, mp_get_byte(key->exponent, i));
-    } // WINSCP
     ssh_hash_final(hash, digest);
 
     out = strbuf_new();
@@ -357,8 +341,7 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
 char **rsa_ssh1_fake_all_fingerprints(RSAKey *key)
 {
     char **fingerprints = snewn(SSH_N_FPTYPES, char *);
-    unsigned i; // WINSCP
-    for (i = 0; i < SSH_N_FPTYPES; i++)
+    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
         fingerprints[i] = NULL;
     fingerprints[SSH_FPTYPE_MD5] = rsa_ssh1_fingerprint(key);
     return fingerprints;
@@ -409,7 +392,6 @@ bool rsa_verify(RSAKey *key)
      * should instead flip them round into the canonical order of
      * p > q. This also involves regenerating iqmp.
      */
-    { // WINSCP
     mp_int *p_new = mp_max(key->p, key->q);
     mp_int *q_new = mp_min(key->p, key->q);
     mp_free(key->p);
@@ -420,7 +402,6 @@ bool rsa_verify(RSAKey *key)
     key->iqmp = mp_invert(key->q, key->p);
 
     return ok;
-    } // WINSCP
 }
 
 void rsa_ssh1_public_blob(BinarySink *bs, RSAKey *key,
@@ -758,7 +739,7 @@ static unsigned char *rsa_pkcs1_signature_string(
     size_t nbytes, const ssh_hashalg *halg, ptrlen data)
 {
     size_t fixed_parts = rsa_pkcs1_length_of_fixed_parts(halg);
-    pinitassert(nbytes >= fixed_parts);
+    assert(nbytes >= fixed_parts);
     size_t padding = nbytes - fixed_parts;
 
     ptrlen asn1_prefix = rsa_pkcs1_prefix_for_hash(halg);
@@ -772,11 +753,9 @@ static unsigned char *rsa_pkcs1_signature_string(
 
     memcpy(bytes + 2 + padding, asn1_prefix.ptr, asn1_prefix.len);
 
-    { // WINSCP
     ssh_hash *h = ssh_hash_new(halg);
     put_datapl(h, data);
     ssh_hash_final(h, bytes + 2 + padding + asn1_prefix.len);
-    } // WINSCP
 
     return bytes;
 }
@@ -819,20 +798,16 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
     out = mp_modpow(in, rsa->exponent, rsa->modulus);
     mp_free(in);
 
-
-    { // WINSCP
     unsigned diff = 0;
 
     unsigned char *bytes = rsa_pkcs1_signature_string(nbytes, halg, data);
-    size_t i; // WINSCP
-    for (i = 0; i < nbytes; i++)
+    for (size_t i = 0; i < nbytes; i++)
         diff |= bytes[nbytes-1 - i] ^ mp_get_byte(out, i);
     smemclr(bytes, nbytes);
     sfree(bytes);
     mp_free(out);
 
     return diff == 0;
-    } // WINSCP
 }
 
 static void rsa2_sign(ssh_key *key, ptrlen data,
@@ -893,11 +868,8 @@ static void rsa2_sign(ssh_key *key, ptrlen data,
         nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
     }
     put_uint32(bs, nbytes);
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < nbytes; i++)
+    for (size_t i = 0; i < nbytes; i++)
         put_byte(bs, mp_get_byte(out, nbytes - 1 - i));
-    } // WINSCP
 
     mp_free(out);
 }
@@ -939,67 +911,48 @@ static const struct ssh2_rsa_extra
     rsa_sha256_extra = { SSH_AGENT_RSA_SHA2_256 },
     rsa_sha512_extra = { SSH_AGENT_RSA_SHA2_512 };
 
-// WINSCP
 #define COMMON_KEYALG_FIELDS                    \
-    /*.new_pub =*/ rsa2_new_pub,                    \
-    /*.new_priv =*/ rsa2_new_priv,                  \
-    /*.new_priv_openssh =*/ rsa2_new_priv_openssh,  \
-    /*.freekey =*/ rsa2_freekey,                    \
-    /*.invalid =*/ rsa2_invalid,                    \
-    /*.sign =*/ rsa2_sign,                          \
-    /*.verify =*/ rsa2_verify,                      \
-    /*.public_blob =*/ rsa2_public_blob,            \
-    /*.private_blob =*/ rsa2_private_blob,          \
-    /*.openssh_blob =*/ rsa2_openssh_blob,          \
-    /*.has_private =*/ rsa2_has_private,            \
-    /*.cache_str =*/ rsa2_cache_str,                \
-    /*.components =*/ rsa2_components,              \
-    /*.base_key =*/ nullkey_base_key,               \
-    NULL, NULL, NULL, NULL, \
-    /*.pubkey_bits =*/ rsa2_pubkey_bits
-#define COMMON_KEYALG_FIELDS1a \
-    /*.alg_desc =*/ rsa2_alg_desc,                  \
-    /*.variable_size =*/ nullkey_variable_size_yes, \
-    NULL
-#define COMMON_KEYALG_FIELDS2 \
-    /*.cache_id =*/ "rsa2"
-#define COMMON_KEYALG_FIELDS3 \
-    false, NULL
+    .new_pub = rsa2_new_pub,                    \
+    .new_priv = rsa2_new_priv,                  \
+    .new_priv_openssh = rsa2_new_priv_openssh,  \
+    .freekey = rsa2_freekey,                    \
+    .invalid = rsa2_invalid,                    \
+    .sign = rsa2_sign,                          \
+    .verify = rsa2_verify,                      \
+    .public_blob = rsa2_public_blob,            \
+    .private_blob = rsa2_private_blob,          \
+    .openssh_blob = rsa2_openssh_blob,          \
+    .has_private = rsa2_has_private,            \
+    .cache_str = rsa2_cache_str,                \
+    .components = rsa2_components,              \
+    .base_key = nullkey_base_key,               \
+    .pubkey_bits = rsa2_pubkey_bits,            \
+    .alg_desc = rsa2_alg_desc,                  \
+    .variable_size = nullkey_variable_size_yes, \
+    .cache_id = "rsa2"
 
 const ssh_keyalg ssh_rsa = {
-    // WINSCP
     COMMON_KEYALG_FIELDS,
-    /*.supported_flags =*/ ssh_rsa_supported_flags,
-    /*.alternate_ssh_id =*/ ssh_rsa_alternate_ssh_id,
-    COMMON_KEYALG_FIELDS1a,
-    /*.ssh_id =*/ "ssh-rsa",
-    COMMON_KEYALG_FIELDS2,
-    /*.extra =*/ &rsa_extra,
-    COMMON_KEYALG_FIELDS3,
+    .ssh_id = "ssh-rsa",
+    .supported_flags = ssh_rsa_supported_flags,
+    .alternate_ssh_id = ssh_rsa_alternate_ssh_id,
+    .extra = &rsa_extra,
 };
 
 const ssh_keyalg ssh_rsa_sha256 = {
-    // WINSCP
     COMMON_KEYALG_FIELDS,
-    /*.supported_flags =*/ nullkey_supported_flags,
-    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
-    COMMON_KEYALG_FIELDS1a,
-    /*.ssh_id =*/ "rsa-sha2-256",
-    COMMON_KEYALG_FIELDS2,
-    /*.extra =*/ &rsa_sha256_extra,
-    COMMON_KEYALG_FIELDS3,
+    .ssh_id = "rsa-sha2-256",
+    .supported_flags = nullkey_supported_flags,
+    .alternate_ssh_id = nullkey_alternate_ssh_id,
+    .extra = &rsa_sha256_extra,
 };
 
 const ssh_keyalg ssh_rsa_sha512 = {
-    // WINSCP
     COMMON_KEYALG_FIELDS,
-    /*.supported_flags =*/ nullkey_supported_flags,
-    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
-    COMMON_KEYALG_FIELDS1a,
-    /*.ssh_id =*/ "rsa-sha2-512",
-    COMMON_KEYALG_FIELDS2,
-    /*.extra =*/ &rsa_sha512_extra,
-    COMMON_KEYALG_FIELDS3,
+    .ssh_id = "rsa-sha2-512",
+    .supported_flags = nullkey_supported_flags,
+    .alternate_ssh_id = nullkey_alternate_ssh_id,
+    .extra = &rsa_sha512_extra,
 };
 
 RSAKey *ssh_rsakex_newkey(ptrlen data)
@@ -1090,7 +1043,6 @@ strbuf *ssh_rsakex_encrypt(RSAKey *rsa, const ssh_hashalg *h, ptrlen in)
     assert(in.len > 0 && in.len <= k - 2*HLEN - 2);
 
     /* The length of the output data wants to be precisely k. */
-    { // WINSCP
     strbuf *toret = strbuf_new_nm();
     int outlen = k;
     unsigned char *out = strbuf_append(toret, outlen);
@@ -1139,7 +1091,6 @@ strbuf *ssh_rsakex_encrypt(RSAKey *rsa, const ssh_hashalg *h, ptrlen in)
      * And we're done.
      */
     return toret;
-    } // WINSCP
 }
 
 mp_int *ssh_rsakex_decrypt(
@@ -1215,21 +1166,17 @@ static const struct ssh_rsa_kex_extra ssh_rsa_kex_extra_sha1 = { 1024 };
 static const struct ssh_rsa_kex_extra ssh_rsa_kex_extra_sha256 = { 2048 };
 
 static const ssh_kex ssh_rsa_kex_sha1 = {
-    /*.name =*/ "rsa1024-sha1",
-    NULL,
-    /*.main_type =*/ KEXTYPE_RSA,
-    /*.hash =*/ &ssh_sha1,
-    NULL, // WINSCP
-    /*.extra =*/ &ssh_rsa_kex_extra_sha1,
+    .name = "rsa1024-sha1",
+    .main_type = KEXTYPE_RSA,
+    .hash = &ssh_sha1,
+    .extra = &ssh_rsa_kex_extra_sha1,
 };
 
 static const ssh_kex ssh_rsa_kex_sha256 = {
-    /*.name =*/ "rsa2048-sha256",
-    NULL,
-    /*.main_type =*/ KEXTYPE_RSA,
-    /*.hash =*/ &ssh_sha256,
-    NULL, // WINSCP
-    /*.extra =*/ &ssh_rsa_kex_extra_sha256,
+    .name = "rsa2048-sha256",
+    .main_type = KEXTYPE_RSA,
+    .hash = &ssh_sha256,
+    .extra = &ssh_rsa_kex_extra_sha256,
 };
 
 static const ssh_kex *const rsa_kex_list[] = {

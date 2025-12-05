@@ -26,15 +26,14 @@ static void ssh2_bare_bpp_handle_output(BinaryPacketProtocol *bpp);
 static PktOut *ssh2_bare_bpp_new_pktout(int type);
 
 static const BinaryPacketProtocolVtable ssh2_bare_bpp_vtable = {
-    // WINSCP
-    /*.free =*/ ssh2_bare_bpp_free,
-    /*.handle_input =*/ ssh2_bare_bpp_handle_input,
-    /*.handle_output =*/ ssh2_bare_bpp_handle_output,
-    /*.new_pktout =*/ ssh2_bare_bpp_new_pktout,
-    /*.queue_disconnect =*/ ssh2_bpp_queue_disconnect, /* in common.c */
+    .free = ssh2_bare_bpp_free,
+    .handle_input = ssh2_bare_bpp_handle_input,
+    .handle_output = ssh2_bare_bpp_handle_output,
+    .new_pktout = ssh2_bare_bpp_new_pktout,
+    .queue_disconnect = ssh2_bpp_queue_disconnect, /* in common.c */
 
     /* packet size limit, per protocol spec in sharing.c comment */
-    /*.packet_size_limit =*/ 0x4000,
+    .packet_size_limit = 0x4000,
 };
 
 BinaryPacketProtocol *ssh2_bare_bpp_new(LogContext *logctx)

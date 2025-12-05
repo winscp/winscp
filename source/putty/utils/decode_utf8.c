@@ -13,7 +13,6 @@ unsigned decode_utf8(BinarySource *src, DecodeUTF8Failure *err)
 
     /* If the source has no byte available, this will return 0, which
      * we'll return immediately and is a reasonable error return anyway */
-    { // WINSCP
     unsigned char c = get_byte(src);
 
     /* One-byte cases. */
@@ -25,7 +24,6 @@ unsigned decode_utf8(BinarySource *src, DecodeUTF8Failure *err)
         return 0xFFFD;
     }
 
-    { // WINSCP
     unsigned long wc, min;
     size_t ncont;
     if (c < 0xE0) {
@@ -48,7 +46,6 @@ unsigned decode_utf8(BinarySource *src, DecodeUTF8Failure *err)
             *err = DUTF8_E_OUT_OF_DATA;
             return 0xFFFD;
         }
-        { // WINSCP
         unsigned char cont = get_byte(src);
         if (!(0x80 <= cont && cont < 0xC0)) {
             BinarySource_REWIND_TO(src, src->pos - 1);
@@ -57,7 +54,6 @@ unsigned decode_utf8(BinarySource *src, DecodeUTF8Failure *err)
         }
 
         wc = (wc << 6) | (cont & 0x3F);
-        } // WINSCP
     }
 
     if (wc < min) {
@@ -74,8 +70,6 @@ unsigned decode_utf8(BinarySource *src, DecodeUTF8Failure *err)
     }
     *err = DUTF8_SUCCESS;
     return wc;
-    } // WINSCP
-    } // WINSCP
 }
 
 const char *const decode_utf8_error_strings[DUTF8_N_FAILURE_CODES] = {

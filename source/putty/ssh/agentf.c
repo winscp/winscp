@@ -149,29 +149,28 @@ static char *agentf_log_close_msg(Channel *chan);
 static void agentf_set_input_wanted(Channel *chan, bool wanted);
 
 static const ChannelVtable agentf_channelvt = {
-    // WINSCP
-    /*.free =*/ agentf_free,
-    /*.open_confirmation =*/ chan_remotely_opened_confirmation,
-    /*.open_failed =*/ chan_remotely_opened_failure,
-    /*.send =*/ agentf_send,
-    /*.send_eof =*/ agentf_send_eof,
-    /*.set_input_wanted =*/ agentf_set_input_wanted,
-    /*.log_close_msg =*/ agentf_log_close_msg,
-    /*.want_close =*/ chan_default_want_close,
-    /*.rcvd_exit_status =*/ chan_no_exit_status,
-    /*.rcvd_exit_signal =*/ chan_no_exit_signal,
-    /*.rcvd_exit_signal_numeric =*/ chan_no_exit_signal_numeric,
-    /*.run_shell =*/ chan_no_run_shell,
-    /*.run_command =*/ chan_no_run_command,
-    /*.run_subsystem =*/ chan_no_run_subsystem,
-    /*.enable_x11_forwarding =*/ chan_no_enable_x11_forwarding,
-    /*.enable_agent_forwarding =*/ chan_no_enable_agent_forwarding,
-    /*.allocate_pty =*/ chan_no_allocate_pty,
-    /*.set_env =*/ chan_no_set_env,
-    /*.send_break =*/ chan_no_send_break,
-    /*.send_signal =*/ chan_no_send_signal,
-    /*.change_window_size =*/ chan_no_change_window_size,
-    /*.request_response =*/ chan_no_request_response,
+    .free = agentf_free,
+    .open_confirmation = chan_remotely_opened_confirmation,
+    .open_failed = chan_remotely_opened_failure,
+    .send = agentf_send,
+    .send_eof = agentf_send_eof,
+    .set_input_wanted = agentf_set_input_wanted,
+    .log_close_msg = agentf_log_close_msg,
+    .want_close = chan_default_want_close,
+    .rcvd_exit_status = chan_no_exit_status,
+    .rcvd_exit_signal = chan_no_exit_signal,
+    .rcvd_exit_signal_numeric = chan_no_exit_signal_numeric,
+    .run_shell = chan_no_run_shell,
+    .run_command = chan_no_run_command,
+    .run_subsystem = chan_no_run_subsystem,
+    .enable_x11_forwarding = chan_no_enable_x11_forwarding,
+    .enable_agent_forwarding = chan_no_enable_agent_forwarding,
+    .allocate_pty = chan_no_allocate_pty,
+    .set_env = chan_no_set_env,
+    .send_break = chan_no_send_break,
+    .send_signal = chan_no_send_signal,
+    .change_window_size = chan_no_change_window_size,
+    .request_response = chan_no_request_response,
 };
 
 Channel *agentf_new(SshChannel *c, struct callback_set *callback_set) // WINSCP
@@ -190,7 +189,7 @@ Channel *agentf_new(SshChannel *c, struct callback_set *callback_set) // WINSCP
 
 static void agentf_free(Channel *chan)
 {
-    pinitassert(chan->vt == &agentf_channelvt);
+    assert(chan->vt == &agentf_channelvt);
     agentf *af = container_of(chan, agentf, chan);
 
     if (af->pending)
@@ -202,7 +201,7 @@ static void agentf_free(Channel *chan)
 static size_t agentf_send(Channel *chan, bool is_stderr,
                           const void *data, size_t length)
 {
-    pinitassert(chan->vt == &agentf_channelvt);
+    assert(chan->vt == &agentf_channelvt);
     agentf *af = container_of(chan, agentf, chan);
     bufchain_add(&af->inbuffer, data, length);
     agentf_try_forward(af);
@@ -220,7 +219,7 @@ static size_t agentf_send(Channel *chan, bool is_stderr,
 
 static void agentf_send_eof(Channel *chan)
 {
-    pinitassert(chan->vt == &agentf_channelvt);
+    assert(chan->vt == &agentf_channelvt);
     agentf *af = container_of(chan, agentf, chan);
 
     af->rcvd_eof = true;
@@ -238,7 +237,7 @@ static char *agentf_log_close_msg(Channel *chan)
 
 static void agentf_set_input_wanted(Channel *chan, bool wanted)
 {
-    pinitassert(chan->vt == &agentf_channelvt);
+    assert(chan->vt == &agentf_channelvt);
     agentf *af = container_of(chan, agentf, chan);
 
     af->input_wanted = wanted;

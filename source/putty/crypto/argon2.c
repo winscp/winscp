@@ -89,11 +89,9 @@ strbuf *argon2_long_hash(unsigned length, ptrlen data)
 {
     ssh_hash *h = hprime_new(length);
     put_datapl(h, data);
-    { // WINSCP
     strbuf *out = strbuf_new();
     hprime_final(h, length, strbuf_append(out, length));
     return out;
-    } // WINSCP
 }
 #endif
 
@@ -109,9 +107,10 @@ strbuf *argon2_long_hash(unsigned length, ptrlen data)
 #ifdef WINSCP_VS
 static inline uint64_t ror(uint64_t x, unsigned rotation)
 {
-    #pragma warning(suppress: 4068)
-    #pragma warning(suppress: 4146)
+    #pragma warning(push)
+    #pragma warning(suppress: 4146) // WINSCP VS
     unsigned lshift = 63 & -rotation, rshift = 63 & rotation;
+    #pragma warning(pop)
     return (x << lshift) | (x >> rshift);
 }
 
@@ -144,8 +143,7 @@ static inline void GB(uint64_t *a, uint64_t *b, uint64_t *c, uint64_t *d)
 static inline void P(uint64_t *out, unsigned outstep,
                      uint64_t *in, unsigned instep)
 {
-    unsigned i; // WINSCP
-    for (i = 0; i < 8; i++) {
+    for (unsigned i = 0; i < 8; i++) {
         out[i*outstep] = in[i*instep];
         out[i*outstep+1] = in[i*instep+1];
     }
@@ -173,17 +171,16 @@ static inline void P(uint64_t *out, unsigned outstep,
 {
     uint64_t R[128], Q[128], Z[128];
 
-    unsigned i; // WINSCP
-    for (i = 0; i < 128; i++)
+    for (unsigned i = 0; i < 128; i++)
         R[i] = GET_64BIT_LSB_FIRST(X + 8*i) ^ GET_64BIT_LSB_FIRST(Y + 8*i);
 
-    for (i = 0; i < 8; i++) // WINSCP
+    for (unsigned i = 0; i < 8; i++)
         P(Q+16*i, 2, R+16*i, 2);
 
-    for (i = 0; i < 8; i++) // WINSCP
+    for (unsigned i = 0; i < 8; i++)
         P(Z+2*i, 16, Q+2*i, 16);
 
-    for (i = 0; i < 128; i++) // WINSCP
+    for (unsigned i = 0; i < 128; i++)
         PUT_64BIT_LSB_FIRST(out + 8*i,
                             GET_64BIT_LSB_FIRST(out + 8*i) ^ R[i] ^ Z[i]);
 
@@ -230,7 +227,6 @@ static void argon2_internal(uint32_t p, uint32_t T, uint32_t m, uint32_t t,
         ssh_hash_final(h, h0);
     }
 
-    { // WINSCP
     // WINSCP struct blk { uint8_t data[1024]; };
 
     /*
@@ -263,16 +259,14 @@ static void argon2_internal(uint32_t p, uint32_t T, uint32_t m, uint32_t t,
      * the long-output hash function H' to hash h0 itself plus the block's
      * coordinates in the array.
      */
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < p; i++) {
+    for (size_t i = 0; i < p; i++) {
         ssh_hash *h = hprime_new(1024);
         put_data(h, h0, 64);
         put_uint32_le(h, 0);
         put_uint32_le(h, i);
         hprime_final(h, 1024, B[i].data);
     }
-    for (i = 0; i < p; i++) { // WINSCP
+    for (size_t i = 0; i < p; i++) {
         ssh_hash *h = hprime_new(1024);
         put_data(h, h0, 64);
         put_uint32_le(h, 1);
@@ -297,18 +291,15 @@ static void argon2_internal(uint32_t p, uint32_t T, uint32_t m, uint32_t t,
      * independent, and then once we've mixed things up enough, switch over to
      * dependent mode to force long serial chains of computation.
      */
-    { // WINSCP
     size_t jstart = 2;
     bool d_mode = (y == 0);
     struct blk out2i, tmp2i, in2i;
 
     /* Outermost loop: t whole passes from left to right over the array */
-    size_t pass; // WINSCP
-    for (pass = 0; pass < t; pass++) {
+    for (size_t pass = 0; pass < t; pass++) {
 
         /* Within that, we process the array in its four main slices */
-        unsigned slice; // WINSCP
-        for (slice = 0; slice < 4; slice++) {
+        for (unsigned slice = 0; slice < 4; slice++) {
 
             /* In Argon2id mode, if we're half way through the first pass,
              * this is the moment to switch d_mode from false to true */
@@ -317,9 +308,7 @@ static void argon2_internal(uint32_t p, uint32_t T, uint32_t m, uint32_t t,
 
             /* Loop over every segment in the slice (i.e. every row). So i is
              * the y-coordinate of each block we process. */
-            { // WINSCP
-            size_t i; // WINSCP
-            for (i = 0; i < p; i++) {
+            for (size_t i = 0; i < p; i++) {
 
                 argon2_internal_vs(jstart, SL, q, slice, d_mode, B, i, p, &in2i, pass, mprime, t, y, &tmp2i, &out2i); // WINSCP
 
@@ -333,8 +322,7 @@ void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool
                 /* And within that segment, process the blocks from left to
                  * right, starting at 'jstart' (usually 0, but 2 in the first
                  * slice). */
-                size_t jpre; // WINSCP
-                for (jpre = jstart; jpre < SL; jpre++) {
+                for (size_t jpre = jstart; jpre < SL; jpre++) {
 
                     /* j is the x-coordinate of each block we process, made up
                      * of the slice number and the index 'jpre' within the
@@ -429,7 +417,6 @@ void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool
                      * because it's already massively randomised from the real
                      * inputs).
                      */
-                    { // WINSCP
                     uint32_t index_l = (pass == 0 && slice == 0) ? i : J2 % p;
 
                     /*
@@ -486,7 +473,6 @@ void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool
                     }
 
                     /* Total number of blocks available to choose from */
-                    { // WINSCP
                     uint32_t Wsize = (Wend + q - Wstart) % q;
 
                     /* Fiddly computation from the spec that chooses from the
@@ -506,8 +492,6 @@ void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool
                      * in our current output block. */
                     G_xor(B[i + p * j].data, B[i + p * jm1].data,
                           B[index_l + p * index_z].data);
-                    } // WINSCP
-                    } // WINSCP
                 }
 #undef in2i
 #undef tmp2i
@@ -522,7 +506,6 @@ void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool
              * case it still had its initial value of 2 to avoid the starting
              * data. */
             jstart = 0;
-            } // WINSCP
         }
     }
 
@@ -533,10 +516,8 @@ void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool
      * deliver to the caller.
      */
 
-    { // WINSCP
     struct blk C = B[p * (q-1)];
-    size_t i; // WINSCP
-    for (i = 1; i < p; i++)
+    for (size_t i = 1; i < p; i++)
         memxor(C.data, C.data, B[i + p * (q-1)].data, 1024);
 
     {
@@ -554,10 +535,6 @@ void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool
     smemclr(C.data, sizeof(C.data));
     smemclr(B, mprime * sizeof(struct blk));
     sfree(B);
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 /*
@@ -600,7 +577,6 @@ void argon2_choose_passes(
     while (true) {
         unsigned long start_time = GETTICKCOUNT();
         argon2(flavour, mem, b, parallel, taglen, P, S, K, X, out);
-        { // WINSCP
         unsigned long ticks = GETTICKCOUNT() - start_time;
 
         /* But just in case computers get _too_ fast, we have to cap
@@ -617,7 +593,6 @@ void argon2_choose_passes(
             b += a;
             a = b - a;
         }
-        } // WINSCP
     }
 }
 #endif

@@ -36,13 +36,13 @@ struct mlkem_params {
  * Specific parameter sets.
  */
 const mlkem_params mlkem_params_512 = {
-    /*.k =*/ 2, /*.eta_1 =*/ 3, /*.eta_2 =*/ 2, /*.d_u =*/ 10, /*.d_v =*/ 4,
+    .k = 2, .eta_1 = 3, .eta_2 = 2, .d_u = 10, .d_v = 4,
 };
 const mlkem_params mlkem_params_768 = {
-    /*.k =*/ 3, /*.eta_1 =*/ 2, /*.eta_2 =*/ 2, /*.d_u =*/ 10, /*.d_v =*/ 4,
+    .k = 3, .eta_1 = 2, .eta_2 = 2, .d_u = 10, .d_v = 4,
 };
 const mlkem_params mlkem_params_1024 = {
-    /*.k =*/ 4, /*.eta_1 =*/ 2, /*.eta_2 =*/ 2, /*.d_u =*/ 11, /*.d_v =*/ 5,
+    .k = 4, .eta_1 = 2, .eta_2 = 2, .d_u = 11, .d_v = 5,
 };
 #define KMAX 4
 
@@ -120,13 +120,10 @@ static void mlkem_ntt(uint16_t *v)
     const uint64_t Qrecip = reciprocal_for_reduction(Q);
     size_t next_power = 1;
 
-    size_t len; // WINSCP
-    for (len = 128; len >= 2; len /= 2) {
-        size_t start; // WINSCP
-        for (start = 0; start < 256; start += 2*len) {
+    for (size_t len = 128; len >= 2; len /= 2) {
+        for (size_t start = 0; start < 256; start += 2*len) {
             uint16_t mult = powers_reversed_order[next_power++];
-            size_t j; // WINSCP
-            for (j = start; j < start + len; j++) {
+            for (size_t j = start; j < start + len; j++) {
                 uint16_t t = reduce(mult * v[j + len], Q, Qrecip);
                 v[j + len] = reduce(v[j] + Q - t, Q, Qrecip);
                 v[j] = reduce(v[j] + t, Q, Qrecip);
@@ -143,13 +140,10 @@ static void mlkem_inverse_ntt(uint16_t *v)
     const uint64_t Qrecip = reciprocal_for_reduction(Q);
     size_t next_power = 127;
 
-    size_t len; // WINSCP
-    for (len = 2; len <= 128; len *= 2) {
-        size_t start; // WINSCP
-        for (start = 0; start < 256; start += 2*len) {
+    for (size_t len = 2; len <= 128; len *= 2) {
+        for (size_t start = 0; start < 256; start += 2*len) {
             uint16_t mult = powers_reversed_order[next_power--];
-            size_t j; // WINSCP
-            for (j = start; j < start + len; j++) {
+            for (size_t j = start; j < start + len; j++) {
                 uint16_t t = v[j];
                 v[j] = reduce(t + v[j + len], Q, Qrecip);
                 v[j + len] = reduce(mult * (v[j + len] + Q - t), Q, Qrecip);
@@ -157,11 +151,8 @@ static void mlkem_inverse_ntt(uint16_t *v)
         }
     }
 
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < 256; i++)
+    for (size_t i = 0; i < 256; i++)
         v[i] = reduce(v[i] * 3303, Q, Qrecip);
-    } // WINSCP
 }
 
 /*
@@ -175,8 +166,7 @@ static void mlkem_multiply_ntts(
 {
     const uint64_t Qrecip = reciprocal_for_reduction(Q);
 
-    size_t i; // WINSCP
-    for (i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         uint16_t a0 = a[2*i], a1 = a[2*i+1];
         uint16_t b0 = b[2*i], b1 = b[2*i+1];
         uint16_t mult = powers_odd_reversed_order[i];
@@ -247,7 +237,6 @@ static void mlkem_matrix_alloc(mlkem_matrix_storage *storage, ...)
     va_end(ap);
 
     storage->data = snewn(256 * storage->n, uint16_t);
-    { // WINSCP
     size_t pos = 0;
     va_start(ap, storage);
     while ((m = va_arg(ap, mlkem_matrix *)) != NULL) {
@@ -258,7 +247,6 @@ static void mlkem_matrix_alloc(mlkem_matrix_storage *storage, ...)
         pos += nrows * ncols;
     }
     va_end(ap);
-    } // WINSCP
 }
 
 /* Clear and free the storage allocated by mlkem_matrix_alloc. */
@@ -279,20 +267,15 @@ static void mlkem_matrix_add(mlkem_matrix *out, const mlkem_matrix *left,
     assert(out->nrows == right->nrows);
     assert(out->ncols == right->ncols);
 
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < out->nrows; i++) {
-        size_t j; // WINSCP
-        for (j = 0; j < out->ncols; j++) {
+    for (size_t i = 0; i < out->nrows; i++) {
+        for (size_t j = 0; j < out->ncols; j++) {
             const uint16_t *lv = left->data + 256*(i * left->ncols + j);
             const uint16_t *rv = right->data + 256*(i * right->ncols + j);
             uint16_t *ov = out->data + 256*(i * out->ncols + j);
-            size_t p; // WINSCP
-            for (p = 0; p < 256; p++)
+            for (size_t p = 0; p < 256; p++)
                 ov[p] = reduce(lv[p] + rv[p] , Q, Qrecip);
         }
     }
-    } // WINSCP
 }
 
 /* Subtract matrices. */
@@ -306,35 +289,28 @@ static void mlkem_matrix_sub(mlkem_matrix *out, const mlkem_matrix *left,
     assert(out->nrows == right->nrows);
     assert(out->ncols == right->ncols);
 
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < out->nrows; i++) {
-        size_t j; // WINSCP
-        for (j = 0; j < out->ncols; j++) {
+    for (size_t i = 0; i < out->nrows; i++) {
+        for (size_t j = 0; j < out->ncols; j++) {
             const uint16_t *lv = left->data + 256*(i * left->ncols + j);
             const uint16_t *rv = right->data + 256*(i * right->ncols + j);
             uint16_t *ov = out->data + 256*(i * out->ncols + j);
-            size_t p; // WINSCP
-            for (p = 0; p < 256; p++)
+            for (size_t p = 0; p < 256; p++)
                 ov[p] = reduce(lv[p] + Q - rv[p] , Q, Qrecip);
         }
     }
-    } // WINSCP
 }
 
 /* Convert every element of a matrix into NTT representation. */
 static void mlkem_matrix_ntt(mlkem_matrix *m)
 {
-    size_t i; // WINSCP
-    for (i = 0; i < m->nrows * m->ncols; i++)
+    for (size_t i = 0; i < m->nrows * m->ncols; i++)
         mlkem_ntt(m->data + i * 256);
 }
 
 /* Convert every element of a matrix out of NTT representation. */
 static void mlkem_matrix_inverse_ntt(mlkem_matrix *m)
 {
-    size_t i; // WINSCP
-    for (i = 0; i < m->nrows * m->ncols; i++)
+    for (size_t i = 0; i < m->nrows * m->ncols; i++)
         mlkem_inverse_ntt(m->data + i * 256);
 }
 
@@ -359,35 +335,25 @@ static void mlkem_matrix_mul(mlkem_matrix *out, const mlkem_matrix *left,
     assert(left_ncols == right->nrows);
     assert(right->ncols == out->ncols);
 
-    { // WINSCP
     uint16_t work[256];
 
-    size_t i; // WINSCP
-    for (i = 0; i < out->nrows; i++) {
-        size_t j; // WINSCP
-        for (j = 0; j < out->ncols; j++) {
+    for (size_t i = 0; i < out->nrows; i++) {
+        for (size_t j = 0; j < out->ncols; j++) {
             uint16_t *thisout = out->data + 256 * (i * out->ncols + j);
             memset(thisout, 0, 256 * sizeof(uint16_t));
-            { // WINSCP
-            size_t k; // WINSCP
-            for (k = 0; k < right->nrows; k++) {
+            for (size_t k = 0; k < right->nrows; k++) {
                 size_t left_index = left_transposed ?
                     k * left->ncols + i : i * left->ncols + k;
                 const uint16_t *lv = left->data + 256*left_index;
                 const uint16_t *rv = right->data + 256*(k * right->ncols + j);
                 mlkem_multiply_ntts(work, lv, rv);
-                { // WINSCP
-                size_t p; // WINSCP
-                for (p = 0; p < 256; p++)
+                for (size_t p = 0; p < 256; p++)
                     thisout[p] = reduce(thisout[p] + work[p], Q, Qrecip);
-                } // WINSCP
             }
-            } // WINSCP
         }
     }
 
     smemclr(work, sizeof(work));
-    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -408,10 +374,8 @@ static void mlkem_sample_ntt(uint16_t *output, ptrlen seed); /* forward ref */
  */
 static void mlkem_matrix_from_seed(mlkem_matrix *m, const void *rho)
 {
-    unsigned r; // WINSCP
-    for (r = 0; r < m->nrows; r++) {
-        unsigned c; // WINSCP
-        for (c = 0; c < m->ncols; c++) {
+    for (unsigned r = 0; r < m->nrows; r++) {
+        for (unsigned c = 0; c < m->ncols; c++) {
             unsigned char seedbuf[34];
             memcpy(seedbuf, rho, 32);
             seedbuf[32] = c;
@@ -442,13 +406,10 @@ static void mlkem_sample_ntt(uint16_t *output, ptrlen seed)
     unsigned char bytebuf[4];
     bytebuf[3] = '\0';
 
-    { // WINSCP
-    size_t pos; // WINSCP
-    for (pos = 0; pos < 256 ;) {
+    for (size_t pos = 0; pos < 256 ;) {
         /* Read 3 bytes into the low-order end of bytebuf. The fourth
          * byte is always 0, so this gives us a random 24-bit integer. */
         shake_xof_read(sx, &bytebuf, 3);
-        { // WINSCP
         uint32_t random24 = GET_32BIT_LSB_FIRST(bytebuf);
 
         /*
@@ -467,11 +428,9 @@ static void mlkem_sample_ntt(uint16_t *output, ptrlen seed)
             output[pos++] = d1;
         if (d2 < Q && pos < 256)
             output[pos++] = d2;
-        } // WINSCP
     }
 
     shake_xof_free(sx);
-    } // WINSCP
 }
 
 /*
@@ -493,39 +452,30 @@ static void mlkem_matrix_poly_cbd(
     unsigned char seedbuf[33];
     memcpy(seedbuf, sigma, 32);
 
-    { // WINSCP
     unsigned char *randombuf = snewn(eta * 64, unsigned char);
 
-    unsigned r; // WINSCP
-    for (r = 0; r < v->nrows * v->ncols; r++) {
+    for (unsigned r = 0; r < v->nrows * v->ncols; r++) {
         seedbuf[32] = r + offset;
-        { // WINSCP
         ShakeXOF *sx = shake256_xof_from_input(make_ptrlen(seedbuf, 33));
         shake_xof_read(sx, randombuf, eta * 64);
         shake_xof_free(sx);
 
-        { // WINSCP
-        size_t i; // WINSCP
-        for (i = 0; i < 256; i++) {
+        for (size_t i = 0; i < 256; i++) {
             unsigned x = 0, y = 0;
-            size_t j; // WINSCP
-            for (j = 0; j < eta; j++) {
+            for (size_t j = 0; j < eta; j++) {
                 size_t bitpos = 2 * i * eta + j;
                 x += 1 & ((randombuf[bitpos >> 3]) >> (bitpos & 7));
             }
-            for (j = 0; j < eta; j++) {
+            for (size_t j = 0; j < eta; j++) {
                 size_t bitpos = 2 * i * eta + eta + j;
                 y += 1 & ((randombuf[bitpos >> 3]) >> (bitpos & 7));
             }
             v->data[256 * r + i] = reduce(x + Q - y, Q, Qrecip);
         }
-        } // WINSCP
-        } // WINSCP
     }
     smemclr(seedbuf, sizeof(seedbuf));
     smemclr(randombuf, eta * 64);
     sfree(randombuf);
-    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -549,8 +499,7 @@ static void mlkem_byte_encode_lossless(
 {
     unsigned char *out = (unsigned char *)outv;
     uint32_t buffer = 0, bufbits = 0;
-    size_t i; // WINSCP
-    for (i = 0; i < 256*n; i++) {
+    for (size_t i = 0; i < 256*n; i++) {
         buffer |= (uint32_t) in[i] << bufbits;
         bufbits += 12;
         while (bufbits >= 8) {
@@ -575,8 +524,7 @@ static bool mlkem_byte_decode_lossless(
 {
     const unsigned char *in = (const unsigned char *)inv;
     uint32_t buffer = 0, bufbits = 0;
-    size_t i; // WINSCP
-    for (i = 0; i < 384*n; i++) {
+    for (size_t i = 0; i < 384*n; i++) {
         buffer |= (uint32_t) in[i] << bufbits;
         bufbits += 8;
         while (bufbits >= 12) {
@@ -609,8 +557,7 @@ static void mlkem_byte_encode_compressed(
 
     unsigned char *out = (unsigned char *)outv;
     uint32_t buffer = 0, bufbits = 0;
-    size_t i; // WINSCP
-    for (i = 0; i < 256*n; i++) {
+    for (size_t i = 0; i < 256*n; i++) {
         uint32_t dividend = ((uint32_t)in[i] << (d+1)) + Q;
         uint32_t quotient;
         reduce_with_quot(dividend, &quotient, 2*Q, Qrecip);
@@ -644,8 +591,7 @@ static void mlkem_byte_decode_compressed(
 {
     const unsigned char *in = (const unsigned char *)inv;
     uint32_t buffer = 0, bufbits = 0;
-    size_t i; // WINSCP
-    for (i = 0; i < 32*d*n; i++) {
+    for (size_t i = 0; i < 32*d*n; i++) {
         buffer |= (uint32_t) in[i] << bufbits;
         bufbits += 8;
         while (bufbits >= d) {
@@ -704,11 +650,9 @@ void mlkem_keygen_rho_sigma(
      * The encryption key is the vector t, plus the random seed rho
      * from which anyone can reconstruct the matrix A.
      */
-    { // WINSCP
     unsigned char ek[1568];
     mlkem_byte_encode_lossless(ek, t->data, params->k);
     memcpy(ek + 384 * params->k, rho, 32);
-    { // WINSCP
     size_t eklen = 384 * params->k + 32;
     put_data(ek_out, ek, eklen);
 
@@ -716,10 +660,8 @@ void mlkem_keygen_rho_sigma(
      * The decryption key (for the internal "K-PKE" public-key system)
      * is the vector s.
      */
-    { // WINSCP
     unsigned char dk[1536];
     mlkem_byte_encode_lossless(dk, s->data, params->k);
-    { // WINSCP
     size_t dklen = 384 * params->k;
 
     /*
@@ -735,10 +677,8 @@ void mlkem_keygen_rho_sigma(
      */
     put_data(dk_out, dk, dklen);
     put_data(dk_out, ek, eklen);
-    { // WINSCP
     ssh_hash *h = ssh_hash_new(&ssh_sha3_256);
     put_data(h, ek, eklen);
-    { // WINSCP
     unsigned char ekhash[32];
     ssh_hash_final(h, ekhash);
     put_data(dk_out, ekhash, 32);
@@ -748,12 +688,6 @@ void mlkem_keygen_rho_sigma(
     smemclr(ek, sizeof(ek));
     smemclr(ekhash, sizeof(ekhash));
     smemclr(dk, sizeof(dk));
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 /*
@@ -834,7 +768,6 @@ bool mlkem_encaps_internal(
      * the output shared secret, plus some randomness for making up
      * the vectors below.
      */
-    { // WINSCP
     unsigned char kr[64];
     unsigned char ekhash[32];
     ssh_hash *h;
@@ -847,7 +780,6 @@ bool mlkem_encaps_internal(
     put_data(h, m, 32);
     put_data(h, ekhash, 32);
     ssh_hash_final(h, kr);
-    { // WINSCP
     const unsigned char *k = kr, *r = kr + 32;
 
     /*
@@ -909,7 +841,6 @@ bool mlkem_encaps_internal(
      * The ciphertext consists of u and v, both encoded lossily, with
      * different numbers of bits retained per element.
      */
-    { // WINSCP
     char c[1568];
     mlkem_byte_encode_compressed(c, u->data, params->d_u, params->k);
     mlkem_byte_encode_compressed(c + 32 * params->k * params->d_u,
@@ -926,9 +857,6 @@ bool mlkem_encaps_internal(
     mlkem_matrix_storage_free(storage);
 
     return true;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 /*
@@ -939,11 +867,9 @@ bool mlkem_encaps(BinarySink *ciphertext, BinarySink *kout,
 {
     unsigned char m[32];
     random_read(m, 32);
-    { // WINSCP
     bool success = mlkem_encaps_internal(ciphertext, kout, params, ek, m);
     smemclr(m, sizeof(m));
     return success;
-    } // WINSCP
 }
 
 /*
@@ -964,7 +890,6 @@ bool mlkem_decaps(BinarySink *k_out, const mlkem_params *params,
      * Further validation: extract the encryption key from the middle
      * of dk, hash it, and check the hash matches.
      */
-    { // WINSCP
     const unsigned char *dkp = (const unsigned char *)dk.ptr;
     const unsigned char *cp = (const unsigned char *)c.ptr;
     ptrlen ek = make_ptrlen(dkp + 384*params->k, 384*params->k + 32);
@@ -976,7 +901,6 @@ bool mlkem_decaps(BinarySink *k_out, const mlkem_params *params,
     if (!smemeq(ekhash, dkp + 768*params->k + 32, 32))
         return false;
 
-    { // WINSCP
     mlkem_matrix_storage storage[1];
     mlkem_matrix u[1], v[1], s[1], w[1];
     mlkem_matrix_alloc(storage,
@@ -1030,7 +954,6 @@ bool mlkem_decaps(BinarySink *k_out, const mlkem_params *params,
      * that makes you not worry about spontaneous hash collisions),
      * but it's not actually impossible.
      */
-    { // WINSCP
     unsigned char m[32];
     mlkem_byte_encode_compressed(m, w->data, 1, 1);
 
@@ -1044,12 +967,10 @@ bool mlkem_decaps(BinarySink *k_out, const mlkem_params *params,
      * This is also where we get the output secret k from: the
      * encapsulation function creates it as half of the hash of m.
      */
-    { // WINSCP
     unsigned char c_regen[1568], k[32];
     buffer_sink c_sink[1], k_sink[1];
     buffer_sink_init(c_sink, c_regen, sizeof(c_regen));
     buffer_sink_init(k_sink, k, sizeof(k));
-    { // WINSCP
     bool success = mlkem_encaps_internal(
         BinarySink_UPCAST(c_sink), BinarySink_UPCAST(k_sink), params, ek, m);
     /* If any application of ML-KEM uses a dk given to it by someone
@@ -1069,7 +990,6 @@ bool mlkem_decaps(BinarySink *k_out, const mlkem_params *params,
      * k_reject is that secret; for constant-time reasons we generate
      * it unconditionally.
      */
-    { // WINSCP
     unsigned char k_reject[32];
     h = ssh_hash_new(&ssh_shake256_32bytes);
     put_data(h, dkp + 768 * params->k + 64, 32);
@@ -1080,11 +1000,9 @@ bool mlkem_decaps(BinarySink *k_out, const mlkem_params *params,
      * Now replace k with k_reject if the ciphertexts didn't match.
      */
     assert((void *)c_sink->out == (void *)(c_regen + c.len));
-    { // WINSCP
     unsigned match = smemeq(c.ptr, c_regen, c.len);
     unsigned mask = match - 1;
-    size_t i; // WINSCP
-    for (i = 0; i < 32; i++)
+    for (size_t i = 0; i < 32; i++)
         k[i] ^= mask & (k[i] ^ k_reject[i]);
 
     /*
@@ -1098,13 +1016,6 @@ bool mlkem_decaps(BinarySink *k_out, const mlkem_params *params,
     smemclr(k, sizeof(k));
     smemclr(k_reject, sizeof(k_reject));
     return true;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -1146,34 +1057,34 @@ static void mlkem_vt_free_dk(pq_kem_dk *dk)
 }
 
 const pq_kemalg ssh_mlkem512 = {
-    /*.keygen =*/ mlkem_vt_keygen,
-    /*.encaps =*/ mlkem_vt_encaps,
-    /*.decaps =*/ mlkem_vt_decaps,
-    /*.free_dk =*/ mlkem_vt_free_dk,
-    /*.extra =*/ &mlkem_params_512,
-    /*.description =*/ "ML-KEM-512",
-    /*.ek_len =*/ 384 * 2 + 32,
-    /*.c_len =*/ 32 * (10 * 2 + 4),
+    .keygen = mlkem_vt_keygen,
+    .encaps = mlkem_vt_encaps,
+    .decaps = mlkem_vt_decaps,
+    .free_dk = mlkem_vt_free_dk,
+    .extra = &mlkem_params_512,
+    .description = "ML-KEM-512",
+    .ek_len = 384 * 2 + 32,
+    .c_len = 32 * (10 * 2 + 4),
 };
 
 const pq_kemalg ssh_mlkem768 = {
-    /*.keygen =*/ mlkem_vt_keygen,
-    /*.encaps =*/ mlkem_vt_encaps,
-    /*.decaps =*/ mlkem_vt_decaps,
-    /*.free_dk =*/ mlkem_vt_free_dk,
-    /*.extra =*/ &mlkem_params_768,
-    /*.description =*/ "ML-KEM-768",
-    /*.ek_len =*/ 384 * 3 + 32,
-    /*.c_len =*/ 32 * (10 * 3 + 4),
+    .keygen = mlkem_vt_keygen,
+    .encaps = mlkem_vt_encaps,
+    .decaps = mlkem_vt_decaps,
+    .free_dk = mlkem_vt_free_dk,
+    .extra = &mlkem_params_768,
+    .description = "ML-KEM-768",
+    .ek_len = 384 * 3 + 32,
+    .c_len = 32 * (10 * 3 + 4),
 };
 
 const pq_kemalg ssh_mlkem1024 = {
-    /*.keygen =*/ mlkem_vt_keygen,
-    /*.encaps =*/ mlkem_vt_encaps,
-    /*.decaps =*/ mlkem_vt_decaps,
-    /*.free_dk =*/ mlkem_vt_free_dk,
-    /*.extra =*/ &mlkem_params_1024,
-    /*.description =*/ "ML-KEM-1024",
-    /*.ek_len =*/ 384 * 4 + 32,
-    /*.c_len =*/ 32 * (11 * 4 + 5),
+    .keygen = mlkem_vt_keygen,
+    .encaps = mlkem_vt_encaps,
+    .decaps = mlkem_vt_decaps,
+    .free_dk = mlkem_vt_free_dk,
+    .extra = &mlkem_params_1024,
+    .description = "ML-KEM-1024",
+    .ek_len = 384 * 4 + 32,
+    .c_len = 32 * (11 * 4 + 5),
 };

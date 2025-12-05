@@ -94,12 +94,10 @@ bool import_encrypted(const Filename *filename, int type, char **comment)
     if (!lf)
         return false; /* couldn't even open the file */
 
-    { // WINSCP
     bool toret = import_encrypted_s(filename, BinarySource_UPCAST(lf),
                                     type, comment);
     lf_free(lf);
     return toret;
-    } // WINSCP
 }
 
 /*
@@ -118,12 +116,10 @@ int import_ssh1(const Filename *filename, int type,
     if (!lf)
         return false;
 
-    { // WINSCP
     int toret = import_ssh1_s(BinarySource_UPCAST(lf),
                               type, key, passphrase, errmsg_p);
     lf_free(lf);
     return toret;
-    } // WINSCP
 }
 
 /*
@@ -148,12 +144,10 @@ ssh2_userkey *import_ssh2(const Filename *filename, int type,
     if (!lf)
         return false;
 
-    { // WINSCP
     ssh2_userkey *toret = import_ssh2_s(BinarySource_UPCAST(lf),
                                         type, passphrase, errmsg_p);
     lf_free(lf);
     return toret;
-    } // WINSCP
 }
 
 /*
@@ -714,7 +708,6 @@ static ssh2_userkey *openssh_pem_read(
 
         put_stringz(blob, key->keytype == OP_DSA ? "ssh-dss" : "ssh-rsa");
 
-        { // WINSCP
         ptrlen rsa_modulus = PTRLEN_LITERAL("");
 
         for (i = 0; i < num_integers; i++) {
@@ -781,7 +774,6 @@ static ssh2_userkey *openssh_pem_read(
             errmsg = "unable to create key data structure";
             goto error;
         }
-        } // WINSCP
 
     } else {
         unreachable("Bad key type from load_openssh_pem_key");
@@ -2259,7 +2251,7 @@ static bool sshcom_write(
                         outblob->len - (lenpos + 8));
     /* Pad encrypted blob to a multiple of cipher block size. */
     if (passphrase) {
-        int padding = -(ssize_t)(outblob->len - (lenpos+4)) & 7; // WINSCP
+        int padding = -(outblob->len - (lenpos+4)) & 7;
         uint8_t padding_buf[8];
         random_read(padding_buf, padding);
         put_data(outblob, padding_buf, padding);

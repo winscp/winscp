@@ -1890,10 +1890,8 @@ struct ConfKeyInfo {
     int value_type;
 
     union {
-        // WINSCP changed order, because only the first member can be initialized
-        // and char* can be casted to int, but not to bool
-        int ival;
         bool bval;
+        int ival;
         const char *sval;
     } default_value;
 

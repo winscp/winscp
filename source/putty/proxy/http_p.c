@@ -328,7 +328,6 @@ static HttpAuthDetails *parse_http_auth_header(HttpProxyNegotiator *s)
                     (!get_token(s) && !get_quoted_string(s)))
                     return auth_error(d, "parse error in Digest algorithm "
                                       "field");
-                { // WINSCP
                 bool found = false;
                 size_t i;
 
@@ -353,7 +352,6 @@ static HttpAuthDetails *parse_http_auth_header(HttpProxyNegotiator *s)
                 }
 
                 d->digest_hash = i;
-                } // WINSCP
             } else if (!stricmp(s->token->s, "qop")) {
                 if (!get_separator(s, '=') ||
                     !get_quoted_string(s))
@@ -419,16 +417,13 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
         if (s->next_auth->auth_type == AUTH_BASIC) {
             put_datalit(pn->output, "Proxy-Authorization: Basic ");
 
-            { // WINSCP
             strbuf *base64_input = strbuf_new_nm();
             put_datapl(base64_input, ptrlen_from_strbuf(s->username));
             put_byte(base64_input, ':');
             put_datapl(base64_input, ptrlen_from_strbuf(s->password));
 
-            { // WINSCP
             char base64_output[4];
-            size_t i, e; // WINSCP
-            for (i = 0, e = base64_input->len; i < e; i += 3) {
+            for (size_t i = 0, e = base64_input->len; i < e; i += 3) {
                 base64_encode_atom(base64_input->u + i,
                                    e-i > 3 ? 3 : e-i, base64_output);
                 put_data(pn->output, base64_output, 4);
@@ -436,8 +431,6 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
             strbuf_free(base64_input);
             smemclr(base64_output, sizeof(base64_output));
             put_datalit(pn->output, "\r\n");
-            } // WINSCP
-            } // WINSCP
         } else if (s->next_auth->auth_type == AUTH_DIGEST) {
             put_datalit(pn->output, "Proxy-Authorization: Digest ");
 
@@ -526,7 +519,6 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
             }
 
             /* Parse the header name */
-            { // WINSCP
             HttpHeader hdr = HDR_UNKNOWN;
             {
                 #define CHECK_HEADER(id, string) \
@@ -611,7 +603,6 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
                     http_auth_details_free(auth);
                 }
             }
-            } // WINSCP
         } while (s->header->len > 0);
 
         /* Read and ignore the entire response document */
@@ -783,9 +774,8 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
 }
 
 const struct ProxyNegotiatorVT http_proxy_negotiator_vt = {
-    // WINSCP
-    /*.new =*/ proxy_http_new,
-    /*.process_queue =*/ proxy_http_process_queue,
-    /*.free =*/ proxy_http_free,
-    /*.type =*/ "HTTP",
+    .new = proxy_http_new,
+    .free = proxy_http_free,
+    .process_queue = proxy_http_process_queue,
+    .type = "HTTP",
 };

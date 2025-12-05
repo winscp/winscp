@@ -9,9 +9,7 @@
 static inline uint64_t rol(uint64_t x, unsigned shift)
 {
     unsigned L = (+shift) & 63;
-#pragma option push -w-ngu // WINSCP
     unsigned R = (-shift) & 63;
-#pragma option pop // WINSCP
     return (x << L) | (x >> R);
 }
 
@@ -39,36 +37,25 @@ static void keccak_transform(keccak_core_state A)
         uint64_t B[5][5];
     } u;
 
-    unsigned round; // WINSCP
-    for (round = 0; round < NROUNDS; round++) {
+    for (unsigned round = 0; round < NROUNDS; round++) {
         /* theta step */
-        unsigned x; // WINSCP
-        for (x = 0; x < 5; x++)
+        for (unsigned x = 0; x < 5; x++)
             u.C[x] = A[x][0] ^ A[x][1] ^ A[x][2] ^ A[x][3] ^ A[x][4];
-        for (x = 0; x < 5; x++) { // WINSCP
+        for (unsigned x = 0; x < 5; x++) {
             uint64_t D = rol(u.C[(x+1) % 5], 1) ^ u.C[(x+4) % 5];
-            { // WINSCP
-            unsigned y; // WINSCP
-            for (y = 0; y < 5; y++)
+            for (unsigned y = 0; y < 5; y++)
                 A[x][y] ^= D;
-            } // WINSCP
         }
 
         /* rho and pi steps */
-        for (x = 0; x < 5; x++) // WINSCP
-        { // WINSCP
-            unsigned y; // WINSCP
-            for (y = 0; y < 5; y++)
+        for (unsigned x = 0; x < 5; x++)
+            for (unsigned y = 0; y < 5; y++)
                 u.B[y][(2*x+3*y) % 5] = rol(A[x][y], rotation_counts[x][y]);
-        } // WINSCP
 
         /* chi step */
-        for (x = 0; x < 5; x++) // WINSCP
-        { // WINSCP
-            unsigned y; // WINSCP
-            for (y = 0; y < 5; y++)
+        for (unsigned x = 0; x < 5; x++)
+            for (unsigned y = 0; y < 5; y++)
                 A[x][y] = u.B[x][y] ^ (u.B[(x+2)%5][y] & ~u.B[(x+1)%5][y]);
-        } // WINSCP
 
         /* iota step */
         A[0][0] ^= round_constants[round];
@@ -98,12 +85,9 @@ static void keccak_accumulate(keccak_state *s, const void *vdata, size_t len)
         len -= b;
         data += b;
 
-        { // WINSCP
         size_t n = 0;
-        unsigned y; // WINSCP
-        for (y = 0; y < 5; y++) {
-            unsigned x; // WINSCP
-            for (x = 0; x < 5; x++) {
+        for (unsigned y = 0; y < 5; y++) {
+            for (unsigned x = 0; x < 5; x++) {
                 if (n >= s->bytes_wanted)
                     break;
 
@@ -114,7 +98,6 @@ static void keccak_accumulate(keccak_state *s, const void *vdata, size_t len)
         keccak_transform(s->A);
 
         s->bytes_got = 0;
-        } // WINSCP
     }
 
     memcpy(s->bytes + s->bytes_got, data, len);
@@ -142,26 +125,20 @@ static void keccak_output(keccak_state *s, void *voutput)
         keccak_accumulate(s, padding, len);
     }
 
-    { // WINSCP
     size_t n = 0;
-    unsigned y; // WINSCP
-    for (y = 0; y < 5; y++) {
-        unsigned x; // WINSCP
-        for (x = 0; x < 5; x++) {
+    for (unsigned y = 0; y < 5; y++) {
+        for (unsigned x = 0; x < 5; x++) {
             size_t to_copy = s->hash_bytes - n;
             if (to_copy == 0)
                 break;
             if (to_copy > 8)
                 to_copy = 8;
-            { // WINSCP
             unsigned char outbytes[8];
             PUT_64BIT_LSB_FIRST(outbytes, s->A[x][y]);
             memcpy(output + n, outbytes, to_copy);
             n += to_copy;
-            } // WINSCP
         }
     }
-    } // WINSCP
 }
 
 static void keccak_init(keccak_state *s, unsigned hashbits, unsigned ratebits,
@@ -217,15 +194,14 @@ print(textwrap.indent("\n".join(textwrap.wrap(", ".join(
 */
 
 static const uint64_t round_constants[24] = {
-    // WINSCP (ULL)
-    0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
-    0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
-    0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL,
-    0x0000000000000088ULL, 0x0000000080008009ULL, 0x000000008000000aULL,
-    0x000000008000808bULL, 0x800000000000008bULL, 0x8000000000008089ULL,
-    0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL,
-    0x000000000000800aULL, 0x800000008000000aULL, 0x8000000080008081ULL,
-    0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL
+    0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
+    0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
+    0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
+    0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
+    0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
+    0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
+    0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
+    0x8000000000008080, 0x0000000080000001, 0x8000000080008008
 };
 
 /*
@@ -306,16 +282,14 @@ static void sha3_reset(ssh_hash *hash)
 
 #define DEFINE_SHA3(bits)                       \
     const ssh_hashalg ssh_sha3_##bits = {       \
-        /* WINSCP */ \
-        /*.new =*/ keccak_new,                      \
-        /*.reset =*/ sha3_reset,                    \
-        /*.copyfrom =*/ keccak_copyfrom,            \
-        /*.digest =*/ keccak_digest,                \
-        /*.free =*/ keccak_free,                    \
-        /*.hlen =*/ bits/8,                         \
-        /*.blocklen =*/ 200 - 2*(bits/8),           \
+        .new = keccak_new,                      \
+        .reset = sha3_reset,                    \
+        .copyfrom = keccak_copyfrom,            \
+        .digest = keccak_digest,                \
+        .free = keccak_free,                    \
+        .hlen = bits/8,                         \
+        .blocklen = 200 - 2*(bits/8),           \
         HASHALG_NAMES_BARE("SHA3-" #bits),      \
-        NULL, /* WINSCP */ \
     }
 
 DEFINE_SHA3(224);
@@ -342,16 +316,14 @@ static void shake256_reset(ssh_hash *hash)
 
 #define DEFINE_SHAKE(param, hashbytes)                          \
     const ssh_hashalg ssh_shake##param##_##hashbytes##bytes = { \
-        /* WINSCP */ \
-        /*.new =*/ keccak_new,                                      \
-        /*.reset =*/ shake##param##_reset,                          \
-        /*.copyfrom =*/ keccak_copyfrom,                            \
-        /*.digest =*/ keccak_digest,                                \
-        /*.free =*/ keccak_free,                                    \
-        /*.hlen =*/ hashbytes,                                      \
-        /*.blocklen =*/ 0,                                          \
+        .new = keccak_new,                                      \
+        .reset = shake##param##_reset,                          \
+        .copyfrom = keccak_copyfrom,                            \
+        .digest = keccak_digest,                                \
+        .free = keccak_free,                                    \
+        .hlen = hashbytes,                                      \
+        .blocklen = 0,                                          \
         HASHALG_NAMES_BARE("SHAKE" #param),                     \
-        NULL, /*NULL*/ \
     }
 
 DEFINE_SHAKE(256, 114);                /* used by Ed448 */
@@ -398,15 +370,13 @@ void shake_xof_read(ShakeXOF *sx, void *output_v, size_t size)
         if (sx->pos == 0) {
             /* Copy the 64-bit words from the Keccak state into the
              * output buffer of bytes */
-            unsigned y, x; // WINSCP
-            for (y = 0; y < 5; y++)
-                for (x = 0; x < 5; x++)
+            for (unsigned y = 0; y < 5; y++)
+                for (unsigned x = 0; x < 5; x++)
                     PUT_64BIT_LSB_FIRST(sx->buf + 8 * (5*y+x),
                                         sx->state.A[x][y]);
         }
 
         /* Read a chunk from the byte buffer */
-        { // WINSCP
         size_t this_size = sx->bytes_per_transform - sx->pos;
         if (this_size > size)
             this_size = size;
@@ -420,7 +390,6 @@ void shake_xof_read(ShakeXOF *sx, void *output_v, size_t size)
             keccak_transform(sx->state.A);
             sx->pos = 0;
         }
-        } // WINSCP
     }
 }
 

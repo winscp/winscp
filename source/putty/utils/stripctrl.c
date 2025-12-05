@@ -320,7 +320,6 @@ static void stripctrl_locale_BinarySink_write(
             to_copy = len;
 
         memcpy(scc->buf + scc->buflen, p, to_copy);
-        { // WINSCP
         size_t consumed = stripctrl_locale_try_consume(
             scc, scc->buf, scc->buflen + to_copy);
 
@@ -370,7 +369,6 @@ static void stripctrl_locale_BinarySink_write(
          */
         scc->buflen -= consumed;
         memmove(scc->buf, scc->buf + consumed, scc->buflen);
-        } // WINSCP
     }
 
     /*

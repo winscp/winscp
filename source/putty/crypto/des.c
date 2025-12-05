@@ -74,11 +74,11 @@
  */
 static inline uint32_t rol(uint32_t x, unsigned c)
 {
-    return (x << (31 & c)) | (x >> (31 & -(int/*WINSCP*/)c));
+    return (x << (31 & c)) | (x >> (31 & -c));
 }
 static inline uint32_t ror(uint32_t x, unsigned c)
 {
-    return rol(x, -(int/*WINSCP*/)c);
+    return rol(x, -c);
 }
 
 /*
@@ -275,7 +275,6 @@ static inline uint32_t des_S(uint32_t si6420, uint32_t si7531)
      */
 
     /* Set up the gadgets */
-    { // WINSCP
     uint32_t c40 = ((si6420     ) & 0x00FC00FC) | 0xFF00FF00;
     uint32_t c62 = ((si6420 >> 8) & 0x00FC00FC) | 0xFF00FF00;
     uint32_t c51 = ((si7531     ) & 0x00FC00FC) | 0xFF00FF00;
@@ -284,15 +283,13 @@ static inline uint32_t des_S(uint32_t si6420, uint32_t si7531)
           " c51=%08"PRIx32" c73=%08"PRIx32"\n", c40, c62, c51, c73);
 
     /* Iterate over the table */
-    { // WINSCP
     static const struct tbl { uint32_t t40, t62, t51, t73; } tbl[32] = {
-#define TABLE32(a, b) { ((uint32_t)a##LL), (a##LL>>32), ((uint32_t)b##LL), (b##LL>>32) }, // WINSCP
+#define TABLE32(a, b) { ((uint32_t)a), (a>>32), ((uint32_t)b), (b>>32) },
         SBOX_ITERATION(TABLE32)
 #undef TABLE32
     };
     uint32_t s40 = 0, s62 = 0, s51 = 0, s73 = 0;
-    const struct tbl *t, *limit; // WINSCP
-    for (t = tbl, limit = tbl + 32; t < limit; t++) {
+    for (const struct tbl *t = tbl, *limit = tbl + 32; t < limit; t++) {
         s40 ^= c40 & t->t40; c40 += 0x00080008;
         s62 ^= c62 & t->t62; c62 += 0x00080008;
         s51 ^= c51 & t->t51; c51 += 0x00080008;
@@ -324,8 +321,6 @@ static inline uint32_t des_S(uint32_t si6420, uint32_t si7531)
 
     /* Recombine and return */
     return (s40 >> 12) | (s62 >> 4) | (s51 >> 8) | (s73);
-    } // WINSCP
-    } // WINSCP
 
 #endif /* SIXTY_FOUR_BIT */
 
@@ -463,20 +458,17 @@ static void des_key_setup(uint64_t key, des_keysched *sched)
      * 28-bit integers starting at bits 0 and 32. */
     uint64_t CD = bitsel(key, PC1, lenof(PC1));
 
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < 16; i++) {
+    for (size_t i = 0; i < 16; i++) {
         /* Rotate each 28-bit half of CD left by 1 or 2 bits (varying
          * between rounds) */
         CD <<= leftshifts[i];
-        CD = (CD & 0x0FFFFFFF0FFFFFFFLL) | ((CD & 0xF0000000F0000000LL) >> 28); // WINSCP
+        CD = (CD & 0x0FFFFFFF0FFFFFFF) | ((CD & 0xF0000000F0000000) >> 28);
 
         /* Select key bits from the rotated word to use during the
          * actual cipher */
         sched->k7531[i] = bitsel(CD, PC2_7531, lenof(PC2_7531));
         sched->k6420[i] = bitsel(CD, PC2_6420, lenof(PC2_6420));
     }
-    } // WINSCP
 }
 
 /*
@@ -691,42 +683,36 @@ static void des_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_des = {
-    // WINSCP
-    /*.new =*/ des_cbc_new,
-    /*.free =*/ des_cbc_free,
-    /*.setiv =*/ des_cbc_setiv,
-    /*.setkey =*/ des_cbc_setkey,
-    /*.encrypt =*/ des_cbc_encrypt,
-    /*.decrypt =*/ des_cbc_decrypt,
-    NULL, NULL, // WINSCP
-    /*.next_message =*/ nullcipher_next_message,
-    /*.ssh2_id =*/ "des-cbc",
-    /*.blksize =*/ 8,
-    /*.real_keybits =*/ 56,
-    /*.padded_keybytes =*/ 8,
-    /*.flags =*/ SSH_CIPHER_IS_CBC,
-    /*.text_name =*/ "single-DES CBC",
-    NULL, NULL, // WINSCP
+    .new = des_cbc_new,
+    .free = des_cbc_free,
+    .setiv = des_cbc_setiv,
+    .setkey = des_cbc_setkey,
+    .encrypt = des_cbc_encrypt,
+    .decrypt = des_cbc_decrypt,
+    .next_message = nullcipher_next_message,
+    .ssh2_id = "des-cbc",
+    .blksize = 8,
+    .real_keybits = 56,
+    .padded_keybytes = 8,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "single-DES CBC",
 };
 
 const ssh_cipheralg ssh_des_sshcom_ssh2 = {
     /* Same as ssh_des_cbc, but with a different SSH-2 ID */
-    // WINSCP
-    /*.new =*/ des_cbc_new,
-    /*.free =*/ des_cbc_free,
-    /*.setiv =*/ des_cbc_setiv,
-    /*.setkey =*/ des_cbc_setkey,
-    /*.encrypt =*/ des_cbc_encrypt,
-    /*.decrypt =*/ des_cbc_decrypt,
-    NULL, NULL, // WINSCP
-    /*.next_message =*/ nullcipher_next_message,
-    /*.ssh2_id =*/ "des-cbc@ssh.com",
-    /*.blksize =*/ 8,
-    /*.real_keybits =*/ 56,
-    /*.padded_keybytes =*/ 8,
-    /*.flags =*/ SSH_CIPHER_IS_CBC,
-    /*.text_name =*/ "single-DES CBC",
-    NULL, NULL, // WINSCP
+    .new = des_cbc_new,
+    .free = des_cbc_free,
+    .setiv = des_cbc_setiv,
+    .setkey = des_cbc_setkey,
+    .encrypt = des_cbc_encrypt,
+    .decrypt = des_cbc_decrypt,
+    .next_message = nullcipher_next_message,
+    .ssh2_id = "des-cbc@ssh.com",
+    .blksize = 8,
+    .real_keybits = 56,
+    .padded_keybytes = 8,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "single-DES CBC",
 };
 
 static const ssh_cipheralg *const des_list[] = {
@@ -766,8 +752,7 @@ static void des3_cbc1_setkey(ssh_cipher *ciph, const void *vkey)
 {
     struct des3_cbc1_ctx *ctx = container_of(ciph, struct des3_cbc1_ctx, ciph);
     const uint8_t *key = (const uint8_t *)vkey;
-    size_t i; // WINSCP
-    for (i = 0; i < 3; i++)
+    for (size_t i = 0; i < 3; i++)
         des_key_setup(GET_64BIT_MSB_FIRST(key + 8*i), &ctx->sched[i]);
 }
 
@@ -791,12 +776,10 @@ static void des3_cbc1_cbc_encrypt(ssh_cipher *ciph, void *vdata, int len)
         lr = des_inner_cipher(lr, &ctx->sched[0], ENCIPHER);
         lr = des_inner_cipher(lr, &ctx->sched[1], DECIPHER);
         lr = des_inner_cipher(lr, &ctx->sched[2], ENCIPHER);
-        { // WINSCP
         LR ciphertext = des_FP(lr);
 
         des_store_lr(data, ciphertext);
         ctx->iv = ciphertext;
-        } // WINSCP
     }
 }
 
@@ -812,33 +795,28 @@ static void des3_cbc1_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
         lr = des_inner_cipher(lr, &ctx->sched[2], DECIPHER);
         lr = des_inner_cipher(lr, &ctx->sched[1], ENCIPHER);
         lr = des_inner_cipher(lr, &ctx->sched[0], DECIPHER);
-        { // WINSCP
         LR cipher_out = des_FP(lr);
 
         LR plaintext = des_xor_lr(cipher_out, ctx->iv);
         des_store_lr(data, plaintext);
         ctx->iv = ciphertext;
-        } // WINSCP
     }
 }
 
 const ssh_cipheralg ssh_3des_ssh2 = {
-    // WINSCP
-    /*.new =*/ des3_cbc1_new,
-    /*.free =*/ des3_cbc1_free,
-    /*.setiv =*/ des3_cbc1_setiv,
-    /*.setkey =*/ des3_cbc1_setkey,
-    /*.encrypt =*/ des3_cbc1_cbc_encrypt,
-    /*.decrypt =*/ des3_cbc1_cbc_decrypt,
-    NULL, NULL, // WINSCP
-    /*.next_message =*/ nullcipher_next_message,
-    /*.ssh2_id =*/ "3des-cbc",
-    /*.blksize =*/ 8,
-    /*.real_keybits =*/ 168,
-    /*.padded_keybytes =*/ 24,
-    /*.flags =*/ SSH_CIPHER_IS_CBC,
-    /*.text_name =*/ "triple-DES CBC",
-    NULL, NULL, // WINSCP
+    .new = des3_cbc1_new,
+    .free = des3_cbc1_free,
+    .setiv = des3_cbc1_setiv,
+    .setkey = des3_cbc1_setkey,
+    .encrypt = des3_cbc1_cbc_encrypt,
+    .decrypt = des3_cbc1_cbc_decrypt,
+    .next_message = nullcipher_next_message,
+    .ssh2_id = "3des-cbc",
+    .blksize = 8,
+    .real_keybits = 168,
+    .padded_keybytes = 24,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "triple-DES CBC",
 };
 
 /* ----------------------------------------------------------------------
@@ -875,8 +853,7 @@ static void des3_sdctr_setkey(ssh_cipher *ciph, const void *vkey)
     struct des3_sdctr_ctx *ctx = container_of(
         ciph, struct des3_sdctr_ctx, ciph);
     const uint8_t *key = (const uint8_t *)vkey;
-    size_t i; // WINSCP
-    for (i = 0; i < 3; i++)
+    for (size_t i = 0; i < 3; i++)
         des_key_setup(GET_64BIT_MSB_FIRST(key + 8*i), &ctx->sched[i]);
 }
 
@@ -887,8 +864,7 @@ static void des3_sdctr_setiv(ssh_cipher *ciph, const void *viv)
     const uint8_t *iv = (const uint8_t *)viv;
 
     /* Import the initial counter value into the internal representation */
-    unsigned i = 0; // WINSCP
-    for (i = 0; i < SDCTR_WORDS; i++)
+    for (unsigned i = 0; i < SDCTR_WORDS; i++)
         ctx->counter[i] = GET_BIGNUMINT_MSB_FIRST(
             iv + 8 - BIGNUM_INT_BYTES - i*BIGNUM_INT_BYTES);
 }
@@ -901,54 +877,44 @@ static void des3_sdctr_encrypt_decrypt(ssh_cipher *ciph, void *vdata, int len)
     uint8_t iv_buf[8];
     for (; len > 0; len -= 8, data += 8) {
         /* Format the counter value into the buffer. */
-        unsigned i; // WINSCP
-        for (i = 0; i < SDCTR_WORDS; i++)
+        for (unsigned i = 0; i < SDCTR_WORDS; i++)
             PUT_BIGNUMINT_MSB_FIRST(
                 iv_buf + 8 - BIGNUM_INT_BYTES - i*BIGNUM_INT_BYTES,
                 ctx->counter[i]);
 
         /* Increment the counter. */
-        { // WINSCP
         BignumCarry carry = 1;
-        for (i = 0; i < SDCTR_WORDS; i++) // WINSCP
+        for (unsigned i = 0; i < SDCTR_WORDS; i++)
             BignumADC(ctx->counter[i], carry, ctx->counter[i], 0, carry);
 
         /* Triple-encrypt the counter value from the IV. */
-        { // WINSCP
         LR lr = des_IP(des_load_lr(iv_buf));
         lr = des_inner_cipher(lr, &ctx->sched[0], ENCIPHER);
         lr = des_inner_cipher(lr, &ctx->sched[1], DECIPHER);
         lr = des_inner_cipher(lr, &ctx->sched[2], ENCIPHER);
-        { // WINSCP
         LR keystream = des_FP(lr);
 
         LR input = des_load_lr(data);
         LR output = des_xor_lr(input, keystream);
         des_store_lr(data, output);
-        } // WINSCP
-        } // WINSCP
-        } // WINSCP
     }
     smemclr(iv_buf, sizeof(iv_buf));
 }
 
 const ssh_cipheralg ssh_3des_ssh2_ctr = {
-    // WINSCP
-    /*.new =*/ des3_sdctr_new,
-    /*.free =*/ des3_sdctr_free,
-    /*.setiv =*/ des3_sdctr_setiv,
-    /*.setkey =*/ des3_sdctr_setkey,
-    /*.encrypt =*/ des3_sdctr_encrypt_decrypt,
-    /*.decrypt =*/ des3_sdctr_encrypt_decrypt,
-    NULL, NULL, // WINSCP
-    /*.next_message =*/ nullcipher_next_message,
-    /*.ssh2_id =*/ "3des-ctr",
-    /*.blksize =*/ 8,
-    /*.real_keybits =*/ 168,
-    /*.padded_keybytes =*/ 24,
-    /*.flags =*/ 0,
-    /*.text_name =*/ "triple-DES SDCTR",
-    NULL, NULL, // WINSCP
+    .new = des3_sdctr_new,
+    .free = des3_sdctr_free,
+    .setiv = des3_sdctr_setiv,
+    .setkey = des3_sdctr_setkey,
+    .encrypt = des3_sdctr_encrypt_decrypt,
+    .decrypt = des3_sdctr_encrypt_decrypt,
+    .next_message = nullcipher_next_message,
+    .ssh2_id = "3des-ctr",
+    .blksize = 8,
+    .real_keybits = 168,
+    .padded_keybytes = 24,
+    .flags = 0,
+    .text_name = "triple-DES SDCTR",
 };
 
 static const ssh_cipheralg *const des3_list[] = {
@@ -988,8 +954,7 @@ static void des3_cbc3_setkey(ssh_cipher *ciph, const void *vkey)
 {
     struct des3_cbc3_ctx *ctx = container_of(ciph, struct des3_cbc3_ctx, ciph);
     const uint8_t *key = (const uint8_t *)vkey;
-    size_t i; // WINSCP
-    for (i = 0; i < 3; i++)
+    for (size_t i = 0; i < 3; i++)
         des_key_setup(GET_64BIT_MSB_FIRST(key + 8*i), &ctx->sched[i]);
 }
 
@@ -1012,11 +977,8 @@ static void des3_cbc3_setiv(ssh_cipher *ciph, const void *viv)
     /* But we store the IVs in permuted form, so that we can handle
      * all three CBC layers without having to do IP/FP in between. */
     iv = des_IP(iv);
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < 3; i++)
+    for (size_t i = 0; i < 3; i++)
         ctx->iv[i] = iv;
-    } // WINSCP
 }
 
 static void des3_cbc3_cbc_encrypt(ssh_cipher *ciph, void *vdata, int len)
@@ -1034,7 +996,6 @@ static void des3_cbc3_cbc_encrypt(ssh_cipher *ciph, void *vdata, int len)
         lr = des_inner_cipher(lr, &ctx->sched[0], ENCIPHER);
         ctx->iv[0] = lr;
 
-        { // WINSCP
         LR ciphertext = lr;
         lr = des_inner_cipher(ciphertext, &ctx->sched[1], DECIPHER);
         lr = des_xor_lr(lr, ctx->iv[1]);
@@ -1045,7 +1006,6 @@ static void des3_cbc3_cbc_encrypt(ssh_cipher *ciph, void *vdata, int len)
         ctx->iv[2] = lr;
 
         des_store_lr(data, des_FP(lr));
-        } // WINSCP
     }
 }
 
@@ -1078,20 +1038,16 @@ static void des3_cbc3_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh1 = {
-    // WINSCP
-    /*.new =*/ des3_cbc3_new,
-    /*.free =*/ des3_cbc3_free,
-    /*.setiv =*/ des3_cbc3_setiv,
-    /*.setkey =*/ des3_cbc3_setkey,
-    /*.encrypt =*/ des3_cbc3_cbc_encrypt,
-    /*.decrypt =*/ des3_cbc3_cbc_decrypt,
-    NULL, NULL, // WINSCP
-    /*.next_message =*/ nullcipher_next_message,
-    NULL, // WINSCP
-    /*.blksize =*/ 8,
-    /*.real_keybits =*/ 168,
-    /*.padded_keybytes =*/ 24,
-    /*.flags =*/ SSH_CIPHER_IS_CBC,
-    /*.text_name =*/ "triple-DES inner-CBC",
-    NULL, NULL, // WINSCP
+    .new = des3_cbc3_new,
+    .free = des3_cbc3_free,
+    .setiv = des3_cbc3_setiv,
+    .setkey = des3_cbc3_setkey,
+    .encrypt = des3_cbc3_cbc_encrypt,
+    .decrypt = des3_cbc3_cbc_decrypt,
+    .next_message = nullcipher_next_message,
+    .blksize = 8,
+    .real_keybits = 168,
+    .padded_keybytes = 24,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "triple-DES inner-CBC",
 };

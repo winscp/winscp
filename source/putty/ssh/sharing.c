@@ -1795,11 +1795,9 @@ static void share_receive(Plug *plug, int urgent, const char *data, size_t len)
     }
     if (cs->recvlen > 0 && cs->recvbuf[cs->recvlen-1] == '\015')
         cs->recvlen--;                 /* trim off \r before \n */
-    { // WINSCP
     ptrlen verstring = make_ptrlen(cs->recvbuf, cs->recvlen);
     log_downstream(cs, "Downstream version string: %.*s",
                    PTRLEN_PRINTF(verstring));
-    } // WINSCP
     cs->got_verstring = true;
 
     /*
@@ -1904,12 +1902,10 @@ void share_activate(ssh_sharing_state *sharestate,
 }
 
 static const PlugVtable ssh_sharing_conn_plugvt = {
-    // WINSCP
-    /*.log =*/ nullplug_log,
-    /*.closing =*/ share_closing,
-    /*.receive =*/ share_receive,
-    /*.sent =*/ share_sent,
-    NULL, // WINSCP
+    .closing = share_closing,
+    .receive = share_receive,
+    .sent = share_sent,
+    .log = nullplug_log,
 };
 
 static int share_listen_accepting(Plug *plug,
@@ -2049,11 +2045,9 @@ bool ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 }
 
 static const PlugVtable ssh_sharing_listen_plugvt = {
-    // WINSCP
-    /*.log =*/ nullplug_log,
-    /*.closing =*/ share_listen_closing,
-    NULL, NULL, // WINSCP
-    /*.accepting =*/ share_listen_accepting,
+    .closing = share_listen_closing,
+    .accepting = share_listen_accepting,
+    .log = nullplug_log,
 };
 
 void ssh_connshare_provide_connlayer(ssh_sharing_state *sharestate,

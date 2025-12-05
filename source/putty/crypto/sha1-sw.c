@@ -13,7 +13,7 @@ static bool sha1_sw_available(void)
 
 static inline uint32_t rol(uint32_t x, unsigned y)
 {
-    return (x << (31 & y)) | (x >> (31 & (uint32_t)(-(int32_t)y))); // WINSCP
+    return (x << (31 & y)) | (x >> (31 & -y));
 }
 
 static inline uint32_t Ch(uint32_t ctrl, uint32_t if1, uint32_t if0)
@@ -45,50 +45,38 @@ static void sha1_sw_block(uint32_t *core, const uint8_t *block)
     uint32_t w[SHA1_ROUNDS];
     uint32_t a,b,c,d,e;
 
-    { // WINSCP
-    size_t t;
-    for (t = 0; t < 16; t++)
+    for (size_t t = 0; t < 16; t++)
         w[t] = GET_32BIT_MSB_FIRST(block + 4*t);
 
-    { // WINSCP
-    size_t t;
-    for (t = 16; t < SHA1_ROUNDS; t++)
+    for (size_t t = 16; t < SHA1_ROUNDS; t++)
         w[t] = rol(w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16], 1);
 
     a = core[0]; b = core[1]; c = core[2]; d = core[3];
     e = core[4];
 
-    { // WINSCP
     size_t t = 0;
-    size_t u;
-    for (u = 0; u < SHA1_ROUNDS_PER_STAGE/5; u++) {
+    for (size_t u = 0; u < SHA1_ROUNDS_PER_STAGE/5; u++) {
         sha1_sw_round(t++,w, &a,&b,&c,&d,&e, Ch(b,c,d), SHA1_STAGE0_CONSTANT);
         sha1_sw_round(t++,w, &e,&a,&b,&c,&d, Ch(a,b,c), SHA1_STAGE0_CONSTANT);
         sha1_sw_round(t++,w, &d,&e,&a,&b,&c, Ch(e,a,b), SHA1_STAGE0_CONSTANT);
         sha1_sw_round(t++,w, &c,&d,&e,&a,&b, Ch(d,e,a), SHA1_STAGE0_CONSTANT);
         sha1_sw_round(t++,w, &b,&c,&d,&e,&a, Ch(c,d,e), SHA1_STAGE0_CONSTANT);
     }
-    { // WINSCP
-    size_t u;
-    for (u = 0; u < SHA1_ROUNDS_PER_STAGE/5; u++) {
+    for (size_t u = 0; u < SHA1_ROUNDS_PER_STAGE/5; u++) {
         sha1_sw_round(t++,w, &a,&b,&c,&d,&e, Par(b,c,d), SHA1_STAGE1_CONSTANT);
         sha1_sw_round(t++,w, &e,&a,&b,&c,&d, Par(a,b,c), SHA1_STAGE1_CONSTANT);
         sha1_sw_round(t++,w, &d,&e,&a,&b,&c, Par(e,a,b), SHA1_STAGE1_CONSTANT);
         sha1_sw_round(t++,w, &c,&d,&e,&a,&b, Par(d,e,a), SHA1_STAGE1_CONSTANT);
         sha1_sw_round(t++,w, &b,&c,&d,&e,&a, Par(c,d,e), SHA1_STAGE1_CONSTANT);
     }
-    { // WINSCP
-    size_t u;
-    for (u = 0; u < SHA1_ROUNDS_PER_STAGE/5; u++) {
+    for (size_t u = 0; u < SHA1_ROUNDS_PER_STAGE/5; u++) {
         sha1_sw_round(t++,w, &a,&b,&c,&d,&e, Maj(b,c,d), SHA1_STAGE2_CONSTANT);
         sha1_sw_round(t++,w, &e,&a,&b,&c,&d, Maj(a,b,c), SHA1_STAGE2_CONSTANT);
         sha1_sw_round(t++,w, &d,&e,&a,&b,&c, Maj(e,a,b), SHA1_STAGE2_CONSTANT);
         sha1_sw_round(t++,w, &c,&d,&e,&a,&b, Maj(d,e,a), SHA1_STAGE2_CONSTANT);
         sha1_sw_round(t++,w, &b,&c,&d,&e,&a, Maj(c,d,e), SHA1_STAGE2_CONSTANT);
     }
-    { // WINSCP
-    size_t u;
-    for (u = 0; u < SHA1_ROUNDS_PER_STAGE/5; u++) {
+    for (size_t u = 0; u < SHA1_ROUNDS_PER_STAGE/5; u++) {
         sha1_sw_round(t++,w, &a,&b,&c,&d,&e, Par(b,c,d), SHA1_STAGE3_CONSTANT);
         sha1_sw_round(t++,w, &e,&a,&b,&c,&d, Par(a,b,c), SHA1_STAGE3_CONSTANT);
         sha1_sw_round(t++,w, &d,&e,&a,&b,&c, Par(e,a,b), SHA1_STAGE3_CONSTANT);
@@ -99,12 +87,6 @@ static void sha1_sw_block(uint32_t *core, const uint8_t *block)
     core[0] += a; core[1] += b; core[2] += c; core[3] += d; core[4] += e;
 
     smemclr(w, sizeof(w));
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 typedef struct sha1_sw {
@@ -166,11 +148,8 @@ static void sha1_sw_digest(ssh_hash *hash, uint8_t *digest)
     sha1_sw *s = container_of(hash, sha1_sw, hash);
 
     sha1_block_pad(&s->blk, BinarySink_UPCAST(s));
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < 5; i++)
+    for (size_t i = 0; i < 5; i++)
         PUT_32BIT_MSB_FIRST(digest + 4*i, s->core[i]);
-    } // WINSCP
 }
 
 SHA1_VTABLE(sw, "unaccelerated");

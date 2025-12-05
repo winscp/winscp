@@ -9,8 +9,7 @@
 
 void BinarySink_put_c_string_literal(BinarySink *bs, ptrlen str)
 {
-    const char *p; // WINSCP
-    for (p = str.ptr; p < (const char *)str.ptr + str.len; p++) {
+    for (const char *p = str.ptr; p < (const char *)str.ptr + str.len; p++) {
         char c = *p;
 
         if (c == '\n')

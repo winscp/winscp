@@ -45,11 +45,7 @@ typedef const char *HelpCtx;
 #elif defined _MSC_VER
 #define THREADLOCAL __declspec(thread)
 #else
-#ifdef WINSCP
-#define THREADLOCAL __thread
-#else
 #error Do not know how to declare thread-local storage with this toolchain
-#endif
 #endif
 
 /* Randomly-chosen dwData value identifying a WM_COPYDATA message as
@@ -151,14 +147,10 @@ void ShinyEndDialog(HWND hwnd, int ret);
 void centre_window(HWND hwnd);
 
 #ifndef __WINE__
-#ifdef MPEXT
-/* use them as is in bcb */
-#else
 /* Up-to-date Windows headers warn that the unprefixed versions of
  * these names are deprecated. */
 #define stricmp _stricmp
 #define strnicmp _strnicmp
-#endif
 #else
 /* Compiling with winegcc, _neither_ version of these functions
  * exists. Use the POSIX names. */
@@ -716,7 +708,7 @@ struct handle *handle_output_new(struct callback_set * callback_set, HANDLE hand
                                  void *privdata, int flags);
 size_t handle_write(struct handle *h, const void *data, size_t len);
 void handle_write_eof(struct handle *h);
-void handle_free(struct handle *h); // WINSCP
+void handle_free(struct handle *h);
 void handle_unthrottle(struct handle *h, size_t backlog);
 size_t handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);

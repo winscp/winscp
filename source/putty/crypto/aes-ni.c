@@ -142,11 +142,9 @@ static void aes_ni_key_expand(
 // WINSCP
 // WORKAROUND
 // Cannot use _mm_setr_epi* - it results in the constant being stored in .rdata segment.
-// objconv reports:
-// Warning 1060: Different alignments specified for same segment, %s. Using highest alignment.rdata
-// Despite that the code crashes.
+// And consequently the code crashes.
 // This macro is based on:
-// Based on https://stackoverflow.com/q/35268036/850848
+// https://stackoverflow.com/q/35268036/850848
 #define _MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
     { (char)a0, (char)a1, (char)a2, (char)a3, (char)a4, (char)a5, (char)a6, (char)a7, \
       (char)a8, (char)a9, (char)aa, (char)ab, (char)ac, (char)ad, (char)ae, (char)af }
@@ -278,7 +276,7 @@ static void aes_ni_next_message_gcm(ssh_cipher *ciph)
     msg_counter <<= 32;
     msg_counter |= (uint32_t)_mm_extract_epi32(ctx->iv, 1);
     msg_counter++;
-    ctx->iv = _mm_set_epi32(fixed, (int)(msg_counter >> 32), (int)msg_counter, 1); // WINSCP
+    ctx->iv = _mm_set_epi32(fixed, (int)(msg_counter >> 32), (int)msg_counter, 1); // WINSCP VS
 }
 
 typedef __m128i (*aes_ni_fn)(__m128i v, const __m128i *keysched);
@@ -339,7 +337,7 @@ static inline void aes_encrypt_ecb_block_ni(
 }
 
 // WINSCP (fixes linker alignment issues for the following function)
-const __m128i DUMMY; // WINSCP
+const __m128i DUMMY; // WINSCP VS
 
 static inline void aes_gcm_ni(
     ssh_cipher *ciph, void *vblk, int blklen, aes_ni_fn encrypt)

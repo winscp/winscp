@@ -38,21 +38,19 @@ static inline bool check_availability(const struct sha256_extra *extra)
 #define SHA256_VTABLE(impl_c, impl_display)                             \
     static struct sha256_extra_mutable sha256_ ## impl_c ## _extra_mut; \
     static const struct sha256_extra sha256_ ## impl_c ## _extra = {    \
-        /* WINSCP */ \
-        /*.check_available =*/ sha256_ ## impl_c ## _available,             \
-        /*.mut =*/ &sha256_ ## impl_c ## _extra_mut,                        \
+        .check_available = sha256_ ## impl_c ## _available,             \
+        .mut = &sha256_ ## impl_c ## _extra_mut,                        \
     };                                                                  \
     const ssh_hashalg ssh_sha256_ ## impl_c = {                         \
-        /* WINSCP */ \
-        /*.new =*/ sha256_ ## impl_c ## _new,                               \
-        /*.reset =*/ sha256_ ## impl_c ## _reset,                           \
-        /*.copyfrom =*/ sha256_ ## impl_c ## _copyfrom,                     \
-        /*.digest =*/ sha256_ ## impl_c ## _digest,                         \
-        /*.free =*/ sha256_ ## impl_c ## _free,                             \
-        /*.hlen =*/ 32,                                                     \
-        /*.blocklen =*/ 64,                                                 \
+        .new = sha256_ ## impl_c ## _new,                               \
+        .reset = sha256_ ## impl_c ## _reset,                           \
+        .copyfrom = sha256_ ## impl_c ## _copyfrom,                     \
+        .digest = sha256_ ## impl_c ## _digest,                         \
+        .free = sha256_ ## impl_c ## _free,                             \
+        .hlen = 32,                                                     \
+        .blocklen = 64,                                                 \
         HASHALG_NAMES_BARE("SHA-256"),               \
-        /*.extra =*/ &sha256_ ## impl_c ## _extra,                          \
+        .extra = &sha256_ ## impl_c ## _extra,                          \
     }
 
 extern const uint32_t sha256_initial_state[8];

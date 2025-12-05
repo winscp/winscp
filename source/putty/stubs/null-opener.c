@@ -9,10 +9,10 @@
 static void null_opener_free(DeferredSocketOpener *opener) {}
 
 static const DeferredSocketOpenerVtable NullOpener_vt = {
-    /*.free =*/ null_opener_free,
+    .free = null_opener_free,
 };
 
-static DeferredSocketOpener null_opener = { /*.vt =*/ &NullOpener_vt };
+static DeferredSocketOpener null_opener = { .vt = &NullOpener_vt };
 
 DeferredSocketOpener *null_deferred_socket_opener(void)
 {

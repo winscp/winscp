@@ -11,9 +11,7 @@
 
 static inline uint64_t ror(uint64_t x, unsigned rotation)
 {
-#pragma option push -w-ngu // WINSCP
     unsigned lshift = 63 & -rotation, rshift = 63 & rotation;
-#pragma option pop // WINSCP
     return (x << lshift) | (x >> rshift);
 }
 
@@ -22,15 +20,14 @@ enum { R1 = 32, R2 = 24, R3 = 16, R4 = 63 };
 
 /* RFC 7693 section 2.6 */
 static const uint64_t iv[] = {
-    // WINSCP (ULL)
-    0x6a09e667f3bcc908ULL,                /* floor(2^64 * frac(sqrt(2)))  */
-    0xbb67ae8584caa73bULL,                /* floor(2^64 * frac(sqrt(3)))  */
-    0x3c6ef372fe94f82bULL,                /* floor(2^64 * frac(sqrt(5)))  */
-    0xa54ff53a5f1d36f1ULL,                /* floor(2^64 * frac(sqrt(7)))  */
-    0x510e527fade682d1ULL,                /* floor(2^64 * frac(sqrt(11))) */
-    0x9b05688c2b3e6c1fULL,                /* floor(2^64 * frac(sqrt(13))) */
-    0x1f83d9abfb41bd6bULL,                /* floor(2^64 * frac(sqrt(17))) */
-    0x5be0cd19137e2179ULL,                /* floor(2^64 * frac(sqrt(19))) */
+    0x6a09e667f3bcc908,                /* floor(2^64 * frac(sqrt(2)))  */
+    0xbb67ae8584caa73b,                /* floor(2^64 * frac(sqrt(3)))  */
+    0x3c6ef372fe94f82b,                /* floor(2^64 * frac(sqrt(5)))  */
+    0xa54ff53a5f1d36f1,                /* floor(2^64 * frac(sqrt(7)))  */
+    0x510e527fade682d1,                /* floor(2^64 * frac(sqrt(11))) */
+    0x9b05688c2b3e6c1f,                /* floor(2^64 * frac(sqrt(13))) */
+    0x1f83d9abfb41bd6b,                /* floor(2^64 * frac(sqrt(17))) */
+    0x5be0cd19137e2179,                /* floor(2^64 * frac(sqrt(19))) */
 };
 
 /* RFC 7693 section 2.7 */
@@ -78,9 +75,7 @@ static inline void f(uint64_t h[8], uint64_t m[16], uint64_t offset_hi,
     v[12] ^= offset_lo;
     v[13] ^= offset_hi;
     v[14] ^= -(uint64_t)final;
-    { // WINSCP
-    unsigned round; // WINSCP
-    for (round = 0; round < 12; round++) {
+    for (unsigned round = 0; round < 12; round++) {
         const unsigned char *s = sigma[round];
         g(v,  0,  4,  8, 12, m[s[ 0]], m[s[ 1]]);
         g(v,  1,  5,  9, 13, m[s[ 2]], m[s[ 3]]);
@@ -91,21 +86,16 @@ static inline void f(uint64_t h[8], uint64_t m[16], uint64_t offset_hi,
         g(v,  2,  7,  8, 13, m[s[12]], m[s[13]]);
         g(v,  3,  4,  9, 14, m[s[14]], m[s[15]]);
     }
-    { // WINSCP
-    unsigned i; // WINSCP
-    for (i = 0; i < 8; i++)
+    for (unsigned i = 0; i < 8; i++)
         h[i] ^= v[i] ^ v[i+8];
     smemclr(v, sizeof(v));
-    } // WINSCP
-    } // WINSCP
 }
 
 static inline void f_outer(uint64_t h[8], uint8_t blk[128], uint64_t offset_hi,
                            uint64_t offset_lo, unsigned final)
 {
     uint64_t m[16];
-    unsigned i; // WINSCP
-    for (i = 0; i < 16; i++)
+    for (unsigned i = 0; i < 16; i++)
         m[i] = GET_64BIT_LSB_FIRST(blk + 8*i);
     f(h, m, offset_hi, offset_lo, final);
     smemclr(m, sizeof(m));
@@ -129,14 +119,12 @@ static ssh_hash *blake2b_new_inner(unsigned hashlen)
 {
     assert(hashlen <= ssh_blake2b.hlen);
 
-    { // WINSCP
     blake2b *s = snew(blake2b);
     s->hash.vt = &ssh_blake2b;
     s->hashlen = hashlen;
     BinarySink_INIT(s, blake2b_write);
     BinarySink_DELEGATE_INIT(&s->hash, s);
     return &s->hash;
-    } // WINSCP
 }
 
 static ssh_hash *blake2b_new(const ssh_hashalg *alg)
@@ -195,7 +183,6 @@ static void blake2b_write(BinarySink *bs, const void *vp, size_t len)
             s->used = 0;
         }
 
-        { // WINSCP
         size_t chunk = sizeof(s->block) - s->used;
         if (chunk > len)
             chunk = len;
@@ -207,7 +194,6 @@ static void blake2b_write(BinarySink *bs, const void *vp, size_t len)
 
         s->lenlo += chunk;
         s->lenhi += (s->lenlo < chunk);
-        } // WINSCP
     }
 }
 
@@ -218,25 +204,20 @@ static void blake2b_digest(ssh_hash *hash, uint8_t *digest)
     memset(s->block + s->used, 0, sizeof(s->block) - s->used);
     f_outer(s->h, s->block, s->lenhi, s->lenlo, 1);
 
-    { // WINSCP
     uint8_t hash_pre[128];
-    unsigned i; // WINSCP
-    for (i = 0; i < 8; i++)
+    for (unsigned i = 0; i < 8; i++)
         PUT_64BIT_LSB_FIRST(hash_pre + 8*i, s->h[i]);
     memcpy(digest, hash_pre, s->hashlen);
     smemclr(hash_pre, sizeof(hash_pre));
-    } // WINSCP
 }
 
 const ssh_hashalg ssh_blake2b = {
-    // WINSCP
-    /*.new =*/ blake2b_new,
-    /*.reset =*/ blake2b_reset,
-    /*.copyfrom =*/ blake2b_copyfrom,
-    /*.digest =*/ blake2b_digest,
-    /*.free =*/ blake2b_free,
-    /*.hlen =*/ 64,
-    /*.blocklen =*/ 128,
+    .new = blake2b_new,
+    .reset = blake2b_reset,
+    .copyfrom = blake2b_copyfrom,
+    .digest = blake2b_digest,
+    .free = blake2b_free,
+    .hlen = 64,
+    .blocklen = 128,
     HASHALG_NAMES_BARE("BLAKE2b-64"),
-    NULL, // WINSCP
 };

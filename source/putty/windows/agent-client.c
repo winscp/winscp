@@ -165,11 +165,9 @@ static int named_pipe_agent_accumulate_response(
         if (length_field > AGENT_MAX_MSGLEN)
             return -1; /* badly formatted message */
 
-        { // WINSCP
         int overall_length = length_field + 4;
         if (sb->len >= overall_length)
             return overall_length;
-        } // WINSCP
     }
 
     return 0; /* not done yet */
@@ -186,7 +184,6 @@ static size_t named_pipe_agent_gotdata(
         return 0;
     }
 
-    { // WINSCP
     int status = named_pipe_agent_accumulate_response(pq->response, data, len);
     if (status == -1) {
         pq->callback(pq->callback_ctx, NULL, 0);
@@ -198,7 +195,6 @@ static size_t named_pipe_agent_gotdata(
         agent_cancel_query(pq);
     }
     return 0;
-    } // WINSCP
 }
 
 static agent_pending_query *named_pipe_agent_query(
@@ -217,9 +213,7 @@ static agent_pending_query *named_pipe_agent_query(
 
     strbuf_finalise_agent_query(query);
 
-    { // WINSCP
-    DWORD done; // WINSCP
-    for (done = 0; done < query->len ;) {
+    for (DWORD done = 0; done < query->len ;) {
         DWORD nwritten;
         bool ret = WriteFile(pipehandle, query->s + done, query->len - done,
                              &nwritten, NULL);
@@ -274,7 +268,6 @@ static agent_pending_query *named_pipe_agent_query(
     if (sb)
         strbuf_free(sb);
     return pq;
-    } // WINSCP
 }
 
 void agent_cancel_query(agent_pending_query *pq)

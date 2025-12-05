@@ -162,12 +162,10 @@ void random_read(void *buf, size_t size)
 void random_get_savedata(void **data, int *len)
 {
     WINSCP_PUTTY_SECTION_ENTER; // though called from our finalizer, when the app is single threaded only
-    { // WINSCP
     void *buf = snewn(global_prng->savesize, char);
     random_read(buf, global_prng->savesize);
     *len = global_prng->savesize;
     *data = buf;
-    } // WINSCP
     WINSCP_PUTTY_SECTION_LEAVE;
 }
 

@@ -504,7 +504,6 @@ struct handle *handle_input_new(struct callback_set * callback_set, HANDLE handl
     h->u.i.callback_set = callback_set; // WINSCP
 
     ensure_ready_event_setup(callback_set);
-    { // WINSCP
     HANDLE hThread = CreateThread(NULL, 0, handle_input_threadfunc,
                                   &h->u.i, 0, &in_threadid);
     if (hThread)
@@ -512,7 +511,6 @@ struct handle *handle_input_new(struct callback_set * callback_set, HANDLE handl
     h->u.i.busy = true;
 
     return h;
-    } // WINSCP
 }
 
 struct handle *handle_output_new(struct callback_set * callback_set, HANDLE handle, handle_outputfn_t sentdata, // WINSCP
@@ -537,14 +535,12 @@ struct handle *handle_output_new(struct callback_set * callback_set, HANDLE hand
     h->u.o.callback_set = callback_set; // WINSCP
 
     ensure_ready_event_setup(callback_set);
-    { // WINSCP
     HANDLE hThread = CreateThread(NULL, 0, handle_output_threadfunc,
                                   &h->u.o, 0, &out_threadid);
     if (hThread)
         CloseHandle(hThread);          /* we don't need the thread handle */
 
     return h;
-    } // WINSCP
 }
 
 size_t handle_write(struct handle *h, const void *data, size_t len)
@@ -602,7 +598,7 @@ void handle_free(struct handle *h)
          * There isn't even a subthread; we can go straight to
          * handle_destroy.
          */
-        handle_destroy(h); // WINSCP
+        handle_destroy(h);
     } else {
         /*
          * The subthread is alive but not busy, so we now signal it
@@ -629,7 +625,7 @@ static bool handle_ready(struct handle *h) // WINSCP
          * we haven't yet done so, or destroy the handle if not.
          */
         if (h->u.g.done) {
-            handle_destroy(h); // WINSCP
+            handle_destroy(h);
         } else {
             h->u.g.done = true;
             h->u.g.busy = true;

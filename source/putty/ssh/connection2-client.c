@@ -104,7 +104,6 @@ static ChanopenResult chan_open_auth_agent(
      * If possible, make a stream-oriented connection to the agent and
      * set up an ordinary port-forwarding type channel over it.
      */
-    { // WINSCP
     Plug *plug;
     Channel *ch = portfwd_raw_new(&s->cl, &plug, true);
     Socket *skt = agent_connect(plug);
@@ -122,7 +121,6 @@ static ChanopenResult chan_open_auth_agent(
          */
         CHANOPEN_RETURN_SUCCESS(agentf_new(sc, callback_set));
     }
-    } // WINSCP
 }
 
 ChanopenResult ssh2_connection_parse_channel_open(
@@ -229,12 +227,10 @@ static void ssh2_rportfwd_globreq_response(struct ssh2_connection_state *s,
         ppl_logevent("Remote port forwarding from %s refused",
                      rpf->log_description);
 
-        { // WINSCP
         struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
         assert(realpf == rpf);
         portfwdmgr_close(s->portfwdmgr, rpf->pfr);
         free_rportfwd(rpf);
-        } // WINSCP
     }
 }
 
@@ -304,10 +300,8 @@ void ssh2_rportfwd_remove(ConnectionLayer *cl, struct ssh_rportfwd *rpf)
     }
 
     assert(s->rportfwds);
-    { // WINSCP
     struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
     assert(realpf == rpf);
-    } // WINSCP
     free_rportfwd(rpf);
 }
 

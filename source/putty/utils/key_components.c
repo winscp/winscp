@@ -14,12 +14,10 @@ static void key_components_add_str(key_components *kc, const char *name,
                                    KeyComponentType type, ptrlen data)
 {
     sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
-    { // WINSCP
     size_t n = kc->ncomponents++;
     kc->components[n].name = dupstr(name);
     kc->components[n].type = type;
     kc->components[n].str = strbuf_dup_nm(data);
-    } // WINSCP
 }
 
 void key_components_add_text(key_components *kc,
@@ -44,12 +42,10 @@ void key_components_add_mp(key_components *kc,
                            const char *name, mp_int *value)
 {
     sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
-    { // WINSCP
     size_t n = kc->ncomponents++;
     kc->components[n].name = dupstr(name);
     kc->components[n].type = KCT_MPINT;
     kc->components[n].mp = mp_copy(value);
-    } // WINSCP
 }
 
 void key_components_add_uint(key_components *kc,
@@ -77,8 +73,7 @@ void key_components_add_copy(key_components *kc,
 
 void key_components_free(key_components *kc)
 {
-    size_t i; // WINSCP
-    for (i = 0; i < kc->ncomponents; i++) {
+    for (size_t i = 0; i < kc->ncomponents; i++) {
         key_component *comp = &kc->components[i];
         sfree(comp->name);
         switch (comp->type) {

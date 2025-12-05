@@ -190,12 +190,10 @@ static inline ptrlen make_ptrlen_startend(const void *startv, const void *endv)
 {
     const char *start = (const char *)startv, *end = (const char *)endv;
     assert(end >= start);
-    { // WINSCP
     ptrlen pl;
     pl.ptr = start;
     pl.len = end - start;
     return pl;
-    } // WINSCP
 }
 
 static inline ptrlen ptrlen_from_asciz(const char *str)
@@ -523,12 +521,6 @@ static inline char *stripctrl_string(StripCtrlChars *sccpub, const char *str)
 {
     return stripctrl_string_ptrlen(sccpub, ptrlen_from_asciz(str));
 }
-#endif
-
-#ifdef MPEXT
-// Recent PuTTY code uses C99 standard that allows code before initialization.
-// Frequently that code are assertions. This assert implementation allows being used before code.
-#define pinitassert(P) const int __assert_dummy = 1/((int)(P))
 #endif
 
 /*

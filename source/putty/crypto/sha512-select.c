@@ -30,9 +30,7 @@ static ssh_hash *sha512_select(const ssh_hashalg *alg)
     const ssh_hashalg *const *real_algs =
         (const ssh_hashalg *const *)alg->extra;
 
-    { // WINSCP
-    size_t i;
-    for (i = 0; real_algs[i]; i++) {
+    for (size_t i = 0; real_algs[i]; i++) {
         const ssh_hashalg *alg = real_algs[i];
         const struct sha512_extra *alg_extra =
             (const struct sha512_extra *)alg->extra;
@@ -44,23 +42,20 @@ static ssh_hash *sha512_select(const ssh_hashalg *alg)
      * the last non-NULL entry should be software-only SHA-512, which
      * is always available. */
     unreachable("sha512_select ran off the end of its list");
-    } // WINSCP
 }
 
 const ssh_hashalg ssh_sha512 = {
-    /*.new =*/ sha512_select,
-    NULL, NULL, NULL, NULL, // WINSCP
-    /*.hlen =*/ 64,
-    /*.blocklen =*/ 128,
+    .new = sha512_select,
+    .hlen = 64,
+    .blocklen = 128,
     HASHALG_NAMES_ANNOTATED("SHA-512", "dummy selector vtable"),
-    /*.extra =*/ real_sha512_algs,
+    .extra = real_sha512_algs,
 };
 
 const ssh_hashalg ssh_sha384 = {
-    /*.new =*/ sha512_select,
-    NULL, NULL, NULL, NULL, // WINSCP
-    /*.hlen =*/ 48,
-    /*.blocklen =*/ 128,
+    .new = sha512_select,
+    .hlen = 48,
+    .blocklen = 128,
     HASHALG_NAMES_ANNOTATED("SHA-384", "dummy selector vtable"),
-    /*.extra =*/ real_sha384_algs,
+    .extra = real_sha384_algs,
 };

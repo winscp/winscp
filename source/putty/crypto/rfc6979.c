@@ -143,7 +143,6 @@ static mp_int *bits2int(ptrlen b, RFC6979 *s)
 {
     if (b.len > s->qbytes)
         b.len = s->qbytes;
-    { // WINSCP
     mp_int *x = mp_from_bytes_be(b);
 
     /*
@@ -161,14 +160,12 @@ static mp_int *bits2int(ptrlen b, RFC6979 *s)
         mp_rshift_fixed_into(x, x, b.len * 8 - s->qbits);
 
     return x;
-    } // WINSCP
 }
 
 static void BinarySink_put_int2octets(BinarySink *bs, mp_int *x, RFC6979 *s)
 {
     mp_int *x_mod_q = mp_mod(x, s->q);
-    size_t i; // WINSCP
-    for (i = s->qbytes; i-- > 0 ;)
+    for (size_t i = s->qbytes; i-- > 0 ;)
         put_byte(bs, mp_get_byte(x_mod_q, i));
     mp_free(x_mod_q);
 }
@@ -199,13 +196,11 @@ RFC6979 *rfc6979_new(const ssh_hashalg *hashalg, mp_int *q, mp_int *x)
 
     /* In each attempt, we concatenate enough hash blocks to be
      * greater than qbits in size. */
-    { // WINSCP
     size_t hbits = 8 * s->hlen;
     s->T_nblocks = (s->qbits + hbits - 1) / hbits;
     s->T = snewn(s->T_nblocks * s->hlen, unsigned char);
 
     return s;
-    } // WINSCP
 }
 
 void rfc6979_setup(RFC6979 *s, ptrlen message)
@@ -268,8 +263,7 @@ RFC6979Result rfc6979_attempt(RFC6979 *s)
 
     /* 3.2 (h) 1: set T to the empty string */
     /* 3.2 (h) 2: make lots of output by concatenating MACs of V */
-    size_t i; // WINSCP
-    for (i = 0; i < s->T_nblocks; i++) {
+    for (size_t i = 0; i < s->T_nblocks; i++) {
         ssh2_mac_start(s->mac);
         put_data(s->mac, s->V, s->hlen);
         ssh2_mac_genresult(s->mac, s->V);
@@ -317,7 +311,6 @@ RFC6979Result rfc6979_attempt(RFC6979 *s)
     ssh2_mac_start(s->mac);
     put_data(s->mac, s->V, s->hlen);
     put_byte(s->mac, 0);
-    { // WINSCP
     unsigned char K[MAX_HASH_LEN];
     ssh2_mac_genresult(s->mac, K);
     ssh2_mac_setkey(s->mac, make_ptrlen(K, s->hlen));
@@ -328,7 +321,6 @@ RFC6979Result rfc6979_attempt(RFC6979 *s)
     ssh2_mac_genresult(s->mac, s->V);
 
     return result;
-    } // WINSCP
 }
 
 void rfc6979_free(RFC6979 *s)
@@ -354,7 +346,6 @@ mp_int *rfc6979(
 {
     RFC6979 *s = rfc6979_new(hashalg, q, x);
     rfc6979_setup(s, message);
-    { // WINSCP
     RFC6979Result result;
     while (true) {
         result = rfc6979_attempt(s);
@@ -365,5 +356,4 @@ mp_int *rfc6979(
     }
     rfc6979_free(s);
     return result.k;
-    } // WINSCP
 }

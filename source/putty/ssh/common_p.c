@@ -317,28 +317,28 @@ static bool zombiechan_want_close(Channel *chan, bool sent_eof, bool rcvd_eof);
 static char *zombiechan_log_close_msg(Channel *chan) { return NULL; }
 
 static const ChannelVtable zombiechan_channelvt = {
-    /*.free =*/ zombiechan_free,
-    /*.open_confirmation =*/ zombiechan_do_nothing,
-    /*.open_failed =*/ zombiechan_open_failure,
-    /*.send =*/ zombiechan_send,
-    /*.send_eof =*/ zombiechan_do_nothing,
-    /*.set_input_wanted =*/ zombiechan_set_input_wanted,
-    /*.log_close_msg =*/ zombiechan_log_close_msg,
-    /*.want_close =*/ zombiechan_want_close,
-    /*.rcvd_exit_status =*/ chan_no_exit_status,
-    /*.rcvd_exit_signal =*/ chan_no_exit_signal,
-    /*.rcvd_exit_signal_numeric =*/ chan_no_exit_signal_numeric,
-    /*.run_shell =*/ chan_no_run_shell,
-    /*.run_command =*/ chan_no_run_command,
-    /*.run_subsystem =*/ chan_no_run_subsystem,
-    /*.enable_x11_forwarding =*/ chan_no_enable_x11_forwarding,
-    /*.enable_agent_forwarding =*/ chan_no_enable_agent_forwarding,
-    /*.allocate_pty =*/ chan_no_allocate_pty,
-    /*.set_env =*/ chan_no_set_env,
-    /*.send_break =*/ chan_no_send_break,
-    /*.send_signal =*/ chan_no_send_signal,
-    /*.change_window_size =*/ chan_no_change_window_size,
-    /*.request_response =*/ chan_no_request_response,
+    .free = zombiechan_free,
+    .open_confirmation = zombiechan_do_nothing,
+    .open_failed = zombiechan_open_failure,
+    .send = zombiechan_send,
+    .send_eof = zombiechan_do_nothing,
+    .set_input_wanted = zombiechan_set_input_wanted,
+    .log_close_msg = zombiechan_log_close_msg,
+    .want_close = zombiechan_want_close,
+    .rcvd_exit_status = chan_no_exit_status,
+    .rcvd_exit_signal = chan_no_exit_signal,
+    .rcvd_exit_signal_numeric = chan_no_exit_signal_numeric,
+    .run_shell = chan_no_run_shell,
+    .run_command = chan_no_run_command,
+    .run_subsystem = chan_no_run_subsystem,
+    .enable_x11_forwarding = chan_no_enable_x11_forwarding,
+    .enable_agent_forwarding = chan_no_enable_agent_forwarding,
+    .allocate_pty = chan_no_allocate_pty,
+    .set_env = chan_no_set_env,
+    .send_break = chan_no_send_break,
+    .send_signal = chan_no_send_signal,
+    .change_window_size = chan_no_change_window_size,
+    .request_response = chan_no_request_response,
 };
 
 Channel *zombiechan_new(void)
@@ -850,7 +850,6 @@ void ssh2_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
 
 bool ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
 {
-    #pragma warn -osh
     static const unsigned valid_bitmap[] = {
         SSH2_BITMAP_WORD(0),
         SSH2_BITMAP_WORD(1),
@@ -861,7 +860,6 @@ bool ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
         SSH2_BITMAP_WORD(6),
         SSH2_BITMAP_WORD(7),
     };
-    #pragma warn +osh
 
     if (pktin->type < 0x100 &&
         !((valid_bitmap[pktin->type >> 5] >> (pktin->type & 0x1F)) & 1)) {
@@ -903,8 +901,7 @@ SeatPromptResult verify_ssh_host_key(
      */
     if (conf_get_str_nthstrkey(conf, CONF_ssh_manual_hostkeys, 0)) {
         if (fingerprints) {
-            size_t i; // WINSCP
-            for (i = 0; i < SSH_N_FPTYPES; i++) {
+            for (size_t i = 0; i < SSH_N_FPTYPES; i++) {
                 /*
                  * Each fingerprint string we've been given will have
                  * things like 'ssh-rsa 2048' at the front of it. Strip
@@ -914,14 +911,11 @@ SeatPromptResult verify_ssh_host_key(
                 const char *fingerprint = fingerprints[i];
                 if (!fingerprint)
                     continue;
-                    
-                { // WINSCP
                 const char *p = strrchr(fingerprint, ' ');
                 fingerprint = p ? p+1 : fingerprint;
                 if (conf_get_str_str_opt(conf, CONF_ssh_manual_hostkeys,
                                          fingerprint))
                     return SPR_OK;
-                } // WINSCP
             }
         }
 
@@ -956,7 +950,6 @@ SeatPromptResult verify_ssh_host_key(
     /*
      * Next, check the host key cache.
      */
-    { // WINSCP
     int storage_status = 1; // WINSCP check_stored_host_key(host, port, keytype, keystr);
     if (storage_status == 0) /* matching key was found in the cache */
         return SPR_OK;
@@ -965,7 +958,6 @@ SeatPromptResult verify_ssh_host_key(
      * The key is either missing from the cache, or does not match.
      * Either way, fall back to an interactive prompt from the Seat.
      */
-    { // WINSCP
     SeatDialogText *text = seat_dialog_text_new();
     const SeatDialogPromptDescriptions *pds =
         seat_prompt_descriptions(iseat.seat);
@@ -976,7 +968,6 @@ SeatPromptResult verify_ssh_host_key(
     seat_dialog_text_append(
         text, SDT_TITLE, "%s Security Alert", appname);
 
-    { // WINSCP
     HelpCtx helpctx;
 
     if (key && ssh_key_alg(key)->is_certificate) {
@@ -1118,16 +1109,11 @@ SeatPromptResult verify_ssh_host_key(
                                 fingerprints[SSH_FPTYPE_MD5]);
     }
 
-    { // WINSCP
     SeatPromptResult toret = seat_confirm_ssh_host_key(
         iseat, host, port, keytype, keystr, text, helpctx, callback, ctx,
         fingerprints, key && ssh_key_alg(key)->is_certificate, ca_count, false); // WINSCP
     seat_dialog_text_free(text);
     return toret;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 SeatPromptResult confirm_weak_crypto_primitive(
@@ -1188,13 +1174,11 @@ SeatPromptResult confirm_weak_crypto_primitive(
 
     seat_dialog_text_append(text, SDT_PROMPT, "Continue with connection?");
 
-    { // WINSCP
     SeatPromptResult toret = seat_confirm_weak_crypto_primitive(
         iseat, text, callback, ctx,
         algtype, algname, wcr); // WINSCP
     seat_dialog_text_free(text);
     return toret;
-    } // WINSCP
 }
 
 SeatPromptResult confirm_weak_cached_hostkey(
@@ -1217,11 +1201,8 @@ SeatPromptResult confirm_weak_cached_hostkey(
         "The server also provides the following types of host key "
         "above the threshold, which we do not have stored:");
 
-    { // WINSCP
-    const char **p; // WINSCP
-    for (p = betteralgs; *p; p++)
+    for (const char **p = betteralgs; *p; p++)
         seat_dialog_text_append(text, SDT_DISPLAY, "%s", *p);
-    } // WINSCP
 
     /* In batch mode, we print the above information and then this
      * abort message, and stop. */
@@ -1234,12 +1215,10 @@ SeatPromptResult confirm_weak_cached_hostkey(
 
     seat_dialog_text_append(text, SDT_PROMPT, "Continue with connection?");
 
-    { // WINSCP
     SeatPromptResult toret = seat_confirm_weak_cached_hostkey(
         iseat, text, callback, ctx);
     seat_dialog_text_free(text);
     return toret;
-    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -1301,11 +1280,10 @@ void ssh1_compute_session_id(
     RSAKey *hostkey, RSAKey *servkey)
 {
     ssh_hash *hash = ssh_hash_new(&ssh_md5);
-    size_t i; // WINSCP
 
-    for (i = (mp_get_nbits(hostkey->modulus) + 7) / 8; i-- ;)
+    for (size_t i = (mp_get_nbits(hostkey->modulus) + 7) / 8; i-- ;)
         put_byte(hash, mp_get_byte(hostkey->modulus, i));
-    for (i = (mp_get_nbits(servkey->modulus) + 7) / 8; i-- ;)
+    for (size_t i = (mp_get_nbits(servkey->modulus) + 7) / 8; i-- ;)
         put_byte(hash, mp_get_byte(servkey->modulus, i));
     put_data(hash, cookie, 8);
     ssh_hash_final(hash, session_id);
@@ -1324,10 +1302,8 @@ void ssh_spr_close(Ssh *ssh, SeatPromptResult spr, const char *context)
         ssh_user_close(ssh, "User aborted at %s", context);
     } else {
         assert(spr.kind == SPRK_SW_ABORT);
-        { // WINSCP
         char *err = spr_get_error_message(spr);
         ssh_sw_abort(ssh, "%s", err);
         sfree(err);
-        } // WINSCP
     }
 }

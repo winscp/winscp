@@ -16,11 +16,9 @@ Seat *interactor_borrow_seat(Interactor *itr)
         return tempseat_get_real(clientseat);
 
     /* Otherwise, make a new TempSeat and give that to the client. */
-    { // WINSCP
     Seat *tempseat = tempseat_new(clientseat);
     interactor_set_seat(itr, tempseat);
     return clientseat;
-    } // WINSCP
 }
 
 static Interactor *interactor_toplevel(Interactor *itr, unsigned *level_out)
@@ -57,7 +55,6 @@ void interactor_return_seat(Interactor *itr)
      *
      * However, this may be overridden by the tempseat_flush call.
      */
-    { // WINSCP
     Seat *realseat = tempseat_get_real(tempseat);
     seat_set_trust_status(realseat, true);
 
@@ -70,12 +67,9 @@ void interactor_return_seat(Interactor *itr)
      * interactor_announce, then all Interactors from now on will
      * announce themselves even if they have nothing to say.
      */
-    { // WINSCP
     Interactor *itr_top = interactor_toplevel(itr, NULL);
     if (itr_top->last_to_talk)
         interactor_announce(itr);
-    } // WINSCP
-    } // WINSCP
 }
 
 InteractionReadySeat interactor_announce(Interactor *itr)
@@ -84,11 +78,9 @@ InteractionReadySeat interactor_announce(Interactor *itr)
     assert(!is_tempseat(seat) &&
            "Shouldn't call announce when someone else is using our seat");
 
-    { // WINSCP
     InteractionReadySeat iseat;
     iseat.seat = seat;
 
-    { // WINSCP
     unsigned level;
     Interactor *itr_top = interactor_toplevel(itr, &level);
 
@@ -109,7 +101,6 @@ InteractionReadySeat interactor_announce(Interactor *itr)
         if (itr_top->last_to_talk != NULL)
             seat_antispoof_msg(iseat, ""); /* leave a separating blank line */
 
-        { // WINSCP
         char *desc = interactor_description(itr);
         char *adjective = (level == 0 ? dupstr("primary") :
                            level == 1 ? dupstr("proxy") :
@@ -123,10 +114,7 @@ InteractionReadySeat interactor_announce(Interactor *itr)
         sfree(msg);
 
         itr_top->last_to_talk = itr;
-        } // WINSCP
     }
 
     return iseat;
-    } // WINSCP
-    } // WINSCP
 }

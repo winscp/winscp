@@ -362,9 +362,8 @@ static void proxy_telnet_process_queue(ProxyNegotiator *pn)
 }
 
 const struct ProxyNegotiatorVT telnet_proxy_negotiator_vt = {
-    // WINSCP
-    /*.new =*/ proxy_telnet_new,
-    /*.process_queue =*/ proxy_telnet_process_queue,
-    /*.free =*/ proxy_telnet_free,
-    /*.type =*/ "Telnet",
+    .new = proxy_telnet_new,
+    .free = proxy_telnet_free,
+    .process_queue = proxy_telnet_process_queue,
+    .type = "Telnet",
 };

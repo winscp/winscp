@@ -41,7 +41,7 @@
 #include "utils/utils.h"
 
 /* Work around lack of va_copy in old MSC */
-#if (defined _MSC_VER || defined WINSCP) && !defined va_copy
+#if defined _MSC_VER && !defined va_copy
 #define va_copy(a, b) TYPECHECK(                        \
         (va_list *)0 == &(a) && (va_list *)0 == &(b),   \
         memcpy(&a, &b, sizeof(va_list)))
@@ -60,18 +60,10 @@ char *dupvprintf_inner(char *buf, size_t oldlen, size_t *sizeptr,
 {
     size_t size = *sizeptr;
     sgrowarrayn_nm(buf, size, oldlen, 512);
-#if defined _DEBUG && defined IDE
-    // WORKAROUND
-    // CodeGuard breaks execution when vsnprintf function returns -1.
-    // Prevent that by making the buffer large enough not to ever return -1.
-    // (particularly when called from verify_ssh_host_key for keydisp)
-    sgrowarrayn_nm(buf, size, oldlen, 4096);
-#endif
 
     while (1) {
         va_list aq;
         va_copy(aq, ap);
-        { // WINSCP
         int len = vsnprintf(buf + oldlen, size - oldlen, fmt, aq);
         va_end(aq);
 
@@ -89,7 +81,6 @@ char *dupvprintf_inner(char *buf, size_t oldlen, size_t *sizeptr,
              * buffer wasn't big enough, so we enlarge it a bit and hope. */
             sgrowarray_nm(buf, size, size);
         }
-        } // WINSCP
     }
 }
 

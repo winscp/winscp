@@ -226,7 +226,6 @@ static void handle_socket_unfreeze(void *hsv)
     /*
      * Get some of the data we've buffered.
      */
-    { // WINSCP
     ptrlen data = bufchain_prefix(&hs->inputdata);
     assert(data.len > 0);
 
@@ -256,7 +255,6 @@ static void handle_socket_unfreeze(void *hsv)
         hs->frozen = UNFROZEN;
         handle_unthrottle(hs->recv_h, 0);
     }
-    } // WINSCP
 }
 
 static void sk_handle_set_frozen(Socket *s, bool is_frozen)
@@ -365,15 +363,14 @@ static SocketEndpointInfo *sk_handle_endpoint_info(Socket *s, bool peer)
 }
 
 static const SocketVtable HandleSocket_sockvt = {
-    // WINSCP
-    /*.plug =*/ sk_handle_plug,
-    /*.close =*/ sk_handle_close,
-    /*.write =*/ sk_handle_write,
-    /*.write_oob =*/ sk_handle_write_oob,
-    /*.write_eof =*/ sk_handle_write_eof,
-    /*.set_frozen =*/ sk_handle_set_frozen,
-    /*.socket_error =*/ sk_handle_socket_error,
-    /*.endpoint_info =*/ sk_handle_endpoint_info,
+    .plug = sk_handle_plug,
+    .close = sk_handle_close,
+    .write = sk_handle_write,
+    .write_oob = sk_handle_write_oob,
+    .write_eof = sk_handle_write_eof,
+    .set_frozen = sk_handle_set_frozen,
+    .socket_error = sk_handle_socket_error,
+    .endpoint_info = sk_handle_endpoint_info,
 };
 
 static void sk_handle_connect_success_callback(void *ctx)
@@ -474,15 +471,14 @@ static SocketEndpointInfo *sk_handle_deferred_endpoint_info(
 }
 
 static const SocketVtable HandleSocket_deferred_sockvt = {
-    // WINSCP
-    /*.plug =*/ sk_handle_plug,
-    /*.close =*/ sk_handle_deferred_close,
-    /*.write =*/ sk_handle_deferred_write,
-    /*.write_oob =*/ sk_handle_deferred_write,
-    /*.write_eof =*/ sk_handle_deferred_write_eof,
-    /*.set_frozen =*/ sk_handle_deferred_set_frozen,
-    /*.socket_error =*/ sk_handle_socket_error,
-    /*.endpoint_info =*/ sk_handle_deferred_endpoint_info,
+    .plug = sk_handle_plug,
+    .close = sk_handle_deferred_close,
+    .write = sk_handle_deferred_write,
+    .write_oob = sk_handle_deferred_write,
+    .write_eof = sk_handle_deferred_write_eof,
+    .set_frozen = sk_handle_deferred_set_frozen,
+    .socket_error = sk_handle_socket_error,
+    .endpoint_info = sk_handle_deferred_endpoint_info,
 };
 
 Socket *make_deferred_handle_socket(DeferredSocketOpener *opener,
@@ -507,7 +503,7 @@ void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
                          HANDLE stderr_H, bool overlapped)
 {
     HandleSocket *hs = container_of(s, HandleSocket, sock);
-    pinitassert(hs->sock.vt == &HandleSocket_deferred_sockvt);
+    assert(hs->sock.vt == &HandleSocket_deferred_sockvt);
     struct callback_set * callback_set = get_callback_set(hs->plug);
 
     int flags = (overlapped ? HANDLE_FLAG_OVERLAPPED : 0);
@@ -528,7 +524,6 @@ void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
     if (hs->output_eof_pending)
         handle_write_eof(send_h);
 
-    { // WINSCP
     bool start_frozen = hs->start_frozen;
 
     deferred_socket_opener_free(hs->opener);
@@ -554,7 +549,6 @@ void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
     #endif
 
     queue_toplevel_callback(sk_handle_connect_success_callback, hs);
-    } // WINSCP
 }
 
 #pragma clang diagnostic pop

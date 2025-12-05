@@ -13,9 +13,7 @@ static bool sha512_sw_available(void)
 
 static inline uint64_t ror(uint64_t x, unsigned y)
 {
-#pragma option push -w-ngu // WINSCP
     return (x << (63 & -y)) | (x >> (63 & y));
-#pragma option pop // WINSCP
 }
 
 static inline uint64_t Ch(uint64_t ctrl, uint64_t if1, uint64_t if0)
@@ -156,11 +154,8 @@ static void sha512_sw_digest(ssh_hash *hash, uint8_t *digest)
     sha512_sw *s = container_of(hash, sha512_sw, hash);
 
     sha512_block_pad(&s->blk, BinarySink_UPCAST(s));
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < hash->vt->hlen / 8; i++)
+    for (size_t i = 0; i < hash->vt->hlen / 8; i++)
         PUT_64BIT_MSB_FIRST(digest + 8*i, s->core[i]);
-    } // WINSCP
 }
 
 /*

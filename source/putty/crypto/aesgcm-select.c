@@ -15,8 +15,7 @@ static ssh2_mac *aesgcm_mac_selector_new(const ssh2_macalg *alg,
         NULL,
     };
 
-    size_t i; // WINSCP
-    for (i = 0; real_algs[i]; i++) {
+    for (size_t i = 0; real_algs[i]; i++) {
         const ssh2_macalg *alg = real_algs[i];
         const struct aesgcm_extra *alg_extra =
             (const struct aesgcm_extra *)alg->extra;
@@ -31,11 +30,9 @@ static ssh2_mac *aesgcm_mac_selector_new(const ssh2_macalg *alg,
 }
 
 const ssh2_macalg ssh2_aesgcm_mac = {
-    /*.new =*/ aesgcm_mac_selector_new,
-    NULL, NULL, NULL, NULL, NULL, NULL, // WINSCP
-    /*.name =*/ "",
-    /*.etm_name =*/ "", /* Not selectable independently */
-    /*.len =*/ 16,
-    /*.keylen =*/ 0,
-    NULL, // WINSCP
+    .new = aesgcm_mac_selector_new,
+    .name = "",
+    .etm_name = "", /* Not selectable independently */
+    .len = 16,
+    .keylen = 0,
 };

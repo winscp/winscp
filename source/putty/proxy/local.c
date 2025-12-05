@@ -61,7 +61,7 @@ static void local_proxy_opener_free(DeferredSocketOpener *opener)
 }
 
 static const DeferredSocketOpenerVtable LocalProxyOpener_openervt = {
-    /*WINSCP .free =*/ local_proxy_opener_free,
+    .free = local_proxy_opener_free,
 };
 
 static char *local_proxy_opener_description(Interactor *itr)
@@ -88,11 +88,10 @@ static void local_proxy_opener_set_seat(Interactor *itr, Seat *seat)
 }
 
 static const InteractorVtable LocalProxyOpener_interactorvt = {
-    // WINSCP
-    /*.description =*/ local_proxy_opener_description,
-    /*.logpolicy =*/ local_proxy_opener_logpolicy,
-    /*.get_seat =*/ local_proxy_opener_get_seat,
-    /*.set_seat =*/ local_proxy_opener_set_seat,
+    .description = local_proxy_opener_description,
+    .logpolicy = local_proxy_opener_logpolicy,
+    .get_seat = local_proxy_opener_get_seat,
+    .set_seat = local_proxy_opener_set_seat,
 };
 
 static void local_proxy_opener_cleanup_interactor(LocalProxyOpener *lp)
@@ -162,12 +161,10 @@ static void local_proxy_opener_coroutine(void *vctx)
                     return;
                 } else if (spr.kind == SPRK_SW_ABORT) {
                     local_proxy_opener_cleanup_interactor(lp);
-                    { // WINSCP
                     char *err = spr_get_error_message(spr);
                     plug_closing_error(lp->plug, err);
                     sfree(err);
                     return; /* without crStop, as above */
-                    } // WINSCP
                 }
                 crReturnV;
             }
@@ -222,13 +219,11 @@ static void local_proxy_opener_coroutine(void *vctx)
      * Now we're ready to actually do the platform-specific socket
      * setup.
      */
-    { // WINSCP
     char *cmd = lp->formatted_cmd;
     lp->formatted_cmd = NULL;
 
     local_proxy_opener_cleanup_interactor(lp);
 
-    { // WINSCP
     char *error_msg = platform_setup_local_proxy(lp->socket, cmd);
     burnstr(cmd);
 
@@ -243,8 +238,6 @@ static void local_proxy_opener_coroutine(void *vctx)
         return;
     }
 
-    } // WINSCP
-    } // WINSCP
     crFinishV;
 }
 
@@ -274,9 +267,7 @@ void local_proxy_opener_set_socket(DeferredSocketOpener *opener,
                                    Socket *socket)
 {
     assert(opener->vt == &LocalProxyOpener_openervt);
-    { // WINSCP
     LocalProxyOpener *lp = container_of(opener, LocalProxyOpener, opener);
     lp->socket = socket;
     queue_toplevel_callback(get_callback_set(lp->plug), local_proxy_opener_coroutine, lp);
-    } // WINSCP
 }

@@ -888,8 +888,7 @@ static void aes_sw_setiv_sdctr(ssh_cipher *ciph, const void *viv)
     const uint8_t *iv = (const uint8_t *)viv;
 
     /* Import the initial counter value into the internal representation */
-    unsigned i; // WINSCP
-    for (i = 0; i < SDCTR_WORDS; i++)
+    for (unsigned i = 0; i < SDCTR_WORDS; i++)
         ctx->iv.sdctr.counter[i] =
             GET_BIGNUMINT_MSB_FIRST(
                 iv + 16 - BIGNUM_INT_BYTES - i*BIGNUM_INT_BYTES);
