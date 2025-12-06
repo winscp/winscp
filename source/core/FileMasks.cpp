@@ -297,7 +297,7 @@ void __fastcall TFileMasks::Init()
 //---------------------------------------------------------------------------
 void __fastcall TFileMasks::DoInit(bool Delete)
 {
-  for (size_t Index = 0; Index < LENOF(FMasksStr); Index++)
+  for (size_t Index = 0; Index < std::size(FMasksStr); Index++)
   {
     if (Delete)
     {
@@ -311,7 +311,7 @@ void __fastcall TFileMasks::Clear()
 {
   DoInit(true);
 
-  for (size_t Index = 0; Index < LENOF(FMasks); Index++)
+  for (size_t Index = 0; Index < std::size(FMasks); Index++)
   {
     Clear(FMasks[Index]);
   }

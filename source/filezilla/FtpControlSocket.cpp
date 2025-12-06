@@ -1404,7 +1404,7 @@ void CFtpControlSocket::OnConnect(int nErrorCode)
       TCHAR Buffer[255];
       int Len = FormatMessage(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-        NULL, nErrorCode, 0, Buffer, LENOF(Buffer), NULL);
+        NULL, nErrorCode, 0, Buffer, std::size(Buffer), NULL);
       while ((Len > 0) && ((Buffer[Len - 1] >= 0) && (Buffer[Len - 1] <= 32)))
       {
         --Len;

@@ -2440,7 +2440,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(
   int Message;
   if ((AllowStatus & (0x01 << Code)) == 0)
   {
-    if (Code >= LENOF(Messages))
+    if (Code >= std::size(Messages))
     {
       Message = SFTP_STATUS_UNKNOWN;
     }
@@ -3419,7 +3419,7 @@ void __fastcall TSFTPFileSystem::LookupUsersGroups()
   TRemoteTokenList * Lists[] = { &FTerminal->FUsers, &FTerminal->FGroups };
   unsigned char ListTypes[] = { OGQ_LIST_OWNERS, OGQ_LIST_GROUPS };
 
-  for (size_t Index = 0; Index < LENOF(Packets); Index++)
+  for (size_t Index = 0; Index < std::size(Packets); Index++)
   {
     TSFTPPacket * Packet = Packets[Index];
     Packet->AddString(SFTP_EXT_OWNER_GROUP);
@@ -3428,7 +3428,7 @@ void __fastcall TSFTPFileSystem::LookupUsersGroups()
     ReserveResponse(Packet, Packet);
   }
 
-  for (size_t Index = 0; Index < LENOF(Packets); Index++)
+  for (size_t Index = 0; Index < std::size(Packets); Index++)
   {
     TSFTPPacket * Packet = Packets[Index];
 
@@ -4448,7 +4448,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
     TQueryParams QueryParams(qpNeverAskAgainCheck);
     QueryParams.NoBatchAnswers = qaIgnore | qaRetry | qaAll;
     QueryParams.Aliases = Aliases;
-    QueryParams.AliasesCount = LENOF(Aliases);
+    QueryParams.AliasesCount = std::size(Aliases);
     Answer = FTerminal->ConfirmFileOverwrite(
       SourceFullFileName, TargetFileName, FileParams,
       Answers, &QueryParams,

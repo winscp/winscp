@@ -8,8 +8,6 @@
 #define _AFX_ENABLE_INLINES
 #define _AFX_NOFORCE_LIBS
 //---------------------------------------------------------------------------
-#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
-//---------------------------------------------------------------------------
 #include <afx.h>
 #include "wtypes.h"
 

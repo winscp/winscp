@@ -906,7 +906,7 @@ void __fastcall TSCPFileSystem::UnsetNationalVars()
   try
   {
     FTerminal->LogEvent(L"Clearing national user variables.");
-    for (size_t Index = 0; Index < LENOF(NationalVars); Index++)
+    for (size_t Index = 0; Index < std::size(NationalVars); Index++)
     {
       ExecCommand(fsUnset, ARRAYOFCONST((NationalVars[Index])), false);
     }
@@ -1588,7 +1588,7 @@ unsigned int __fastcall TSCPFileSystem::ConfirmOverwrite(
   Aliases[2] = TQueryButtonAlias::CreateNoToAllGrouppedWithNo();
   TQueryParams QueryParams(qpNeverAskAgainCheck);
   QueryParams.Aliases = Aliases;
-  QueryParams.AliasesCount = LENOF(Aliases);
+  QueryParams.AliasesCount = std::size(Aliases);
   unsigned int Answer =
     FTerminal->ConfirmFileOverwrite(
       SourceFullFileName, TargetFileName, FileParams,

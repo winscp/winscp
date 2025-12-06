@@ -46,10 +46,10 @@ void __fastcall PuttyInitialize()
   sk_init();
 
   AnsiString VersionString = AnsiString(SshVersionString());
-  DebugAssert(!VersionString.IsEmpty() && (static_cast<size_t>(VersionString.Length()) < LENOF(sshver)));
+  DebugAssert(!VersionString.IsEmpty() && (static_cast<size_t>(VersionString.Length()) < std::size(sshver)));
   strcpy(sshver, VersionString.c_str());
   AnsiString AppName = AnsiString(AppNameString());
-  DebugAssert(!AppName.IsEmpty() && (static_cast<size_t>(AppName.Length()) < LENOF(appname_)));
+  DebugAssert(!AppName.IsEmpty() && (static_cast<size_t>(AppName.Length()) < std::size(appname_)));
   strcpy(appname_, AppName.c_str());
 }
 //---------------------------------------------------------------------------
@@ -339,9 +339,9 @@ NORETURN static void SSHFatalError(const char * Format, va_list Param)
   char Buf[200];
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat-nonliteral"
-  vsnprintf(Buf, LENOF(Buf), Format, Param);
+  vsnprintf(Buf, std::size(Buf), Format, Param);
 #pragma clang diagnostic pop
-  Buf[LENOF(Buf) - 1] = '\0';
+  Buf[std::size(Buf) - 1] = '\0';
 
   // Only few calls from putty\winnet.c might be connected with specific
   // TSecureShell. Otherwise called only for really fatal errors
@@ -1152,7 +1152,7 @@ UnicodeString __fastcall Sha256(const char * Data, size_t Size)
 {
   unsigned char Digest[32];
   hash_simple(&ssh_sha256, make_ptrlen(Data, Size), Digest);
-  UnicodeString Result(BytesToHex(Digest, LENOF(Digest)));
+  UnicodeString Result(BytesToHex(Digest, std::size(Digest)));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1358,7 +1358,7 @@ static TCipherGroup Ciphers[] =
 TStrings * SshCipherList()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
-  for (unsigned int Index = 0; Index < LENOF(Ciphers); Index++)
+  for (unsigned int Index = 0; Index < std::size(Ciphers); Index++)
   {
     const ssh2_ciphers * Cipher = Ciphers[Index].Cipher;
     for (int Index2 = 0; Index2 < Cipher->nciphers; Index2++)
@@ -1373,7 +1373,7 @@ TStrings * SshCipherList()
 int GetCipherGroup(const ssh_cipher * TheCipher)
 {
   DebugAssert(strlen(TheCipher->vt->ssh2_id) > 0);
-  for (unsigned int Index = 0; Index < LENOF(Ciphers); Index++)
+  for (unsigned int Index = 0; Index < std::size(Ciphers); Index++)
   {
     TCipherGroup & CipherGroup = Ciphers[Index];
     const ssh2_ciphers * Cipher = CipherGroup.Cipher;
@@ -1398,7 +1398,7 @@ TStrings * SshKexList()
     &ssh_ntru_hybrid_kex, &ssh_mlkem_curve25519_hybrid_kex, &ssh_mlkem_nist_hybrid_kex, &ssh_ecdh_kex, &ssh_diffiehellman_gex,
     &ssh_diffiehellman_group18, &ssh_diffiehellman_group17, &ssh_diffiehellman_group16, &ssh_diffiehellman_group15, &ssh_diffiehellman_group14,
     &ssh_rsa_kex, &ssh_diffiehellman_group1 };
-  for (unsigned int Index = 0; Index < LENOF(Kexes); Index++)
+  for (unsigned int Index = 0; Index < std::size(Kexes); Index++)
   {
     for (int Index2 = 0; Index2 < Kexes[Index]->nkexes; Index2++)
     {

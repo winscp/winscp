@@ -1131,7 +1131,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TCo
   }
 
   wchar_t UserName[UNLEN + 1];
-  unsigned long UserNameSize = LENOF(UserName);
+  unsigned long UserNameSize = std::size(UserName);
   if (DebugAlwaysFalse(!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize)))
   {
     wcscpy(UserName, L"<Failed to retrieve username>");

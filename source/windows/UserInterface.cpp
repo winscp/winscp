@@ -245,7 +245,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
           Aliases[0].MenuButton = true;
           Answers |= Aliases[0].Button;
           Params.Aliases = Aliases;
-          Params.AliasesCount = LENOF(Aliases);
+          Params.AliasesCount = std::size(Aliases);
         }
 
         if (ForActiveTerminal)

@@ -1566,8 +1566,8 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
       char * buf = new char[len + 1];
       memcpy(buf, data, len);
       buf[len] = '\0';
-      _tcsncpy(SslCertData.subjectAltName, A2CT(buf), LENOF(SslCertData.subjectAltName));
-      SslCertData.subjectAltName[LENOF(SslCertData.subjectAltName) - 1] = '\0';
+      _tcsncpy(SslCertData.subjectAltName, A2CT(buf), std::size(SslCertData.subjectAltName));
+      SslCertData.subjectAltName[std::size(SslCertData.subjectAltName) - 1] = '\0';
       delete [] buf;
     }
 

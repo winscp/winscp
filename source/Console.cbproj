@@ -30,7 +30,7 @@
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
-        <BCC_UserSuppliedOptions>-Wno-c++98-compat-pedantic -Wno-c99-extensions -Wno-padded -Wno-language-extension-token</BCC_UserSuppliedOptions>
+        <BCC_UserSuppliedOptions>-Wno-c++98-compat-pedantic -Wno-c99-extensions -Wno-padded -Wno-language-extension-token -Wno-vla -Wno-vla-extension</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <Defines>UNICODE;$(Defines)</Defines>

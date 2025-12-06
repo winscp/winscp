@@ -230,7 +230,7 @@ void __fastcall TSessionData::DefaultSettings()
   ProxyDNS = asAuto;
   ProxyLocalhost = false;
 
-  for (unsigned int Index = 0; Index < LENOF(FBugs); Index++)
+  for (unsigned int Index = 0; Index < std::size(FBugs); Index++)
   {
     Bug[(TSshBug)Index] = asAuto;
   }
@@ -299,7 +299,7 @@ void __fastcall TSessionData::DefaultSettings()
   SFTPRealPath = asAuto;
   UsePosixRename = false;
 
-  for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++)
+  for (unsigned int Index = 0; Index < std::size(FSFTPBugs); Index++)
   {
     SFTPBug[(TSftpBug)Index] = asAuto;
   }
@@ -479,7 +479,7 @@ void __fastcall TSessionData::NonPersistent()
   PROPERTY(ProxyDNS); \
   PROPERTY(ProxyLocalhost); \
   \
-  for (unsigned int Index = 0; Index < LENOF(FBugs); Index++) \
+  for (unsigned int Index = 0; Index < std::size(FBugs); Index++) \
   { \
     PROPERTY(Bug[(TSshBug)Index]); \
   } \
@@ -493,7 +493,7 @@ void __fastcall TSessionData::NonPersistent()
   PROPERTY(SFTPRealPath); \
   PROPERTY(UsePosixRename); \
   \
-  for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++) \
+  for (unsigned int Index = 0; Index < std::size(FSFTPBugs); Index++) \
   { \
     PROPERTY(SFTPBug[(TSftpBug)Index]); \
   } \
@@ -4288,13 +4288,13 @@ void __fastcall TSessionData::SetFtpProxyLogonType(int value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetBug(TSshBug Bug, TAutoSwitch value)
 {
-  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FBugs));
+  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < std::size(FBugs));
   SET_SESSION_PROPERTY(Bugs[Bug]);
 }
 //---------------------------------------------------------------------
 TAutoSwitch __fastcall TSessionData::GetBug(TSshBug Bug) const
 {
-  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FBugs));
+  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < std::size(FBugs));
   return FBugs[Bug];
 }
 //---------------------------------------------------------------------
@@ -4350,13 +4350,13 @@ void TSessionData::SetUsePosixRename(bool value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetSFTPBug(TSftpBug Bug, TAutoSwitch value)
 {
-  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FSFTPBugs));
+  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < std::size(FSFTPBugs));
   SET_SESSION_PROPERTY(SFTPBugs[Bug]);
 }
 //---------------------------------------------------------------------
 TAutoSwitch __fastcall TSessionData::GetSFTPBug(TSftpBug Bug) const
 {
-  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FSFTPBugs));
+  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < std::size(FSFTPBugs));
   return FSFTPBugs[Bug];
 }
 //---------------------------------------------------------------------

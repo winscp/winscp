@@ -92,9 +92,9 @@ LPTSTR find_reg_str(LPTSTR str, LPCTSTR what, LPTSTR * next){
     curr_tok = _tcstok(tok_buff, _T(";"));
     while (pos == -1 && curr_tok){
         curr_tok_dup = unquote(curr_tok);
-        path_eq = GetShortPathName(what, sh_path1, LENOF(sh_path1)) &&
+        path_eq = GetShortPathName(what, sh_path1, std::size(sh_path1)) &&
                   GetShortPathName(curr_tok_dup, sh_path2,
-                                   LENOF(sh_path2)) &&
+                                   std::size(sh_path2)) &&
                   (tcharicmp(sh_path1, sh_path2) == 0);
         if (path_eq || tcharicmp(what, curr_tok_dup) == 0){
             pos = curr_tok - tok_buff;
@@ -740,7 +740,7 @@ void __fastcall TemporaryDirectoryCleanup()
       Aliases[0].Alias = LoadStr(OPEN_BUTTON);
       TMessageParams Params(mpNeverAskAgainCheck);
       Params.Aliases = Aliases;
-      Params.AliasesCount = LENOF(Aliases);
+      Params.AliasesCount = std::size(Aliases);
 
       unsigned int Answer = MoreMessageDialog(
         FMTLOAD(CLEANTEMP_CONFIRM2, (Folders->Count)), Folders.get(),
@@ -1756,7 +1756,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
   Params.MoreMessagesUrl = Updates.Results.NewsUrl;
   Params.MoreMessagesSize = Updates.Results.NewsSize;
   // alias "ok" button to "upgrade" only if we have new version
-  Params.AliasesCount = LENOF(Aliases) - (New ? 0 : 1);
+  Params.AliasesCount = std::size(Aliases) - (New ? 0 : 1);
   Params.CustomCaption = LoadStr(CHECK_FOR_UPDATES_TITLE);
 
   if (New)
@@ -1884,7 +1884,7 @@ static void AddJumpListCategory(
           Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true));
 
       wchar_t Desc[2048];
-      if (SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
+      if (SUCCEEDED(Link->GetDescription(Desc, std::size(Desc) - 1)))
       {
         if (Removed->IndexOf(Desc) < 0)
         {
@@ -1934,7 +1934,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
         IShellLink * Link;
         wchar_t Desc[2048];
         if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, (void**)&Link)) &&
-            SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
+            SUCCEEDED(Link->GetDescription(Desc, std::size(Desc) - 1)))
         {
           Removed->Add(Desc);
         }
@@ -2160,7 +2160,7 @@ static void __fastcall ShowTip(bool AutoShow)
   Params.MoreMessagesSize = Updates.Results.TipsSize;
   Params.MoreMessagesUrl = TipUrl(TipsData.get());
   Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
+  Params.AliasesCount = std::size(Aliases);
   Params.ImageName = L"Bulb On";
 
   if (AutoShow)

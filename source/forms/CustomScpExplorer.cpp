@@ -2564,7 +2564,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommand(TStrings * FileList,
       Aliases[0].Alias = LoadStr(EDIT_COPY);
       Aliases[0].OnSubmit = &ClipboardHandler.Copy;
       Params.Aliases = Aliases;
-      Params.AliasesCount = LENOF(Aliases);
+      Params.AliasesCount = std::size(Aliases);
 
       MessageDialog(*POutput, qtInformation, qaOK | qaRetry, HelpKeyword, &Params);
     }
@@ -3201,7 +3201,7 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
           Aliases[1].Alias = LoadStr(NEXT_BUTTON);
           TMessageParams Params;
           Params.Aliases = Aliases;
-          Params.AliasesCount = LENOF(Aliases);
+          Params.AliasesCount = std::size(Aliases);
 
           int No = Index + 1;
 
@@ -5840,11 +5840,11 @@ void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
 
   TControl * TopControlsOrder[] =
     { TopDock, MessageDock, SessionsPageControl };
-  SetVerticalControlsOrder(TopControlsOrder, LENOF(TopControlsOrder));
+  SetVerticalControlsOrder(TopControlsOrder, std::size(TopControlsOrder));
 
   TControl * QueueControlsOrder[] =
     { QueueDock, QueueView3, QueueFileListSplitter, QueueFileList };
-  SetVerticalControlsOrder(QueueControlsOrder, LENOF(QueueControlsOrder));
+  SetVerticalControlsOrder(QueueControlsOrder, std::size(QueueControlsOrder));
 
 }
 //---------------------------------------------------------------------------
@@ -8250,8 +8250,7 @@ void __fastcall TCustomScpExplorerForm::DDFakeFileInitDrag(TFileList * FileList,
     DebugAssert(CommStruct != NULL);
     CommStruct->Version = TDragExtCommStruct::CurrentVersion;
     CommStruct->Dragging = true;
-    wcsncpy(CommStruct->DropDest, FDragFakeDirectory.c_str(),
-      LENOF(CommStruct->DropDest));
+    wcsncpy(CommStruct->DropDest, FDragFakeDirectory.c_str(), std::size(CommStruct->DropDest));
     NULL_TERMINATE(CommStruct->DropDest);
     UnmapViewOfFile(CommStruct);
   }
@@ -9824,7 +9823,7 @@ void __fastcall TCustomScpExplorerForm::TransferPresetNoteMessage(
   Aliases[0].Alias = LoadStr(CONFIGURE_BUTTON);
 
   Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
+  Params.AliasesCount = std::size(Aliases);
 
   unsigned int Result =
     MoreMessageDialog(NoteData->Message, NULL, qtInformation,

@@ -2443,7 +2443,7 @@ bool __fastcall TTerminal::DoQueryReopen(Exception * E)
     Aliases[0].Button = qaRetry;
     Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
     Params.Aliases = Aliases;
-    Params.AliasesCount = LENOF(Aliases);
+    Params.AliasesCount = std::size(Aliases);
     Result = (QueryUserException(L"", E, qaRetry | qaAbort, &Params, qtError) == qaRetry);
 
     if (Fatal != NULL)
@@ -3073,7 +3073,7 @@ unsigned int __fastcall TTerminal::CommandError(Exception * E, const UnicodeStri
         Aliases[0].Button = qaAll;
         Aliases[0].Alias = LoadStr(SKIP_ALL_BUTTON);
         Params.Aliases = Aliases;
-        Params.AliasesCount = LENOF(Aliases);
+        Params.AliasesCount = std::size(Aliases);
         Answers |= qaAll;
       }
       Result = QueryUserException(Msg, E, Answers, &Params, qtError);
@@ -8785,7 +8785,7 @@ bool __fastcall TTerminal::ConfirmCertificate(
   Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
   Params.NoBatchAnswers = qaYes | qaRetry;
   Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
+  Params.AliasesCount = std::size(Aliases);
   unsigned int Answer =
     QueryUser(
       FMTLOAD(VERIFY_CERT_PROMPT3, (SessionInfo.Certificate)),

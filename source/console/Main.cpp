@@ -9,7 +9,6 @@
 #include "Console.h"
 #define MAX_ATTEMPTS 10
 //---------------------------------------------------------------------------
-#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 //---------------------------------------------------------------------------
 using namespace std;
 static HANDLE ConsoleInput = nullptr;
@@ -607,10 +606,11 @@ static void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
     unsigned long Read;
     bool Result;
     char Ch;
-    char Buf[LENOF(Event.Str) * 3];
+    size_t BufSize = std::size(Event.Str) * 3;
+    char Buf[BufSize];
 
     while (((Result = (ReadFile(ConsoleInput, &Ch, 1, &Read, nullptr) != 0)) != false) &&
-           (Read > 0) && (Bytes < LENOF(Buf) - 1) && (Ch != '\n'))
+           (Read > 0) && (Bytes < BufSize - 1) && (Ch != '\n'))
     {
       if (Ch != '\r')
       {
@@ -620,8 +620,8 @@ static void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
     }
     Buf[Bytes] = L'\0';
 
-    MultiByteToWideChar(CP_UTF8, 0, Buf, -1, Event.Str, LENOF(Event.Str) - 1);
-    Event.Str[LENOF(Event.Str) - 1] = L'\0';
+    MultiByteToWideChar(CP_UTF8, 0, Buf, -1, Event.Str, static_cast<int>(std::size(Event.Str) - 1));
+    Event.Str[std::size(Event.Str) - 1] = L'\0';
 
     Print(false, Event.Str);
     Print(false, L"\n");
@@ -656,7 +656,7 @@ static void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
       }
 
       unsigned long Read;
-      Event.Result = ReadConsole(ConsoleInput, Event.Str, LENOF(Event.Str) - 1, &Read, nullptr);
+      Event.Result = ReadConsole(ConsoleInput, Event.Str, std::size(Event.Str) - 1, &Read, nullptr);
       Event.Str[Read] = L'\0';
 
       bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
@@ -979,7 +979,7 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
       CancelEvent, FileMapping, Job);
 
     wchar_t SavedTitle[512];
-    GetConsoleTitle(SavedTitle, LENOF(SavedTitle));
+    GetConsoleTitle(SavedTitle, std::size(SavedTitle));
 
     try
     {

@@ -831,7 +831,7 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     if ((ALocale & AdditionalLanguageMask) != AdditionalLanguageMask)
     {
       wchar_t LocaleStr[4];
-      GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, LENOF(LocaleStr));
+      GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, std::size(LocaleStr));
       LocaleName = LocaleStr;
       DebugAssert(!LocaleName.IsEmpty());
     }
@@ -1116,10 +1116,10 @@ void __fastcall TGUIConfiguration::AddLocale(LCID Locale, const UnicodeString & 
   if (Name.IsEmpty())
   {
     wchar_t LocaleStr[255];
-    GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE, LocaleStr, LENOF(LocaleStr));
+    GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE, LocaleStr, std::size(LocaleStr));
     Name = UnicodeString(LocaleStr) + TitleSeparator;
     // LOCALE_SNATIVELANGNAME
-    GetLocaleInfo(Locale, LOCALE_SLANGUAGE, LocaleStr, LENOF(LocaleStr));
+    GetLocaleInfo(Locale, LOCALE_SLANGUAGE, LocaleStr, std::size(LocaleStr));
     Name += LocaleStr;
   }
 

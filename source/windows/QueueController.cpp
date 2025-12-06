@@ -459,7 +459,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
 
   Item->StateIndex = (!BlinkHide ? State : -1);
   Item->ImageIndex = (!BlinkHide ? Image : -1);
-  for (size_t Index = 0; Index < LENOF(Values); Index++)
+  for (size_t Index = 0; Index < std::size(Values); Index++)
   {
     if (Index < static_cast<size_t>(Item->SubItems->Count))
     {

@@ -5,11 +5,10 @@
 #define STRICT
 #endif
 //---------------------------------------------------------------------------
-#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
-//---------------------------------------------------------------------------
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <array>
 //---------------------------------------------------------------------------
 // prevent the system header files from messing with compiler settings
 #pragma clang diagnostic push
@@ -154,7 +153,7 @@ static void LogVersion(HINSTANCE HInstance)
   if (GLogOn)
   {
     wchar_t FileName[MAX_PATH];
-    if (GetModuleFileName(HInstance, FileName, LENOF(FileName)) > 0)
+    if (GetModuleFileName(HInstance, FileName, std::size(FileName)) > 0)
     {
       Debug(FileName);
 
@@ -172,7 +171,7 @@ static void LogVersion(HINSTANCE HInstance)
                 &VersionInfoSize) != 0)
           {
             wchar_t VersionStr[100];
-            snwprintf(VersionStr, LENOF(VersionStr), L"%d.%d.%d.%d",
+            snwprintf(VersionStr, std::size(VersionStr), L"%d.%d.%d.%d",
               HIWORD(VersionInfo->dwFileVersionMS),
               LOWORD(VersionInfo->dwFileVersionMS),
               HIWORD(VersionInfo->dwFileVersionLS),
@@ -234,8 +233,8 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
                  reinterpret_cast<unsigned char*>(&Buf), &Size) == ERROR_SUCCESS) &&
               (Type == REG_SZ))
           {
-            wcsncpy(GLogFile, Buf, LENOF(GLogFile));
-            GLogFile[LENOF(GLogFile) - 1] = L'\0';
+            wcsncpy(GLogFile, Buf, std::size(GLogFile));
+            GLogFile[std::size(GLogFile) - 1] = L'\0';
             GLogOn = true;
           }
 
@@ -328,7 +327,7 @@ static bool RegisterServer(bool AllUsers)
   DWORD Unused;
   wchar_t ClassID[CLSID_SIZE];
 
-  StringFromGUID2(CLSID_ShellExtension, ClassID, LENOF(ClassID));
+  StringFromGUID2(CLSID_ShellExtension, ClassID, std::size(ClassID));
 
   if ((RegOpenKeyEx(RootKey, L"Software\\Classes", 0, KEY_WRITE, &HKey) ==
          ERROR_SUCCESS) &&
@@ -350,7 +349,7 @@ static bool RegisterServer(bool AllUsers)
         Debug(L"InProcServer32 created");
 
         wchar_t Filename[MAX_PATH];
-        GetModuleFileName(GInstance, Filename, LENOF(Filename));
+        GetModuleFileName(GInstance, Filename, std::size(Filename));
         RegSetValueEx(HKey, nullptr, 0, REG_SZ,
           reinterpret_cast<unsigned char*>(Filename), (wcslen(Filename) + 1) * sizeof(wchar_t));
 
@@ -426,7 +425,7 @@ static bool UnregisterServer(bool AllUsers)
   bool Result = false;
   wchar_t ClassID[CLSID_SIZE];
 
-  StringFromGUID2(CLSID_ShellExtension, ClassID, LENOF(ClassID));
+  StringFromGUID2(CLSID_ShellExtension, ClassID, std::size(ClassID));
 
   HKEY RootKey = AllUsers ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
   HKEY HKey;
@@ -780,16 +779,16 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
                     wchar_t DropDestShort[MAX_PATH];
                     wchar_t SrcFileShort[MAX_PATH];
                     size_t DropDestSize = GetShortPathName(CommStruct->DropDest,
-                      DropDestShort, LENOF(DropDestShort));
+                      DropDestShort, std::size(DropDestShort));
                     size_t SrcFileSize = GetShortPathName(SrcFile,
-                      SrcFileShort, LENOF(SrcFileShort));
+                      SrcFileShort, std::size(SrcFileShort));
                     if ((DropDestSize == 0) || (SrcFileSize == 0))
                     {
                       Debug(L"cannot convert paths to short form");
                       IsDropDest = false;
                     }
-                    else if ((DropDestSize >= LENOF(DropDestShort)) ||
-                        (SrcFileSize >= LENOF(SrcFileShort)))
+                    else if ((DropDestSize >= std::size(DropDestShort)) ||
+                        (SrcFileSize >= std::size(SrcFileShort)))
                     {
                       Debug(L"short paths too long");
                       IsDropDest = false;
@@ -815,8 +814,8 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
                   if (IsDropDest)
                   {
                     CommStruct->Dragging = false;
-                    wcsncpy(CommStruct->DropDest, DestFile, LENOF(CommStruct->DropDest));
-                    CommStruct->DropDest[LENOF(CommStruct->DropDest)-1] = L'\0';
+                    wcsncpy(CommStruct->DropDest, DestFile, std::size(CommStruct->DropDest));
+                    CommStruct->DropDest[std::size(CommStruct->DropDest)-1] = L'\0';
                     Result = IDNO;
                     Debug(L"dragging refused");
                   }

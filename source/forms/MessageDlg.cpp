@@ -499,7 +499,7 @@ static UnicodeString __fastcall GetKeyNameStr(int Key)
   wchar_t Buf[MAX_PATH];
   LONG VirtualKey = MapVirtualKey(Key, MAPVK_VK_TO_VSC);
   VirtualKey <<= 16;
-  if (GetKeyNameText(VirtualKey, Buf, LENOF(Buf)) > 0)
+  if (GetKeyNameText(VirtualKey, Buf, std::size(Buf)) > 0)
   {
     NULL_TERMINATE(Buf);
   }

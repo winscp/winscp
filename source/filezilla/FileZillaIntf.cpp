@@ -328,12 +328,12 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
         try
         {
           DebugAssert(Data != NULL);
-          wcsncpy(FileName1, Data->FileName1, LENOF(FileName1));
-          FileName1[LENOF(FileName1) - 1] = L'\0';
+          wcsncpy(FileName1, Data->FileName1, std::size(FileName1));
+          FileName1[std::size(FileName1) - 1] = L'\0';
           TRemoteFileTime RemoteTime;
           CopyFileTime(RemoteTime, Data->remotetime);
           Result = HandleAsynchRequestOverwrite(
-            FileName1, LENOF(FileName1), Data->FileName2, Data->path1, Data->path2,
+            FileName1, std::size(FileName1), Data->FileName2, Data->path1, Data->path2,
             Data->size1, Data->size2,
             (Data->localtime != NULL) ? Data->localtime->GetTime() : 0,
             (Data->localtime != NULL) && ((Data->localtime->GetHour() != 0) || (Data->localtime->GetMinute() != 0)),

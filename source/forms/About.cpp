@@ -191,7 +191,7 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     wchar_t LocaleNameStr[255];
     GetLocaleInfo(
       GUIConfiguration->AppliedLocale, LOCALE_SLOCALIZEDLANGUAGENAME,
-      LocaleNameStr, LENOF(LocaleNameStr));
+      LocaleNameStr, std::size(LocaleNameStr));
     UnicodeString LocaleName(LocaleNameStr);
 
     // The {language} should be present only if we are using an untranslated

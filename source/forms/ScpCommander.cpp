@@ -827,7 +827,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
       Panel(true)->Align = alLeft;
       TControl * ControlsOrder[] =
         { Panel(true), Splitter, Panel(false) };
-      SetHorizontalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+      SetHorizontalControlsOrder(ControlsOrder, std::size(ControlsOrder));
       Panel(true)->TabOrder = 0;
       Panel(false)->TabOrder = 1;
       ClientWidth = AWidth;
@@ -1216,19 +1216,19 @@ void __fastcall TScpCommanderForm::FixControlsPlacement()
 
   TControl * ControlsOrder[] =
     { BottomDock, QueueSeparatorPanel, QueueSplitter, QueuePanel, StatusBar };
-  SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+  SetVerticalControlsOrder(ControlsOrder, std::size(ControlsOrder));
 
   TControl * LocalControlsOrder[] =
     { LocalTopDock, LocalPathLabel, LocalDriveView, LocalPanelSplitter,
       LocalDirView, LocalBottomDock, LocalStatusBar };
-  SetVerticalControlsOrder(LocalControlsOrder, LENOF(LocalControlsOrder));
-  SetHorizontalControlsOrder(LocalControlsOrder, LENOF(LocalControlsOrder));
+  SetVerticalControlsOrder(LocalControlsOrder, std::size(LocalControlsOrder));
+  SetHorizontalControlsOrder(LocalControlsOrder, std::size(LocalControlsOrder));
 
   TControl * RemoteControlsOrder[] =
     { RemoteTopDock, RemotePathLabel, RemoteDrivePanel, RemotePanelSplitter,
       RemoteDirPanel, RemoteBottomDock, RemoteStatusBar };
-  SetVerticalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
-  SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
+  SetVerticalControlsOrder(RemoteControlsOrder, std::size(RemoteControlsOrder));
+  SetHorizontalControlsOrder(RemoteControlsOrder, std::size(RemoteControlsOrder));
 
   MakeFocusedItemVisible(LocalDirView);
   MakeFocusedItemVisible(OtherLocalDirView);

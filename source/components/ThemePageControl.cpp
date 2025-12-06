@@ -351,7 +351,7 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
   HPEN Pen = CreatePen(PS_SOLID, 1, Color);
   HGDIOBJ OldBrush = SelectObject(DC, Brush);
   HGDIOBJ OldPen = SelectObject(DC, Pen);
-  Polygon(DC, Points, LENOF(Points));
+  Polygon(DC, Points, std::size(Points));
   SelectObject(DC, OldPen);
   SelectObject(DC, OldBrush);
   DeleteObject(Brush);

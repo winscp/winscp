@@ -659,7 +659,7 @@ unsigned int __fastcall FatalExceptionMessageDialog(
   }
   DebugAssert(AParams.Aliases == NULL);
   AParams.Aliases = Aliases;
-  AParams.AliasesCount = LENOF(Aliases);
+  AParams.AliasesCount = std::size(Aliases);
 
   return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpKeyword, &AParams);
 }
@@ -1561,7 +1561,7 @@ void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
   FTrayIcon->uFlags |= NIF_INFO;
   AppLogFmt("Tray popup balloon: %s - %s", (Title, Str));
   Title = Title + TitleSeparator + AppNameString();
-  StrPLCopy(FTrayIcon->szInfoTitle, Title, LENOF(FTrayIcon->szInfoTitle) - 1);
+  StrPLCopy(FTrayIcon->szInfoTitle, Title, std::size(FTrayIcon->szInfoTitle) - 1);
   UnicodeString Info = Str;
   // When szInfo is empty, balloon is not shown
   // (or actually it means the balloon should be deleted, if any)
@@ -1569,7 +1569,7 @@ void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
   {
     Info = L" ";
   }
-  StrPLCopy(FTrayIcon->szInfo, Info, LENOF(FTrayIcon->szInfo) - 1);
+  StrPLCopy(FTrayIcon->szInfo, Info, std::size(FTrayIcon->szInfo) - 1);
   FTrayIcon->uTimeout = Timeout;
   switch (QueryType)
   {
@@ -1765,7 +1765,7 @@ void __fastcall ::TTrayIcon::SetHint(UnicodeString value)
 {
   if (Hint != value)
   {
-    unsigned int Max = LENOF(FTrayIcon->szTip);
+    unsigned int Max = std::size(FTrayIcon->szTip);
     StrPLCopy(FTrayIcon->szTip, value, Max - 1);
     Update();
   }

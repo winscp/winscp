@@ -2109,7 +2109,7 @@ int __fastcall TLoginDialog::FSProtocolToIndex(TFSProtocol FSProtocol,
 //---------------------------------------------------------------------------
 TFSProtocol __fastcall TLoginDialog::IndexToFSProtocol(int Index, bool AllowScpFallback)
 {
-  bool InBounds = (Index >= 0) && (Index < static_cast<int>(LENOF(FSOrder)));
+  bool InBounds = (Index >= 0) && (Index < static_cast<int>(std::size(FSOrder)));
   // can be temporary "unselected" while new language is being loaded
   DebugAssert(InBounds || (Index == -1));
   TFSProtocol Result = fsSFTP;

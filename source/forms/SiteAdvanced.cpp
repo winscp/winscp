@@ -1698,7 +1698,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyViewButtonClick(TObject * /*Sende
   Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
   Aliases[0].OnSubmit = &ClipboardHandler.Copy;
   Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
+  Params.AliasesCount = std::size(Aliases);
 
   UnicodeString Message = LoadStr(HasCertificate ? LOGIN_KEY_WITH_CERTIFICATE : LOGIN_AUTHORIZED_KEYS);
   int Answers = qaOK | qaRetry;
@@ -1739,7 +1739,7 @@ void __fastcall TSiteAdvancedDialog::GenerateKeyButtonClick(TObject * /*Sender*/
   Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
   Aliases[0].OnSubmit = &ClipboardHandler.Copy;
   Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
+  Params.AliasesCount = std::size(Aliases);
 
   MessageDialog(LoadStr(ENCRYPT_KEY_GENERATED), qtInformation, qaOK | qaRetry, HELP_FILE_ENCRYPTION, &Params);
 }

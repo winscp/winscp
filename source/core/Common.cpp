@@ -360,7 +360,7 @@ UnicodeString ExceptionLogString(Exception *E)
   else
   {
     wchar_t Buffer[1024];
-    ExceptionErrorMessage(ExceptObject(), ExceptAddr(), Buffer, LENOF(Buffer));
+    ExceptionErrorMessage(ExceptObject(), ExceptAddr(), Buffer, std::size(Buffer));
     return UnicodeString(Buffer);
   }
 }
@@ -1046,7 +1046,7 @@ bool __fastcall IsReservedName(UnicodeString FileName)
       L"CON", L"PRN", L"AUX", L"NUL",
       L"COM1", L"COM2", L"COM3", L"COM4", L"COM5", L"COM6", L"COM7", L"COM8", L"COM9",
       L"LPT1", L"LPT2", L"LPT3", L"LPT4", L"LPT5", L"LPT6", L"LPT7", L"LPT8", L"LPT9" };
-    for (unsigned int Index = 0; Index < LENOF(Reserved); Index++)
+    for (unsigned int Index = 0; Index < std::size(Reserved); Index++)
     {
       if (SameText(FileName, Reserved[Index]))
       {

@@ -682,7 +682,7 @@ void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning, b
     TConsoleCommStruct * CommStruct = GetCommStruct();
     try
     {
-      size_t MaxLen = LENOF(CommStruct->PrintEvent.Message) - 1;
+      size_t MaxLen = std::size(CommStruct->PrintEvent.Message) - 1;
       UnicodeString Piece = Str.SubString(1, MaxLen);
       Str.Delete(1, MaxLen);
 
@@ -754,7 +754,7 @@ int __fastcall TExternalConsole::Choice(
   {
     CommStruct->Event = TConsoleCommStruct::CHOICE;
 
-    DebugAssert(Options.Length() < static_cast<int>(LENOF(CommStruct->ChoiceEvent.Options)));
+    DebugAssert(Options.Length() < static_cast<int>(std::size(CommStruct->ChoiceEvent.Options)));
     wcscpy(CommStruct->ChoiceEvent.Options, Options.c_str());
     CommStruct->ChoiceEvent.Cancel = Cancel;
     CommStruct->ChoiceEvent.Break = Break;
@@ -763,7 +763,7 @@ int __fastcall TExternalConsole::Choice(
     CommStruct->ChoiceEvent.Timeouted = Timeouted;
     CommStruct->ChoiceEvent.Timer = Timer;
     CommStruct->ChoiceEvent.Timeouting = Timeouting;
-    size_t MaxLen = LENOF(CommStruct->ChoiceEvent.Message) - 1;
+    size_t MaxLen = std::size(CommStruct->ChoiceEvent.Message) - 1;
     Message = Message.SubString(1, MaxLen);
     wcscpy(CommStruct->ChoiceEvent.Message, Message.c_str());
   }
@@ -800,7 +800,7 @@ void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
   try
   {
     // Truncate to maximum allowed. Title over 10 KB won't fit to screen anyway
-    Title = Title.SubString(1, LENOF(CommStruct->TitleEvent.Title) - 1);
+    Title = Title.SubString(1, std::size(CommStruct->TitleEvent.Title) - 1);
 
     CommStruct->Event = TConsoleCommStruct::TITLE;
     wcscpy(CommStruct->TitleEvent.Title, Title.c_str());
@@ -921,10 +921,10 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
         DebugFail();
     }
 
-    wcsncpy(ProgressEvent.FileName, Progress.FileName.c_str(), LENOF(ProgressEvent.FileName));
+    wcsncpy(ProgressEvent.FileName, Progress.FileName.c_str(), std::size(ProgressEvent.FileName));
     NULL_TERMINATE(ProgressEvent.FileName);
 
-    wcsncpy(ProgressEvent.Directory, Progress.Directory.c_str(), LENOF(ProgressEvent.Directory));
+    wcsncpy(ProgressEvent.Directory, Progress.Directory.c_str(), std::size(ProgressEvent.Directory));
     NULL_TERMINATE(ProgressEvent.Directory);
 
     ProgressEvent.OverallProgress = Progress.OverallProgress;

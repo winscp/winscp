@@ -14,7 +14,7 @@ namespace My
   void __fastcall PACKAGE Register()
   {
     TComponentClass classes[] = {__classid(THistoryComboBox)};
-    RegisterComponents(L"Martin", classes, LENOF(classes) - 1);
+    RegisterComponents(L"Martin", classes, std::size(classes) - 1);
   }
 #pragma clang diagnostic pop
 }

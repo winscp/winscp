@@ -9,12 +9,12 @@
 #define THROWOSIFFALSE(C) { if (!(C)) RaiseLastOSError(); }
 #define SAFE_DESTROY_EX(CLASS, OBJ) { CLASS * PObj = OBJ; OBJ = NULL; delete PObj; }
 #define SAFE_DESTROY(OBJ) SAFE_DESTROY_EX(TObject, OBJ)
-#define NULL_TERMINATE(S) S[LENOF(S) - 1] = L'\0'
+#define NULL_TERMINATE(S) S[std::size(S) - 1] = L'\0'
 #define ASCOPY(dest, source) \
   { \
     AnsiString CopyBuf = source; \
-    strncpy(dest, CopyBuf.c_str(), LENOF(dest)); \
-    dest[LENOF(dest)-1] = '\0'; \
+    strncpy(dest, CopyBuf.c_str(), std::size(dest)); \
+    dest[std::size(dest)-1] = '\0'; \
   }
 #define SWAP(TYPE, FIRST, SECOND) \
   { TYPE __Backup = FIRST; FIRST = SECOND; SECOND = __Backup; }

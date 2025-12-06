@@ -681,7 +681,7 @@ void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
         { L"Administratively prohibited [%]", PFWD_TRANSL_ADMIN },
         { L"Connect failed [%]", PFWD_TRANSL_CONNECT },
       };
-      TranslatePuttyMessage(Translation, LENOF(Translation), FLastTunnelError);
+      TranslatePuttyMessage(Translation, std::size(Translation), FLastTunnelError);
     }
   }
   else if (StartsStr(LocalPortMsg, Str) && ContainsStr(Str, ForwadingToMsg) && ContainsStr(Str, FailedMsg))
@@ -707,7 +707,7 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
     { L"HTTP proxy authentication", PROXY_AUTH_TITLE },
   };
 
-  int Index = TranslatePuttyMessage(NameTranslation, LENOF(NameTranslation), Name);
+  int Index = TranslatePuttyMessage(NameTranslation, std::size(NameTranslation), Name);
 
   TPromptKind PromptKind;
   if (Index == 0) // username
@@ -843,7 +843,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       { L"Confirm new password: ", NEW_PASSWORD_CONFIRM_PROMPT },
     };
     PromptTranslation = NewPasswordPromptTranslation;
-    PromptTranslationCount = LENOF(NewPasswordPromptTranslation);
+    PromptTranslationCount = std::size(NewPasswordPromptTranslation);
     PromptDesc = L"new password";
   }
   else if (PromptKind == pkProxyAuth)
@@ -853,7 +853,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       { L"Proxy password: ", PROXY_AUTH_PASSWORD_PROMPT },
     };
     PromptTranslation = ProxyAuthPromptTranslation;
-    PromptTranslationCount = LENOF(ProxyAuthPromptTranslation);
+    PromptTranslationCount = std::size(ProxyAuthPromptTranslation);
     PromptDesc = L"proxy authentication";
   }
   else
@@ -1474,7 +1474,7 @@ int __fastcall TSecureShell::TranslateAuthenticationMessage(
     { L"Server refused our key", AUTH_TRANSL_KEY_REFUSED, HELP_AUTH_TRANSL_KEY_REFUSED }
   };
 
-  int Result = TranslatePuttyMessage(Translation, LENOF(Translation), Message, HelpKeyword);
+  int Result = TranslatePuttyMessage(Translation, std::size(Translation), Message, HelpKeyword);
 
   if ((Result == 2) || (Result == 3) || (Result == 4))
   {
@@ -1558,7 +1558,7 @@ int __fastcall TSecureShell::TranslateErrorMessage(
     { L"Incoming packet was garbled on decryption", NET_TRANSL_PACKET_GARBLED, HELP_NET_TRANSL_PACKET_GARBLED },
   };
 
-  int Index = TranslatePuttyMessage(Translation, LENOF(Translation), Message, HelpKeyword);
+  int Index = TranslatePuttyMessage(Translation, std::size(Translation), Message, HelpKeyword);
 
   if ((Index == 0) || (Index == 1) || (Index == 2) || (Index == 3))
   {
@@ -2014,7 +2014,7 @@ void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENT
     { FD_READ_BIT, FD_READ, L"read" },
   };
 
-  for (unsigned int Event = 0; Event < LENOF(EventTypes); Event++)
+  for (unsigned int Event = 0; Event < std::size(EventTypes); Event++)
   {
     if (FLAGSET(Events.lNetworkEvents, EventTypes[Event].Mask))
     {
@@ -2858,7 +2858,7 @@ void TSecureShell::AskAlg(const UnicodeString & AAlgType, const UnicodeString & 
   };
 
   UnicodeString AlgType = AAlgType;
-  TranslatePuttyMessage(AlgTranslation, LENOF(AlgTranslation), AlgType);
+  TranslatePuttyMessage(AlgTranslation, std::size(AlgTranslation), AlgType);
 
   UnicodeString Msg;
   UnicodeString NewLine = UnicodeString(sLineBreak);

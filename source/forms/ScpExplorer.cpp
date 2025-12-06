@@ -256,11 +256,11 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
 
   TControl * ControlsOrder[] =
     { RemoteDirPanel, QueueSplitter, QueuePanel, BottomDock, RemoteStatusBar };
-  SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+  SetVerticalControlsOrder(ControlsOrder, std::size(ControlsOrder));
 
   TControl * RemoteControlsOrder[] =
     { RemoteDrivePanel, RemotePanelSplitter, RemoteDirPanel };
-  SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
+  SetHorizontalControlsOrder(RemoteControlsOrder, std::size(RemoteControlsOrder));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(

@@ -1782,7 +1782,7 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
       // so we fallback to querying registration keys
       #define CLSID_SIZE 39
       wchar_t ClassID[CLSID_SIZE];
-      StringFromGUID2(CLSID_ShellExtension, ClassID, LENOF(ClassID));
+      StringFromGUID2(CLSID_ShellExtension, ClassID, std::size(ClassID));
       NULL_TERMINATE(ClassID);
       UnicodeString SubKey = UnicodeString(L"CLSID\\") + ClassID;
       HKEY HKey;

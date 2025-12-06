@@ -1031,8 +1031,7 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
 
   if (Parameters->FindSwitch(RESUMESUPPORT_SWITCH, Value))
   {
-    int ToggleValue = TScriptCommands::FindCommand(ToggleNames,
-      LENOF(ToggleNames), Value);
+    int ToggleValue = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), Value);
     if (ToggleValue >= 0)
     {
       switch (ToggleValue)
@@ -1611,7 +1610,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   int Option = -1;
   if (!OptionName.IsEmpty())
   {
-    Option = TScriptCommands::FindCommand(Names, LENOF(Names), OptionName);
+    Option = TScriptCommands::FindCommand(Names, std::size(Names), OptionName);
     if (Option < 0)
     {
       throw Exception(FMTLOAD(SCRIPT_OPTION_UNKNOWN, (OptionName)));
@@ -1631,7 +1630,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1646,7 +1645,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(BatchModeNames, LENOF(BatchModeNames), ValueName);
+      int Value = TScriptCommands::FindCommand(BatchModeNames, std::size(BatchModeNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1669,7 +1668,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1699,7 +1698,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1781,7 +1780,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1949,7 +1948,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
   }
   UnicodeString ModeName = Parameters->Param[1];
   DebugAssert(FSynchronizeMode < 0);
-  FSynchronizeMode = TScriptCommands::FindCommand(ModeNames, LENOF(ModeNames), ModeName);
+  FSynchronizeMode = TScriptCommands::FindCommand(ModeNames, std::size(ModeNames), ModeName);
 
   try
   {
@@ -1981,7 +1980,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     {
       enum { None, Either, EitherBoth };
       static const wchar_t * CriteriaNames[] = { L"none", L"either", L"both" };
-      int Criteria = TScriptCommands::FindCommand(CriteriaNames, LENOF(CriteriaNames), Value);
+      int Criteria = TScriptCommands::FindCommand(CriteriaNames, std::size(CriteriaNames), Value);
       if (Criteria >= 0)
       {
         switch (Criteria)
@@ -2006,7 +2005,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
           UnicodeString Token = CutToChar(Value, L',', true);
           enum { Time, Size, Checksum };
           static const wchar_t * CriteriaNames[] = { L"time", L"size", L"checksum" };
-          int Criteria = TScriptCommands::FindCommand(CriteriaNames, LENOF(CriteriaNames), Token);
+          int Criteria = TScriptCommands::FindCommand(CriteriaNames, std::size(CriteriaNames), Token);
           switch (Criteria)
           {
             case Time:

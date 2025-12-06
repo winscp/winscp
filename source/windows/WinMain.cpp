@@ -678,7 +678,7 @@ static void __fastcall FindOtherInstances(THandles & OtherInstances)
       while ((HiddenWindow == NULL) && (WindowI != ProcessI->second.end()))
       {
         wchar_t ClassName[1024];
-        if (GetClassName(*WindowI, ClassName, LENOF(ClassName)) != 0)
+        if (GetClassName(*WindowI, ClassName, std::size(ClassName)) != 0)
         {
           NULL_TERMINATE(ClassName);
 
@@ -735,7 +735,7 @@ bool __fastcall SendToAnotherInstance()
       SetForegroundWindow(Handle);
 
       Message.Command = TCopyDataMessage::CommandCommandLine;
-      wcsncpy(Message.Data.CommandLine, CmdLine, LENOF(Message.Data.CommandLine));
+      wcsncpy(Message.Data.CommandLine, CmdLine, std::size(Message.Data.CommandLine));
       NULL_TERMINATE(Message.Data.CommandLine);
 
       Result = SendCopyDataMessage(Handle, Message);
@@ -759,9 +759,9 @@ void __fastcall Refresh(const UnicodeString & Session, const UnicodeString & Pat
 
     TCopyDataMessage Message;
     Message.Command = TCopyDataMessage::RefreshPanel;
-    wcsncpy(Message.Data.Refresh.Session, Session.c_str(), LENOF(Message.Data.Refresh.Session));
+    wcsncpy(Message.Data.Refresh.Session, Session.c_str(), std::size(Message.Data.Refresh.Session));
     NULL_TERMINATE(Message.Data.Refresh.Session);
-    wcsncpy(Message.Data.Refresh.Path, Path.c_str(), LENOF(Message.Data.Refresh.Path));
+    wcsncpy(Message.Data.Refresh.Path, Path.c_str(), std::size(Message.Data.Refresh.Path));
     NULL_TERMINATE(Message.Data.Refresh.Path);
 
     SendCopyDataMessage(Handle, Message);

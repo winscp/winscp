@@ -1265,7 +1265,7 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
   Aliases[2] = TQueryButtonAlias::CreateNoToAllGrouppedWithNo();
   TQueryParams QueryParams(qpNeverAskAgainCheck);
   QueryParams.Aliases = Aliases;
-  QueryParams.AliasesCount = LENOF(Aliases);
+  QueryParams.AliasesCount = std::size(Aliases);
 
   unsigned int Answer;
 

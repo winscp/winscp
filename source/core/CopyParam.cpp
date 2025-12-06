@@ -6,7 +6,7 @@
 #include "HierarchicalStorage.h"
 //---------------------------------------------------------------------------
 const wchar_t * TransferModeNames[] = { L"binary", L"ascii", L"automatic" };
-const int TransferModeNamesCount = LENOF(TransferModeNames);
+const int TransferModeNamesCount = std::size(TransferModeNames);
 //---------------------------------------------------------------------------
 __fastcall TCopyParamType::TCopyParamType()
 {

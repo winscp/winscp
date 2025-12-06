@@ -4,7 +4,6 @@
 //---------------------------------------------------------------------------
 #define FORMAT(S, F) Format(S, ARRAYOFCONST(F))
 #define FMTLOAD(I, F) FmtLoadStr(I, ARRAYOFCONST(F))
-#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 #define FLAGSET(SET, FLAG) (((SET) & (FLAG)) == (FLAG))
 #define FLAGCLEAR(SET, FLAG) (((SET) & (FLAG)) == 0)
 #define FLAGMASK(ENABLE, FLAG) ((ENABLE) ? (FLAG) : 0)

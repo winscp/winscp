@@ -896,7 +896,7 @@ UnicodeString __fastcall TFTPFileSystem::AbsolutePath(UnicodeString Path, bool /
 UnicodeString __fastcall TFTPFileSystem::ActualCurrentDirectory()
 {
   wchar_t CurrentPath[1024];
-  FFileZillaIntf->GetCurrentPath(CurrentPath, LENOF(CurrentPath));
+  FFileZillaIntf->GetCurrentPath(CurrentPath, std::size(CurrentPath));
   return UnixExcludeTrailingBackslash(CurrentPath);
 }
 //---------------------------------------------------------------------------
@@ -1382,7 +1382,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
     Aliases[4] = TQueryButtonAlias::CreateNoToAllGrouppedWithNo();
     TQueryParams QueryParams(qpNeverAskAgainCheck);
     QueryParams.Aliases = Aliases;
-    QueryParams.AliasesCount = LENOF(Aliases);
+    QueryParams.AliasesCount = std::size(Aliases);
 
     {
       TSuspendFileOperationProgress Suspend(OperationProgress);
