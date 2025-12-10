@@ -1856,7 +1856,7 @@ void __fastcall TSecureShell::PoolForData(WSANETWORKEVENTS & Events, unsigned in
     {
       if (Configuration->ActualLogProtocol >= 2)
       {
-        LogEvent(L"Pooling for data in case they finally arrives");
+        LogEvent(L"Polling for data in case it finally arrives");
       }
 
       // in extreme condition it may happen that send buffer is full, but there
