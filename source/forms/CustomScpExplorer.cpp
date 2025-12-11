@@ -11514,6 +11514,7 @@ void __fastcall TCustomScpExplorerForm::ReloadDirectory(TOperationSide Side)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CloseSessionTab(int Index)
 {
+  TWindowLock Lock(this);
   if (Index == SessionsPageControl->TabIndex)
   {
     CloseTab();
