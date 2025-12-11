@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace WinSCP
 {
     public interface IOperationResultBase
