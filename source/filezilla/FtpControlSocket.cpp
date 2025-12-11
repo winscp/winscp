@@ -1401,15 +1401,8 @@ void CFtpControlSocket::OnConnect(int nErrorCode)
     }
     else
     {
-      TCHAR Buffer[255];
-      int Len = FormatMessage(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-        NULL, nErrorCode, 0, Buffer, std::size(Buffer), NULL);
-      while ((Len > 0) && ((Buffer[Len - 1] >= 0) && (Buffer[Len - 1] <= 32)))
-      {
-        --Len;
-      }
-      ShowStatus(CString(Buffer, Len), FZ_LOG_ERROR);
+      UnicodeString Message = SysErrorMessage(nErrorCode).TrimRight();
+      ShowStatus(CString(Message), FZ_LOG_ERROR);
     }
     DoClose();
   }

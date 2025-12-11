@@ -288,14 +288,10 @@ void CTransferSocket::OnConnect(int nErrorCode)
 {
   if (nErrorCode)
   {
-    TCHAR buffer[1000];
-    memset(buffer, 0, sizeof(buffer));
-    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, nErrorCode, 0, buffer, 999, 0);
-    CString str;
-    str.Format(IDS_ERRORMSG_CANTOPENTRANSFERCHANNEL,buffer);
-    str.Replace( L"\n", L"\0" );
-    str.Replace( L"\r", L"\0" );
-    m_pOwner->ShowStatus(str, FZ_LOG_ERROR);
+    UnicodeString Message = SysErrorMessage(nErrorCode);
+    Message = FMTLOAD(IDS_ERRORMSG_CANTOPENTRANSFERCHANNEL, (Message));
+    Message = Message.TrimRight();
+    m_pOwner->ShowStatus(CString(Message), FZ_LOG_ERROR);
     CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
   }
   else
