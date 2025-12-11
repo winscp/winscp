@@ -72,6 +72,7 @@ to tim.kosse@gmx.de
 class CAsyncSocketExHelperWindow;
 class CAsyncSocketExLayer;
 class CCriticalSectionWrapper;
+class CString;
 //---------------------------------------------------------------------------
 struct t_callbackMsg
 {
@@ -192,6 +193,9 @@ public:
   // Trigers an event on the socket
   // Any combination of FD_READ, FD_WRITE, FD_CLOSE, FD_ACCEPT, FD_CONNECT and FD_FORCEREAD is valid for lEvent.
   BOOL TriggerEvent(long lEvent);
+
+  static SOCKADDR * CreateSockAddr(int family, int & nSockAddrLen);
+  static bool GetSockName(int family, SOCKADDR * sockAddr, CString & address, UINT & peerPort);
 
 protected:
   // Strucure to hold the socket data

@@ -446,48 +446,15 @@ BOOL CAsyncSocketExLayer::GetPeerNameNext( CString& rPeerAddress, UINT& rPeerPor
   }
   else
   {
-    SOCKADDR* sockAddr = nullptr;
-    int nSockAddrLen = 0;
-
-    if (m_nFamily == AF_INET6)
-    {
-      sockAddr = (SOCKADDR*)new SOCKADDR_IN6;
-      nSockAddrLen = sizeof(SOCKADDR_IN6);
-    }
-    else if (m_nFamily == AF_INET)
-    {
-      sockAddr = (SOCKADDR*)new SOCKADDR_IN;
-      nSockAddrLen = sizeof(SOCKADDR_IN);
-    }
+    int nSockAddrLen;
+    SOCKADDR* sockAddr = CAsyncSocketEx::CreateSockAddr(m_nFamily, nSockAddrLen);
 
     BOOL bResult = (sockAddr != nullptr);
-
     if (bResult)
     {
-      memset(sockAddr, 0, nSockAddrLen);
-
-      bResult = GetPeerName(sockAddr, &nSockAddrLen);
-
-      if (bResult)
-      {
-        if (m_nFamily == AF_INET6)
-        {
-          rPeerPort = ntohs(((SOCKADDR_IN6*)sockAddr)->sin6_port);
-          LPTSTR buf = Inet6AddrToString(((SOCKADDR_IN6*)sockAddr)->sin6_addr);
-          rPeerAddress = buf;
-          delete [] buf;
-        }
-        else if (m_nFamily == AF_INET)
-        {
-          rPeerPort = ntohs(((SOCKADDR_IN*)sockAddr)->sin_port);
-          rPeerAddress = inet_ntoa(((SOCKADDR_IN*)sockAddr)->sin_addr);
-        }
-        else
-        {
-          delete sockAddr;
-          return FALSE;
-        }
-      }
+      bResult =
+        GetPeerName(sockAddr, &nSockAddrLen) &&
+        CAsyncSocketEx::GetSockName(m_nFamily, sockAddr, rPeerAddress, rPeerPort);
       delete sockAddr;
     }
 
@@ -532,48 +499,15 @@ BOOL CAsyncSocketExLayer::GetSockNameNext( CString& rSockAddress, UINT& rSockPor
     return m_pNextLayer->GetSockName(rSockAddress, rSockPort);
   else
   {
-    SOCKADDR* sockAddr = nullptr;
-    int nSockAddrLen = 0;
-
-    if (m_nFamily == AF_INET6)
-    {
-      sockAddr = (SOCKADDR*)new SOCKADDR_IN6;
-      nSockAddrLen = sizeof(SOCKADDR_IN6);
-    }
-    else if (m_nFamily == AF_INET)
-    {
-      sockAddr = (SOCKADDR*)new SOCKADDR_IN;
-      nSockAddrLen = sizeof(SOCKADDR_IN);
-    }
+    int nSockAddrLen;
+    SOCKADDR* sockAddr = CAsyncSocketEx::CreateSockAddr(m_nFamily, nSockAddrLen);
 
     BOOL bResult = (sockAddr != nullptr);
-
     if (bResult)
     {
-      memset(sockAddr, 0, nSockAddrLen);
-
-      bResult = GetSockName(sockAddr, &nSockAddrLen);
-
-      if (bResult)
-      {
-        if (m_nFamily == AF_INET6)
-        {
-          rSockPort = ntohs(((SOCKADDR_IN6*)sockAddr)->sin6_port);
-          LPTSTR buf = Inet6AddrToString(((SOCKADDR_IN6*)sockAddr)->sin6_addr);
-          rSockAddress = buf;
-          delete [] buf;
-        }
-        else if (m_nFamily == AF_INET)
-        {
-          rSockPort = ntohs(((SOCKADDR_IN*)sockAddr)->sin_port);
-          rSockAddress = inet_ntoa(((SOCKADDR_IN*)sockAddr)->sin_addr);
-        }
-        else
-        {
-          delete sockAddr;
-          return FALSE;
-        }
-      }
+      bResult =
+        GetSockName(sockAddr, &nSockAddrLen);
+        CAsyncSocketEx::GetSockName(m_nFamily, sockAddr, rSockAddress, rSockPort);
       delete sockAddr;
     }
 
