@@ -70,7 +70,7 @@ namespace WinSCP
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
     [ComSourceInterfaces(typeof(ISessionEvents))]
-    public sealed class Session : IDisposable, IReflect
+    public sealed class Session : ISession, IReflect
     {
         public string ExecutablePath { get { return GetExecutablePath(); } set { CheckNotOpened(); _executablePath = value; } }
 #if !NETSTANDARD

@@ -47,7 +47,7 @@ namespace WinSCP
     [Guid("2D4EF368-EE80-4C15-AE77-D12AEAF4B00A")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
-    public sealed class SessionOptions
+    public sealed class SessionOptions : ISessionOptions
     {
         public SessionOptions()
         {
