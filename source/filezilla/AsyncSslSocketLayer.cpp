@@ -1288,21 +1288,8 @@ static bool AsnTimeToValidTime(ASN1_TIME * AsnTime, t_SslCertData::t_validTime &
   return TRUE;
 }
 
-BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LPCTSTR & Error)
+static void NameToContact(X509_NAME *pX509Name, t_SslCertData::t_Contact & contact)
 {
-  X509 *pX509=SSL_get_peer_certificate(m_ssl);
-  if (!pX509)
-  {
-    Error = L"Cannot get certificate";
-    return FALSE;
-  }
-
-  //Reset the contents of SslCertData
-  memset(&SslCertData, 0, sizeof(t_SslCertData));
-
-  //Set subject data fields
-  X509_NAME *pX509Name=X509_get_subject_name(pX509);
-
   if (pX509Name)
   {
     int count=X509_NAME_entry_count(pX509Name);
@@ -1319,204 +1306,97 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
       int len = ASN1_STRING_to_UTF8(&out, pString);
       if (len > 0)
       {
-        // Keep it huge
-        LPWSTR unicode = new WCHAR[len * 10];
-        memset(unicode, 0, sizeof(WCHAR) * len * 10);
-        int unicodeLen = MultiByteToWideChar(CP_UTF8, 0, (const char *)out, len, unicode, len * 10);
-        if (unicodeLen > 0)
-        {
-#ifdef _UNICODE
-          str = unicode;
-#else
-          LPSTR ansi = new CHAR[len * 10];
-          memset(ansi, 0, sizeof(CHAR) * len * 10);
-          int ansiLen = WideCharToMultiByte(CP_ACP, 0, unicode, unicodeLen, ansi, len * 10, 0, 0);
-          if (ansiLen > 0)
-            str = ansi;
-
-          delete [] ansi;
-#endif
-        }
-        delete [] unicode;
+        str = CString(UTF8String(reinterpret_cast<char *>(out), len));
         OPENSSL_free(out);
       }
 
       switch(OBJ_obj2nid(pObject))
       {
       case NID_organizationName:
-        _tcsncpy(SslCertData.subject.Organization, str, 255);
-        SslCertData.subject.Organization[255] = 0;
+        _tcsncpy(contact.Organization, str, 255);
+        contact.Organization[255] = 0;
         break;
       case NID_organizationalUnitName:
-        _tcsncpy(SslCertData.subject.Unit, str, 255);
-        SslCertData.subject.Unit[255] = 0;
+        _tcsncpy(contact.Unit, str, 255);
+        contact.Unit[255] = 0;
         break;
       case NID_commonName:
-        _tcsncpy(SslCertData.subject.CommonName, str, 255);
-        SslCertData.subject.CommonName[255] = 0;
+        _tcsncpy(contact.CommonName, str, 255);
+        contact.CommonName[255] = 0;
         break;
       case NID_pkcs9_emailAddress:
-        _tcsncpy(SslCertData.subject.Mail, str, 255);
-        SslCertData.subject.Mail[255] = 0;
+        _tcsncpy(contact.Mail, str, 255);
+        contact.Mail[255] = 0;
         break;
       case NID_countryName:
-        _tcsncpy(SslCertData.subject.Country, str, 255);
-        SslCertData.subject.Country[255] = 0;
+        _tcsncpy(contact.Country, str, 255);
+        contact.Country[255] = 0;
         break;
       case NID_stateOrProvinceName:
-        _tcsncpy(SslCertData.subject.StateProvince, str, 255);
-        SslCertData.subject.StateProvince[255] = 0;
+        _tcsncpy(contact.StateProvince, str, 255);
+        contact.StateProvince[255] = 0;
         break;
       case NID_localityName:
-        _tcsncpy(SslCertData.subject.Town, str, 255);
-        SslCertData.subject.Town[255] = 0;
+        _tcsncpy(contact.Town, str, 255);
+        contact.Town[255] = 0;
         break;
       default:
         if ( !OBJ_nid2sn(OBJ_obj2nid(pObject)) )
         {
           TCHAR tmp[20];
           _stprintf(tmp, L"%d", OBJ_obj2nid(pObject));
-          int maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
-          _tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), tmp, maxlen);
+          int maxlen = 1024 - _tcslen(contact.Other)-1;
+          _tcsncpy(contact.Other+_tcslen(contact.Other), tmp, maxlen);
 
-          maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
-          _tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), L"=", maxlen);
+          maxlen = 1024 - _tcslen(contact.Other)-1;
+          _tcsncpy(contact.Other+_tcslen(contact.Other), L"=", maxlen);
 
-          maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
-          _tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), str, maxlen);
+          maxlen = 1024 - _tcslen(contact.Other)-1;
+          _tcsncpy(contact.Other+_tcslen(contact.Other), str, maxlen);
 
-          maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
-          _tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), L";", maxlen);
+          maxlen = 1024 - _tcslen(contact.Other)-1;
+          _tcsncpy(contact.Other+_tcslen(contact.Other), L";", maxlen);
         }
         else
         {
-          int maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
+          int maxlen = 1024 - _tcslen(contact.Other)-1;
 
           USES_CONVERSION;
-          _tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), A2CT(OBJ_nid2sn(OBJ_obj2nid(pObject))), maxlen);
+          _tcsncpy(contact.Other+_tcslen(contact.Other), A2CT(OBJ_nid2sn(OBJ_obj2nid(pObject))), maxlen);
 
-          maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
-          _tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), L"=", maxlen);
+          maxlen = 1024 - _tcslen(contact.Other)-1;
+          _tcsncpy(contact.Other+_tcslen(contact.Other), L"=", maxlen);
 
-          maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
-          _tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), str, maxlen);
+          maxlen = 1024 - _tcslen(contact.Other)-1;
+          _tcsncpy(contact.Other+_tcslen(contact.Other), str, maxlen);
 
-          maxlen = 1024 - _tcslen(SslCertData.subject.Other)-1;
-          _tcsncpy(SslCertData.subject.Other+_tcslen(SslCertData.subject.Other), L";", maxlen);
+          maxlen = 1024 - _tcslen(contact.Other)-1;
+          _tcsncpy(contact.Other+_tcslen(contact.Other), L";", maxlen);
         }
         break;
       }
     }
   }
+}
 
-  //Set issuer data fields
-  pX509Name=X509_get_issuer_name(pX509);
-  if (pX509Name)
+BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LPCTSTR & Error)
+{
+  X509 *pX509=SSL_get_peer_certificate(m_ssl);
+  if (!pX509)
   {
-    int count=X509_NAME_entry_count(pX509Name);
-    for (int i=0;i<count;i++)
-    {
-      X509_NAME_ENTRY *pX509NameEntry=X509_NAME_get_entry(pX509Name,i);
-      if (!pX509NameEntry)
-        continue;
-      ASN1_STRING *pString=X509_NAME_ENTRY_get_data(pX509NameEntry);
-      ASN1_OBJECT *pObject=X509_NAME_ENTRY_get_object(pX509NameEntry);
-
-      CString str;
-
-      unsigned char *out;
-      int len = ASN1_STRING_to_UTF8(&out, pString);
-      if (len > 0)
-      {
-        // Keep it huge
-        LPWSTR unicode = new WCHAR[len * 10];
-        memset(unicode, 0, sizeof(WCHAR) * len * 10);
-        int unicodeLen = MultiByteToWideChar(CP_UTF8, 0, (const char *)out, len, unicode, len * 10);
-        if (unicodeLen > 0)
-        {
-#ifdef _UNICODE
-          str = unicode;
-#else
-          LPSTR ansi = new CHAR[len * 10];
-          memset(ansi, 0, sizeof(CHAR) * len * 10);
-          int ansiLen = WideCharToMultiByte(CP_ACP, 0, unicode, unicodeLen, ansi, len * 10, 0, 0);
-          if (ansiLen > 0)
-            str = ansi;
-
-          delete [] ansi;
-#endif
-        }
-        delete [] unicode;
-        OPENSSL_free(out);
-      }
-
-      switch(OBJ_obj2nid(pObject))
-      {
-      case NID_organizationName:
-        _tcsncpy(SslCertData.issuer.Organization, str, 255);
-        SslCertData.issuer.Organization[255] = 0;
-        break;
-      case NID_organizationalUnitName:
-        _tcsncpy(SslCertData.issuer.Unit, str, 255);
-        SslCertData.issuer.Unit[255] = 0;
-        break;
-      case NID_commonName:
-        _tcsncpy(SslCertData.issuer.CommonName, str, 255);
-        SslCertData.issuer.CommonName[255] = 0;
-        break;
-      case NID_pkcs9_emailAddress:
-        _tcsncpy(SslCertData.issuer.Mail, str, 255);
-        SslCertData.issuer.Mail[255] = 0;
-        break;
-      case NID_countryName:
-        _tcsncpy(SslCertData.issuer.Country, str, 255);
-        SslCertData.issuer.Country[255] = 0;
-        break;
-      case NID_stateOrProvinceName:
-        _tcsncpy(SslCertData.issuer.StateProvince, str, 255);
-        SslCertData.issuer.StateProvince[255] = 0;
-        break;
-      case NID_localityName:
-        _tcsncpy(SslCertData.issuer.Town, str, 255);
-        SslCertData.issuer.Town[255] = 0;
-        break;
-      default:
-        if ( !OBJ_nid2sn(OBJ_obj2nid(pObject)) )
-        {
-          TCHAR tmp[20];
-          _stprintf(tmp, L"%d", OBJ_obj2nid(pObject));
-          int maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
-          _tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), tmp, maxlen);
-
-          maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
-          _tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), L"=", maxlen);
-
-          maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
-          _tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), str, maxlen);
-
-          maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
-          _tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), L";", maxlen);
-        }
-        else
-        {
-          int maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
-
-          USES_CONVERSION;
-          _tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), A2CT(OBJ_nid2sn(OBJ_obj2nid(pObject))), maxlen);
-
-          maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
-          _tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), L"=", maxlen);
-
-          maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
-          _tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), str, maxlen);
-
-          maxlen = 1024 - _tcslen(SslCertData.issuer.Other)-1;
-          _tcsncpy(SslCertData.issuer.Other+_tcslen(SslCertData.issuer.Other), L";", maxlen);
-        }
-        break;
-      }
-    }
+    Error = L"Cannot get certificate";
+    return FALSE;
   }
+
+  //Reset the contents of SslCertData
+  memset(&SslCertData, 0, sizeof(t_SslCertData));
+
+  //Set subject data fields
+  X509_NAME *pX509Name=X509_get_subject_name(pX509);
+  NameToContact(pX509Name, SslCertData.subject);
+
+  pX509Name=X509_get_issuer_name(pX509);
+  NameToContact(pX509Name, SslCertData.issuer);
 
   //Set date fields
 
