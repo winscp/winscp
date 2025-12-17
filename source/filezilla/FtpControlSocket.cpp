@@ -270,8 +270,6 @@ void CFtpControlSocket::Close()
 
 BOOL CFtpControlSocket::Connect(CString hostAddress, UINT nHostPort)
 {
-  hostAddress = ConvertDomainName(hostAddress);
-
   //Don't resolve host asynchronously when using proxies
   if (m_pProxyLayer)
   {
@@ -5863,29 +5861,6 @@ BOOL CFtpControlSocket::SpeedLimitAddTransferredBytes(enum transferDirection dir
     }
   m_SpeedLimitSync.Unlock();
   return FALSE;
-}
-
-CString CFtpControlSocket::ConvertDomainName(CString domain)
-{
-  USES_CONVERSION;
-
-  LPCWSTR buffer = T2CW(domain);
-
-  char *utf8 = new char[wcslen(buffer) * 2 + 2];
-  if (!WideCharToMultiByte(CP_UTF8, 0, buffer, -1, utf8, wcslen(buffer) * 2 + 2, 0, 0))
-  {
-    delete [] utf8;
-    LogMessage(FZ_LOG_WARNING, L"Could not convert domain name");
-    return domain;
-  }
-
-  char *output = 0;
-  output = strdup(utf8);
-  delete [] utf8;
-
-  CString result = A2T(output);
-  free(output);
-  return result;
 }
 
 void CFtpControlSocket::LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg)
