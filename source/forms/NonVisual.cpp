@@ -19,17 +19,17 @@
 TNonVisualDataModule *NonVisualDataModule;
 //---------------------------------------------------------------------------
 #define UPDEX(HandleAction, Condition, OtherEnabled, OtherDisabled) if (Action == HandleAction) { \
-  ((TCustomAction *)Action)->Enabled = (Condition); \
-  if (((TCustomAction *)Action)->Enabled) { OtherEnabled; } else { OtherDisabled; }; \
+  Action->Enabled = (Condition); \
+  if (Action->Enabled) { OtherEnabled; } else { OtherDisabled; }; \
   Handled = true; } else
 #define UPDEX1(HandleAction, Condition, Other) UPDEX(HandleAction, Condition, Other, Other)
 #define UPD(HandleAction, Condition) if (Action == HandleAction) { \
-  ((TCustomAction *)Action)->Enabled = (Condition); Handled = true; } else
+  Action->Enabled = (Condition); Handled = true; } else
 #define UPDFUNC(HandleAction, Function) if (Action == HandleAction) { Function; Handled = true; } else
 #define EXE(HandleAction, Command) if (Action == HandleAction) { \
   Command; Handled = true; } else
 #define UPDACT(HandleAction, Command) \
-  EXE(HandleAction, ((TCustomAction *)Action)->Enabled = true; Command)
+  EXE(HandleAction, Action->Enabled = true; Command)
 #define UPDCOMP2(COMP, NUM) if (Action == COMP ## Action ## NUM) { COMP ## Action ## NUM->Enabled = true; \
   COMP ## Action ## NUM->Visible = ScpExplorer->IsComponentPossible(fc ## COMP); \
   COMP ## Action ## NUM->Checked = ScpExplorer->ComponentVisible[fc ## COMP]; Handled = true; } else
