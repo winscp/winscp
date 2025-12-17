@@ -1,4 +1,4 @@
-namespace WinSCP
+﻿namespace WinSCP
 {
     public interface ITransferOptions
     {
@@ -9,7 +9,7 @@ namespace WinSCP
         TransferResumeSupport ResumeSupport { get; set; }
         int SpeedLimit { get; set; }
         OverwriteMode OverwriteMode { get; set; }
-        
+
         void AddRawSettings(string setting, string value);
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace WinSCP
 {
@@ -17,18 +17,18 @@ namespace WinSCP
         bool IsThisDirectory { get; }
         bool IsParentDirectory { get; }
     }
-    
+
     public interface IRemoteDirectoryInfo
     {
         RemoteFileInfoCollection Files { get; }
     }
-    
+
     public interface IFilePermissions
     {
         string Text { get; set; }
         string Octal { get; set; }
         int Numeric { get; set; }
-        
+
         bool UserExecute { get; set; }
         bool UserRead { get; set; }
         bool UserWrite { get; set; }
@@ -38,7 +38,7 @@ namespace WinSCP
         bool OtherExecute { get; set; }
         bool OtherRead { get; set; }
         bool OtherWrite { get; set; }
-        
+
         bool Sticky { get; set; }
         bool SetUid { get; set; }
         bool SetGid { get; set; }
