@@ -20,17 +20,17 @@ _AFX_INLINE CFileException::CFileException(int cause, LONG lOsError,
 _AFX_INLINE CString::CString()
 	{ }
 _AFX_INLINE CString::CString(const unsigned char* lpsz)
-	{ *this = (LPCSTR)lpsz; }
+	{ *this = reinterpret_cast<LPCSTR>(lpsz); }
 _AFX_INLINE const CString& CString::operator=(const unsigned char* lpsz)
-	{ *this = (LPCSTR)lpsz; return *this; }
+	{ *this = reinterpret_cast<LPCSTR>(lpsz); return *this; }
 _AFX_INLINE const CString& CString::operator+=(char ch)
-	{ *this += (TCHAR)ch; return *this; }
+	{ *this += static_cast<TCHAR>(ch); return *this; }
 _AFX_INLINE const CString& CString::operator=(char ch)
-	{ *this = (TCHAR)ch; return *this; }
+	{ *this = static_cast<TCHAR>(ch); return *this; }
 _AFX_INLINE CString AFXAPI operator+(const CString& string, char ch)
-	{ return string + (TCHAR)ch; }
+	{ return string + static_cast<TCHAR>(ch); }
 _AFX_INLINE CString AFXAPI operator+(char ch, const CString& string)
-	{ return (TCHAR)ch + string; }
+	{ return static_cast<TCHAR>(ch) + string; }
 
 _AFX_INLINE int CString::GetLength() const
 	{ return m_Data.Length(); }

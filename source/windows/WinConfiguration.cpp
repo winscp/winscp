@@ -177,7 +177,7 @@ void __fastcall TEditorPreferences::Load(THierarchicalStorage * Storage, bool Le
   {
     FData.FileMask = Storage->ReadString(L"FileMask", FData.FileMask.Masks);
   }
-  FData.Editor = (TEditor)Storage->ReadInteger(L"Editor", FData.Editor);
+  FData.Editor = static_cast<TEditor>(Storage->ReadInteger(L"Editor", FData.Editor));
   FData.ExternalEditor = Storage->ReadString(L"ExternalEditor", FData.ExternalEditor);
   FData.ExternalEditorText = Storage->ReadBool(L"ExternalEditorText", FData.ExternalEditorText);
   FData.SDIExternalEditor = Storage->ReadBool(L"SDIExternalEditor", FData.SDIExternalEditor);
@@ -3788,7 +3788,7 @@ void __fastcall TCustomCommandList::Load(THierarchicalStorage * Storage)
     for (int Index = 0; Index < FCommands->Count; Index++)
     {
       TCustomCommandType * Command = GetCommand(Index);
-      Command->ShortCut = (Word)Storage->ReadInteger(Command->Name, Command->ShortCut);
+      Command->ShortCut = static_cast<Word>(Storage->ReadInteger(Command->Name, Command->ShortCut));
     }
     Storage->CloseSubKey();
   }

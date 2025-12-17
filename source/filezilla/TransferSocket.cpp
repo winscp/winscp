@@ -115,7 +115,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
       status->bFileTransfer = FALSE;
       status->transfersize = -1;
       status->bytes = m_transferdata.transfersize;
-      GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_TRANSFERSTATUS, 0), (LPARAM)status);
+      GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_TRANSFERSTATUS, 0), reinterpret_cast<LPARAM>(status));
     }
     if (!numread)
     {
@@ -647,7 +647,7 @@ void CTransferSocket::UpdateStatusBar(bool forceUpdate)
   status->transfersize = m_transferdata.transfersize;
   status->bytes=m_transferdata.transfersize-m_transferdata.transferleft;
 
-  GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_TRANSFERSTATUS, 0), (LPARAM)status);
+  GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_TRANSFERSTATUS, 0), reinterpret_cast<LPARAM>(status));
 }
 
 BOOL CTransferSocket::Create(BOOL bUseSsl)
@@ -686,7 +686,7 @@ BOOL CTransferSocket::Create(BOOL bUseSsl)
       m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
       return FALSE;
     }
-    int startport=static_cast<int>(min+((double)rand()*(max-min))/(RAND_MAX+1));
+    int startport=static_cast<int>(min+(static_cast<double>(rand())*(max-min))/(RAND_MAX+1));
     int port=startport;
     // Failure to create the socket, calls Close(), which resets the family. We want to keep trying the original faimily with each port.
     // Only with the specific family set, the Create actually does bind(), without which the port testing does not work.

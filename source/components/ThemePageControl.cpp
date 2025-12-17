@@ -159,7 +159,7 @@ int __fastcall TThemePageControl::GetTabsHeight()
   // but not on Windows XP
 
   TRect Rect = GetClientRect();
-  ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, (LPARAM)&Rect);
+  ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, reinterpret_cast<LPARAM>(&Rect));
   int Result = Rect.Top - 1;
 
   // Two different ways to calculate the same, not sure which one is more reliable,
@@ -198,7 +198,7 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
 
   // 1st paint the tab body
   TRect ClientRect = PageRect;
-  ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, (LPARAM)&PageRect);
+  ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, reinterpret_cast<LPARAM>(&PageRect));
 
   ClientRect.Top = PageRect.Top - 2;
   DrawThemeBackground(Theme, DC, TABP_PANE, 0, &ClientRect, NULL);
@@ -398,7 +398,7 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
     {
       SetTextColor(DC, static_cast<COLORREF>(ATabTheme->GetItemTextColor(GetItemInfo(State))));
     }
-    HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);
+    HGDIOBJ OldFont = SelectObject(DC, Font->Handle);
     wchar_t * Buf = new wchar_t[static_cast<size_t>(Text.Length() + 1 + 4)];
     wcscpy(Buf, Text.c_str());
     TRect TextRect(0, 0, Rect.Width(), 20);

@@ -2,8 +2,11 @@
 #ifndef NeonIntfH
 #define NeonIntfH
 //---------------------------------------------------------------------------
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <ne_uri.h>
 #include <ne_session.h>
+#pragma clang diagnostic pop
 #include <SessionData.h>
 //---------------------------------------------------------------------------
 #define StrToNeon(S) UTF8String(S).c_str()

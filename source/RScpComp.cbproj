@@ -36,7 +36,7 @@
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
-        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-zero-as-null-pointer-constant -Wno-c++98-compat-pedantic -Wno-language-extension-token -Wno-missing-prototypes -Wno-old-style-cast -Wno-padded -Wno-float-equal</BCC_UserSuppliedOptions>
+        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-zero-as-null-pointer-constant -Wno-c++98-compat-pedantic -Wno-language-extension-token -Wno-missing-prototypes -Wno-padded -Wno-float-equal -Wno-c99-extensions</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <Defines>UNICODE;$(Defines)</Defines>

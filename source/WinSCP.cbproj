@@ -57,7 +57,7 @@
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_PCHName_Clang>windows\WinPCH.h</BCC_PCHName_Clang>
         <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
-        <BCC_UserSuppliedOptions>-Wno-objc-interface-ivars -Wno-return-type-c-linkage -Wno-covered-switch-default -Wno-cast-align -Wno-implicit-fallthrough -Wno-missing-prototypes -Wno-switch -Wno-shadow -Wno-sign-conversion -Wno-global-constructors -Wno-exit-time-destructors -Wno-padded -Wno-c++98-compat-pedantic -Wno-zero-as-null-pointer-constant -Wno-language-extension-token -Wno-old-style-cast -Wno-ignored-attributes -Wno-float-equal -Wno-switch-enum</BCC_UserSuppliedOptions>
+        <BCC_UserSuppliedOptions>-Wno-objc-interface-ivars -Wno-return-type-c-linkage -Wno-covered-switch-default -Wno-cast-align -Wno-implicit-fallthrough -Wno-missing-prototypes -Wno-switch -Wno-shadow -Wno-sign-conversion -Wno-global-constructors -Wno-exit-time-destructors -Wno-padded -Wno-c++98-compat-pedantic -Wno-zero-as-null-pointer-constant -Wno-language-extension-token -Wno-ignored-attributes -Wno-float-equal -Wno-switch-enum -Wno-c99-extensions</BCC_UserSuppliedOptions>
         <BRCC_CodePage>65001</BRCC_CodePage>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>

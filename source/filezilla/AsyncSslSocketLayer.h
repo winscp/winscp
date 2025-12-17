@@ -73,7 +73,10 @@ for use in the OpenSSL Toolkit. (https://openssl-library.org/)
 #define AsyncSslSocketLayerH
 //---------------------------------------------------------------------------
 #include "AsyncSocketExLayer.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/ssl.h>
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 // Details of SSL certificate, can be used by app to verify if certificate is valid
 struct t_SslCertData

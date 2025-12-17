@@ -290,7 +290,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
             TMessageParams Params;
             if (DebugAlwaysTrue(Manager->ActiveTerminal != NULL) &&
                 ((Configuration->SessionReopenTimeout == 0) ||
-                 ((double)Manager->ActiveTerminal->ReopenStart == 0) ||
+                 (Manager->ActiveTerminal->ReopenStart == TDateTime()) ||
                  (int(double(Now() - Manager->ActiveTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
             {
               Params.Timeout = GUIConfiguration->SessionReopenAutoIdleOn ? GUIConfiguration->SessionReopenAutoIdle : 0;

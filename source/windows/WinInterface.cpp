@@ -201,7 +201,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
   {
     NeverAskAgainCaption =
       !Params->NeverAskAgainTitle.IsEmpty() ?
-        (UnicodeString)Params->NeverAskAgainTitle :
+        Params->NeverAskAgainTitle :
         // qaOK | qaIgnore is used, when custom "non-answer" button is required
         LoadStr(((ActualAnswers == qaOK) || (ActualAnswers == (qaOK | qaIgnore))) ?
           NEVER_SHOW_AGAIN : NEVER_ASK_AGAIN);
@@ -1518,7 +1518,7 @@ __fastcall ::TTrayIcon::TTrayIcon(unsigned int Id)
   if (DebugAlwaysTrue(ComCtl32Dll))
   {
     typedef HRESULT WINAPI (* TLoadIconMetric)(HINSTANCE hinst, PCWSTR pszName, int lims, __out HICON *phico);
-    TLoadIconMetric LoadIconMetric = (TLoadIconMetric)GetProcAddress(ComCtl32Dll, "LoadIconMetric");
+    TLoadIconMetric LoadIconMetric = reinterpret_cast<TLoadIconMetric>(GetProcAddress(ComCtl32Dll, "LoadIconMetric"));
     if (LoadIconMetric != NULL)
     {
       // Prefer not to use Application->Icon->Handle as that shows 32x32 scaled down to 16x16 for some reason
@@ -1634,14 +1634,14 @@ void __fastcall ::TTrayIcon::CancelBalloon()
 //---------------------------------------------------------------------------
 bool __fastcall ::TTrayIcon::Notify(unsigned int Message)
 {
-  bool Result = SUCCEEDED(Shell_NotifyIcon(Message, (NOTIFYICONDATA*)FTrayIcon));
+  bool Result = SUCCEEDED(Shell_NotifyIcon(Message, FTrayIcon));
   if (Result && (Message == NIM_ADD))
   {
     UINT Timeout = FTrayIcon->uTimeout;
     try
     {
       FTrayIcon->uVersion = NOTIFYICON_VERSION;
-      Result = SUCCEEDED(Shell_NotifyIcon(NIM_SETVERSION, (NOTIFYICONDATA*)FTrayIcon));
+      Result = SUCCEEDED(Shell_NotifyIcon(NIM_SETVERSION, FTrayIcon));
     }
     __finally
     {

@@ -232,7 +232,7 @@ void __fastcall TSessionData::DefaultSettings()
 
   for (unsigned int Index = 0; Index < std::size(FBugs); Index++)
   {
-    Bug[(TSshBug)Index] = asAuto;
+    Bug[static_cast<TSshBug>(Index)] = asAuto;
   }
 
   Special = false;
@@ -301,7 +301,7 @@ void __fastcall TSessionData::DefaultSettings()
 
   for (unsigned int Index = 0; Index < std::size(FSFTPBugs); Index++)
   {
-    SFTPBug[(TSftpBug)Index] = asAuto;
+    SFTPBug[static_cast<TSftpBug>(Index)] = asAuto;
   }
 
   Tunnel = false;
@@ -481,7 +481,7 @@ void __fastcall TSessionData::NonPersistent()
   \
   for (unsigned int Index = 0; Index < std::size(FBugs); Index++) \
   { \
-    PROPERTY(Bug[(TSshBug)Index]); \
+    PROPERTY(Bug[static_cast<TSshBug>(Index)]); \
   } \
   \
   PROPERTY(SftpServer); \
@@ -495,7 +495,7 @@ void __fastcall TSessionData::NonPersistent()
   \
   for (unsigned int Index = 0; Index < std::size(FSFTPBugs); Index++) \
   { \
-    PROPERTY(SFTPBug[(TSftpBug)Index]); \
+    PROPERTY(SFTPBug[static_cast<TSftpBug>(Index)]); \
   } \
   \
   PROPERTY(Tunnel); \
@@ -549,7 +549,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
 {
   if (Source && Source->InheritsFrom(__classid(TSessionData)))
   {
-    TSessionData * SourceData = (TSessionData *)Source;
+    TSessionData * SourceData = static_cast<TSessionData *>(Source);
     // Master password prompt shows implicitly here, when cloning the session data for a new terminal
     CopyData(SourceData);
     FSource = SourceData->FSource;
@@ -764,7 +764,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   RekeyData = Storage->ReadString(L"RekeyBytes", RekeyData);
   RekeyTime = Storage->ReadInteger(L"RekeyTime", RekeyTime);
 
-  FSProtocol = (TFSProtocol)Storage->ReadInteger(L"FSProtocol", FSProtocol);
+  FSProtocol = static_cast<TFSProtocol>(Storage->ReadInteger(L"FSProtocol", FSProtocol));
   LocalDirectory = Storage->ReadString(L"LocalDirectory", LocalDirectory);
   OtherLocalDirectory = Storage->ReadString(L"OtherLocalDirectory", OtherLocalDirectory);
   RemoteDirectory = Storage->ReadString(L"RemoteDirectory", RemoteDirectory);
@@ -776,7 +776,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   ResolveSymlinks = Storage->ReadBool(L"ResolveSymlinks", ResolveSymlinks);
   FollowDirectorySymlinks = Storage->ReadBool(L"FollowDirectorySymlinks", FollowDirectorySymlinks);
-  DSTMode = (TDSTMode)Storage->ReadInteger(L"ConsiderDST", DSTMode);
+  DSTMode = static_cast<TDSTMode>(Storage->ReadInteger(L"ConsiderDST", DSTMode));
   Special = Storage->ReadBool(L"Special", Special);
   if (!Unsafe)
   {
@@ -805,7 +805,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   ExitCode1IsError = Storage->ReadBool(L"ExitCode1IsError", ExitCode1IsError);
   LookupUserGroups = Storage->ReadEnum(L"LookupUserGroups2", LookupUserGroups, AutoSwitchMapping);
-  EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
+  EOLType = static_cast<TEOLType>(Storage->ReadInteger(L"EOLType", EOLType));
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
   VMSAllRevisions = Storage->ReadBool(L"VMSAllRevisions", VMSAllRevisions);
   NotUtf = Storage->ReadEnum(L"Utf", Storage->ReadEnum(L"SFTPUtfBug", NotUtf), AutoSwitchReversedMapping);
@@ -816,7 +816,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   S3RoleArn = Storage->ReadString(L"S3RoleArn", S3RoleArn);
   S3RoleSessionName = Storage->ReadString(L"S3RoleSessionName", S3RoleSessionName);
   S3Profile = Storage->ReadString(L"S3Profile", S3Profile);
-  S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
+  S3UrlStyle = static_cast<TS3UrlStyle>(Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle));
   S3MaxKeys = Storage->ReadEnum(L"S3MaxKeys", S3MaxKeys, AutoSwitchMapping);
   S3CredentialsEnv = Storage->ReadBool(L"S3CredentialsEnv", S3CredentialsEnv);
   S3RequesterPays = Storage->ReadBool(L"S3RequesterPays", S3RequesterPays);
@@ -2268,7 +2268,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       // this can be optimized as the list is sorted
       for (Integer Index = 0; Index < StoredSessions->CountIncludingHidden; Index++)
       {
-        TSessionData * AData = (TSessionData *)StoredSessions->Items[Index];
+        TSessionData * AData = static_cast<TSessionData *>(StoredSessions->Items[Index]);
         if (!AData->IsWorkspace)
         {
           bool Match = false;
@@ -3071,7 +3071,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
       if (!AlgoStr.CompareIC(Names[Algo]) &&
           !Used[Algo] && DebugAlwaysTrue(Index < Count))
       {
-        NewList[Index] = (AlgoT)Algo;
+        NewList[Index] = static_cast<AlgoT>(Algo);
         Used[Algo] = true;
         Index++;
         break;
@@ -3378,7 +3378,7 @@ void __fastcall TSessionData::SetPingIntervalDT(TDateTime value)
   unsigned short hour, min, sec, msec;
 
   value.DecodeTime(&hour, &min, &sec, &msec);
-  PingInterval = ((int)hour)*SecsPerHour + ((int)min)*SecsPerMin + sec;
+  PingInterval = (static_cast<int>(hour))*SecsPerHour + (static_cast<int>(min))*SecsPerMin + sec;
 }
 //---------------------------------------------------------------------------
 TDateTime __fastcall TSessionData::GetPingIntervalDT()
@@ -4830,7 +4830,7 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
           }
           else
           {
-            SessionData = (TSessionData*)FindByName(SessionName);
+            SessionData = static_cast<TSessionData*>(FindByName(SessionName));
           }
         }
 
@@ -4922,7 +4922,7 @@ void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
     DoSave(Storage, FDefaultSettings, All, RecryptPasswordOnly, FactoryDefaults);
     for (int Index = 0; Index < CountIncludingHidden; Index++)
     {
-      TSessionData * SessionData = (TSessionData *)Items[Index];
+      TSessionData * SessionData = static_cast<TSessionData *>(Items[Index]);
       try
       {
         DoSave(Storage, SessionData, All, RecryptPasswordOnly, FactoryDefaults);
@@ -4990,7 +4990,7 @@ void __fastcall TStoredSessionList::Saved()
   FDefaultSettings->Modified = false;
   for (int Index = 0; Index < CountIncludingHidden; Index++)
   {
-    ((TSessionData *)Items[Index])->Modified = false;
+    static_cast<TSessionData *>(Items[Index])->Modified = false;
   }
 }
 //---------------------------------------------------------------------
@@ -5442,7 +5442,7 @@ int __fastcall TStoredSessionList::IndexOf(TSessionData * Data)
 TSessionData * __fastcall TStoredSessionList::NewSession(
   UnicodeString SessionName, TSessionData * Session)
 {
-  TSessionData * DuplicateSession = (TSessionData*)FindByName(SessionName);
+  TSessionData * DuplicateSession = static_cast<TSessionData*>(FindByName(SessionName));
   if (!DuplicateSession)
   {
     DuplicateSession = new TSessionData(L"");

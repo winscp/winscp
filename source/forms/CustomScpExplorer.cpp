@@ -836,7 +836,7 @@ void __fastcall TCustomScpExplorerForm::QueueItemUpdate(TTerminalQueue * Queue,
 
       if (QueueItem != NULL)
       {
-        QueueItem->UserData = (void*)true;
+        QueueItem->UserData = reinterpret_cast<void*>(true);
         FQueueItemInvalidated = true;
       }
     }
@@ -876,9 +876,9 @@ void __fastcall TCustomScpExplorerForm::RefreshQueueItems()
         FUserActionTimer->Enabled = true;
       }
 
-      if ((bool)QueueItem->UserData)
+      if (reinterpret_cast<bool>(QueueItem->UserData))
       {
-        QueueItem->UserData = (void*)false;
+        QueueItem->UserData = reinterpret_cast<void*>(false);
         QueueItem->Update();
         Updated = true;
         Update = true;
@@ -1898,7 +1898,7 @@ void __fastcall TCustomScpExplorerForm::HistoryItemClick(System::TObject* Sender
 {
   TTBCustomItem * Item = dynamic_cast<TTBCustomItem *>(Sender);
   THistoryItemData Data = *reinterpret_cast<THistoryItemData*>(&(Item->Tag));
-  HistoryGo((TOperationSide)Data.Side, Data.Index);
+  HistoryGo(static_cast<TOperationSide>(Data.Side), Data.Index);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateHistoryMenu(TOperationSide Side,
@@ -4895,7 +4895,7 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
         {
           for (int Index = 0; Index < FileList->Count; Index++)
           {
-            TRemoteFile * File = (TRemoteFile *)(FileList->Objects[Index]);
+            TRemoteFile * File = static_cast<TRemoteFile *>(FileList->Objects[Index]);
             if (CapableGroupChanging)
             {
               GroupList->AddUnique(File->Group);
@@ -5002,7 +5002,7 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
       {
         // Note that handling shortcuts on panel (current control) popup menu has precendence over this.
         // But so far it's not a problem, as it does what we want.
-        TAction * Action = (TAction *)NonVisualDataModule->ExplorerActions->Actions[Index];
+        TAction * Action = static_cast<TAction *>(NonVisualDataModule->ExplorerActions->Actions[Index]);
         if (((Action->ShortCut == KeyShortCut) ||
              (Action->SecondaryShortCuts->IndexOfShortCut(KeyShortCut) >= 0)) &&
             AllowedAction(Action, aaShortCut))
@@ -5097,7 +5097,7 @@ void __fastcall TCustomScpExplorerForm::InitStatusBar()
     }
   }
 
-  TTBXStatusBar * SessionStatusBar = (TTBXStatusBar *)GetComponent(fcStatusBar);
+  TTBXStatusBar * SessionStatusBar = static_cast<TTBXStatusBar *>(GetComponent(fcStatusBar));
 
   int Offset = SessionStatusBar->Panels->Count - SessionPanelCount;
 
@@ -5135,7 +5135,7 @@ void __fastcall TCustomScpExplorerForm::InitStatusBar()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
 {
-  TTBXStatusBar * SessionStatusBar = (TTBXStatusBar *)GetComponent(fcStatusBar);
+  TTBXStatusBar * SessionStatusBar = static_cast<TTBXStatusBar *>(GetComponent(fcStatusBar));
   DebugAssert(SessionStatusBar != NULL);
 
   TTBXStatusPanel * NoteStatusPanel = SessionStatusBar->Panels->Items[0];
@@ -5696,7 +5696,7 @@ void __fastcall TCustomScpExplorerForm::ForceCloseLocalEditors()
 void __fastcall TCustomScpExplorerForm::RemoteDirViewDisplayProperties(
       TObject *Sender)
 {
-  TStrings *FileList = ((TUnixDirView*)Sender)->CreateFileList(True, False, NULL);
+  TStrings *FileList = static_cast<TUnixDirView*>(Sender)->CreateFileList(True, False, NULL);
   try
   {
     SetProperties(osRemote, FileList);
@@ -5904,7 +5904,7 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
 {
   DebugAssert(Sender && Item && Configuration);
   DebugAssert(AllowExec);
-  TCustomDirView * ADirView = (TCustomDirView *)Sender;
+  TCustomDirView * ADirView = static_cast<TCustomDirView *>(Sender);
   TOperationSide Side = ((ADirView == DirView(osRemote)) ? osRemote : osLocal);
   bool Remote = !IsSideLocalBrowser(Side);
 
@@ -7082,10 +7082,10 @@ void __fastcall TCustomScpExplorerForm::DoWarnLackOfTempSpace(
     UnicodeString ADrive = ExtractFileDrive(ExpandFileName(Path));
     if (!ADrive.IsEmpty())
     {
-      __int64 FreeSpace = DiskFree((Byte)(ADrive[1]-'A'+1));
+      __int64 FreeSpace = DiskFree(static_cast<Byte>(ADrive[1]-'A'+1));
       DebugAssert(RequiredSpace >= 0);
       __int64 RequiredWithReserve;
-      RequiredWithReserve = (__int64)(RequiredSpace * WinConfiguration->DDWarnLackOfTempSpaceRatio);
+      RequiredWithReserve = static_cast<__int64>(RequiredSpace * WinConfiguration->DDWarnLackOfTempSpaceRatio);
       if (FreeSpace < RequiredWithReserve)
       {
         unsigned int Result;
@@ -7314,7 +7314,7 @@ void __fastcall TCustomScpExplorerForm::AddEditLink(TOperationSide Side, bool Ad
   if (RemoteDirView->ItemFocused)
   {
     DebugAssert(RemoteDirView->ItemFocused->Data);
-    File = (TRemoteFile *)RemoteDirView->ItemFocused->Data;
+    File = static_cast<TRemoteFile *>(RemoteDirView->ItemFocused->Data);
 
     Edit = !Add && File->IsSymLink && Terminal->SessionData->ResolveSymlinks;
     if (Edit)
@@ -7365,7 +7365,7 @@ bool __fastcall TCustomScpExplorerForm::LinkFocused()
   return
     !IsSideLocalBrowser(FCurrentSide) &&
     (RemoteDirView->ItemFocused != NULL) &&
-    ((TRemoteFile *)RemoteDirView->ItemFocused->Data)->IsSymLink &&
+    static_cast<TRemoteFile *>(RemoteDirView->ItemFocused->Data)->IsSymLink &&
     Terminal->SessionData->ResolveSymlinks;
 }
 //---------------------------------------------------------------------------
@@ -8239,7 +8239,7 @@ void __fastcall TCustomScpExplorerForm::DDFakeFileInitDrag(TFileList * FileList,
     FDragFakeMonitors = StartCreationDirectoryMonitorsOnEachDrive(FILE_NOTIFY_CHANGE_DIR_NAME, DDFakeCreated);
   }
 
-  FDDExtMapFile = CreateFileMappingA((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE,
+  FDDExtMapFile = CreateFileMappingA(reinterpret_cast<HANDLE>(0xFFFFFFFF), NULL, PAGE_READWRITE,
     0, sizeof(TDragExtCommStruct), AnsiString(DRAG_EXT_MAPPING).c_str());
 
   {
@@ -10301,7 +10301,7 @@ bool __fastcall TCustomScpExplorerForm::CancelNote(bool Force)
     // cannot cancel note too early
     bool NotEarly =
       (Now() - FNoteShown >
-          EncodeTimeVerbose(0, 0, (unsigned short)(WinConfiguration->NotificationsStickTime), 0));
+          EncodeTimeVerbose(0, 0, static_cast<unsigned short>(WinConfiguration->NotificationsStickTime), 0));
     if (Force || NotEarly)
     {
       FNoteTimer->Enabled = false;

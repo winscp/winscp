@@ -78,13 +78,13 @@ __fastcall TNamedObjectList::TNamedObjectList():
 //---------------------------------------------------------------------------
 TNamedObject * __fastcall TNamedObjectList::AtObject(Integer Index)
 {
-  return (TNamedObject *)Items[Index+FHiddenCount];
+  return static_cast<TNamedObject *>(Items[Index+FHiddenCount]);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNamedObjectList::Recount()
 {
   int i = 0;
-  while ((i < TObjectList::Count) && ((TNamedObject *)Items[i])->Hidden) i++;
+  while ((i < TObjectList::Count) && static_cast<TNamedObject *>(Items[i])->Hidden) i++;
   FHiddenCount = i;
 }
 //---------------------------------------------------------------------------

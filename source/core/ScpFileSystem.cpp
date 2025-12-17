@@ -263,7 +263,7 @@ TStrings * __fastcall TCommandSet::CreateCommandList()
   TStrings * CommandList = new TStringList();
   for (Integer Index = 0; Index < ShellCommandCount; Index++)
   {
-    UnicodeString Cmd = Commands[(TFSCommand)Index];
+    UnicodeString Cmd = Commands[static_cast<TFSCommand>(Index)];
     if (!Cmd.IsEmpty())
     {
       Cmd = ExtractCommand(Cmd);
@@ -1933,7 +1933,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
     UnicodeString AbsoluteFileName = FTerminal->AbsolutePath(TargetDir + DestFileName, false);
 
     DebugAssert(Handle.Handle);
-    std::unique_ptr<TStream> Stream(new TSafeHandleStream((THandle)Handle.Handle));
+    std::unique_ptr<TStream> Stream(new TSafeHandleStream(reinterpret_cast<THandle>(Handle.Handle)));
 
     // File is regular file (not directory)
     FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to remote directory started.", (FileName)));
@@ -2043,7 +2043,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           // TVarRec don't understand 'unsigned int' -> we use sprintf()
           Buf.sprintf(L"C%s %Ld %s",
             Rights.Octal.data(),
-            (OperationProgress->AsciiTransfer ? (__int64)AsciiBuf.Size :
+            (OperationProgress->AsciiTransfer ? static_cast<__int64>(AsciiBuf.Size) :
               OperationProgress->LocalSize),
             DestFileName.data());
           FSecureShell->SendLine(Buf);
@@ -2065,7 +2065,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
             {
               unsigned long BlockSize = OperationProgress->TransferBlockSize();
               FSecureShell->Send(
-                reinterpret_cast<unsigned char *>(AsciiBuf.Data + (unsigned int)OperationProgress->TransferredSize),
+                reinterpret_cast<unsigned char *>(AsciiBuf.Data + static_cast<unsigned int>(OperationProgress->TransferredSize)),
                 BlockSize);
               OperationProgress->AddTransferred(BlockSize);
               if (OperationProgress->Cancel == csCancelTransfer)
@@ -2306,7 +2306,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
       !OperationProgress->Cancel; IFile++)
     {
       UnicodeString FileName = FilesToCopy->Strings[IFile];
-      TRemoteFile * File = (TRemoteFile *)FilesToCopy->Objects[IFile];
+      TRemoteFile * File = static_cast<TRemoteFile *>(FilesToCopy->Objects[IFile]);
       DebugAssert(File);
 
       try
@@ -2427,9 +2427,9 @@ void __fastcall TSCPFileSystem::SCPError(const UnicodeString Message, bool Fatal
 void __fastcall TSCPFileSystem::SCPSendError(const UnicodeString Message, bool Fatal)
 {
   DebugUsedParam(Message);
-  unsigned char ErrorLevel = (char)(Fatal ? 2 : 1);
+  unsigned char ErrorLevel = Fatal ? 2 : 1;
   FTerminal->LogEvent(FORMAT(L"Sending SCP error (%d) to remote side:",
-    ((int)ErrorLevel)));
+    (static_cast<int>(ErrorLevel))));
   FSecureShell->Send(&ErrorLevel, 1);
   // We don't send exact error message, because some unspecified
   // characters can terminate remote scp
@@ -2694,7 +2694,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   EXCEPTION;
                 }
 
-                FileStream = new TSafeHandleStream((THandle)File);
+                FileStream = new TSafeHandleStream(reinterpret_cast<THandle>(File));
               }
               catch (Exception &E)
               {

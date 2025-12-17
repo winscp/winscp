@@ -12,6 +12,7 @@
 #include <Soap.EncdDecd.hpp>
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
@@ -344,11 +345,11 @@ UnicodeString ExceptionLogString(Exception *E)
   DebugAssert(E);
   if (E->InheritsFrom(__classid(Exception)))
   {
-    UnicodeString Msg;
-    Msg = FORMAT(L"(%s) %s", (E->ClassName(), E->Message));
-    if (E->InheritsFrom(__classid(ExtException)))
+    UnicodeString Msg = FORMAT(L"(%s) %s", (E->ClassName(), E->Message));
+    ExtException * EE = dynamic_cast<ExtException *>(E);
+    if (EE != nullptr)
     {
-      TStrings * MoreMessages = ((ExtException*)E)->MoreMessages;
+      TStrings * MoreMessages = EE->MoreMessages;
       if (MoreMessages)
       {
         Msg += L"\n" +
@@ -1755,7 +1756,7 @@ static const TDateTimeParams * __fastcall GetDateTimeParams(unsigned short Year)
     HINSTANCE Kernel32 = GetModuleHandle(kernel32);
     typedef BOOL WINAPI (* TGetTimeZoneInformationForYear)(USHORT wYear, PDYNAMIC_TIME_ZONE_INFORMATION pdtzi, LPTIME_ZONE_INFORMATION ptzi);
     TGetTimeZoneInformationForYear GetTimeZoneInformationForYear =
-      (TGetTimeZoneInformationForYear)GetProcAddress(Kernel32, "GetTimeZoneInformationForYear");
+      reinterpret_cast<TGetTimeZoneInformationForYear>(GetProcAddress(Kernel32, "GetTimeZoneInformationForYear"));
 
     if ((Year == 0) || (GetTimeZoneInformationForYear == NULL))
     {
@@ -2109,7 +2110,7 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
     CurrentParams->BaseDifferenceSec;
 
   FILETIME Result;
-  (*(__int64*)&(Result) = (__int64(UnixTimeStamp) + 11644473600LL) * 10000000LL);
+  *reinterpret_cast<__int64*>(&Result) = (__int64(UnixTimeStamp) + 11644473600LL) * 10000000LL;
 
   return Result;
 }
@@ -2139,7 +2140,7 @@ TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   TDSTMode DSTMode)
 {
-  __int64 Result = ((*(const __int64*)&(FileTime)) / 10000000LL - 11644473600LL);
+  __int64 Result = ((*reinterpret_cast<const __int64*>(&FileTime)) / 10000000LL - 11644473600LL);
 
   if (DSTMode == dstmWin)
   {
@@ -2627,7 +2628,7 @@ TLibModule * __fastcall FindModule(void * Instance)
 
   while (CurModule)
   {
-    if (CurModule->Instance == (unsigned)Instance)
+    if (CurModule->Instance == reinterpret_cast<unsigned>(Instance))
     {
       break;
     }
@@ -2659,7 +2660,7 @@ UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength)
 {
   TLibModule * MainModule = FindModule(HInstance);
   DebugAssert(MainModule != NULL);
-  return DoLoadStrFrom((HINSTANCE)MainModule->ResInstance, Ident, MaxLength);
+  return DoLoadStrFrom(reinterpret_cast<HINSTANCE>(MainModule->ResInstance), Ident, MaxLength);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall LoadStrPart(int Ident, int Part)
@@ -2979,7 +2980,7 @@ static void NeedUWPData()
     HINSTANCE Kernel32 = GetModuleHandle(kernel32);
     typedef LONG WINAPI (* GetCurrentPackageFamilyNameProc)(UINT32 * packageFamilyNameLength, PWSTR packageFamilyName);
     GetCurrentPackageFamilyNameProc GetCurrentPackageFamilyName =
-      (GetCurrentPackageFamilyNameProc)GetProcAddress(Kernel32, "GetCurrentPackageFamilyName");
+      reinterpret_cast<GetCurrentPackageFamilyNameProc>(GetProcAddress(Kernel32, "GetCurrentPackageFamilyName"));
     UINT32 NameLen = 0;
     if ((GetCurrentPackageFamilyName != NULL) &&
         (GetCurrentPackageFamilyName(&NameLen, NULL) == ERROR_INSUFFICIENT_BUFFER))
@@ -3324,7 +3325,7 @@ UnicodeString __fastcall FormatVersion(int MajorVersion, int MinorVersion, int R
 //---------------------------------------------------------------------------
 TFormatSettings __fastcall GetEngFormatSettings()
 {
-  return TFormatSettings::Create((TLocaleID)1033);
+  return TFormatSettings::Create(static_cast<TLocaleID>(1033));
 }
 //---------------------------------------------------------------------------
 int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr)

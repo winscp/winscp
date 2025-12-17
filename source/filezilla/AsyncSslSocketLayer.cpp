@@ -10,9 +10,12 @@
 #include "AsyncSslSocketLayer.h"
 #include "FileZillaTools.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <openssl/tls1.h>
+#pragma clang diagnostic pop
 #pragma hdrstop
 #include "Common.h"
 
@@ -737,7 +740,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
         SSL_CTX_set_session_cache_mode(m_ssl_ctx, SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL_STORE | SSL_SESS_CACHE_NO_AUTO_CLEAR);
         SSL_CTX_sess_set_new_cb(m_ssl_ctx, NewSessionCallback);
         if (!m_CertStorage.IsEmpty() &&
-            CFile::IsValid((LPCTSTR)m_CertStorage))
+            CFile::IsValid(m_CertStorage.c_str()))
         {
           SSL_CTX_load_verify_locations(m_ssl_ctx, T2CA(m_CertStorage), 0);
         }
@@ -751,6 +754,8 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
       return SSL_FAILURE_INITSSL;
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
     if (clientMode && (host.GetLength() > 0))
     {
       USES_CONVERSION;
@@ -770,6 +775,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
       }
     }
 #endif
+#pragma clang diagnostic pop
 
     //Add current instance to list of active instances
     t_SslLayerList *tmp = m_pSslLayerList;
@@ -869,7 +875,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   }
   SSL_set_bio(m_ssl, m_ibio, m_ibio);
   BIO_ctrl(m_sslbio, BIO_C_SET_SSL, BIO_NOCLOSE, m_ssl);
-  BIO_read(m_sslbio, (void *)1, 0);
+  BIO_read(m_sslbio, reinterpret_cast<void *>(1), 0);
 
   // Trigger FD_WRITE so that we can initialize SSL negotiation
   if (GetLayerState() == connected || GetLayerState() == attached)
@@ -1226,7 +1232,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 static bool AsnTimeToValidTime(ASN1_TIME * AsnTime, t_SslCertData::t_validTime & ValidTime)
 {
   int i = AsnTime->length;
-  const char * v = (const char *)AsnTime->data;
+  const char * v = reinterpret_cast<const char *>(AsnTime->data);
 
   if (i < 10)
   {
@@ -1442,7 +1448,10 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
     {
       USES_CONVERSION;
       u_char *data;
+      #pragma clang diagnostic push
+      #pragma clang diagnostic ignored "-Wold-style-cast"
       int len = BIO_get_mem_data(subjectAltNameBio, &data);
+      #pragma clang diagnostic pop
       char * buf = new char[len + 1];
       memcpy(buf, data, len);
       buf[len] = '\0';
@@ -1623,8 +1632,10 @@ int CAsyncSslSocketLayer::verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
      * Retrieve the pointer to the SSL of the connection currently treated
      * and the application specific data stored into the SSL object.
      */
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wold-style-cast"
     ssl = (SSL *)X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
-
+    #pragma clang diagnostic pop
 
     CAsyncSslSocketLayer * pLayer = LookupLayer(ssl);
 
@@ -1683,7 +1694,7 @@ int CAsyncSslSocketLayer::ProvideClientCert(
     Result = 1;
   }
 
-  Layer->LogSocketMessageRaw(Level, static_cast<LPCTSTR>(Message));
+  Layer->LogSocketMessageRaw(Level, Message.c_str());
 
   return Result;
 }

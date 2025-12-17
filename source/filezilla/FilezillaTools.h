@@ -5,6 +5,7 @@
 #include <ctime>
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/ssl.h>
 #pragma clang diagnostic pop
 //---------------------------------------------------------------------------

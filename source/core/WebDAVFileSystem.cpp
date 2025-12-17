@@ -7,6 +7,8 @@
 #include <wincrypt.h>
 
 #define NE_LFS
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <ne_basic.h>
 #include <ne_auth.h>
 #include <ne_props.h>
@@ -18,6 +20,7 @@
 #include <ne_xmlreq.h>
 #include <ne_locks.h>
 #include <expat.h>
+#pragma clang diagnostic pop
 
 #include "WebDAVFileSystem.h"
 
@@ -1007,8 +1010,8 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
       if (Month >= 1)
       {
         TDateTime Modification =
-          EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
-          EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
+          EncodeDateVerbose(static_cast<unsigned short>(Year), static_cast<unsigned short>(Month), static_cast<unsigned short>(Day)) +
+          EncodeTimeVerbose(static_cast<unsigned short>(Hour), static_cast<unsigned short>(Min), static_cast<unsigned short>(Sec), 0);
         File->Modification = ConvertTimestampFromUTC(Modification);
         // Should use mfYMDHM or mfMDY when appropriate according to Filled
         File->ModificationFmt = mfFull;
@@ -1444,7 +1447,7 @@ void __fastcall TWebDAVFileSystem::Source(
     {
       SetFilePointer(Handle.Handle, 0, NULL, FILE_BEGIN);
 
-      FD = _open_osfhandle((intptr_t)Handle.Handle, O_BINARY);
+      FD = _open_osfhandle(reinterpret_cast<intptr_t>(Handle.Handle), O_BINARY);
       if (FD < 0) // can happen only if there are no free slots in handle-FD table
       {
         throw ESkipFile();
@@ -1843,7 +1846,7 @@ void __fastcall TWebDAVFileSystem::Sink(
     int FD = -1;
     try
     {
-      FD = _open_osfhandle((intptr_t)LocalHandle, O_BINARY);
+      FD = _open_osfhandle(reinterpret_cast<intptr_t>(LocalHandle), O_BINARY);
       if (FD < 0)
       {
         throw ESkipFile();

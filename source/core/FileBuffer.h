@@ -37,11 +37,11 @@ private:
   TMemoryStream * FMemory;
   int FSize;
 
-  char * __fastcall GetData() const { return (char *)FMemory->Memory; }
+  char * __fastcall GetData() const { return static_cast<char *>(FMemory->Memory); }
   char * __fastcall GetPointer() const { return GetData() + GetPosition(); }
   void NeedSpace(DWORD Size);
   void __fastcall SetSize(int value);
-  int __fastcall GetPosition() const { return (int)FMemory->Position; }
+  int __fastcall GetPosition() const { return static_cast<int>(FMemory->Position); }
   void __fastcall ProcessRead(DWORD Len, DWORD Result);
 };
 //---------------------------------------------------------------------------

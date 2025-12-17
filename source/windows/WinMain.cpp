@@ -246,13 +246,13 @@ void __fastcall FullSynchronize(
 
   bool SaveMode = true;
   // bit ugly
-  TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
+  TSynchronizeMode Mode = static_cast<TSynchronizeMode>(GUIConfiguration->SynchronizeMode);
   int Params = GUIConfiguration->SynchronizeParams;
 
   // Undocumented syntax for "Start in New Window"
   if (CommandParams->Count >= 4)
   {
-    Mode = (TSynchronizeMode)StrToIntDef(CommandParams->Strings[2], Mode);
+    Mode = static_cast<TSynchronizeMode>(StrToIntDef(CommandParams->Strings[2], Mode));
     Params = StrToIntDef(CommandParams->Strings[3], Params);
   }
 

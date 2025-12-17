@@ -38,7 +38,7 @@ TNonVisualDataModule *NonVisualDataModule;
   ScpExplorer->ComponentVisible[fc ## COMP] = !ScpExplorer->ComponentVisible[fc ## COMP] )
 #define EXECOMP(COMP) EXECOMP2(COMP, )
 #define COLPROPS(SIDE) \
-  ((TCustomDirViewColProperties*)ScpExplorer->DirView(os ## SIDE)->ColProperties)
+  (static_cast<TCustomDirViewColProperties*>(ScpExplorer->DirView(os ## SIDE)->ColProperties))
 #define UPDSORT(SIDE, NAME, LCOL, RCOL, NUM) \
   UPDEX(SIDE ## SortBy ## NAME ## Action ## NUM, (AuxInt = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL)) >= 0, \
     Action->Checked = (COLPROPS(SIDE)->SortColumn == AuxInt), \
@@ -384,7 +384,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSORT(Current, Rights, dvAttr, uvRights, )
   UPDSORT(Current, Owner, -1, uvOwner, )
   UPDSORT(Current, Group, -1, uvGroup, )
-  #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
+  #define COLVIEWPROPS (static_cast<TCustomDirViewColProperties*>(static_cast<TCustomDirView*>(static_cast<TListColumns*>(ListColumn->Collection)->Owner())->ColProperties))
   UPDEX(SortColumnAscendingAction, (ListColumn != NULL), SortColumnAscendingAction->Checked =
     (COLVIEWPROPS->SortColumn == ListColumn->Index) && COLVIEWPROPS->SortAscending, )
   UPDEX(SortColumnDescendingAction, (ListColumn != NULL), SortColumnDescendingAction->Checked =
@@ -549,7 +549,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(NewLinkAction, ScpExplorer->AddEditLink(osCurrent, true))
     EXE(CurrentRenameAction, ScpExplorer->ExecuteFileOperationCommand(foRename, osCurrent, false))
     EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false))
-    EXE(CurrentDeleteAlternativeAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false, false, (void*)true))
+    EXE(CurrentDeleteAlternativeAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false, false, reinterpret_cast<void*>(true)))
     EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osCurrent, false))
     EXE(CurrentCopyToClipboardAction2, ScpExplorer->CopyFilesToClipboard(osCurrent, false))
     EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
@@ -631,7 +631,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     // style
     EXE(RemoteCycleStyleAction,
       if (DirView(osRemote)->DirViewStyle == dvsThumbnail) DirView(osRemote)->DirViewStyle = dvsIcon;
-        else DirView(osRemote)->DirViewStyle = (TDirViewStyle)(DirView(osRemote)->DirViewStyle + 1);
+        else DirView(osRemote)->DirViewStyle = static_cast<TDirViewStyle>(DirView(osRemote)->DirViewStyle + 1);
       ScpExplorer->UpdateControls();
     )
     #define STYLEACTION(SIDE, STYLE) EXE(SIDE ## STYLE ## Action, \
@@ -711,7 +711,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(GoToAddressAction, ScpExplorer->GoToAddress())
     EXE(CustomizeToolbarAction, CreateToolbarButtonsList())
 
-    #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
+    #define COLVIEWPROPS (static_cast<TCustomDirViewColProperties*>((static_cast<TCustomDirView*>((static_cast<TListColumns*>(ListColumn->Collection))->Owner()))->ColProperties))
     // SORT
     EXESORTA(Local, 2)
     #define EXESORTL(NAME, COL, NUM) EXESORT(Local, NAME, COL, COL, NUM)
@@ -1503,8 +1503,8 @@ void __fastcall TNonVisualDataModule::SessionFolderThisItemClick(TObject * Sende
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::SessionItemClick(TObject * Sender)
 {
-  DebugAssert(StoredSessions && (((TTBCustomItem *)Sender)->Tag < StoredSessions->Count));
-  ScpExplorer->OpenStoredSession(StoredSessions->Sessions[((TTBCustomItem *)Sender)->Tag]);
+  DebugAssert(StoredSessions && (static_cast<TTBCustomItem *>(Sender)->Tag < StoredSessions->Count));
+  ScpExplorer->OpenStoredSession(StoredSessions->Sessions[static_cast<TTBCustomItem *>(Sender)->Tag]);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateWorkspacesMenu(TAction * Action)
@@ -1545,7 +1545,7 @@ TShortCut __fastcall TNonVisualDataModule::OpenSessionShortCut(int Index)
 {
   if (Index >= 0 && Index < 10)
   {
-    return ShortCut((Word)(Index < 9 ? L'0' + 1 + Index : L'0'),
+    return ShortCut(static_cast<Word>(Index < 9 ? L'0' + 1 + Index : L'0'),
       TShiftState() << ssAlt);
   }
   else
@@ -1583,7 +1583,7 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Acti
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::OpenedSessionItemClick(TObject * Sender)
 {
-  TTerminalManager::Instance()->ActiveSession = (TManagedTerminal*)(((TMenuItem *)Sender)->Tag);
+  TTerminalManager::Instance()->ActiveSession = reinterpret_cast<TManagedTerminal*>(static_cast<TMenuItem *>(Sender)->Tag);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateEditorListMenu(TTBCustomItem * Menu, bool OnFocused)

@@ -206,7 +206,7 @@ static SeatPromptResult get_userpass_input(Seat * seat, prompts_t * p)
       {
         S = UnicodeString(AnsiString(Prompt->prompt));
       }
-      Prompts->AddObject(S, (TObject *)(FLAGMASK(Prompt->echo, pupEcho)));
+      Prompts->AddObject(S, reinterpret_cast<TObject *>(FLAGMASK(Prompt->echo, pupEcho)));
       // this fails, when new passwords do not match on change password prompt,
       // and putty retries the prompt
       DebugAssert(strlen(prompt_get_result_ref(Prompt)) == 0);
@@ -621,7 +621,10 @@ char * get_reg_sz_winscp(HKEY Key, const char * Name)
     else
     {
       AnsiString ValueAnsi = AnsiString(Value);
+      #pragma clang diagnostic push
+      #pragma clang diagnostic ignored "-Wold-style-cast"
       Result = snewn(ValueAnsi.Length() + 1, char);
+      #pragma clang diagnostic pop
       strcpy(Result, ValueAnsi.c_str());
     }
   }
@@ -704,7 +707,7 @@ TKeyType KeyType(UnicodeString FileName)
   DebugAssert(ktSSH2PublicOpenSSH == SSH_KEYTYPE_SSH2_PUBLIC_OPENSSH);
   UTF8String UtfFileName = UTF8String(FileName);
   Filename * KeyFile = filename_from_utf8(UtfFileName.c_str());
-  TKeyType Result = (TKeyType)key_type(KeyFile);
+  TKeyType Result = static_cast<TKeyType>(key_type(KeyFile));
   filename_free(KeyFile);
   return Result;
 }
@@ -841,6 +844,8 @@ void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment)
 }
 //---------------------------------------------------------------------------
 // Based on cmdgen.c
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 void AddCertificateToKey(TPrivateKey * PrivateKey, const UnicodeString & CertificateFileName)
 {
   struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
@@ -1592,6 +1597,7 @@ bool enum_host_ca_next(host_ca_enum * Enum, strbuf * StrBuf)
   }
   return Result;
 }
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 void enum_host_ca_finish(host_ca_enum * Enum)
 {

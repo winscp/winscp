@@ -256,7 +256,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       CipherListBox->Items->AddObject(
         LoadStr(CIPHER_NAME_WARN+FSessionData->Cipher[Index]),
-        (TObject*)FSessionData->Cipher[Index]);
+        reinterpret_cast<TObject*>(FSessionData->Cipher[Index]));
     }
 
     // KEX page
@@ -267,7 +267,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       KexListBox->Items->AddObject(
         LoadStr(KEX_NAME_WARN+FSessionData->Kex[Index]),
-        (TObject*)FSessionData->Kex[Index]);
+        reinterpret_cast<TObject*>(FSessionData->Kex[Index]));
     }
 
     AuthGSSAPIKEXCheck->Checked = FSessionData->AuthGSSAPIKEX;
@@ -425,7 +425,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     WebDavLiberalEscapingCheck->Checked = FSessionData->WebDavLiberalEscaping;
 
     // color
-    FColor = (TColor)FSessionData->Color;
+    FColor = static_cast<TColor>(FSessionData->Color);
   }
 
   EnableControl(PuttyGroup, !DoesSessionExistInPutty(FSessionData->StorageKey));
@@ -672,7 +672,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   SessionData->ProxyTelnetCommand = ProxyTelnetCommandEdit->Text;
   SessionData->ProxyLocalCommand = ProxyLocalCommandEdit->Text;
   SessionData->ProxyLocalhost = ProxyLocalhostCheck->Checked;
-  SessionData->ProxyDNS = (TAutoSwitch)(2 - ProxyDNSCombo->ItemIndex);
+  SessionData->ProxyDNS = static_cast<TAutoSwitch>(2 - ProxyDNSCombo->ItemIndex);
 
   // Bugs page
   #define SAVE_BUG_COMBO(BUG) SessionData->Bug[sb ## BUG] = ComboAutoSwitchSave(Bug ## BUG ## Combo)
@@ -1262,11 +1262,11 @@ void __fastcall TSiteAdvancedDialog::Dispatch(void * Message)
   DebugAssert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else if (M->Msg == WM_HELP)
   {
-    WMHelp(*((TWMHelp *)Message));
+    WMHelp(*static_cast<TWMHelp *>(Message));
   }
   else
   {
@@ -1472,13 +1472,13 @@ TProxyMethod __fastcall TSiteAdvancedDialog::GetProxyMethod()
   TFSProtocol FSProtocol = FSessionData->FSProtocol;
   if (FSessionData->UsesSsh)
   {
-    Result = (TProxyMethod)SshProxyMethodCombo->ItemIndex;
+    Result = static_cast<TProxyMethod>(SshProxyMethodCombo->ItemIndex);
   }
   else if (FSProtocol == fsFTP)
   {
     if (SupportedFtpProxyMethod(FtpProxyMethodCombo->ItemIndex))
     {
-      Result = (TProxyMethod)FtpProxyMethodCombo->ItemIndex;
+      Result = static_cast<TProxyMethod>(FtpProxyMethodCombo->ItemIndex);
     }
     else
     {
@@ -1487,7 +1487,7 @@ TProxyMethod __fastcall TSiteAdvancedDialog::GetProxyMethod()
   }
   else if (IsNeon(FSProtocol))
   {
-    Result = (TProxyMethod)NeonProxyMethodCombo->ItemIndex;
+    Result = static_cast<TProxyMethod>(NeonProxyMethodCombo->ItemIndex);
   }
   else
   {

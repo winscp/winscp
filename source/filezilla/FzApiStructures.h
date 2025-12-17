@@ -2,7 +2,10 @@
 #ifndef FzApiStructuresH
 #define FzApiStructuresH
 //---------------------------------------------------------------------------
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/pkcs12.h>
+#pragma clang diagnostic pop
 #include <FileBuffer.h>
 //---------------------------------------------------------------------------
 class t_server

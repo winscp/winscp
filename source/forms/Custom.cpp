@@ -615,7 +615,7 @@ void __fastcall SessionNameValidate(const UnicodeString & Text,
   TSessionData::ValidatePath(Text);
 
   DebugAssert(StoredSessions);
-  TSessionData * Data = (TSessionData *)StoredSessions->FindByName(Text);
+  TSessionData * Data = static_cast<TSessionData *>(StoredSessions->FindByName(Text));
   if (Data && Data->Special)
   {
     MessageDialog(FMTLOAD(CANNOT_OVERWRITE_SPECIAL_SESSION, (Text)),

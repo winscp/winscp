@@ -438,7 +438,7 @@ int CFileZillaApi::SetAsyncRequestResult(int nAction, CAsyncRequestData *pData)
   case FZ_ASYNCREQUEST_OVERWRITE:
     break;
   case FZ_ASYNCREQUEST_VERIFYCERT:
-    if (!((CVerifyCertRequestData *)pData)->pCertData)
+    if (!static_cast<CVerifyCertRequestData *>(pData)->pCertData)
     {
       delete pData;
       return FZ_REPLY_INVALIDPARAM;
@@ -463,7 +463,7 @@ int CFileZillaApi::SetAsyncRequestResult(int nAction, CAsyncRequestData *pData)
     return FZ_REPLY_NOTINITIALIZED;
   }
 
-  m_pMainThread->PostThreadMessage(m_nInternalMessageID, FZAPI_THREADMSG_ASYNCREQUESTREPLY,  (LPARAM)pData);
+  m_pMainThread->PostThreadMessage(m_nInternalMessageID, FZAPI_THREADMSG_ASYNCREQUESTREPLY, reinterpret_cast<LPARAM>(pData));
 
   return FZ_REPLY_OK;
 }

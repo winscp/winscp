@@ -761,7 +761,7 @@ UnicodeString __fastcall TConfiguration::BannerHash(const UnicodeString & Banner
   Result.SetLength(16);
   md5checksum(
     reinterpret_cast<const char*>(Banner.c_str()), Banner.Length() * sizeof(wchar_t),
-    (unsigned char*)Result.c_str());
+    reinterpret_cast<unsigned char*>(Result.c_str()));
   return BytesToHex(Result);
 }
 //---------------------------------------------------------------------------

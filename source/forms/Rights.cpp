@@ -142,7 +142,7 @@ TCheckBox * __fastcall TRightsFrame::GetChecks(TRights::TRight Right)
     if (Controls[Index]->InheritsFrom(__classid(TCheckBox)) &&
         (Controls[Index]->Tag == TRights::RightToFlag(Right)))
     {
-      return ((TCheckBox *)Controls[Index]);
+      return static_cast<TCheckBox *>(Controls[Index]);
     }
   }
   return NULL;
@@ -593,19 +593,19 @@ void __fastcall TRightsFrame::Dispatch(void * Message)
   switch (AMessage.Msg)
   {
     case CM_CANCELMODE:
-      CMCancelMode(*(TCMCancelMode *)Message);
+      CMCancelMode(*static_cast<TCMCancelMode *>(Message));
       break;
 
     case CM_DIALOGKEY:
-      CMDialogKey(*(TCMDialogKey *)Message);
+      CMDialogKey(*static_cast<TCMDialogKey *>(Message));
       break;
 
     case CM_DIALOGCHAR:
-      CMDialogChar(*(TCMDialogChar *)Message);
+      CMDialogChar(*static_cast<TCMDialogChar *>(Message));
       break;
 
     case WM_CONTEXTMENU:
-      WMContextMenu(*(TWMContextMenu *)Message);
+      WMContextMenu(*static_cast<TWMContextMenu *>(Message));
       break;
 
     case CM_DPICHANGED:

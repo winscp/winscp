@@ -78,7 +78,7 @@ void __fastcall TScpExplorerForm::RestoreParams()
   bool HadHandleAllocated = RemoteDirView->HandleAllocated();
   RemoteDirView->UnixColProperties->ParamsStr = WinConfiguration->ScpExplorer.DirViewParams;
   RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
-  RemoteDirView->DirViewStyle = (TDirViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
+  RemoteDirView->DirViewStyle = static_cast<TDirViewStyle>(WinConfiguration->ScpExplorer.ViewStyle);
   if (HadHandleAllocated)
   {
     // This is here to make our persistence checks in VerifyControl pass,
@@ -186,7 +186,7 @@ bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed
       Action->Visible = false;
     }
   }
-  #define FLAG ((TActionFlag)(Action->Tag))
+  #define FLAG (static_cast<TActionFlag>(Action->Tag))
   return
     TCustomScpExplorerForm::AllowedAction(Action, Allowed) &&
     // always require Explorer flag
@@ -238,7 +238,7 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
   UnicodeString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   UnicodeString RemoteDirectory = RemoteDirView->PathName;
   bool SaveMode = true;
-  TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
+  TSynchronizeMode Mode = static_cast<TSynchronizeMode>(GUIConfiguration->SynchronizeMode);
   int Params = GUIConfiguration->SynchronizeParams;
   if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, -1) >= 0)
   {

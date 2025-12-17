@@ -730,7 +730,7 @@ bool __fastcall TCustomUnixDriveView::NodePathExists(TTreeNode * /*Node*/)
 TColor __fastcall TCustomUnixDriveView::NodeColor(TTreeNode * Node)
 {
   DebugAssert(Node != NULL);
-  TColor Result = static_cast<TColor>(clDefaultItemColor);
+  TColor Result = clDefaultItemColor;
   #ifndef DESIGN_ONLY
   if (FDimmHiddenDirs && !Node->Selected)
   {

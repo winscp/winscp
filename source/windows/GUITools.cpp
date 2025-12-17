@@ -1396,11 +1396,11 @@ protected:
     HRESULT Result = S_OK;
     if (ClassId == IID_IUnknown)
     {
-      *Intf = (IUnknown *)this;
+      *Intf = static_cast<IUnknown *>(this);
     }
     else if (ClassId == ::IID_IDocHostUIHandler)
     {
-      *Intf = (::IDocHostUIHandler *)this;
+      *Intf = static_cast<::IDocHostUIHandler *>(this);
     }
     else
     {
@@ -1748,7 +1748,7 @@ void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Docum
   TStreamAdapter * DocumentStreamAdapter = new TStreamAdapter(DocumentStream.get(), soReference);
   IPersistStreamInit * PersistStreamInit = NULL;
   if (DebugAlwaysTrue(WebBrowser->Document != NULL) &&
-      SUCCEEDED(WebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
+      SUCCEEDED(WebBrowser->Document->QueryInterface(IID_IPersistStreamInit, reinterpret_cast<void **>(&PersistStreamInit))) &&
       DebugAlwaysTrue(PersistStreamInit != NULL))
   {
     PersistStreamInit->Load(static_cast<_di_IStream>(*DocumentStreamAdapter));
@@ -1797,7 +1797,7 @@ void __fastcall GetInstrutionsTheme(
     }
     if (GetThemeColor(Theme, TEXT_MAININSTRUCTION, 0, TMT_TEXTCOLOR, &AColor) == S_OK)
     {
-      MainInstructionColor = (TColor)AColor;
+      MainInstructionColor = static_cast<TColor>(AColor);
     }
 
     memset(&AFont, 0, sizeof(AFont));

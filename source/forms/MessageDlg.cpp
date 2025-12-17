@@ -38,7 +38,7 @@ void __fastcall TMessageButton::Dispatch(void * Message)
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   if (M->Msg == WM_GETDLGCODE)
   {
-    WMGetDlgCode(*((TWMGetDlgCode *)Message));
+    WMGetDlgCode(*static_cast<TWMGetDlgCode *>(Message));
   }
   else
   {
@@ -365,7 +365,7 @@ void __fastcall TMessageForm::Dispatch(void * Message)
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else if (M->Msg == CM_SHOWINGCHANGED)
   {

@@ -629,7 +629,7 @@ struct TLibS3CallbackData
 {
   TLibS3CallbackData()
   {
-    Status = (S3Status)-1;
+    Status = static_cast<S3Status>(-1);
   }
 
   TS3FileSystem * FileSystem;
@@ -1413,8 +1413,8 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
       if (Filled == 6)
       {
         TDateTime Modification =
-          EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
-          EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
+          EncodeDateVerbose(static_cast<unsigned short>(Year), static_cast<unsigned short>(Month), static_cast<unsigned short>(Day)) +
+          EncodeTimeVerbose(static_cast<unsigned short>(Hour), static_cast<unsigned short>(Min), static_cast<unsigned short>(Sec), 0);
         File->Modification = ConvertTimestampFromUTC(Modification);
         File->ModificationFmt = mfFull;
       }

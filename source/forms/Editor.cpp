@@ -267,7 +267,7 @@ int __fastcall TEditorRichEdit::FindText(const UnicodeString SearchStr, int Star
     FLAGMASK(Options.Contains(stWholeWord), FR_WHOLEWORD) |
     FLAGMASK(Options.Contains(stMatchCase), FR_MATCHCASE) |
     FLAGMASK(Down, FR_DOWN);
-  int Result = SendMessage(Handle, EM_FINDTEXTEX, Flags, (LPARAM)&Find);
+  int Result = SendMessage(Handle, EM_FINDTEXTEX, Flags, reinterpret_cast<LPARAM>(&Find));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -490,12 +490,12 @@ void __fastcall TEditorRichEdit::SetTabSize(unsigned int TabSize)
 
   // save selection
   CHARRANGE CharRange;
-  SendMessage(Handle, EM_EXGETSEL, 0, (LPARAM)&CharRange);
+  SendMessage(Handle, EM_EXGETSEL, 0, reinterpret_cast<LPARAM>(&CharRange));
 
   CHARRANGE CharRangeAll;
   CharRangeAll.cpMin = 0;
   CharRangeAll.cpMax = -1;
-  SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRangeAll);
+  SendMessage(Handle, EM_EXSETSEL, 0, reinterpret_cast<LPARAM>(&CharRangeAll));
 
   PARAFORMAT2 ParaFormat;
   ParaFormat.cbSize = sizeof(ParaFormat);
@@ -507,10 +507,10 @@ void __fastcall TEditorRichEdit::SetTabSize(unsigned int TabSize)
     ParaFormat.rgxTabs[i] = (i + 1) * TabTwips;
   }
 
-  SendMessage(Handle, EM_SETPARAFORMAT, 0, (LPARAM)&ParaFormat);
+  SendMessage(Handle, EM_SETPARAFORMAT, 0, reinterpret_cast<LPARAM>(&ParaFormat));
 
   // restore selection
-  SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRange);
+  SendMessage(Handle, EM_EXSETSEL, 0, reinterpret_cast<LPARAM>(&CharRange));
 }
 //---------------------------------------------------------------------------
 bool __stdcall TEditorRichEdit::StreamLoad(
@@ -872,7 +872,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
     Action == FindAction || Action == ReplaceAction || Action == GoToLineAction ||
     Action == HelpAction || Action == ColorAction)
   {
-    ((TAction *)Action)->Enabled = true;
+    static_cast<TAction *>(Action)->Enabled = true;
   }
   else if (Action == ReloadAction)
   {
@@ -1109,7 +1109,7 @@ void __fastcall TEditorForm::UpdateControls()
     FCaretPos = ACaretPos;
     int Count = EditorMemo->Lines->Count;
     StatusBar->Panels->Items[0]->Caption = FMTLOAD(EDITOR_LINE_STATUS,
-      ((int)FCaretPos.y+1, Count));
+      (static_cast<int>(FCaretPos.y)+1, Count));
     int Column = 0;
     UnicodeString Character;
     if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
@@ -1531,13 +1531,13 @@ bool __fastcall TEditorForm::CursorInUpperPart()
   TRect Rect;
 
   DC = GetDC(EditorMemo->Handle);
-  OldFont = (HFONT)SelectObject(DC, EditorMemo->Font->Handle);
+  OldFont = static_cast<HFONT>(SelectObject(DC, EditorMemo->Font->Handle));
 
   try
   {
     GetTextMetrics(DC, &TM);
 
-    EditorMemo->Perform(EM_GETRECT, 0, ((int)&Rect));
+    EditorMemo->Perform(EM_GETRECT, 0, reinterpret_cast<int>(&Rect));
   }
   __finally
   {

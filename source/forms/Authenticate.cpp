@@ -344,7 +344,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
         TCustomEdit * Edit = reinterpret_cast<TCustomEdit *>(Edits->Items[Index]);
         Results->Strings[Index] = Edit->Text;
 
-        Prompts->Objects[Index] = (TObject *)
+        Prompts->Objects[Index] = reinterpret_cast<TObject *>
           ((int(Prompts->Objects[Index]) & ~pupRemember) |
            FLAGMASK(((Index == 0) && SessionRememberPasswordCheck->Checked), pupRemember));
       }

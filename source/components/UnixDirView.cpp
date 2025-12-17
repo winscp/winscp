@@ -20,7 +20,7 @@
 
 #pragma package(smart_init)
 #ifndef DESIGN_ONLY
-#define ITEMFILE ((TRemoteFile *)(Item->Data))
+#define ITEMFILE (static_cast<TRemoteFile *>(Item->Data))
 // noop, previously this tested that the file was in terminal's file listing,
 // but that cannot be safely checked now the terminal is used in multithreaded
 // environment
@@ -765,8 +765,8 @@ int __stdcall CompareFile(INT_PTR AItem1, INT_PTR AItem2, INT_PTR ADirView)
   TListItem * Item2 = reinterpret_cast<TListItem *>(AItem2);
   TUnixDirView * DirView = reinterpret_cast<TUnixDirView *>(ADirView);
   DebugAssert((Item1 != NULL) && (Item2 != NULL));
-  TRemoteFile * File1 = DebugNotNull((TRemoteFile *)(Item1->Data));
-  TRemoteFile * File2 = DebugNotNull((TRemoteFile *)(Item2->Data));
+  TRemoteFile * File1 = DebugNotNull(static_cast<TRemoteFile *>(Item1->Data));
+  TRemoteFile * File2 = DebugNotNull(static_cast<TRemoteFile *>(Item2->Data));
 
   int Result;
   if (File1->IsParentDirectory && !File2->IsParentDirectory)
@@ -1049,7 +1049,7 @@ TColor __fastcall TUnixDirView::ItemColor(TListItem * Item)
   DebugUsedParam(Item);
 #endif
   {
-    return (TColor)clDefaultItemColor;
+    return clDefaultItemColor;
   }
 }
 //---------------------------------------------------------------------------

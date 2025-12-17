@@ -35,17 +35,17 @@ LPSTR WINAPI AtlW2AHelper(LPSTR lpa, LPCWSTR lpw, int nChars);
 #endif
 
 #define A2W(lpa) (\
-	((LPCSTR)lpa == NULL) ? NULL : (\
+	(static_cast<LPCSTR>(lpa) == NULL) ? NULL : (\
 		_convert = (lstrlenA(lpa)+1),\
-		ATLA2WHELPER((LPWSTR) alloca(_convert*2), lpa, _convert)))
+		ATLA2WHELPER(static_cast<LPWSTR>(alloca(_convert*2)), lpa, _convert)))
 
 #define W2A(lpw) (\
-	((LPCWSTR)lpw == NULL) ? NULL : (\
+	(static_cast<LPCWSTR>(lpw) == NULL) ? NULL : (\
 		_convert = (lstrlenW(lpw)+1)*2,\
-		ATLW2AHELPER((LPSTR) alloca(_convert), lpw, _convert)))
+		ATLW2AHELPER(static_cast<LPSTR>(alloca(_convert)), lpw, _convert)))
 
-#define A2CW(lpa) ((LPCWSTR)A2W(lpa))
-#define W2CA(lpw) ((LPCSTR)W2A(lpw))
+#define A2CW(lpa) (static_cast<LPCWSTR>(A2W(lpa)))
+#define W2CA(lpw) (static_cast<LPCSTR>(W2A(lpw)))
 
 #define T2A W2A
 #define A2T A2W

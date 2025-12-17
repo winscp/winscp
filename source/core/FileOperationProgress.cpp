@@ -263,7 +263,7 @@ int __fastcall TFileOperationProgressType::TransferProgress()
   int Result;
   if (TransferSize)
   {
-    Result = (int)((TransferredSize * 100)/TransferSize);
+    Result = static_cast<int>((TransferredSize * 100)/TransferSize);
   }
   else
   {
@@ -279,7 +279,7 @@ int __fastcall TFileOperationProgressType::TotalTransferProgress() const
   int Result;
   if (FTotalSize > 0)
   {
-    Result = (int)(((FPersistence.TotalTransferred - FTotalTransferBase + FTotalSkipped) * 100)/FTotalSize);
+    Result = static_cast<int>(((FPersistence.TotalTransferred - FTotalTransferBase + FTotalSkipped) * 100)/FTotalSize);
   }
   else
   {
@@ -474,7 +474,7 @@ unsigned long __fastcall TFileOperationProgressType::LocalBlockSize()
   unsigned long Result = TRANSFER_BUF_SIZE;
   if (LocallyUsed + Result > LocalSize)
   {
-    Result = (unsigned long)(LocalSize - LocallyUsed);
+    Result = static_cast<unsigned long>(LocalSize - LocallyUsed);
   }
   Result = AdjustToCPSLimit(Result);
   return Result;
@@ -804,7 +804,7 @@ unsigned long __fastcall TFileOperationProgressType::TransferBlockSize()
   unsigned long Result = TRANSFER_BUF_SIZE;
   if (TransferredSize + Result > TransferSize)
   {
-    Result = (unsigned long)(TransferSize - TransferredSize);
+    Result = static_cast<unsigned long>(TransferSize - TransferredSize);
   }
   Result = AdjustToCPSLimit(Result);
   return Result;
@@ -853,7 +853,7 @@ inline static unsigned int CalculateCPS(__int64 Transferred, unsigned int MSecEl
   }
   else
   {
-    Result = (unsigned int)(Transferred * MSecsPerSec / MSecElapsed);
+    Result = static_cast<unsigned int>(Transferred * MSecsPerSec / MSecElapsed);
   }
   return Result;
 }
@@ -891,7 +891,7 @@ TDateTime __fastcall TFileOperationProgressType::TimeExpected()
   unsigned int CurCps = CPS();
   if (CurCps)
   {
-    return TDateTime((double)(((double)(TransferSize - TransferredSize)) / CurCps) / SecsPerDay);
+    return TDateTime(static_cast<double>(static_cast<double>(TransferSize - TransferredSize) / CurCps) / SecsPerDay);
   }
   else
   {
@@ -908,7 +908,7 @@ TDateTime __fastcall TFileOperationProgressType::TotalTimeLeft()
   __int64 Processed = FTotalSkipped + FPersistence.TotalTransferred - FTotalTransferBase;
   if ((CurCps > 0) && (FTotalSize > Processed))
   {
-    return TDateTime((double)((double)(FTotalSize - Processed) / CurCps) / SecsPerDay);
+    return TDateTime(static_cast<double>(static_cast<double>(FTotalSize - Processed) / CurCps) / SecsPerDay);
   }
   else
   {

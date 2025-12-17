@@ -67,7 +67,7 @@ LPTSTR unquote(LPCTSTR str){
     last_pos = _tcslen(str) - 1;
     if (last_pos != -1 && str[0] == L'"' && str[last_pos] == L'"'){
         new_len= (_tcslen(str) - 1);
-        ret = (LPTSTR)malloc(new_len * sizeof(TCHAR));
+        ret = static_cast<LPTSTR>(malloc(new_len * sizeof(TCHAR)));
         lstrcpyn(ret, &str[1], new_len);
     }
     else
@@ -128,7 +128,7 @@ void path_reg_propagate()
   {
     DWORD send_message_result;
     LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-                             (LPARAM)_T("Environment"), SMTO_ABORTIFHUNG,
+                             reinterpret_cast<LPARAM>(_T("Environment")), SMTO_ABORTIFHUNG,
                              5000, &send_message_result);
     if (ret != ERROR_SUCCESS && GetLastError() != 0)
     {
@@ -160,8 +160,8 @@ BOOL add_path_reg(LPCTSTR path){
     RegQueryValueEx(key, _T("PATH"), NULL, NULL, NULL, &data_size);
     data_size += _tcslen(path) + 3 ; /* ";" and quotes, "data_size" already
                                         includes '\0'. */
-    reg_str = (LPTSTR)malloc(data_size * sizeof(TCHAR));
-    ret = RegQueryValueEx(key, _T("PATH"), NULL, NULL, (LPBYTE)reg_str,
+    reg_str = static_cast<LPTSTR>(malloc(data_size * sizeof(TCHAR)));
+    ret = RegQueryValueEx(key, _T("PATH"), NULL, NULL, reinterpret_cast<LPBYTE>(reg_str),
                           &data_size);
     if (ret != ERROR_SUCCESS){
         err_out_sys(_T("Cannot read \"PATH\" key."), ret);
@@ -186,7 +186,7 @@ BOOL add_path_reg(LPCTSTR path){
             else
             {
               ret = RegSetValueEx(key, _T("PATH"), 0, REG_EXPAND_SZ,
-                                  (LPBYTE)reg_str,
+                                  reinterpret_cast<LPBYTE>(reg_str),
                                   (_tcslen(reg_str) + 1) * sizeof(TCHAR));
               if (ret != ERROR_SUCCESS){
                   err_out_sys(_T("Cannot write \"PATH\" key."), ret);
@@ -229,23 +229,23 @@ BOOL remove_path_reg(LPCTSTR path){
     RegQueryValueEx(key, _T("PATH"), NULL, NULL, NULL, &data_size);
     data_size += _tcslen(path) + 3; /* ";" and quotes,"data_size" already
                                         includes '\0'. */
-    reg_str = (LPTSTR)malloc(data_size * sizeof(TCHAR));
+    reg_str = static_cast<LPTSTR>(malloc(data_size * sizeof(TCHAR)));
     ret = RegQueryValueEx(key, _T("PATH"), NULL, NULL,
-                          (LPBYTE)reg_str, &data_size);
+                          reinterpret_cast<LPBYTE>(reg_str), &data_size);
     if (ret != ERROR_SUCCESS){
         err_out_sys(_T("Cannot read \"PATH\" key."), ret);
         func_ret = FALSE;
     }
     else{
         if ((del_part = find_reg_str(reg_str, path, &next)) != NULL){
-            reg_str2 = (LPTSTR)malloc((_tcslen(reg_str) + 1) * sizeof(TCHAR));
+            reg_str2 = static_cast<LPTSTR>(malloc((_tcslen(reg_str) + 1) * sizeof(TCHAR)));
             *del_part = '\0';
             _stprintf(reg_str2, _T("%s%s"), reg_str, next);
             last_pos = _tcslen(reg_str2) - 1;
             if (last_pos != -1 && reg_str2[last_pos] == ';')
                 reg_str2[last_pos] = '\0';
             ret = RegSetValueEx(key, _T("PATH"), 0, REG_EXPAND_SZ,
-                                (LPBYTE)reg_str2,
+                                reinterpret_cast<LPBYTE>(reg_str2),
                                 (_tcslen(reg_str2) + 1) * sizeof(TCHAR));
             if (ret != ERROR_SUCCESS){
                 err_out_sys(_T("Cannot write \"PATH\" key."), ret);
@@ -1933,7 +1933,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
       {
         IShellLink * Link;
         wchar_t Desc[2048];
-        if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, (void**)&Link)) &&
+        if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, reinterpret_cast<void**>(&Link))) &&
             SUCCEEDED(Link->GetDescription(Desc, std::size(Desc) - 1)))
         {
           Removed->Add(Desc);

@@ -16,7 +16,7 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   TConfiguration * Configuration) :
   TTerminal(SessionData, Configuration),
   LocalBrowser(false), LocalExplorerState(NULL), RemoteExplorerState(NULL), OtherLocalExplorerState(NULL),
-  ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false), DisconnectedTemporarily(false),
+  ReopenStart(), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false), DisconnectedTemporarily(false),
   ThumbnailsSection(new TCriticalSection()), ThumbnailsEnabled(false), ThumbnailDownloadQueueItem(NULL),
   ThumbnailVisibleResult(-1)
 {
@@ -374,7 +374,7 @@ void TTerminalManager::ReconnectingTerminal(TManagedTerminal * ManagedTerminal)
   ManagedTerminal->OrigRemoteDirectory = ManagedTerminal->SessionData->RemoteDirectory;
   ManagedTerminal->SessionData->RemoteDirectory = ManagedTerminal->StateData->RemoteDirectory;
 
-  if ((double)ManagedTerminal->ReopenStart == 0)
+  if (ManagedTerminal->ReopenStart == TDateTime())
   {
     ManagedTerminal->ReopenStart = Now();
   }
@@ -385,7 +385,7 @@ void TTerminalManager::ReconnectedTerminal(TManagedTerminal * ManagedTerminal)
   ManagedTerminal->SessionData->RemoteDirectory = ManagedTerminal->OrigRemoteDirectory;
   if (ManagedTerminal->Active)
   {
-    ManagedTerminal->ReopenStart = 0;
+    ManagedTerminal->ReopenStart = TDateTime();
     ManagedTerminal->Permanent = true;
   }
 }
@@ -1238,7 +1238,7 @@ void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
 
   HINSTANCE User32Library = LoadLibrary(L"user32.dll");
   ChangeWindowMessageFilterExProc ChangeWindowMessageFilterEx =
-    (ChangeWindowMessageFilterExProc)GetProcAddress(User32Library, "ChangeWindowMessageFilterEx");
+    reinterpret_cast<ChangeWindowMessageFilterExProc>(GetProcAddress(User32Library, "ChangeWindowMessageFilterEx"));
 
   if (ChangeWindowMessageFilterEx != NULL)
   {

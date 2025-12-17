@@ -59,7 +59,7 @@ TFontStyles __fastcall IntToFontStyles(int value)
   {
     if (value & 1)
     {
-      Result << (TFontStyle)i;
+      Result << static_cast<TFontStyle>(i);
     }
     value >>= 1;
   }
@@ -72,7 +72,7 @@ int __fastcall FontStylesToInt(const TFontStyles value)
   for (int i = fsStrikeOut; i >= fsBold; i--)
   {
     Result <<= 1;
-    if (value.Contains((TFontStyle)i))
+    if (value.Contains(static_cast<TFontStyle>(i)))
     {
       Result |= 1;
     }
@@ -229,7 +229,7 @@ void RestoreForm(const UnicodeString & AData, TForm * Form, bool PositionOnly, c
     {
       CutToChar(Data, FormDataSep, true);
     }
-    TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, FormDataSep, true), (int)wsNormal);
+    TWindowState State = static_cast<TWindowState>(StrToIntDef(CutToChar(Data, FormDataSep, true), static_cast<int>(wsNormal)));
     int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, FormDataSep, true), Form);
 
     TRect OriginalBounds = Form->BoundsRect;
@@ -338,7 +338,7 @@ UnicodeString __fastcall StoreForm(TForm * Form)
     FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
       SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
       // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
-      (int)(Form->WindowState == wsMinimized ? GetWindowStateBeforeMimimize(Form) : Form->WindowState),
+      static_cast<int>(Form->WindowState == wsMinimized ? GetWindowStateBeforeMimimize(Form) : Form->WindowState),
       SavePixelsPerInch(Form)));
   return Result;
 }
@@ -706,7 +706,7 @@ void __fastcall ExitActiveControl(TForm * Form)
 {
   if (Form->ActiveControl != NULL)
   {
-    TNotifyEvent OnExit = ((TEdit*)Form->ActiveControl)->OnExit;
+    TNotifyEvent OnExit = static_cast<TEdit*>(Form->ActiveControl)->OnExit;
     if (OnExit != NULL)
     {
       OnExit(Form->ActiveControl);
@@ -760,8 +760,9 @@ void __fastcall OpenBrowser(UnicodeString URL)
 //---------------------------------------------------------------------------
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
 {
-  if ((int)ShellExecute(Application->Handle, L"explore",
-      static_cast<const wchar_t*>(Path.data()), NULL, NULL, SW_SHOWNORMAL) <= 32)
+  auto PathStr = static_cast<const wchar_t*>(Path.data());
+  int Result = reinterpret_cast<int>(ShellExecute(Application->Handle, L"explore", PathStr, NULL, NULL, SW_SHOWNORMAL));
+  if (Result <= 32)
   {
     throw Exception(FMTLOAD(EXPLORE_LOCAL_DIR_ERROR, (Path)));
   }
@@ -1188,7 +1189,7 @@ static void __fastcall AcquireShutDownPrivileges()
   Priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
   // Get the shutdown privilege for this process.
-  Win32Check(AdjustTokenPrivileges(Token, FALSE, &Priv, 0, (PTOKEN_PRIVILEGES)NULL, 0));
+  Win32Check(AdjustTokenPrivileges(Token, FALSE, &Priv, 0, nullptr, 0));
 }
 //---------------------------------------------------------------------------
 void __fastcall ShutDownWindows()
@@ -1453,7 +1454,7 @@ bool __fastcall DetectSystemExternalEditor(
   else
   {
     unsigned int File = FileCreate(ApiPath(TempName));
-    if (File == (unsigned int)INVALID_HANDLE_VALUE)
+    if (File == reinterpret_cast<unsigned int>(INVALID_HANDLE_VALUE))
     {
       TryNextTime = true;
       UsageState = "F";

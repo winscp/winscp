@@ -392,7 +392,7 @@ void __fastcall TImportSessionsDialog::CreateHandle()
   {
     HINSTANCE User32Library = LoadLibrary(L"user32.dll");
     AddClipboardFormatListenerProc AddClipboardFormatListener =
-      (AddClipboardFormatListenerProc)GetProcAddress(User32Library, "AddClipboardFormatListener");
+      reinterpret_cast<AddClipboardFormatListenerProc>(GetProcAddress(User32Library, "AddClipboardFormatListener"));
     if (AddClipboardFormatListener != NULL)
     {
       AddClipboardFormatListener(Handle);
@@ -406,7 +406,7 @@ void __fastcall TImportSessionsDialog::DestroyHandle()
   {
     HINSTANCE User32Library = LoadLibrary(L"user32.dll");
     RemoveClipboardFormatListenerProc RemoveClipboardFormatListener =
-      (RemoveClipboardFormatListenerProc)GetProcAddress(User32Library, "RemoveClipboardFormatListener");
+      reinterpret_cast<RemoveClipboardFormatListenerProc>(GetProcAddress(User32Library, "RemoveClipboardFormatListener"));
     if (RemoveClipboardFormatListener != NULL)
     {
       RemoveClipboardFormatListener(Handle);

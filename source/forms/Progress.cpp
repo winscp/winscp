@@ -38,7 +38,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
     PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
     PROGRESS_REMOTE_MOVE, PROGRESS_REMOTE_COPY, PROGRESS_GETPROPERTIES,
     PROGRESS_CALCULATE_CHECKSUM, PROGRESS_LOCK, PROGRESS_UNLOCK };
-  DebugAssert((unsigned int)ProgressData->Operation >= 1 && ((unsigned int)ProgressData->Operation - 1) < std::size(Captions));
+  DebugAssert(static_cast<unsigned int>(ProgressData->Operation) >= 1 && (static_cast<unsigned int>(ProgressData->Operation) - 1) < std::size(Captions));
   int Id;
   if (ProgressData->IsTransfer())
   {
@@ -46,7 +46,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
   }
   else
   {
-    Id = Captions[(int)ProgressData->Operation - 1];
+    Id = Captions[static_cast<int>(ProgressData->Operation) - 1];
     DebugAssert(Id != 0);
   }
   UnicodeString Result = LoadStr(Id);
@@ -75,7 +75,7 @@ __fastcall TProgressForm::TProgressForm(
     : TForm(AOwner), FData()
 {
   FLastOperation = foNone;
-  FLastSide = (TOperationSide)-1;
+  FLastSide = static_cast<TOperationSide>(-1);
   FLastTotalSizeSet = false;
   FDataGot = false;
   FDataReceived = false;

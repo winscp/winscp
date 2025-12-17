@@ -65,7 +65,7 @@ typedef struct
 #define FZ_MSG_OFFSETMASK 0xFFFF
 #define FZ_MSG_ID(x) ((x >> FZ_MSG_OFFSET) & FZ_MSG_OFFSETMASK)
 #define FZ_MSG_PARAM(x) ( x & FZ_MSG_OFFSETMASK)
-#define FZ_MSG_MAKEMSG(id, param) ((((DWORD)(id & FZ_MSG_OFFSETMASK)) << FZ_MSG_OFFSET) + (param & FZ_MSG_OFFSETMASK) )
+#define FZ_MSG_MAKEMSG(id, param) ((static_cast<DWORD>(id & FZ_MSG_OFFSETMASK) << FZ_MSG_OFFSET) + (param & FZ_MSG_OFFSETMASK))
 //---------------------------------------------------------------------------
 #define FZ_MSG_REPLY      0
 #define FZ_MSG_LISTDATA      1

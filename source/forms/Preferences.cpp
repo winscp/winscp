@@ -922,7 +922,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ShowTips);
 
     // panels
-    WinConfiguration->DoubleClickAction = (TDoubleClickAction)DoubleClickActionCombo->ItemIndex;
+    WinConfiguration->DoubleClickAction = static_cast<TDoubleClickAction>(DoubleClickActionCombo->ItemIndex);
     BOOLPROP(AutoReadDirectoryAfterOp);
     BOOLPROP(RefreshRemotePanel);
     WinConfiguration->RefreshRemotePanelInterval =
@@ -2291,15 +2291,15 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   DebugAssert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else if (M->Msg == WM_HELP)
   {
-    WMHelp(*((TWMHelp *)Message));
+    WMHelp(*static_cast<TWMHelp *>(Message));
   }
   else if (M->Msg == WM_ACTIVATE)
   {
-    WMActivate(*((TWMActivate *)Message));
+    WMActivate(*static_cast<TWMActivate *>(Message));
   }
   else if (M->Msg == CM_FOCUSCHANGED)
   {

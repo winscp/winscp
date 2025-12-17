@@ -546,10 +546,10 @@ bool __fastcall TSecureShell::TryFtp()
           Address.sin_family = AF_INET;
           int Port = FtpPortNumber;
           Address.sin_port = htons(static_cast<short>(Port));
-          Address.sin_addr.s_addr = *((unsigned long *)*HostEntry->h_addr_list);
+          Address.sin_addr.s_addr = *(reinterpret_cast<unsigned long *>(*HostEntry->h_addr_list));
 
           HANDLE Event = CreateEvent(NULL, false, false, NULL);
-          Result = (WSAEventSelect(Socket, (WSAEVENT)Event, FD_CONNECT | FD_CLOSE) != SOCKET_ERROR);
+          Result = (WSAEventSelect(Socket, static_cast<WSAEVENT>(Event), FD_CONNECT | FD_CLOSE) != SOCKET_ERROR);
 
           if (Result)
           {
@@ -1071,8 +1071,8 @@ void __fastcall TSecureShell::FromBackend(const unsigned char * Data, size_t Len
     if (PendSize < PendLen + Len)
     {
       PendSize = PendLen + Len + 4096;
-      Pending = (unsigned char *)
-        (Pending ? srealloc(Pending, PendSize) : smalloc(PendSize));
+      Pending = static_cast<unsigned char *>(
+        Pending ? srealloc(Pending, PendSize) : smalloc(PendSize));
       if (!Pending) FatalError(L"Out of memory");
     }
     memmove(Pending + PendLen, p, Len);
@@ -1196,7 +1196,7 @@ UnicodeString __fastcall TSecureShell::ReceiveLine()
       {
         Index++;
       }
-      EOL = (Boolean)(Index && (Pending[Index-1] == '\n'));
+      EOL = static_cast<Boolean>(Index && (Pending[Index-1] == '\n'));
       Integer PrevLen = Line.Length();
       Line.SetLength(PrevLen + Index);
       Receive(reinterpret_cast<unsigned char *>(Line.c_str()) + PrevLen, Index);
@@ -1244,7 +1244,7 @@ void __fastcall TSecureShell::SendSpecial(int Code)
     LogEvent(FORMAT(L"Sending special code: %d", (Code)));
   }
   CheckConnection();
-  backend_special(FBackendHandle, (SessionSpecialCode)Code, 0);
+  backend_special(FBackendHandle, static_cast<SessionSpecialCode>(Code), 0);
   CheckConnection();
   FLastDataSent = Now();
 }
@@ -1437,7 +1437,7 @@ int __fastcall TSecureShell::TranslatePuttyMessage(
       size_t OriginalLen = wcslen(Original);
       size_t PrefixLen = Div - Original;
       size_t SuffixLen = OriginalLen - PrefixLen - 1;
-      if (((size_t)Message.Length() >= OriginalLen - 1) &&
+      if ((static_cast<size_t>(Message.Length()) >= OriginalLen - 1) &&
           (wcsncmp(Message.c_str(), Original, PrefixLen) == 0) &&
           (wcsncmp(Message.c_str() + Message.Length() - SuffixLen, Div + 1, SuffixLen) == 0))
       {
@@ -1615,7 +1615,7 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
     LogEvent(FORMAT(L"Selecting events %d for socket %d", (int(Events), int(Socket))));
   }
 
-  if (WSAEventSelect(Socket, (WSAEVENT)Event, Events) == SOCKET_ERROR)
+  if (WSAEventSelect(Socket, static_cast<WSAEVENT>(Event), Events) == SOCKET_ERROR)
   {
     if (Configuration->ActualLogProtocol >= 2)
     {
@@ -2027,7 +2027,7 @@ void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENT
       #pragma option push -w-prc
       LPARAM SelectEvent = WSAMAKESELECTREPLY(EventTypes[Event].Mask, Err);
       #pragma option pop
-      select_result((WPARAM)Socket, SelectEvent);
+      select_result(static_cast<WPARAM>(Socket), SelectEvent);
       CheckConnection();
     }
   }

@@ -217,7 +217,7 @@ void __fastcall TPropertiesDialog::LoadInfo()
 
   for (int Index = 0; Index < FFileList->Count; Index++)
   {
-    TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[Index]);
+    TRemoteFile * File = static_cast<TRemoteFile *>(FFileList->Objects[Index]);
     if (File->IsDirectory)
     {
       Stats.Directories++;
@@ -263,7 +263,7 @@ void __fastcall TPropertiesDialog::LoadInfo()
 
   if (!FMultiple)
   {
-    TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
+    TRemoteFile * File = static_cast<TRemoteFile *>(FFileList->Objects[0]);
     DebugAssert(File);
 
     UpdateFileImage();
@@ -297,7 +297,7 @@ void __fastcall TPropertiesDialog::UpdateFileImage()
 
   FileIconImage->Picture->Bitmap = NULL;
 
-  TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
+  TRemoteFile * File = static_cast<TRemoteFile *>(FFileList->Objects[0]);
 
   // shell image list does not have fixed large icon size
   // (it is probably 32x32 min, but can be larger, on xp it is 48x48 if
@@ -346,7 +346,7 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
 
   if (((Stats.Files + Stats.Directories) == 0) && !FMultiple)
   {
-    TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
+    TRemoteFile * File = static_cast<TRemoteFile *>(FFileList->Objects[0]);
     DebugAssert(File != NULL);
     FilesStr = File->FileName;
   }

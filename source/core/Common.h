@@ -293,10 +293,8 @@ TStrings * TlsCipherList();
 template<typename MethodT, typename FuncT>
 MethodT __fastcall MakeMethod(void * Data, FuncT Code)
 {
-  MethodT Method;
-  ((TMethod*)&Method)->Data = Data;
-  ((TMethod*)&Method)->Code = reinterpret_cast<void *>(Code);
-  return Method;
+  TMethod Method = { .Data = Data, .Code = reinterpret_cast<void *>(Code) };
+  return *reinterpret_cast<MethodT*>(&Method);
 }
 //---------------------------------------------------------------------------
 enum TAssemblyLanguage { alCSharp, alVBNET, alPowerShell };

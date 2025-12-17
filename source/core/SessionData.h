@@ -770,7 +770,7 @@ public:
   bool Import(TStoredSessionList * From, bool OnlySelected, TList * Imported);
   void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   TSessionData * __fastcall AtSession(int Index)
-    { return (TSessionData*)AtObject(Index); }
+    { return static_cast<TSessionData*>(AtObject(Index)); }
   void __fastcall SelectSessionsToImport(TStoredSessionList * Dest, bool SSHOnly);
   void __fastcall Cleanup();
   void __fastcall UpdateStaticUsage();

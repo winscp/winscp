@@ -447,7 +447,7 @@ void __fastcall TFileFindDialog::Dispatch(void * Message)
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else
   {

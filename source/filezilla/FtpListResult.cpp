@@ -411,7 +411,7 @@ void CFtpListResult::SendLineToMessageLog(const RawByteString & Line)
     Status->post = TRUE;
     Status->status = Line.c_str();
     Status->type = FZ_LOG_INFO;
-    if (!GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)Status))
+    if (!GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), reinterpret_cast<LPARAM>(Status)))
     {
       delete Status;
     }
@@ -433,8 +433,8 @@ void CFtpListResult::AddLine(t_directory::t_direntry & direntry)
 
     FILETIME ft;
     SystemTimeToFileTime(&st, &ft);
-    _int64 nFt = ((_int64)ft.dwHighDateTime << 32) + ft.dwLowDateTime;
-    nFt += ((_int64)m_server.nTimeZoneOffset) * 10000000 * 60;
+    _int64 nFt = (static_cast<_int64>(ft.dwHighDateTime) << 32) + ft.dwLowDateTime;
+    nFt += static_cast<_int64>(m_server.nTimeZoneOffset) * 10000000 * 60;
     ft.dwHighDateTime = static_cast<unsigned long>(nFt >> 32);
     ft.dwLowDateTime = static_cast<unsigned long>(nFt & 0xFFFFFFFF);
     FileTimeToSystemTime(&ft, &st);
@@ -910,7 +910,7 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const int, t_directory::t_dir
         dir.size = strntoi64(fact+1, len-1);
       else if (*fact=='m')
       {
-        time_t rawtime = (time_t)strntoi64(fact+1, len-1);
+        time_t rawtime = static_cast<time_t>(strntoi64(fact+1, len-1));
         TimeTToDate(rawtime, dir.date);
       }
       else if (len == 5 && *fact=='u' && *(fact+1)=='p')
@@ -1152,14 +1152,14 @@ bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_diren
   int Year, Month, Day, Hours, Minutes, Seconds;
   Year=Month=Day=Hours=Minutes=Seconds=0;
   // Time can include a fraction after a dot, this will ignore the fraction part.
-  if (swscanf((LPCWSTR)value, L"%4d%2d%2d%2d%2d%2d", &Year, &Month, &Day, &Hours, &Minutes, &Seconds) == 6)
+  if (swscanf(value.c_str(), L"%4d%2d%2d%2d%2d%2d", &Year, &Month, &Day, &Hours, &Minutes, &Seconds) == 6)
   {
     date.hasdate = TRUE;
     date.hastime = TRUE;
     date.hasseconds = TRUE;
     result = TRUE;
   }
-  else if (swscanf((LPCWSTR)value, L"%4d%2d%2d", &Year, &Month, &Day) == 3)
+  else if (swscanf(value.c_str(), L"%4d%2d%2d", &Year, &Month, &Day) == 3)
   {
     date.hasdate = TRUE;
     date.hastime = FALSE;
@@ -1633,7 +1633,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         break;
     if (i && i < sdaylen)
     {
-      if ((unsigned char)sday[i] > 127)
+      if (static_cast<unsigned char>(sday[i]) > 127)
         sdaylen = i;
     }
 
@@ -1677,7 +1677,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   _strlwr(lwr);
 
   bool gotYear = false;
-  int year = (int)strntoi64(smonth, smonthlen);
+  int year = static_cast<int>(strntoi64(smonth, smonthlen));
   if (year > 1000)
   {
     gotYear = true;
@@ -1699,13 +1699,13 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
       {
         return false;
       }
-      if ((unsigned char)smonth[i] < 128)
+      if (static_cast<unsigned char>(smonth[i]) < 128)
       {
         return false;
       }
 
       smonthlen = i;
-      direntry.date.month = (int)strntoi64(smonth, smonthlen);
+      direntry.date.month = static_cast<int>(strntoi64(smonth, smonthlen));
       if (!direntry.date.month || direntry.date.month > 12)
       {
         return false;
@@ -2277,11 +2277,11 @@ void CFtpListResult::copyStr(CString &target, int pos, const char *source, int l
     else
     {
       // convert from UTF-8 to ANSI
-      int len = MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)p, -1, NULL, 0);
+      int len = MultiByteToWideChar(CP_UTF8, 0, static_cast<LPCSTR>(p), -1, NULL, 0);
       if (len != 0)
       {
         LPWSTR p1 = new WCHAR[len + 1];
-        MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)p, -1 , (LPWSTR)p1, len + 1);
+        MultiByteToWideChar(CP_UTF8, 0, p, -1, p1, len + 1);
         target = target.Left(pos) + W2CT(p1);
         delete [] p1;
       }
@@ -2830,7 +2830,7 @@ bool CFtpListResult::ParseSize(const char* str, int len, __int64 &size) const
     break;
   case 't':
   case 'T':
-    size *= (__int64)1 << 40;
+    size *= static_cast<__int64>(1) << 40;
     break;
   default:
     return false;

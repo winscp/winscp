@@ -49,7 +49,7 @@ UnicodeString __fastcall DoXmlEscape(UnicodeString Str, bool NewLine)
       case L'\x1D':
       case L'\x1E':
       case L'\x1F':
-        Repl = L"#x" + ByteToHex((unsigned char)Ch) + L";";
+        Repl = L"#x" + ByteToHex(static_cast<unsigned char>(Ch)) + L";";
         break;
 
       case L'\xFFFE':
@@ -845,7 +845,7 @@ void __fastcall TSessionLog::DoAddToSelf(TLogLineType Type, const UnicodeString 
       }
       int Writing = UtfLine.Length();
       CheckSize(Writing);
-      FCurrentFileSize += fwrite(UtfLine.c_str(), 1, Writing, (FILE *)FFile);
+      FCurrentFileSize += fwrite(UtfLine.c_str(), 1, Writing, static_cast<FILE *>(FFile));
     }
   }
 }
@@ -992,7 +992,7 @@ void __fastcall TSessionLog::CloseLogFile()
 {
   if (FFile != NULL)
   {
-    fclose((FILE *)FFile);
+    fclose(static_cast<FILE *>(FFile));
     FFile = NULL;
   }
   FCurrentLogFileName = L"";
@@ -1310,7 +1310,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       UnicodeString Bugs;
       for (int Index = 0; Index < BUG_COUNT; Index++)
       {
-        AddToList(Bugs, EnumName(Data->Bug[(TSshBug)Index], AutoSwitchNames), L",");
+        AddToList(Bugs, EnumName(Data->Bug[static_cast<TSshBug>(Index)], AutoSwitchNames), L",");
       }
       ADF(L"SSH Bugs: %s", (Bugs));
       ADF(L"Simple channel: %s", (BooleanToEngStr(Data->SshSimple)));
@@ -1333,7 +1333,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       UnicodeString Bugs;
       for (int Index = 0; Index < SFTP_BUG_COUNT; Index++)
       {
-        AddToList(Bugs, EnumName(Data->SFTPBug[(TSftpBug)Index], AutoSwitchNames), L",");
+        AddToList(Bugs, EnumName(Data->SFTPBug[static_cast<TSftpBug>(Index)], AutoSwitchNames), L",");
       }
       ADF(L"SFTP Bugs: %s", (Bugs));
       ADF(L"SFTP Server: %s", ((Data->SftpServer.IsEmpty()? UnicodeString(L"default") : Data->SftpServer)));
@@ -1551,7 +1551,7 @@ void __fastcall TActionLog::Add(const UnicodeString & Line)
       {
         UTF8String UtfLine = UTF8String(Line);
         size_t Written =
-          fwrite(UtfLine.c_str(), 1, UtfLine.Length(), (FILE *)FFile);
+          fwrite(UtfLine.c_str(), 1, UtfLine.Length(), static_cast<FILE *>(FFile));
         if (Written != static_cast<size_t>(UtfLine.Length()))
         {
           throw ECRTExtException(L"");
@@ -1559,7 +1559,7 @@ void __fastcall TActionLog::Add(const UnicodeString & Line)
         #ifdef _DEBUG
         #endif
         Written =
-          fwrite("\n", 1, 1, (FILE *)FFile);
+          fwrite("\n", 1, 1, static_cast<FILE *>(FFile));
         if (Written != 1)
         {
           throw ECRTExtException(L"");
@@ -1673,7 +1673,7 @@ void __fastcall TActionLog::CloseLogFile()
 {
   if (FFile != NULL)
   {
-    fclose((FILE *)FFile);
+    fclose(static_cast<FILE *>(FFile));
     FFile = NULL;
   }
   FCurrentLogFileName = L"";

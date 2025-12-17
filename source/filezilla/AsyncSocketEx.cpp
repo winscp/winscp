@@ -60,7 +60,7 @@ public:
 
     m_hWnd=CreateWindow(L"CAsyncSocketEx Helper Window", L"CAsyncSocketEx Helper Window", 0, 0, 0, 0, 0, 0, 0, GetModuleHandle(0), 0);
     DebugAssert(m_hWnd);
-    SetWindowLongPtr(m_hWnd, GWL_USERDATA, (LONG)this);
+    SetWindowLongPtr(m_hWnd, GWL_USERDATA, reinterpret_cast<LONG>(this));
   }
 
   virtual ~CAsyncSocketExHelperWindow()
@@ -168,7 +168,7 @@ public:
         continue;
 
       CAsyncSocketEx *pSocket = m_pAsyncSocketExWindowData[msg.wParam].m_pSocket;
-      CAsyncSocketExLayer::t_LayerNotifyMsg *pMsg=(CAsyncSocketExLayer::t_LayerNotifyMsg *)msg.lParam;
+      CAsyncSocketExLayer::t_LayerNotifyMsg *pMsg=reinterpret_cast<CAsyncSocketExLayer::t_LayerNotifyMsg *>(msg.lParam);
       if (!pMsg || !pSocket || pSocket == pOrigSocket || pSocket->m_SocketData.hSocket != pMsg->hSocket)
       {
         delete pMsg;
@@ -191,7 +191,7 @@ public:
     DebugAssert(hWnd);
     if (!hWnd)
       return 0;
-    CAsyncSocketExHelperWindow *pWnd=(CAsyncSocketExHelperWindow *)GetWindowLongPtr(hWnd, GWL_USERDATA);
+    CAsyncSocketExHelperWindow *pWnd=reinterpret_cast<CAsyncSocketExHelperWindow *>(GetWindowLongPtr(hWnd, GWL_USERDATA));
     if (message>=WM_SOCKETEX_NOTIFY)
     {
       DebugAssert(pWnd);
@@ -397,7 +397,7 @@ public:
       }
 
       CAsyncSocketEx *pSocket=pWnd->m_pAsyncSocketExWindowData[wParam].m_pSocket;
-      CAsyncSocketExLayer::t_LayerNotifyMsg *pMsg=(CAsyncSocketExLayer::t_LayerNotifyMsg *)lParam;
+      CAsyncSocketExLayer::t_LayerNotifyMsg *pMsg=reinterpret_cast<CAsyncSocketExLayer::t_LayerNotifyMsg *>(lParam);
       if (!pMsg || !pSocket || pSocket->m_SocketData.hSocket != pMsg->hSocket)
       {
         delete pMsg;
@@ -526,7 +526,7 @@ public:
 
       // Verify parameters
       DebugAssert(hWnd);
-      CAsyncSocketExHelperWindow *pWnd = (CAsyncSocketExHelperWindow *)GetWindowLongPtr(hWnd, GWL_USERDATA);
+      CAsyncSocketExHelperWindow *pWnd = reinterpret_cast<CAsyncSocketExHelperWindow *>(GetWindowLongPtr(hWnd, GWL_USERDATA));
       DebugAssert(pWnd);
 
       CAsyncSocketEx *pSocket = NULL;
@@ -534,7 +534,7 @@ public:
       {
         pSocket = pWnd->m_pAsyncSocketExWindowData[i].m_pSocket;
         if (pSocket && pSocket->m_hAsyncGetHostByNameHandle &&
-          pSocket->m_hAsyncGetHostByNameHandle == (HANDLE)wParam)
+          pSocket->m_hAsyncGetHostByNameHandle == reinterpret_cast<HANDLE>(wParam))
           break;
       }
       if (!pSocket)
@@ -550,11 +550,11 @@ public:
       SOCKADDR_IN sockAddr;
       memset(&sockAddr,0,sizeof(sockAddr));
       sockAddr.sin_family=AF_INET;
-      sockAddr.sin_addr.s_addr = ((LPIN_ADDR)((LPHOSTENT)pSocket->m_pAsyncGetHostByNameBuffer)->h_addr)->s_addr;
+      sockAddr.sin_addr.s_addr = reinterpret_cast<LPIN_ADDR>(reinterpret_cast<LPHOSTENT>(pSocket->m_pAsyncGetHostByNameBuffer)->h_addr)->s_addr;
 
       sockAddr.sin_port = htons(static_cast<unsigned short>(pSocket->m_nAsyncGetHostByNamePort));
 
-      BOOL res = pSocket->Connect((SOCKADDR*)&sockAddr, sizeof(sockAddr));
+      BOOL res = pSocket->Connect(reinterpret_cast<SOCKADDR*>(&sockAddr), sizeof(sockAddr));
       delete [] pSocket->m_pAsyncGetHostByNameBuffer;
       pSocket->m_pAsyncGetHostByNameBuffer=0;
       pSocket->m_hAsyncGetHostByNameHandle=0;
@@ -821,9 +821,9 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
     memset(&sockAddr6, 0, sizeof(sockAddr6));
     sockAddr6.sin6_family = AF_INET6 ;
     sockAddr6.sin6_addr = in6addr_any ;
-    sockAddr6.sin6_port = htons((u_short)nSocketPort);
+    sockAddr6.sin6_port = htons(static_cast<u_short>(nSocketPort));
 
-    return BindToAddr((SOCKADDR*)&sockAddr6, sizeof(sockAddr6));
+    return BindToAddr(reinterpret_cast<SOCKADDR*>(&sockAddr6), sizeof(sockAddr6));
   }
   else if (!lpszAscii && m_SocketData.nFamily == AF_INET)
   {
@@ -832,9 +832,9 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
     memset(&sockAddr, 0, sizeof(sockAddr));
     sockAddr.sin_family = AF_INET ;
     sockAddr.sin_addr.s_addr = INADDR_ANY ;
-    sockAddr.sin_port = htons((u_short)nSocketPort);
+    sockAddr.sin_port = htons(static_cast<u_short>(nSocketPort));
 
-    return BindToAddr((SOCKADDR*)&sockAddr, sizeof(sockAddr));
+    return BindToAddr(reinterpret_cast<SOCKADDR*>(&sockAddr), sizeof(sockAddr));
   }
   else
     return FALSE ;
@@ -1016,7 +1016,7 @@ int CAsyncSocketEx::Receive(void* lpBuf, int nBufLen, int nFlags /*=0*/)
   if (m_pFirstLayer)
     return m_pFirstLayer->Receive(lpBuf, nBufLen, nFlags);
   else
-    return recv(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
+    return recv(m_SocketData.hSocket, static_cast<LPSTR>(lpBuf), nBufLen, nFlags);
 }
 
 
@@ -1028,7 +1028,7 @@ int CAsyncSocketEx::Send(const void* lpBuf, int nBufLen, int nFlags /*=0*/)
   }
   else
   {
-    return send(m_SocketData.hSocket, (LPCSTR)lpBuf, nBufLen, nFlags);
+    return send(m_SocketData.hSocket, static_cast<LPCSTR>(lpBuf), nBufLen, nFlags);
   }
 }
 
@@ -1073,9 +1073,9 @@ BOOL CAsyncSocketEx::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
       return FALSE;
     }
 
-    sockAddr.sin_port = htons((u_short)nHostPort);
+    sockAddr.sin_port = htons(static_cast<u_short>(nHostPort));
 
-    return CAsyncSocketEx::Connect((SOCKADDR*)&sockAddr, sizeof(sockAddr));
+    return CAsyncSocketEx::Connect(reinterpret_cast<SOCKADDR*>(&sockAddr), sizeof(sockAddr));
   }
   else
   {
@@ -1434,7 +1434,7 @@ BOOL CAsyncSocketEx::TriggerEvent(long lEvent)
     pMsg->hSocket = m_SocketData.hSocket;
     pMsg->lEvent=lEvent%0xFFFF;
     pMsg->pLayer=0;
-    BOOL res=PostMessage(GetHelperWindowHandle(), WM_USER, (WPARAM)m_SocketData.nSocketIndex, (LPARAM)pMsg);
+    BOOL res=PostMessage(GetHelperWindowHandle(), WM_USER, static_cast<WPARAM>(m_SocketData.nSocketIndex), reinterpret_cast<LPARAM>(pMsg));
     if (!res)
       delete pMsg;
     return res;
@@ -1516,12 +1516,12 @@ BOOL CAsyncSocketEx::IsLayerAttached() const
 
 BOOL CAsyncSocketEx::GetSockOpt(int nOptionName, void* lpOptionValue, int* lpOptionLen, int nLevel /*=SOL_SOCKET*/)
 {
-  return (SOCKET_ERROR != getsockopt(m_SocketData.hSocket, nLevel, nOptionName, (LPSTR)lpOptionValue, lpOptionLen));
+  return (SOCKET_ERROR != getsockopt(m_SocketData.hSocket, nLevel, nOptionName, static_cast<LPSTR>(lpOptionValue), lpOptionLen));
 }
 
 BOOL CAsyncSocketEx::SetSockOpt(int nOptionName, const void* lpOptionValue, int nOptionLen, int nLevel /*=SOL_SOCKET*/)
 {
-  return (SOCKET_ERROR != setsockopt(m_SocketData.hSocket, nLevel, nOptionName, (LPCSTR)lpOptionValue, nOptionLen));
+  return (SOCKET_ERROR != setsockopt(m_SocketData.hSocket, nLevel, nOptionName, static_cast<LPCSTR>(lpOptionValue), nOptionLen));
 }
 
 int CAsyncSocketEx::GetState() const
@@ -1656,7 +1656,7 @@ void CAsyncSocketEx::AddCallbackNotification(const t_callbackMsg& msg)
 
   if(m_pendingCallbacks.size() == 1 && m_SocketData.nSocketIndex != -1)
   {
-    PostMessage(GetHelperWindowHandle(), WM_USER + 2, (WPARAM)m_SocketData.nSocketIndex, 0);
+    PostMessage(GetHelperWindowHandle(), WM_USER + 2, static_cast<WPARAM>(m_SocketData.nSocketIndex), 0);
   }
 }
 

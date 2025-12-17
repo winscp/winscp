@@ -137,7 +137,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
             int SockAddrLen=sizeof(SockAddr);
             if (GetPeerName(&SockAddr, &SockAddrLen ))
             {
-              ip=((LPSOCKADDR_IN)&SockAddr)->sin_addr.S_un.S_addr;
+              ip=(reinterpret_cast<LPSOCKADDR_IN>(&SockAddr))->sin_addr.S_un.S_addr;
             }
             else
             {
@@ -149,7 +149,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           t_ListenSocketCreatedStruct data;
           data.ip=ip;
           data.nPort=port;
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYSTATUS_LISTENSOCKETCREATED, (int)&data);
+          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYSTATUS_LISTENSOCKETCREATED, reinterpret_cast<int>(&data));
         }
         ClearBuffer();
       }
@@ -236,7 +236,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           DebugAssert(strlen(lpszAsciiUser)<=255);
           DebugAssert(strlen(lpszAsciiPass)<=255);
           unsigned char *buffer = new unsigned char[3 + (lpszAsciiUser?strlen(lpszAsciiUser):0) + (lpszAsciiPass?strlen(lpszAsciiPass):0) + 1];
-          sprintf((char *)buffer, "  %s %s", lpszAsciiUser?lpszAsciiUser:"", lpszAsciiPass?lpszAsciiPass:"");
+          sprintf(reinterpret_cast<char *>(buffer), "  %s %s", lpszAsciiUser?lpszAsciiUser:"", lpszAsciiPass?lpszAsciiPass:"");
           buffer[0]=1;
           buffer[1]=static_cast<unsigned char>(strlen(lpszAsciiUser));
           buffer[2+strlen(lpszAsciiUser)]=static_cast<unsigned char>(strlen(lpszAsciiPass));
@@ -416,7 +416,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           t_ListenSocketCreatedStruct data;
           data.ip=ip;
           data.nPort=port;
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYSTATUS_LISTENSOCKETCREATED, (int)&data);
+          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYSTATUS_LISTENSOCKETCREATED, reinterpret_cast<int>(&data));
         }
         ClearBuffer();
       }
@@ -571,7 +571,7 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
         return FALSE;
       }
     }
-    m_nProxyPeerPort = htons((u_short)nHostPort);
+    m_nProxyPeerPort = htons(static_cast<u_short>(nHostPort));
     m_nProxyPeerIp = 0;
     delete [] m_pProxyPeerHost;
     m_pProxyPeerHost = new char[_tcslen(lpszHostAddress)+1];
@@ -592,7 +592,7 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
     LPHOSTENT lphost;
     lphost = gethostbyname(lpszAscii);
     if (lphost != NULL)
-      sockAddr.sin_addr.s_addr = ((LPIN_ADDR)lphost->h_addr)->s_addr;
+      sockAddr.sin_addr.s_addr = reinterpret_cast<LPIN_ADDR>(lphost->h_addr)->s_addr;
     else
     {
       //Can't resolve hostname
@@ -602,8 +602,8 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
     }
   }
 
-  sockAddr.sin_port = htons((u_short)nHostPort);
-  BOOL res=CAsyncProxySocketLayer::Connect((SOCKADDR*)&sockAddr, sizeof(sockAddr));
+  sockAddr.sin_port = htons(static_cast<u_short>(nHostPort));
+  BOOL res=CAsyncProxySocketLayer::Connect(reinterpret_cast<SOCKADDR*>(&sockAddr), sizeof(sockAddr));
   if (res || WSAGetLastError()==WSAEWOULDBLOCK)
   {
     delete [] m_pProxyPeerHost;
@@ -836,7 +836,7 @@ BOOL CAsyncProxySocketLayer::Listen( int nConnectionBacklog)
     }
   }
   m_nProxyPeerPort=0;
-  m_nProxyPeerIp=(unsigned int)nConnectionBacklog;
+  m_nProxyPeerIp=static_cast<unsigned int>(nConnectionBacklog);
 
   m_nProxyOpID=PROXYOP_LISTEN;
   return TRUE;
@@ -902,7 +902,7 @@ BOOL CAsyncProxySocketLayer::GetPeerName( SOCKADDR* lpSockAddr, int* lpSockAddrL
   BOOL res=GetPeerNameNext(lpSockAddr,lpSockAddrLen);
   if (res)
   {
-    LPSOCKADDR_IN addr=(LPSOCKADDR_IN)lpSockAddr;
+    LPSOCKADDR_IN addr=reinterpret_cast<LPSOCKADDR_IN>(lpSockAddr);
     addr->sin_port=m_nProxyPeerPort;
     addr->sin_addr.S_un.S_addr=m_nProxyPeerIp;
   }

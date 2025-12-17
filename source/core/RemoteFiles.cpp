@@ -867,7 +867,7 @@ void __fastcall TRemoteTokenList::Log(TTerminal * Terminal, const wchar_t * Titl
 //---------------------------------------------------------------------------
 int __fastcall TRemoteTokenList::Count() const
 {
-  return (int)FTokens.size();
+  return static_cast<int>(FTokens.size());
 }
 //---------------------------------------------------------------------------
 const TRemoteToken * __fastcall TRemoteTokenList::Token(int Index) const
@@ -1055,7 +1055,7 @@ wchar_t __fastcall TRemoteFile::GetType() const
 void __fastcall TRemoteFile::SetType(wchar_t AType)
 {
   FType = AType;
-  FIsSymLink = ((wchar_t)towupper(FType) == FILETYPE_SYMLINK);
+  FIsSymLink = (static_cast<wchar_t>(towupper(FType)) == FILETYPE_SYMLINK);
 }
 //---------------------------------------------------------------------------
 const TRemoteFile * __fastcall TRemoteFile::GetLinkedFile() const
@@ -1132,6 +1132,11 @@ UnicodeString __fastcall TRemoteFile::GetRightsStr()
   // note that HumanRights is typically an empty string
   // (with an exception of Perm-fact-only MLSD FTP listing)
   return FRights->Unknown ? HumanRights : FRights->Text;
+}
+//---------------------------------------------------------------------------
+inline Word StrToWord(const UnicodeString & S)
+{
+  return static_cast<Word>(StrToInt(S));
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
@@ -1237,7 +1242,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
       else
       {
         // format dd mmm or mmm dd ?
-        Day = (Word)StrToIntDef(Col, 0);
+        Day = static_cast<Word>(StrToIntDef(Col, 0));
         if (Day > 0)
         {
           DayMonthFormat = true;
@@ -1252,15 +1257,15 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
         // for --full-time format
         if ((Month == 0) && (Col.Length() == 10) && (Col[5] == L'-') && (Col[8] == L'-'))
         {
-          Year = (Word)Col.SubString(1, 4).ToInt();
-          Month = (Word)Col.SubString(6, 2).ToInt();
-          Day = (Word)Col.SubString(9, 2).ToInt();
+          Year = StrToWord(Col.SubString(1, 4));
+          Month = StrToWord(Col.SubString(6, 2));
+          Day = StrToWord(Col.SubString(9, 2));
           GETCOL;
-          Hour = (Word)Col.SubString(1, 2).ToInt();
-          Min = (Word)Col.SubString(4, 2).ToInt();
+          Hour = StrToWord(Col.SubString(1, 2));
+          Min = StrToWord(Col.SubString(4, 2));
           if (Col.Length() >= 8)
           {
-            Sec = (Word)StrToInt(Col.SubString(7, 2));
+            Sec = StrToWord(StrToInt(Col.SubString(7, 2)));
           }
           else
           {
@@ -1293,7 +1298,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
           if (Day == 0)
           {
             GETNCOL;
-            Day = (Word)StrToInt(Col);
+            Day = StrToWord(Col);
           }
           if ((Day < 1) || (Day > 31)) Abort();
 
@@ -1306,13 +1311,13 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             {
               Abort();
             }
-            Hour = (Word)StrToInt(Col.SubString(1, 2));
-            Min = (Word)StrToInt(Col.SubString(4, 2));
-            Sec = (Word)StrToInt(Col.SubString(7, 2));
+            Hour = StrToWord(Col.SubString(1, 2));
+            Min = StrToWord(Col.SubString(4, 2));
+            Sec = StrToWord(Col.SubString(7, 2));
             FModificationFmt = mfFull;
             // do not trim leading space of filename
             GETNCOL;
-            Year = (Word)StrToInt(Col);
+            Year = StrToWord(Col);
           }
           else
           {
@@ -1333,11 +1338,11 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             }
             // GETNCOL; // We don't want to trim input strings (name with space at beginning???)
             // Check if we got time (contains :) or year
-            if ((P = (Word)Col.Pos(L':')) > 0)
+            if ((P = static_cast<Word>(Col.Pos(L':'))) > 0)
             {
               Word CurrMonth, CurrDay;
-              Hour = (Word)StrToInt(Col.SubString(1, P-1));
-              Min = (Word)StrToInt(Col.SubString(P+1, Col.Length() - P));
+              Hour = StrToWord(Col.SubString(1, P-1));
+              Min = StrToWord(Col.SubString(P+1, Col.Length() - P));
               if (Hour > 23 || Min > 59) Abort();
               // When we don't got year, we assume current year
               // with exception that the date would be in future
@@ -1350,7 +1355,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             }
               else
             {
-              Year = (Word)StrToInt(Col);
+              Year = StrToWord(Col);
               if (Year > 10000) Abort();
               // When we didn't get time we assume midnight
               Hour = 0; Min = 0; Sec = 0;
@@ -1656,7 +1661,7 @@ UnicodeString __fastcall TRemoteFileList::GetFullDirectory()
 //---------------------------------------------------------------------------
 TRemoteFile * __fastcall TRemoteFileList::GetFiles(Integer Index)
 {
-  return (TRemoteFile *)Items[Index];
+  return static_cast<TRemoteFile *>(Items[Index]);
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFileList::GetIsRoot()
@@ -1795,7 +1800,7 @@ void __fastcall TRemoteDirectoryCache::Clear()
   {
     for (int Index = 0; Index < Count; Index++)
     {
-      delete (TRemoteFileList *)Objects[Index];
+      delete static_cast<TRemoteFileList *>(Objects[Index]);
       Objects[Index] = NULL;
     }
   }
@@ -2685,7 +2690,7 @@ TRights TRights::Combine(const TRights & Other) const
 {
   TRights Result = (*this);
   Result |= Other.NumberSet;
-  Result &= (unsigned short)~Other.NumberUnset;
+  Result &= static_cast<unsigned short>(~Other.NumberUnset);
   return Result;
 }
 //=== TRemoteProperties -------------------------------------------------------
@@ -2753,7 +2758,7 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
   TRemoteProperties CommonProperties;
   for (int Index = 0; Index < FileList->Count; Index++)
   {
-    TRemoteFile * File = (TRemoteFile *)(FileList->Objects[Index]);
+    TRemoteFile * File = static_cast<TRemoteFile *>(FileList->Objects[Index]);
     DebugAssert(File);
     if (!Index)
     {

@@ -35,7 +35,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FDirectoryChanged = false;
   FExecuting = false;
   OutputMemo->Color = clBlack;
-  OutputMemo->Font->Color = (TColor)0x00BBBBBB;
+  OutputMemo->Font->Color = static_cast<TColor>(0x00BBBBBB);
   FixComboBoxResizeBug(CommandEdit);
   UseSystemSettings(this);
   SelectScaledImageList(Images);
@@ -276,7 +276,7 @@ void __fastcall TConsoleDialog::DoAdjustWindow()
   {
     GetTextMetrics(DC, &TM);
 
-    OutputMemo->Perform(EM_GETRECT, 0, ((int)&Rect));
+    OutputMemo->Perform(EM_GETRECT, 0, reinterpret_cast<int>(&Rect));
   }
   __finally
   {

@@ -265,7 +265,7 @@ void SetNeonTlsInit(ne_session * Session, TNeonTlsInit OnNeonTlsInit, TTerminal 
   }
 
   // As the OnNeonTlsInit always only calls SetupSsl, we can simplify this with one shared implementation
-  TMethod & Method = *(TMethod*)&OnNeonTlsInit;
+  TMethod & Method = *reinterpret_cast<TMethod*>(&OnNeonTlsInit);
   ne_set_session_private(Session, SESSION_TLS_INIT_KEY, Method.Code);
   ne_set_session_private(Session, SESSION_TLS_INIT_DATA_KEY, Method.Data);
 }
@@ -567,7 +567,7 @@ UnicodeString __fastcall NeonTlsSessionInfo(
 //---------------------------------------------------------------------------
 static int TlsVersionToOpenssl(TTlsVersion TlsVersion)
 {
-  TlsVersion = (TTlsVersion)std::min((TTlsVersion)std::max(TlsVersion, tlsMin), tlsMax);
+  TlsVersion = std::min(std::max(TlsVersion, tlsMin), tlsMax);
   switch (TlsVersion)
   {
     case tls10: return TLS1_VERSION;

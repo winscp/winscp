@@ -19,6 +19,7 @@
 #include <PuttyTools.h>
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/pkcs12.h>
 #include <openssl/err.h>
 #pragma clang diagnostic pop
@@ -1961,8 +1962,8 @@ bool __fastcall TTerminal::PromptUser(TSessionData * Data, TPromptKind Kind,
   TStrings * Results = new TStringList;
   try
   {
-    Prompts->AddObject(Prompt, (TObject *)(FLAGMASK(Echo, pupEcho)));
-    Results->AddObject(Result, (TObject *)MaxLen);
+    Prompts->AddObject(Prompt, reinterpret_cast<TObject *>(FLAGMASK(Echo, pupEcho)));
+    Results->AddObject(Result, reinterpret_cast<TObject *>(MaxLen));
 
     AResult = PromptUser(Data, Kind, Name, Instructions, Prompts, Results);
 
@@ -2033,7 +2034,7 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
   {
     if (PasswordOrPassphrasePrompt && !Configuration->RememberPassword)
     {
-      Prompts->Objects[0] = (TObject*)(int(Prompts->Objects[0]) | pupRemember);
+      Prompts->Objects[0] = reinterpret_cast<TObject*>(reinterpret_cast<int>(Prompts->Objects[0]) | pupRemember);
     }
 
     if (OnPromptUser != NULL)
@@ -2320,7 +2321,7 @@ void __fastcall TTerminal::SaveCapabilities(TFileSystemInfo & FileSystemInfo)
 {
   for (int Index = 0; Index < fcCount; Index++)
   {
-    FileSystemInfo.IsCapable[Index] = IsCapable[(TFSCapability)Index];
+    FileSystemInfo.IsCapable[Index] = IsCapable[static_cast<TFSCapability>(Index)];
   }
 }
 //---------------------------------------------------------------------------
@@ -2353,7 +2354,7 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
   bool ChangesDirectory = false;
   bool ModifiesFiles = false;
 
-  switch ((TFSCommand)Cmd) {
+  switch (static_cast<TFSCommand>(Cmd)) {
     case fsChangeDirectory:
     case fsHomeDirectory:
       ChangesDirectory = true;
@@ -2976,7 +2977,7 @@ void __fastcall TTerminal::SetExceptionOnFail(bool value)
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::GetExceptionOnFail() const
 {
-  return (bool)(FExceptionOnFail > 0);
+  return (FExceptionOnFail > 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::FatalAbort()
@@ -4176,7 +4177,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
               else
               {
                 // not used anymore
-                TProcessFileEventEx ProcessFileEx = (TProcessFileEventEx)ProcessFile;
+                TProcessFileEventEx ProcessFileEx = reinterpret_cast<TProcessFileEventEx>(ProcessFile);
                 ProcessFileEx(FileName, File, Param, Index);
               }
               Success = true;
@@ -4364,7 +4365,7 @@ void __fastcall TTerminal::DeleteFile(UnicodeString FileName,
     FileName = File->FileName;
   }
   StartOperationWithFile(FileName, foDelete);
-  int Params = (AParams != NULL) ? *((int*)AParams) : 0;
+  int Params = (AParams != NULL) ? *static_cast<int*>(AParams) : 0;
   bool Recycle =
     FLAGCLEAR(Params, dfForceDelete) &&
     (SessionData->DeleteToRecycleBin != FLAGSET(Params, dfAlternative)) &&
@@ -4432,7 +4433,7 @@ void __fastcall TTerminal::DeleteLocalFile(UnicodeString FileName,
   }
   else
   {
-    OnDeleteLocalFile(FileName, FLAGSET(*((int*)Params), dfAlternative), Deleted);
+    OnDeleteLocalFile(FileName, FLAGSET(*static_cast<int*>(Params), dfAlternative), Deleted);
   }
   AppLogFmt(L"Deleted local file \"%s\"", (FileName));
   if (DebugAlwaysTrue((OperationProgress != NULL) && (OperationProgress->Operation == foDelete)))
@@ -4449,7 +4450,7 @@ bool __fastcall TTerminal::DeleteLocalFiles(TStrings * FileList, int Params)
 void __fastcall TTerminal::CustomCommandOnFile(UnicodeString FileName,
   const TRemoteFile * File, void * AParams)
 {
-  TCustomCommandParams * Params = ((TCustomCommandParams *)AParams);
+  TCustomCommandParams * Params = static_cast<TCustomCommandParams *>(AParams);
   if (FileName.IsEmpty() && File)
   {
     FileName = File->FileName;
@@ -4574,7 +4575,7 @@ bool __fastcall TTerminal::DoOnCustomCommand(const UnicodeString & Command)
 void __fastcall TTerminal::ChangeFileProperties(UnicodeString FileName,
   const TRemoteFile * File, /*const TRemoteProperties*/ void * Properties)
 {
-  TRemoteProperties * RProperties = (TRemoteProperties *)Properties;
+  TRemoteProperties * RProperties = static_cast<TRemoteProperties *>(Properties);
   DebugAssert(RProperties && !RProperties->Valid.Empty());
 
   if (FileName.IsEmpty() && File)
@@ -4642,7 +4643,7 @@ void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
   TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   AnnounceFileListOperation();
-  ProcessFiles(FileList, foSetProperties, ChangeFileProperties, (void *)Properties);
+  ProcessFiles(FileList, foSetProperties, ChangeFileProperties, const_cast<TRemoteProperties *>(Properties));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::LoadFilesProperties(TStrings * FileList)

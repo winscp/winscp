@@ -15,7 +15,7 @@ uses
   IEListView, PathLabel, SysUtils, PasTools;
 
 const
-  clDefaultItemColor = -(COLOR_ENDCOLORS + 1);
+  clDefaultItemColor: TColor = -(COLOR_ENDCOLORS + 1);
   WM_USER_RENAME = WM_USER + 57;
   WM_USER_INVALIDATEITEM = WM_USER + $2000 + 16;
   oiNoOverlay = $00;

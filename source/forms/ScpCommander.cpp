@@ -156,7 +156,7 @@ void __fastcall TScpCommanderForm::RestorePanelParams(
   const TScpCommanderPanelConfiguration & PanelConfiguration)
 {
   DirView->ColProperties->ParamsStr = PanelConfiguration.DirViewParams;
-  DirView->DirViewStyle = (TDirViewStyle)PanelConfiguration.ViewStyle;
+  DirView->DirViewStyle = static_cast<TDirViewStyle>(PanelConfiguration.ViewStyle);
   StatusBar->Visible = PanelConfiguration.StatusBar;
   DriveControl->Visible = PanelConfiguration.DriveView;
   if (DriveControl->Align == alTop)
@@ -186,7 +186,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
   RestorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, WinConfiguration->ScpCommander.LocalPanel);
   RestorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, WinConfiguration->ScpCommander.RemotePanel);
   OtherLocalDirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.OtherLocalPanelDirViewParams;
-  OtherLocalDirView->DirViewStyle = (TDirViewStyle)WinConfiguration->ScpCommander.OtherLocalPanelViewStyle;
+  OtherLocalDirView->DirViewStyle = static_cast<TDirViewStyle>(WinConfiguration->ScpCommander.OtherLocalPanelViewStyle);
   FPanelsRestored = true;
 
   // just to make sure
@@ -452,7 +452,7 @@ void TScpCommanderForm::NewTab(TOperationSide Side, bool AllowReverse)
 //---------------------------------------------------------------------------
 Boolean __fastcall TScpCommanderForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
 {
-  #define FLAG ((TActionFlag)(Action->Tag))
+  #define FLAG (static_cast<TActionFlag>(Action->Tag))
   return
     TCustomScpExplorerForm::AllowedAction(Action, Allowed) &&
     // always require Commander flag
@@ -1266,7 +1266,7 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
   UnicodeString Directory2 = DirView(osOther)->PathName;
   bool SaveMode = !(GUIConfiguration->SynchronizeModeAuto < 0);
   TSynchronizeMode Mode =
-    (SaveMode ? (TSynchronizeMode)GUIConfiguration->SynchronizeModeAuto :
+    (SaveMode ? static_cast<TSynchronizeMode>(GUIConfiguration->SynchronizeModeAuto) :
       ((FCurrentSide == osLocal) ? smRemote : smLocal));
   int Params = GUIConfiguration->SynchronizeParams;
   if (DoFullSynchronizeDirectories(Directory1, Directory2, Mode, Params, SaveMode, -1) >= 0)
@@ -1618,7 +1618,7 @@ void __fastcall TScpCommanderForm::AddEditLink(TOperationSide Side, bool Add)
     if (ADirView->ItemFocused != NULL)
     {
       DebugAssert(ADirView->ItemFocused->Data);
-      PFileRec FileRec = (PFileRec)ADirView->ItemFocused->Data;
+      PFileRec FileRec = static_cast<PFileRec>(ADirView->ItemFocused->Data);
 
       Edit = !Add && (UpperCase(FileRec->FileExt) == L"LNK");
       if (Edit)
@@ -2213,11 +2213,11 @@ void TScpCommanderForm::LocalPathComboUpdateDrives(
     LocalPathComboBoxPaths->Clear();
     Strings->Add(LoadStr(SPECIAL_FOLDER_MY_DOCUMENTS));
     LocalPathComboBoxPaths->AddObject(
-      GetPersonalFolder(), (TObject *)DriveInfo->SpecialFolder[CSIDL_PERSONAL]->ImageIndex);
+      GetPersonalFolder(), reinterpret_cast<TObject *>(DriveInfo->SpecialFolder[CSIDL_PERSONAL]->ImageIndex));
     LocalSpecialPaths++;
     Strings->Add(LoadStr(SPECIAL_FOLDER_DESKTOP));
     LocalPathComboBoxPaths->AddObject(
-      GetDesktopFolder(), (TObject *)DriveInfo->SpecialFolder[CSIDL_DESKTOP]->ImageIndex);
+      GetDesktopFolder(), reinterpret_cast<TObject *>(DriveInfo->SpecialFolder[CSIDL_DESKTOP]->ImageIndex));
     LocalSpecialPaths++;
     DebugAssert((FLocalSpecialPaths == 0) || (FLocalSpecialPaths == LocalSpecialPaths));
     FLocalSpecialPaths = LocalSpecialPaths;

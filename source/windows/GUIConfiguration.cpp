@@ -1047,7 +1047,7 @@ void __fastcall TGUIConfiguration::SetAppliedLocale(LCID AppliedLocale, const Un
 void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
 {
   TLibModule * MainModule = FindModule(HInstance);
-  if ((unsigned)Instance != MainModule->Instance)
+  if (reinterpret_cast<unsigned>(Instance) != MainModule->Instance)
   {
     FreeLibrary(static_cast<HMODULE>(Instance));
   }
@@ -1065,15 +1065,15 @@ HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
     Instance = HInstance;
   }
   TLibModule * MainModule = FindModule(HInstance);
-  HANDLE Result = (HANDLE)MainModule->ResInstance;
-  MainModule->ResInstance = (unsigned)Instance;
+  HANDLE Result = reinterpret_cast<HANDLE>(MainModule->ResInstance);
+  MainModule->ResInstance = reinterpret_cast<unsigned>(Instance);
   CoreSetResourceModule(Instance);
   return Result;
 }
 //---------------------------------------------------------------------------
 HANDLE __fastcall TGUIConfiguration::GetResourceModule()
 {
-  return (HANDLE)FindModule(HInstance)->ResInstance;
+  return reinterpret_cast<HANDLE>(FindModule(HInstance)->ResInstance);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
@@ -1403,7 +1403,7 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
   }
 
   TSessionData * PuttySessionData =
-    (TSessionData *)ImportSessionList->FindByName(PuttySession);
+    static_cast<TSessionData *>(ImportSessionList->FindByName(PuttySession));
   if (PuttySessionData != NULL)
   {
     ImportSessionList->Remove(PuttySessionData);

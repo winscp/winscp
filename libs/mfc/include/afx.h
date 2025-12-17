@@ -105,6 +105,7 @@ public:
 	void SetAt(int nIndex, TCHAR ch);
 	// return pointer to const string
 	operator LPCTSTR() const;
+	LPCTSTR c_str() const { return operator LPCTSTR(); }
 
 	// overloaded assignment
 

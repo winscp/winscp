@@ -8,6 +8,7 @@
 #include "Exceptions.h"
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl\rand.h>
 #include <openssl\err.h>
 #include <openssl\ssl.h>
@@ -96,6 +97,9 @@ static void hmac_sha1_begin(hmac_ctx cx[1])
     memset(cx, 0, sizeof(hmac_ctx));
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
+
 /* input the HMAC key (can be called multiple times)    */
 static void hmac_sha1_key(const unsigned char key[], unsigned long key_len, hmac_ctx cx[1])
 {
@@ -173,6 +177,8 @@ static void hmac_sha1_end(unsigned char mac[], unsigned long mac_len, hmac_ctx c
     for(i = 0; i < mac_len; ++i)
         mac[i] = dig[i];
 }
+
+#pragma clang diagnostic pop
 
 #define BLOCK_SIZE  16
 
@@ -273,10 +279,10 @@ static void derive_key(const unsigned char pwd[],  /* the PASSWORD     */
         c3->CopyFrom(c2);
 
         /* enter additional data for 1st block into uu  */
-        uu[0] = (unsigned char)((i + 1) >> 24);
-        uu[1] = (unsigned char)((i + 1) >> 16);
-        uu[2] = (unsigned char)((i + 1) >> 8);
-        uu[3] = (unsigned char)(i + 1);
+        uu[0] = static_cast<unsigned char>((i + 1) >> 24);
+        uu[1] = static_cast<unsigned char>((i + 1) >> 16);
+        uu[2] = static_cast<unsigned char>((i + 1) >> 8);
+        uu[3] = static_cast<unsigned char>(i + 1);
 
         /* this is the key mixing iteration         */
         for(j = 0, k = 4; j < iter; ++j)
@@ -537,19 +543,19 @@ RawByteString __fastcall ScramblePassword(UnicodeString Password)
     int P = 0;
     while ((P <= 0) || (P > 255) || IsDigit(static_cast<wchar_t>(P)))
     {
-      P = (int)((double)rand() / ((double)RAND_MAX / 256.0));
+      P = static_cast<int>(static_cast<double>(rand()) / (static_cast<double>(RAND_MAX) / 256.0));
     }
-    Buf[Index] = (unsigned char)P;
+    Buf[Index] = static_cast<unsigned char>(P);
   }
-  Buf[Padding] = (char)('0' + (Len % 10));
-  Buf[Padding + 1] = (char)('0' + ((Len / 10) % 10));
-  Buf[Padding + 2] = (char)('0' + ((Len / 100) % 10));
+  Buf[Padding] = static_cast<char>('0' + (Len % 10));
+  Buf[Padding + 1] = static_cast<char>('0' + ((Len / 10) % 10));
+  Buf[Padding + 2] = static_cast<char>('0' + ((Len / 100) % 10));
   strcpy(Buf + Padding + 3, UtfPassword.c_str());
   char * S = Buf;
   int Last = 31;
   while (*S != '\0')
   {
-    Last = (Last + (unsigned char)*S) % 255 + 1;
+    Last = (Last + static_cast<unsigned char>(*S)) % 255 + 1;
     *S = ScrambleTable[Last];
     S++;
   }
@@ -566,12 +572,12 @@ bool __fastcall UnscramblePassword(RawByteString Scrambled, UnicodeString & Pass
   int Last = 31;
   while (*S != '\0')
   {
-    int X = (int)UnscrambleTable[(unsigned char)*S] - 1 - (Last % 255);
+    int X = static_cast<int>(UnscrambleTable[static_cast<unsigned char>(*S)] - 1 - (Last % 255));
     if (X <= 0)
     {
       X += 255;
     }
-    *S = (char)X;
+    *S = static_cast<char>(X);
     Last = (Last + X) % 255 + 1;
     S++;
   }
@@ -622,9 +628,9 @@ void __fastcall CryptographyInitialize()
   UnscrambleTable = new unsigned char[256];
   for (int Index = 0; Index < 256; Index++)
   {
-    UnscrambleTable[SScrambleTable[Index]] = (unsigned char)Index;
+    UnscrambleTable[SScrambleTable[Index]] = static_cast<unsigned char>(Index);
   }
-  srand((unsigned int)time(NULL) ^ (unsigned int)getpid());
+  srand(static_cast<unsigned int>(time(NULL)) ^ static_cast<unsigned int>(getpid()));
 
   // The results are partly cached. So when later some OpenSSL function is called, which internally
   // calls OPENSSL_init_crypto, it will fail, without doing full initialization. So afterwards

@@ -18,7 +18,7 @@ void __fastcall TFileZillaIntf::Finalize()
 //---------------------------------------------------------------------------
 void __fastcall TFileZillaIntf::SetResourceModule(void * ResourceHandle)
 {
-  afxCurrentResourceHandle = (HINSTANCE)ResourceHandle;
+  afxCurrentResourceHandle = static_cast<HINSTANCE>(ResourceHandle);
 }
 //---------------------------------------------------------------------------
 __fastcall TFileZillaIntf::TFileZillaIntf() :
@@ -311,7 +311,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
     case FZ_MSG_STATUS:
       {
         DebugAssert(FZ_MSG_PARAM(wParam) == 0);
-        t_ffam_statusmessage * Status = (t_ffam_statusmessage *)lParam;
+        t_ffam_statusmessage * Status = reinterpret_cast<t_ffam_statusmessage *>(lParam);
         DebugAssert(Status->post);
         Result = HandleStatus(Status->status, Status->type);
         delete Status;
@@ -324,7 +324,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       {
         int RequestResult;
         wchar_t FileName1[MAX_PATH];
-        COverwriteRequestData * Data = (COverwriteRequestData *)lParam;
+        COverwriteRequestData * Data = reinterpret_cast<COverwriteRequestData *>(lParam);
         try
         {
           DebugAssert(Data != NULL);
@@ -356,7 +356,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       else if (FZ_MSG_PARAM(wParam) == FZ_ASYNCREQUEST_VERIFYCERT)
       {
         int RequestResult;
-        CVerifyCertRequestData * AData = (CVerifyCertRequestData *)lParam;
+        CVerifyCertRequestData * AData = reinterpret_cast<CVerifyCertRequestData *>(lParam);
         try
         {
           DebugAssert(AData != NULL);
@@ -392,7 +392,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       else if (FZ_MSG_PARAM(wParam) == FZ_ASYNCREQUEST_NEEDPASS)
       {
         int RequestResult = 0;
-        CNeedPassRequestData * AData = (CNeedPassRequestData *)lParam;
+        CNeedPassRequestData * AData = reinterpret_cast<CNeedPassRequestData *>(lParam);
         try
         {
             TNeedPassRequestData Data;
@@ -428,7 +428,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
     case FZ_MSG_LISTDATA:
       {
         DebugAssert(FZ_MSG_PARAM(wParam) == 0);
-        t_directory * Directory = (t_directory *)lParam;
+        t_directory * Directory = reinterpret_cast<t_directory *>(lParam);
         CString Path = Directory->path.GetPath();
         std::vector<TListDataEntry> Entries(Directory->num);
 
@@ -461,7 +461,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
     case FZ_MSG_TRANSFERSTATUS:
       {
         DebugAssert(FZ_MSG_PARAM(wParam) == 0);
-        t_ffam_transferstatus * Status = (t_ffam_transferstatus *)lParam;
+        t_ffam_transferstatus * Status = reinterpret_cast<t_ffam_transferstatus *>(lParam);
         if (Status != NULL)
         {
           Result = HandleTransferStatus(
@@ -480,7 +480,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       break;
 
     case FZ_MSG_CAPABILITIES:
-      Result = HandleCapabilities((TFTPServerCapabilities *)lParam);
+      Result = HandleCapabilities(reinterpret_cast<TFTPServerCapabilities *>(lParam));
       break;
 
     default:

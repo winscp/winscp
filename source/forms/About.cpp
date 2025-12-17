@@ -132,7 +132,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   }
 
   int IconSize = ScaleByPixelsPerInch(48, this);
-  FIconHandle = (HICON)LoadImage(MainInstance, L"MAINICON", IMAGE_ICON, IconSize, IconSize, 0);
+  FIconHandle = static_cast<HICON>(LoadImage(MainInstance, L"MAINICON", IMAGE_ICON, IconSize, IconSize, 0));
   IconPaintBox->Width = IconSize;
   IconPaintBox->Height = IconSize;
 }

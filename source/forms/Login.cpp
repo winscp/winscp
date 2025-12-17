@@ -1719,7 +1719,7 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
   DebugAssert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else if (M->Msg == WM_MANAGES_CAPTION)
   {

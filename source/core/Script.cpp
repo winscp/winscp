@@ -1334,7 +1334,7 @@ void __fastcall TScript::RmProc(TScriptProcParams * Parameters)
   bool OnlyFile = Parameters->FindSwitch(L"onlyfile");
   TStrings * FileList = CreateFileList(
     Parameters, 1, Parameters->ParamCount,
-    (TFileListType)(fltQueryServer | fltMask| FLAGMASK(OnlyFile, fltOnlyFile)));
+    static_cast<TFileListType>(fltQueryServer | fltMask| FLAGMASK(OnlyFile, fltOnlyFile)));
   try
   {
     CheckParams(Parameters);
@@ -1476,7 +1476,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     OnlyFile = true;
   }
   TStrings * FileList = CreateFileList(Parameters, 1, LastFileParam,
-    (TFileListType)(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest) | FLAGMASK(OnlyFile, fltOnlyFile)));
+    static_cast<TFileListType>(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest) | FLAGMASK(OnlyFile, fltOnlyFile)));
   try
   {
     UnicodeString TargetDirectory;
@@ -1541,7 +1541,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
   }
   else
   {
-    FileList = CreateLocalFileList(Parameters, 1, LastFileParam, (TFileListType)(fltMask | FLAGMASK(Latest, fltLatest)));
+    FileList = CreateLocalFileList(Parameters, 1, LastFileParam, static_cast<TFileListType>(fltMask | FLAGMASK(Latest, fltLatest)));
   }
   try
   {
@@ -1595,7 +1595,7 @@ TTransferMode __fastcall TScript::ParseTransferModeName(UnicodeString Name)
     throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (L"transfer", Name)));
   }
 
-  return (TTransferMode)Value;
+  return static_cast<TTransferMode>(Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString ValueName)
@@ -1650,7 +1650,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
       }
-      FBatch = (TBatchMode)Value;
+      FBatch = static_cast<TBatchMode>(Value);
       FInteractiveBatch = FBatch;
 
       if (SetValue && (FBatch != BatchOff) && (FSessionReopenTimeout == 0))
@@ -1688,7 +1688,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       FCopyParam.TransferMode = ParseTransferModeName(ValueName);
     }
 
-    DebugAssert(FCopyParam.TransferMode < (TTransferMode)TransferModeNamesCount);
+    DebugAssert(FCopyParam.TransferMode < static_cast<TTransferMode>(TransferModeNamesCount));
     const wchar_t * Value = TransferModeNames[FCopyParam.TransferMode];
     PrintLine(FORMAT(ListFormat, (Names[Transfer], Value)));
   }

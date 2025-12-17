@@ -12,6 +12,7 @@ void __fastcall DontSaveRandomSeed();
 #define MPEXT
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wconversion"
+#pragma clang diagnostic ignored "-Wold-style-cast"
 extern "C"
 {
 #include <putty.h>

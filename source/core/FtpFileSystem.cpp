@@ -13,8 +13,11 @@
 #include "NeonIntf.h"
 #include "SessionInfo.h"
 #include "Cryptography.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/x509_vfy.h>
 #include <openssl/err.h>
+#pragma clang diagnostic push
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------

@@ -42,7 +42,7 @@ PVSFixedFileInfo __fastcall GetFixedFileInfo(void * FileInfo)
 {
   UINT Len;
   PVSFixedFileInfo Result;
-  if (!VerQueryValue(FileInfo, L"\\", (void**)&Result, &Len))
+  if (!VerQueryValue(FileInfo, L"\\", reinterpret_cast<void**>(&Result), &Len))
   {
     throw Exception(L"Fixed file info not available");
   }
@@ -54,7 +54,7 @@ unsigned __fastcall GetTranslationCount(void * FileInfo)
 {
   PTranslations P;
   UINT Len;
-  if (!VerQueryValue(FileInfo, L"\\VarFileInfo\\Translation", (void**)&P, &Len))
+  if (!VerQueryValue(FileInfo, L"\\VarFileInfo\\Translation", reinterpret_cast<void**>(&P), &Len))
   {
     throw Exception(L"File info translations not available");
   }
@@ -67,7 +67,7 @@ TTranslation __fastcall GetTranslation(void * FileInfo, unsigned i)
   PTranslations P;
   UINT Len;
 
-  if (!VerQueryValue(FileInfo, L"\\VarFileInfo\\Translation", (void**)&P, &Len))
+  if (!VerQueryValue(FileInfo, L"\\VarFileInfo\\Translation", reinterpret_cast<void**>(&P), &Len))
   {
     throw Exception(L"File info translations not available");
   }
@@ -89,7 +89,7 @@ UnicodeString __fastcall GetFileInfoString(void * FileInfo,
 
   UnicodeString SubBlock =
     UnicodeString(L"\\StringFileInfo\\") + IntToHex(Translation.Language, 4) + IntToHex(Translation.CharSet, 4) + L"\\" + StringName;
-  if (!VerQueryValue(FileInfo, SubBlock.c_str(), (void**)&P, &Len))
+  if (!VerQueryValue(FileInfo, SubBlock.c_str(), reinterpret_cast<void**>(&P), &Len))
   {
     if (!AllowEmpty)
     {

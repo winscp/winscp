@@ -11,7 +11,7 @@ static RawByteString PWALG_SIMPLE_STRING("0123456789ABCDEF");
 //---------------------------------------------------------------------------
 RawByteString SimpleEncryptChar(unsigned char Ch)
 {
-  Ch = (unsigned char)((~Ch) ^ PWALG_SIMPLE_MAGIC);
+  Ch = static_cast<unsigned char>((~Ch) ^ PWALG_SIMPLE_MAGIC);
   RawByteString Result("..");
   Result[1] = PWALG_SIMPLE_STRING[((Ch & 0xF0) >> 4) + 1];
   Result[2] = PWALG_SIMPLE_STRING[((Ch & 0x0F) >> 0) + 1];
@@ -22,9 +22,9 @@ unsigned char SimpleDecryptNextChar(RawByteString &Str)
 {
   if (Str.Length() > 0)
   {
-    unsigned char Result = (unsigned char)
+    unsigned char Result = static_cast<unsigned char>(
       ~((((PWALG_SIMPLE_STRING.Pos(Str.c_str()[0])-1) << 4) +
-         ((PWALG_SIMPLE_STRING.Pos(Str.c_str()[1])-1) << 0)) ^ PWALG_SIMPLE_MAGIC);
+         ((PWALG_SIMPLE_STRING.Pos(Str.c_str()[1])-1) << 0)) ^ PWALG_SIMPLE_MAGIC));
     Str.Delete(1, 2);
     return Result;
   }
@@ -40,31 +40,31 @@ RawByteString EncryptPassword(UnicodeString UnicodePassword, UnicodeString Unico
 
   if (!RandSeed) Randomize();
   Password = Key + Password;
-  Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_FLAG); // Flag
+  Result += SimpleEncryptChar(static_cast<unsigned char>(PWALG_SIMPLE_FLAG)); // Flag
   int Len = Password.Length();
   if (Len > std::numeric_limits<unsigned char>::max())
   {
-    Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_INTERNAL2);
-    Result += SimpleEncryptChar((unsigned char)(Len >> 8));
-    Result += SimpleEncryptChar((unsigned char)(Len & 0xFF));
+    Result += SimpleEncryptChar(static_cast<unsigned char>(PWALG_SIMPLE_INTERNAL2));
+    Result += SimpleEncryptChar(static_cast<unsigned char>(Len >> 8));
+    Result += SimpleEncryptChar(static_cast<unsigned char>(Len & 0xFF));
   }
   else
   {
-    Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_INTERNAL);
-    Result += SimpleEncryptChar((unsigned char)Len);
+    Result += SimpleEncryptChar(static_cast<unsigned char>(PWALG_SIMPLE_INTERNAL));
+    Result += SimpleEncryptChar(static_cast<unsigned char>(Len));
   }
   int DataLen =
     (Result.Length() / 2) +
     1 + // Shift
     Password.Length();
   int Shift = (DataLen < PWALG_SIMPLE_MAXLEN) ? random(PWALG_SIMPLE_MAXLEN - DataLen) : 0;
-  Result += SimpleEncryptChar((unsigned char)Shift);
+  Result += SimpleEncryptChar(static_cast<unsigned char>(Shift));
   for (int Index = 0; Index < Shift; Index++)
-    Result += SimpleEncryptChar((unsigned char)random(256));
+    Result += SimpleEncryptChar(static_cast<unsigned char>(random(256)));
   for (int Index = 0; Index < Password.Length(); Index++)
     Result += SimpleEncryptChar(Password.c_str()[Index]);
   while (Result.Length() < PWALG_SIMPLE_MAXLEN * 2)
-    Result += SimpleEncryptChar((unsigned char)random(256));
+    Result += SimpleEncryptChar(static_cast<unsigned char>(random(256)));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -96,10 +96,10 @@ UnicodeString DecryptPassword(RawByteString Password, UnicodeString UnicodeKey, 
   UTF8String Result;
   if (Length >= 0)
   {
-    Password.Delete(1, ((Integer)SimpleDecryptNextChar(Password))*2);
+    Password.Delete(1, static_cast<Integer>(SimpleDecryptNextChar(Password))*2);
     for (int Index = 0; Index < Length; Index++)
     {
-      Result += (char)SimpleDecryptNextChar(Password);
+      Result += static_cast<char>(SimpleDecryptNextChar(Password));
     }
     if (Flag == PWALG_SIMPLE_FLAG)
     {
@@ -120,8 +120,8 @@ UnicodeString DecryptPassword(RawByteString Password, UnicodeString UnicodeKey, 
 RawByteString SetExternalEncryptedPassword(RawByteString Password)
 {
   RawByteString Result;
-  Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_FLAG);
-  Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_EXTERNAL);
+  Result += SimpleEncryptChar(static_cast<unsigned char>(PWALG_SIMPLE_FLAG));
+  Result += SimpleEncryptChar(static_cast<unsigned char>(PWALG_SIMPLE_EXTERNAL));
   Result += UTF8String(BytesToHex(reinterpret_cast<const unsigned char *>(Password.c_str()), Password.Length()));
   return Result;
 }

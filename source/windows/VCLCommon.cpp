@@ -276,7 +276,7 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
       // But we do not use this code anymore for the main window anyway.
       Color = DarkMode ? GetBtnFaceColor() : clBtnFace;
     }
-    ((TEdit*)Control)->Color = Color;
+    static_cast<TEdit*>(Control)->Color = Color;
   }
 };
 //---------------------------------------------------------------------------
@@ -1573,7 +1573,7 @@ void __fastcall ComboAutoSwitchLoad(TComboBox * ComboBox, TAutoSwitch Value)
 //---------------------------------------------------------------------------
 TAutoSwitch __fastcall ComboAutoSwitchSave(TComboBox * ComboBox)
 {
-  return (TAutoSwitch)(2 - ComboBox->ItemIndex);
+  return static_cast<TAutoSwitch>(2 - ComboBox->ItemIndex);
 }
 //---------------------------------------------------------------------------
 void __fastcall CheckBoxAutoSwitchLoad(TCheckBox * CheckBox, TAutoSwitch Value)
@@ -1763,7 +1763,7 @@ void __fastcall InstallPathWordBreakProc(TWinControl * Control)
   {
     Wnd = Control->Handle;
   }
-  SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, (LPARAM)(EDITWORDBREAKPROC)PathWordBreakProc);
+  SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, reinterpret_cast<LPARAM>(static_cast<EDITWORDBREAKPROC>(PathWordBreakProc)));
 
   TPathWordBreakProcComponent * PathWordBreakProcComponent = new TPathWordBreakProcComponent();
   PathWordBreakProcComponent->Name = TPathWordBreakProcComponent::QualifiedClassName();
@@ -2307,7 +2307,7 @@ static void __fastcall HintLabelWindowProc(void * Data, TMessage & Message)
 
   if (Message.Msg == CM_CANCELMODE)
   {
-    TCMCancelMode & CancelMessage = (TCMCancelMode&)Message;
+    TCMCancelMode & CancelMessage = reinterpret_cast<TCMCancelMode&>(Message);
     if ((CancelMessage.Sender != StaticText) &&
         (CancelMessage.Sender != PersistentHintWindow))
     {
