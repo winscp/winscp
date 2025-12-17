@@ -299,8 +299,6 @@ public:
 		modeNoInherit =     0x0080,
 		modeCreate =        0x1000,
 		modeNoTruncate =    0x2000,
-		typeText =          0x4000, // typeText and typeBinary are used in
-		typeBinary =   (int)0x8000 // derived classes only
 		};
 
 	enum { hFileNull = -1 };
@@ -309,7 +307,7 @@ public:
 	CFile();
 
 // Attributes
-	UINT m_hFile;
+	HANDLE m_hFile;
 
 // Operations
 	BOOL Open(LPCTSTR lpszFileName, UINT nOpenFlags,

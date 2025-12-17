@@ -16,13 +16,13 @@
 
 CFile::CFile()
 {
-	m_hFile = (UINT) hFileNull;
+	m_hFile = (HANDLE) hFileNull;
 	m_bCloseOnDelete = FALSE;
 }
 
 CFile::~CFile()
 {
-	if (m_hFile != (UINT)hFileNull && m_bCloseOnDelete)
+	if (m_hFile != (HANDLE)hFileNull && m_bCloseOnDelete)
 		Close();
 }
 
@@ -33,13 +33,9 @@ BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags,
 	ASSERT(AfxIsValidString(lpszFileName));
 	ASSERT(pException == NULL ||
 		AfxIsValidAddress(pException, sizeof(CFileException)));
-	ASSERT((nOpenFlags & typeText) == 0);   // text mode not supported
-
-	// CFile objects are always binary and CreateFile does not need flag
-	nOpenFlags &= ~(UINT)typeBinary;
 
 	m_bCloseOnDelete = FALSE;
-	m_hFile = (UINT)hFileNull;
+	m_hFile = (HANDLE)hFileNull;
 	m_strFileName.Empty();
 
 	TCHAR szTemp[_MAX_PATH];
@@ -88,8 +84,6 @@ BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags,
 		break;
 	}
 
-	// Note: typeText and typeBinary are used in derived classes only.
-
 	// map modeNoInherit flag
 	SECURITY_ATTRIBUTES sa;
 	sa.nLength = sizeof(sa);
@@ -126,7 +120,7 @@ BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags,
 		}
 		return FALSE;
 	}
-	m_hFile = (HFILE)hFile;
+	m_hFile = hFile;
 	m_bCloseOnDelete = TRUE;
 
 	return TRUE;
@@ -135,7 +129,7 @@ BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags,
 UINT CFile::Read(void* lpBuf, UINT nCount)
 {
 	ASSERT_VALID(this);
-	ASSERT(m_hFile != (UINT)hFileNull);
+	ASSERT(m_hFile != (HANDLE)hFileNull);
 
 	if (nCount == 0)
 		return 0;   // avoid Win32 "null-read"
@@ -144,7 +138,7 @@ UINT CFile::Read(void* lpBuf, UINT nCount)
 	ASSERT(AfxIsValidAddress(lpBuf, nCount));
 
 	DWORD dwRead;
-	if (!::ReadFile((HANDLE)m_hFile, lpBuf, nCount, &dwRead, NULL))
+	if (!::ReadFile(m_hFile, lpBuf, nCount, &dwRead, NULL))
 		CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName);
 
 	return (UINT)dwRead;
@@ -153,7 +147,7 @@ UINT CFile::Read(void* lpBuf, UINT nCount)
 void CFile::Write(const void* lpBuf, UINT nCount)
 {
 	ASSERT_VALID(this);
-	ASSERT(m_hFile != (UINT)hFileNull);
+	ASSERT(m_hFile != (HANDLE)hFileNull);
 
 	if (nCount == 0)
 		return;     // avoid Win32 "null-write" option
@@ -162,7 +156,7 @@ void CFile::Write(const void* lpBuf, UINT nCount)
 	ASSERT(AfxIsValidAddress(lpBuf, nCount, FALSE));
 
 	DWORD nWritten;
-	if (!::WriteFile((HANDLE)m_hFile, lpBuf, nCount, &nWritten, NULL))
+	if (!::WriteFile(m_hFile, lpBuf, nCount, &nWritten, NULL))
 		CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName);
 
 	// Win32s will not return an error all the time (usually DISK_FULL)
@@ -173,13 +167,13 @@ void CFile::Write(const void* lpBuf, UINT nCount)
 void CFile::Close()
 {
 	ASSERT_VALID(this);
-	ASSERT(m_hFile != (UINT)hFileNull);
+	ASSERT(m_hFile != (HANDLE)hFileNull);
 
 	BOOL bError = FALSE;
-	if (m_hFile != (UINT)hFileNull)
-		bError = !::CloseHandle((HANDLE)m_hFile);
+	if (m_hFile != (HANDLE)hFileNull)
+		bError = !::CloseHandle(m_hFile);
 
-	m_hFile = (UINT) hFileNull;
+	m_hFile = (HANDLE) hFileNull;
 	m_bCloseOnDelete = FALSE;
 	m_strFileName.Empty();
 
