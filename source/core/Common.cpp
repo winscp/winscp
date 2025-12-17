@@ -343,27 +343,13 @@ UnicodeString ShellQuoteStr(const UnicodeString & Str)
 UnicodeString ExceptionLogString(Exception *E)
 {
   DebugAssert(E);
-  if (E->InheritsFrom(__classid(Exception)))
+  UnicodeString Msg = FORMAT(L"(%s) %s", (E->ClassName(), E->Message));
+  ExtException * EE = dynamic_cast<ExtException *>(E);
+  if ((EE != nullptr) && (EE->MoreMessages != nullptr))
   {
-    UnicodeString Msg = FORMAT(L"(%s) %s", (E->ClassName(), E->Message));
-    ExtException * EE = dynamic_cast<ExtException *>(E);
-    if (EE != nullptr)
-    {
-      TStrings * MoreMessages = EE->MoreMessages;
-      if (MoreMessages)
-      {
-        Msg += L"\n" +
-          ReplaceStr(MoreMessages->Text, L"\r", L"");
-      }
-    }
-    return Msg;
+    Msg += L"\n" + ReplaceStr(EE->MoreMessages->Text, L"\r", L"");
   }
-  else
-  {
-    wchar_t Buffer[1024];
-    ExceptionErrorMessage(ExceptObject(), ExceptAddr(), Buffer, std::size(Buffer));
-    return UnicodeString(Buffer);
-  }
+  return Msg;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall MainInstructions(const UnicodeString & S)
