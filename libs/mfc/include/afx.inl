@@ -41,9 +41,9 @@ _AFX_INLINE CString::operator LPCTSTR() const
 
 // CString support (windows specific)
 _AFX_INLINE int CString::Compare(LPCTSTR lpsz) const
-	{ ASSERT(AfxIsValidString(lpsz)); return _tcscmp(m_Data.c_str(), lpsz); }    // MBCS/Unicode aware
+	{ return _tcscmp(m_Data.c_str(), lpsz); }    // MBCS/Unicode aware
 _AFX_INLINE int CString::CompareNoCase(LPCTSTR lpsz) const
-	{ ASSERT(AfxIsValidString(lpsz)); return _tcsicmp(m_Data.c_str(), lpsz); }   // MBCS/Unicode aware
+	{ return _tcsicmp(m_Data.c_str(), lpsz); }   // MBCS/Unicode aware
 
 _AFX_INLINE TCHAR CString::GetAt(int nIndex) const
 {

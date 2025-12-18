@@ -112,7 +112,6 @@ CString AFXAPI operator+(LPCTSTR lpsz, const CString& string)
 
 const CString& CString::operator+=(LPCTSTR lpsz)
 {
-	ASSERT(lpsz == NULL || AfxIsValidString(lpsz));
 	m_Data += lpsz;
 	return *this;
 }
@@ -152,7 +151,6 @@ int CString::Find(TCHAR ch, int nStart) const
 
 int CString::FindOneOf(LPCTSTR lpszCharSet) const
 {
-	ASSERT(AfxIsValidString(lpszCharSet));
 	LPTSTR lpsz = _tcspbrk(m_Data.c_str(), lpszCharSet);
 	return (lpsz == NULL) ? -1 : (int)(lpsz - m_Data.c_str());
 }

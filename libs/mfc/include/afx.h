@@ -28,7 +28,6 @@
 // Diagnostic support
 
 #define ASSERT(f)          ((void)0)
-#define ASSERT_VALID(pOb)  ((void)0)
 
 /////////////////////////////////////////////////////////////////////////////
 // Basic object model
@@ -277,8 +276,7 @@ public:
 	HANDLE m_hFile;
 
 // Operations
-	BOOL Open(LPCTSTR lpszFileName, UINT nOpenFlags,
-		CFileException* pError = NULL);
+	BOOL Open(LPCTSTR lpszFileName, UINT nOpenFlags);
 
 	static BOOL IsValid(LPCTSTR lpszFileName);
 
@@ -293,7 +291,6 @@ public:
 	~CFile();
 
 protected:
-	BOOL m_bCloseOnDelete;
 	CString m_strFileName;
 };
 

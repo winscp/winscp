@@ -165,8 +165,6 @@ int CString::Find(LPCTSTR lpszSub) const
 
 int CString::Find(LPCTSTR lpszSub, int nStart) const
 {
-	ASSERT(AfxIsValidString(lpszSub));
-
 	int nLength = m_Data.Length();
 	if (nStart > nLength)
 		return -1;
@@ -184,15 +182,12 @@ int CString::Find(LPCTSTR lpszSub, int nStart) const
 
 void CString::FormatV(LPCTSTR lpszFormat, va_list argList)
 {
-	ASSERT(AfxIsValidString(lpszFormat));
 	m_Data.vprintf(lpszFormat, argList);
 }
 
 // formatting (using wsprintf style formatting)
 void CString::Format(LPCTSTR lpszFormat, ...)
 {
-	ASSERT(AfxIsValidString(lpszFormat));
-
 	va_list argList;
 	va_start(argList, lpszFormat);
 	FormatV(lpszFormat, argList);

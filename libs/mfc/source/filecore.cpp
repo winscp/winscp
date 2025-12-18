@@ -17,24 +17,16 @@
 CFile::CFile()
 {
 	m_hFile = (HANDLE) hFileNull;
-	m_bCloseOnDelete = FALSE;
 }
 
 CFile::~CFile()
 {
-	if (m_hFile != (HANDLE)hFileNull && m_bCloseOnDelete)
+	if (m_hFile != (HANDLE)hFileNull)
 		Close();
 }
 
-BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags,
-	CFileException* pException)
+BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags)
 {
-	ASSERT_VALID(this);
-	ASSERT(AfxIsValidString(lpszFileName));
-	ASSERT(pException == NULL ||
-		AfxIsValidAddress(pException, sizeof(CFileException)));
-
-	m_bCloseOnDelete = FALSE;
 	m_hFile = (HANDLE)hFileNull;
 	m_strFileName.Empty();
 
@@ -107,35 +99,21 @@ BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags,
 		dwCreateFlag, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		if (pException != NULL)
-		{
-			pException->m_lOsError = ::GetLastError();
-			pException->m_cause =
-				CFileException::OsErrorToException(pException->m_lOsError);
-
-			// use passed file name (not expanded vesion) when reporting
-			// an error while opening
-
-			pException->m_strFileName = lpszFileName;
-		}
 		return FALSE;
 	}
 	m_hFile = hFile;
-	m_bCloseOnDelete = TRUE;
 
 	return TRUE;
 }
 
 UINT CFile::Read(void* lpBuf, UINT nCount)
 {
-	ASSERT_VALID(this);
 	ASSERT(m_hFile != (HANDLE)hFileNull);
 
 	if (nCount == 0)
 		return 0;   // avoid Win32 "null-read"
 
 	ASSERT(lpBuf != NULL);
-	ASSERT(AfxIsValidAddress(lpBuf, nCount));
 
 	DWORD dwRead;
 	if (!::ReadFile(m_hFile, lpBuf, nCount, &dwRead, NULL))
@@ -146,14 +124,12 @@ UINT CFile::Read(void* lpBuf, UINT nCount)
 
 void CFile::Write(const void* lpBuf, UINT nCount)
 {
-	ASSERT_VALID(this);
 	ASSERT(m_hFile != (HANDLE)hFileNull);
 
 	if (nCount == 0)
 		return;     // avoid Win32 "null-write" option
 
 	ASSERT(lpBuf != NULL);
-	ASSERT(AfxIsValidAddress(lpBuf, nCount, FALSE));
 
 	DWORD nWritten;
 	if (!::WriteFile(m_hFile, lpBuf, nCount, &nWritten, NULL))
@@ -166,7 +142,6 @@ void CFile::Write(const void* lpBuf, UINT nCount)
 
 void CFile::Close()
 {
-	ASSERT_VALID(this);
 	ASSERT(m_hFile != (HANDLE)hFileNull);
 
 	BOOL bError = FALSE;
@@ -174,7 +149,6 @@ void CFile::Close()
 		bError = !::CloseHandle(m_hFile);
 
 	m_hFile = (HANDLE) hFileNull;
-	m_bCloseOnDelete = FALSE;
 	m_strFileName.Empty();
 
 	if (bError)

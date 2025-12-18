@@ -18,7 +18,6 @@
 
 STRINGTABLE DISCARDABLE
 BEGIN
-#ifndef _AFX_NO_CFILE_RESOURCES
 	AFX_IDP_FILE_NONE                "No error occurred."
 	AFX_IDP_FILE_GENERIC             "An unknown error occurred while accessing %1."
 	AFX_IDP_FILE_NOT_FOUND           "%1 was not found."
@@ -35,8 +34,6 @@ BEGIN
 	AFX_IDP_FILE_DISKFULL            "Disk full while accessing %1."
 	AFX_IDP_FILE_EOF                 "An attempt was made to access %1 past its end."
 	AFX_IDS_UNNAMED_FILE             "an unnamed file"
-#endif // !_AFX_NO_CFILE_RESOURCES
-
 END
 
 #endif //!__AFXRES_RC__
