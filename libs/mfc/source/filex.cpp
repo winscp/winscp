@@ -9,6 +9,8 @@
 // Microsoft Foundation Classes product.
 
 #include "stdafx.h"
+#include <SysUtils.hpp>
+#include <StrUtils.hpp>
 
 /////////////////////////////////////////////////////////////////////////////
 // CFileException
@@ -21,23 +23,14 @@ void CFileException::ThrowOsError(LONG lOsError,
 			lOsError, lpszFileName);
 }
 
-BOOL CFileException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
-	PUINT pnHelpContext)
+UnicodeString CFileException::GetErrorMessage()
 {
-	ASSERT(lpszError != NULL && AfxIsValidString(lpszError, nMaxError));
-
-	if (pnHelpContext != NULL)
-		*pnHelpContext = m_cause + AFX_IDP_FILE_NONE;
-
-	CString strMessage;
-	CString strFileName = m_strFileName;
+	UnicodeString strFileName = m_strFileName;
 	if (strFileName.IsEmpty())
-		strFileName.LoadString(AFX_IDS_UNNAMED_FILE);
-	strMessage.LoadString(m_cause + AFX_IDP_FILE_NONE);
-	strMessage.Replace(L"%1", strFileName);
-	lstrcpyn(lpszError, strMessage, nMaxError);
-
-	return TRUE;
+		strFileName = LoadStr(AFX_IDS_UNNAMED_FILE);
+	UnicodeString strMessage = LoadStr(m_cause + AFX_IDP_FILE_NONE);
+	strMessage = ReplaceStr(strMessage, L"%1", strFileName.c_str());
+	return strMessage;
 }
 
 /////////////////////////////////////////////////////////////////////////////

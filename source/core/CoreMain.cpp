@@ -196,11 +196,6 @@ void CoreFinalize()
   CryptographyFinalize();
 }
 //---------------------------------------------------------------------------
-void CoreSetResourceModule(void * ResourceHandle)
-{
-  TFileZillaIntf::SetResourceModule(ResourceHandle);
-}
-//---------------------------------------------------------------------------
 void CoreMaintenanceTask()
 {
   DontSaveRandomSeed();

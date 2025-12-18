@@ -205,7 +205,6 @@ protected:
   UnicodeString __fastcall GetAppliedLocaleHex();
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
     UnicodeString & FileName);
-  HANDLE __fastcall GetResourceModule();
   void __fastcall SetResourceModule(HINSTANCE Instance);
   TObjectList * __fastcall GetLocales();
   void __fastcall AddLocale(LCID Locale, const UnicodeString & Name);

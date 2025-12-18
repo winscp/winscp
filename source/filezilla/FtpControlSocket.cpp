@@ -202,8 +202,7 @@ CFtpControlSocket::~CFtpControlSocket()
 
 void CFtpControlSocket::ShowStatus(UINT nID, int type) const
 {
-  CString str;
-  str.LoadString(nID);
+  CString str = CString(LoadStr(nID));
   ShowStatus(str, type);
 }
 
@@ -231,13 +230,10 @@ void CFtpControlSocket::ShowStatus(CString status, int type) const
 
 void CFtpControlSocket::ShowTimeoutError(UINT nID) const
 {
-  CString str1;
-  str1.LoadString(IDS_ERRORMSG_TIMEOUT);
-  CString str2;
-  str2.LoadString(nID);
-  CString message;
-  message.Format(L"%s (%s)", str1.c_str(), str2.c_str());
-  ShowStatus(message, FZ_LOG_ERROR);
+  UnicodeString str1 = LoadStr(IDS_ERRORMSG_TIMEOUT);
+  UnicodeString str2 = LoadStr(nID);
+  UnicodeString message = FORMAT(L"%s (%s)", (str1, str2));
+  ShowStatus(CString(message), FZ_LOG_ERROR);
 }
 
 t_server CFtpControlSocket::GetCurrentServer()

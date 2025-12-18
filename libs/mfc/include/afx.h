@@ -180,9 +180,6 @@ public:
 	// printf-like formatting using variable arguments parameter
 	void FormatV(LPCTSTR lpszFormat, va_list argList);
 
-	// load from string resource
-	BOOL LoadString(UINT nID);
-
 // Implementation
 protected:
 	UnicodeString m_Data;
@@ -230,7 +227,7 @@ public:
 // Attributes
 	int     m_cause;
 	LONG    m_lOsError;
-	CString m_strFileName;
+	UnicodeString m_strFileName;
 
 // Operations
 	// convert a OS dependent error code to a Cause
@@ -241,8 +238,7 @@ public:
 
 // Implementation
 public:
-	BOOL GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
-		PUINT pnHelpContext = NULL);
+	UnicodeString GetErrorMessage();
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -373,10 +369,6 @@ private:
 #define _AFX_INLINE AFX_INLINE
 
 #include <afx.inl>
-#endif
-
-#ifdef WINSCP
-extern HINSTANCE afxCurrentResourceHandle;
 #endif
 
 #endif // __AFX_H__

@@ -11,8 +11,6 @@
 #include "stdafx.h"
 #include <SysUtils.hpp>
 
-HINSTANCE afxCurrentResourceHandle;
-
 //////////////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 
@@ -34,7 +32,7 @@ CString::CString(LPCTSTR lpsz)
 	if (lpsz != NULL && HIWORD(lpsz) == NULL)
 	{
 		UINT nID = LOWORD((DWORD)lpsz);
-		LoadString(nID);
+		m_Data = LoadStr(nID);
 	}
 	else
 	{

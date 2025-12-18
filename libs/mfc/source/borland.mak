@@ -27,9 +27,7 @@ FILES = filecore.obj filex.obj filest.obj
 
 MISC = strcore.obj strex.obj timecore.obj
 
-WINMISC = winstr.obj
-
-CPP_OBJS=$(FILES) $(MISC) $(WINMISC)
+CPP_OBJS=$(FILES) $(MISC)
 
 OBJS=$(CPP_OBJS)
 

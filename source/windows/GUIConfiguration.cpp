@@ -525,7 +525,6 @@ __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
   FLocales = new TObjectList();
   FLastLocalesExts = L"*";
   FCopyParamList = new TCopyParamList();
-  CoreSetResourceModule(GetResourceModule());
 }
 //---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::~TGUIConfiguration()
@@ -1067,13 +1066,7 @@ HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
   TLibModule * MainModule = FindModule(HInstance);
   HANDLE Result = reinterpret_cast<HANDLE>(MainModule->ResInstance);
   MainModule->ResInstance = reinterpret_cast<unsigned>(Instance);
-  CoreSetResourceModule(Instance);
   return Result;
-}
-//---------------------------------------------------------------------------
-HANDLE __fastcall TGUIConfiguration::GetResourceModule()
-{
-  return reinterpret_cast<HANDLE>(FindModule(HInstance)->ResInstance);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)

@@ -14,7 +14,6 @@ extern TApplicationLog * ApplicationLog;
 //---------------------------------------------------------------------------
 void CoreInitialize();
 void CoreFinalize();
-void CoreSetResourceModule(void * ResourceHandle);
 void CoreMaintenanceTask();
 void CoreUpdateFinalStaticUsage();
 //---------------------------------------------------------------------------

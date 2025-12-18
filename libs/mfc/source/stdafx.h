@@ -16,15 +16,10 @@
 
 // public headers
 #include "afxres.h"
-inline HINSTANCE AFXAPI AfxGetResourceHandle()
-	{ ASSERT(afxCurrentResourceHandle != NULL);
-		return afxCurrentResourceHandle; }
 
-int AFXAPI AfxLoadString(UINT nIDS, LPTSTR lpszBuf, UINT nMaxBuf = 256);
 BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn);
 
 #include <stddef.h>
-#include <limits.h>
 #include <malloc.h>
 
 /////////////////////////////////////////////////////////////////////////////

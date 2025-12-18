@@ -204,10 +204,8 @@ void CTransferSocket::OnReceive(int nErrorCode)
     }
     catch (CFileException * e)
     {
-      LPTSTR msg = new TCHAR[BUFSIZE];
-      if (e->GetErrorMessage(msg, BUFSIZE))
-        m_pOwner->ShowStatus(msg, FZ_LOG_ERROR);
-      delete [] msg;
+      UnicodeString Error = e->GetErrorMessage();
+      m_pOwner->ShowStatus(CString(Error), FZ_LOG_ERROR);
       CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
       return;
     }
@@ -901,9 +899,8 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
   }
   catch (CFileException* e)
   {
-    TCHAR error[BUFSIZE];
-    if (e->GetErrorMessage(error, BUFSIZE))
-      m_pOwner->ShowStatus(error, FZ_LOG_ERROR);
+    UnicodeString Error = e->GetErrorMessage();
+    m_pOwner->ShowStatus(CString(Error), FZ_LOG_ERROR);
     CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
     return -1;
   }

@@ -16,11 +16,6 @@ void __fastcall TFileZillaIntf::Finalize()
   // noop
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileZillaIntf::SetResourceModule(void * ResourceHandle)
-{
-  afxCurrentResourceHandle = static_cast<HINSTANCE>(ResourceHandle);
-}
-//---------------------------------------------------------------------------
 __fastcall TFileZillaIntf::TFileZillaIntf() :
   FFileZillaApi(NULL),
   FIntern(new TFileZillaIntern(this)),

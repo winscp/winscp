@@ -1669,9 +1669,6 @@ int CAsyncSslSocketLayer::ProvideClientCert(
 {
   CAsyncSslSocketLayer * Layer = LookupLayer(Ssl);
 
-  CString Message;
-  Message.LoadString(NEED_CLIENT_CERTIFICATE);
-
   int Level;
   int Result;
   if ((Layer->FCertificate == NULL) || (Layer->FPrivateKey == NULL))
@@ -1688,7 +1685,7 @@ int CAsyncSslSocketLayer::ProvideClientCert(
     Result = 1;
   }
 
-  Layer->LogSocketMessageRaw(Level, Message.c_str());
+  Layer->LogSocketMessageRaw(Level, LoadStr(NEED_CLIENT_CERTIFICATE).c_str());
 
   return Result;
 }

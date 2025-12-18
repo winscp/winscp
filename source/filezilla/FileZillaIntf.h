@@ -158,7 +158,6 @@ public:
 
   static void __fastcall Initialize();
   static void __fastcall Finalize();
-  static void __fastcall SetResourceModule(void * ResourceHandle);
 
   __fastcall TFileZillaIntf();
   virtual __fastcall ~TFileZillaIntf();

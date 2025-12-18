@@ -201,12 +201,11 @@ void CString::Format(LPCTSTR lpszFormat, ...)
 
 void CString::Format(UINT nFormatID, ...)
 {
-	CString strFormat;
-	strFormat.LoadString(nFormatID);
+	UnicodeString strFormat = LoadStr(nFormatID);
 
 	va_list argList;
 	va_start(argList, nFormatID);
-	FormatV(strFormat, argList);
+	FormatV(strFormat.c_str(), argList);
 	va_end(argList);
 }
 
