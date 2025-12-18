@@ -142,6 +142,8 @@ protected:
   int InitConnectState();
 
   bool IsRoutableAddress(const CString & host);
+  int ParsePasvPort(int code, BOOL & bTriedPortPasvOnce, BOOL & bPasv, const CString & reply, CString & host, int & port);
+  CString FormatPortCmd(UINT nPort);
   bool CheckForcePasvIp(CString & host);
   void TransferFinished(bool preserveFileTimeForUploads);
 

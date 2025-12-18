@@ -1670,10 +1670,202 @@ CString CFtpControlSocket::GetListingCmd()
   return cmd;
 }
 
+int CFtpControlSocket::ParsePasvPort(int code, BOOL & bTriedPortPasvOnce, BOOL & bPasv, const CString & reply, CString & host, int & port)
+{
+  int Result = 1;
+  if (code!=3 && code!=2)
+  {
+    if (!bTriedPortPasvOnce)
+    {
+      bTriedPortPasvOnce = TRUE;
+      bPasv = !bPasv;
+      Result = 0;
+    }
+    else
+      Result = -1;
+    return Result;
+  }
+
+  if (bPasv)
+  {
+    int i,j;
+    // MP EXT
+    if((i=reply.Find(L"("))>=0&&(j=reply.Find(L")"))>=0)
+    {
+      i++;
+      j--;
+    }
+    else
+    {
+      // MP EXT
+      if ((i=reply.Mid(4).FindOneOf(L"0123456789"))>=0)
+      {
+        i += 4;
+        j = reply.GetLength() - 1;
+      }
+      else
+      {
+        if (!bTriedPortPasvOnce)
+        {
+          bTriedPortPasvOnce = TRUE;
+          bPasv = !bPasv;
+          Result = 0;
+        }
+        else
+          Result = -1;
+        return Result;
+      }
+    }
+
+    CString temp = reply.Mid(i,(j-i)+1);
+
+    if (GetFamily() == AF_INET)
+    {
+      int count=0;
+      int pos=0;
+      //Convert commas to dots
+      temp.Replace( L",", L"." );
+      while(1)
+      {
+        pos=temp.Find(L".",pos);
+        if (pos!=-1)
+          count++;
+        else
+          break;
+        pos++;
+      }
+      if (count!=5)
+      {
+        if (!bTriedPortPasvOnce)
+        {
+          bTriedPortPasvOnce = TRUE;
+          bPasv = !bPasv;
+          Result = 0;
+        }
+        else
+          Result = -1;
+        return Result;
+      }
+
+      i=temp.ReverseFind(L'.');
+      port=atol(AnsiString(temp.Right(temp.GetLength()-(i+1))).c_str()); //get ls byte of server socket
+      temp=temp.Left(i);
+      i=temp.ReverseFind(L'.');
+      port+=256*atol(AnsiString(temp.Right(temp.GetLength()-(i+1))).c_str()); // add ms byte to server socket
+      host=temp.Left(i);
+      if (!CheckForcePasvIp(host))
+      {
+        return -1;
+      }
+    }
+    else if (GetFamily() == AF_INET6)
+    {
+      temp = temp.Mid(3);
+      port = atol(AnsiString(temp.Left(temp.GetLength() - 1)).c_str());
+      if (port < 0 || port > 65535)
+      {
+        LogMessage(FZ_LOG_WARNING, L"Port %u not valid", port);
+        return -1;
+      }
+
+      host = m_CurrentServer.host;
+    }
+    else
+    {
+      LogMessage(FZ_LOG_WARNING, L"Protocol %d not supported", GetFamily());
+      Result = -1;
+    }
+  }
+  return Result;
+}
+
+CString CFtpControlSocket::FormatPortCmd(UINT nPort)
+{
+  CString cmd;
+  bool Error = false;
+  if (GetFamily() == AF_INET)
+  {
+    CString host = GetOption(OPTION_TRANSFERIP);
+    if (host != L"")
+    {
+      DWORD ip = inet_addr(AnsiString(host).c_str());
+      if (ip != INADDR_NONE)
+        host.Format(L"%d,%d,%d,%d", ip%256, (ip>>8)%256, (ip>>16)%256, ip>>24);
+      else
+      {
+        hostent *fullname = gethostbyname(AnsiString(host).c_str());
+        if (!fullname)
+          host = L"";
+        else
+        {
+          DWORD ip = reinterpret_cast<LPIN_ADDR>(fullname->h_addr)->s_addr;
+          if (ip != INADDR_NONE)
+            host.Format(L"%d,%d,%d,%d", ip%256, (ip>>8)%256, (ip>>16)%256, ip>>24);
+          else
+            host = L"";
+        }
+      }
+    }
+    if (host == L"")
+    {
+      UINT temp;
+
+      if (!GetSockName(host, temp))
+      {
+        ShowStatus(L"Failed to get socket address ", FZ_LOG_ERROR);
+        Error = true;
+      }
+
+      host.Replace(L'.', L',');
+    }
+
+    if (!Error)
+    {
+      host.Format(host+L",%d,%d", nPort/256, nPort%256);
+      cmd = L"PORT " + host; // send PORT cmd to server
+    }
+  }
+  else if (GetFamily() == AF_INET6)
+  {
+    CString host = GetOption(OPTION_TRANSFERIP6);
+    if (host != L"")
+    {
+      addrinfo hints, *res;
+      memset(&hints, 0, sizeof(addrinfo));
+      hints.ai_family = AF_INET6;
+      hints.ai_socktype = SOCK_STREAM;
+      if (!getaddrinfo(AnsiString(host).c_str(), "1024", &hints, &res))
+      {
+        host = Inet6AddrToString(reinterpret_cast<SOCKADDR_IN6 *>(res->ai_addr)->sin6_addr);
+        freeaddrinfo(res);
+      }
+      else
+        host = L"";
+    }
+    if (host == L"")
+    {
+      UINT temp;
+
+      if(!GetSockName(host, temp))
+        Error = true;
+    }
+
+    if (!Error)
+    {
+      // assamble EPRT command
+      cmd.Format(L"EPRT |2|" +  host + L"|%d|", nPort);
+    }
+  }
+  else
+  {
+    LogMessage(FZ_LOG_WARNING, L"Protocol %d not supported", GetFamily());
+  }
+
+  return cmd;
+}
+
 void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath path /*=CServerPath()*/, CString subdir /*=L""*/)
 {
-  USES_CONVERSION;
-
   #define LIST_INIT  -1
   #define LIST_PWD  0
   #define LIST_CWD  1
@@ -1800,6 +1992,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
     CString retmsg = GetReply();
     BOOL error = FALSE;
     int code = GetReplyCode();
+    int ParseResult;
     switch (m_Operation.nOpState)
     {
     case LIST_PWD: //Reply to PWD command
@@ -1890,79 +2083,15 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
       m_Operation.nOpState = LIST_PORT_PASV;
       break;
     case LIST_PORT_PASV:
-      if (code!=2 && code!=3)
+      ParseResult = ParsePasvPort(code, pData->bTriedPortPasvOnce, pData->bPasv, retmsg, pData->host, pData->port);
+      if (ParseResult < 0)
       {
-        error=TRUE;
-        break;
+        error = TRUE;
       }
-      if (pData->bPasv)
+      else if (ParseResult > 0)
       {
-        CString temp;
-        int i,j;
-        // MP EXT
-        if((i=retmsg.Find(L"("))>=0&&(j=retmsg.Find(L")"))>=0)
-        {
-          i++;
-          j--;
-        }
-        else
-        {
-          // MP EXT
-          if ((i=retmsg.Mid(4).FindOneOf(L"0123456789"))>=0)
-          {
-            i += 4;
-            j = retmsg.GetLength() - 1;
-          }
-          else
-          {
-            if (!pData->bTriedPortPasvOnce)
-            {
-              pData->bTriedPortPasvOnce = TRUE;
-              pData->bPasv = !pData->bPasv;
-            }
-            else
-              error=TRUE;
-            break;
-          }
-        }
-
-        temp = retmsg.Mid(i,(j-i)+1);
-        if (GetFamily() == AF_INET)
-        {
-          i=temp.ReverseFind(L',');
-          pData->port=atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); //get ls byte of server socket
-          temp=temp.Left(i);
-          i=temp.ReverseFind(L',');
-          pData->port+=256*atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); // add ms byte to server socket
-          pData->host = temp.Left(i);
-          pData->host.Replace(L',', L'.');
-          if (!CheckForcePasvIp(pData->host))
-          {
-            error = TRUE;
-            break;
-          }
-        }
-        else if (GetFamily() == AF_INET6)
-        {
-          temp = temp.Mid(3);
-          pData->port = atol( T2CA(temp.Left(temp.GetLength() - 1) ) );
-          if (pData->port < 0 || pData->port > 65535)
-          {
-            LogMessage(FZ_LOG_WARNING, L"Port %u not valid", pData->port);
-            error = TRUE;
-            break;
-          }
-
-          pData->host = m_CurrentServer.host;
-        }
-        else
-        {
-          LogMessage(FZ_LOG_WARNING, L"Protocol %d not supported", GetFamily());
-          error = TRUE;
-          break;
-        }
+        m_Operation.nOpState = LIST_LIST;
       }
-      m_Operation.nOpState = LIST_LIST;
       break;
     case LIST_LIST:
       if (IsMisleadingListResponse())
@@ -2135,89 +2264,8 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
           return;
         }
 
-        CString host;
-        bool bError = false;
-
-        if (GetFamily() == AF_INET)
-        {
-          host = GetOption(OPTION_TRANSFERIP);
-          if (host != L"")
-          {
-            DWORD ip = inet_addr(T2CA(host));
-            if (ip != INADDR_NONE)
-              host.Format(L"%d,%d,%d,%d", ip%256, (ip>>8)%256, (ip>>16)%256, ip>>24);
-            else
-            {
-              hostent *fullname = gethostbyname(T2CA(host));
-              if (!fullname)
-                host = L"";
-              else
-              {
-                DWORD ip = reinterpret_cast<LPIN_ADDR>(fullname->h_addr)->s_addr;
-                if (ip != INADDR_NONE)
-                  host.Format(L"%d,%d,%d,%d", ip%256, (ip>>8)%256, (ip>>16)%256, ip>>24);
-                else
-                  host = L"";
-              }
-            }
-          }
-          if (host == L"")
-          {
-            UINT temp;
-
-            if (!GetSockName(host, temp))
-            {
-              ShowStatus(L"Failed to get socket address ", FZ_LOG_ERROR);
-              bError = true;
-            }
-
-            host.Replace(L'.', L',');
-          }
-
-          if (!bError)
-          {
-            host.Format(host+L",%d,%d", nPort/256, nPort%256);
-            cmd = L"PORT " + host; // send PORT cmd to server
-          }
-        }
-        else if (GetFamily() == AF_INET6)
-        {
-          host = GetOption(OPTION_TRANSFERIP6);
-          if (host != L"")
-          {
-            addrinfo hints, *res;
-            memset(&hints, 0, sizeof(addrinfo));
-            hints.ai_family = AF_INET6;
-            hints.ai_socktype = SOCK_STREAM;
-            if (!getaddrinfo(T2CA(host), "1024", &hints, &res))
-            {
-              host = Inet6AddrToString(reinterpret_cast<SOCKADDR_IN6 *>(res->ai_addr)->sin6_addr);
-              freeaddrinfo(res);
-            }
-            else
-              host = L"";
-          }
-          if (host == L"")
-          {
-            UINT temp;
-
-            if(!GetSockName(host, temp))
-              bError = true;
-          }
-
-          if (!bError)
-          {
-            // assamble EPRT command
-            cmd.Format(L"EPRT |2|" +  host + L"|%d|", nPort);
-          }
-        }
-        else
-        {
-          LogMessage(FZ_LOG_WARNING, L"Protocol %d not supported", GetFamily());
-          bError = true;
-        }
-
-        if (bError)
+        cmd = FormatPortCmd(nPort);
+        if (cmd.IsEmpty())
         {
           ResetOperation(FZ_REPLY_ERROR);
           return;
@@ -2635,8 +2683,6 @@ void CFtpControlSocket::CancelTransferResume(CFileTransferData * pData)
 
 void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFinish/*=FALSE*/,int nError/*=0*/)
 {
-  USES_CONVERSION;
-
   #define FILETRANSFER_INIT      -1
   #define FILETRANSFER_PWD      0
   #define FILETRANSFER_CWD      1
@@ -2958,6 +3004,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     {
       code = 0;
     }
+    int ParseResult;
     switch(m_Operation.nOpState)
     {
     case FILETRANSFER_PWD:
@@ -3165,120 +3212,32 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         m_Operation.nOpState = FILETRANSFER_LIST_PORTPASV;
       break;
     case FILETRANSFER_LIST_PORTPASV:
-      if (code!=3 && code!=2)
+      ParseResult = ParsePasvPort(code, pData->bTriedPortPasvOnce, pData->bPasv, GetReply(), pData->host, pData->port);
+      if (ParseResult < 0)
       {
-        if (!pData->bTriedPortPasvOnce)
-        {
-          pData->bTriedPortPasvOnce = TRUE;
-          pData->bPasv = !pData->bPasv;
-        }
-        else
-          nReplyError=FZ_REPLY_ERROR;
-        break;
+        nReplyError = FZ_REPLY_ERROR;
       }
-
-      if (pData->bPasv)
+      else if (ParseResult > 0)
       {
-        CString reply = GetReply();
-        int i,j;
-        // MP EXT
-        if((i=reply.Find(L"("))>=0&&(j=reply.Find(L")"))>=0)
+        if (pData->bPasv)
         {
-          i++;
-          j--;
-        }
-        else
-        {
-          // MP EXT
-          if ((i=reply.Mid(4).FindOneOf(L"0123456789"))>=0)
-          {
-            i += 4;
-            j = reply.GetLength() - 1;
-          }
-          else
-          {
-            if (!pData->bTriedPortPasvOnce)
-            {
-              pData->bTriedPortPasvOnce = TRUE;
-              pData->bPasv = !pData->bPasv;
-            }
-            else
-              nReplyError = FZ_REPLY_ERROR;
-            break;
-          }
-        }
-
-        CString temp = reply.Mid(i,(j-i)+1);
-
-        if (GetFamily() == AF_INET)
-        {
-          int count=0;
-          int pos=0;
-          //Convert commas to dots
-          temp.Replace( L",", L"." );
-          while(1)
-          {
-            pos=temp.Find(L".",pos);
-            if (pos!=-1)
-              count++;
-            else
-              break;
-            pos++;
-          }
-          if (count!=5)
-          {
-            if (!pData->bTriedPortPasvOnce)
-            {
-              pData->bTriedPortPasvOnce = TRUE;
-              pData->bPasv = !pData->bPasv;
-            }
-            else
-              nReplyError = FZ_REPLY_ERROR;
-            break;
-          }
-
-          i=temp.ReverseFind(L'.');
-          pData->port=atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); //get ls byte of server socket
-          temp=temp.Left(i);
-          i=temp.ReverseFind(L'.');
-          pData->port+=256*atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); // add ms byte to server socket
-          pData->host=temp.Left(i);
-          if (!CheckForcePasvIp(pData->host))
+          m_pTransferSocket = new CTransferSocket(this, CSMODE_LIST);
+  #ifndef MPEXT_NO_GSS
+          if (m_pGssLayer && m_pGssLayer->AuthSuccessful())
+            m_pTransferSocket->UseGSS(m_pGssLayer);
+  #endif
+          m_pTransferSocket->m_nInternalMessageID = m_pOwner->m_nInternalMessageID;
+          m_pTransferSocket->SetFamily(GetFamily());
+          if (!m_pTransferSocket->Create(m_pSslLayer && m_bProtP))
           {
             nReplyError = FZ_REPLY_ERROR;
             break;
           }
-        }
-        else if (GetFamily() == AF_INET6)
-        {
-          temp = temp.Mid(3);
-          pData->port = atol( T2CA(temp.Left(temp.GetLength() - 1) ) );
-          if (pData->port < 0 || pData->port > 65535)
-          {
-            LogMessage(FZ_LOG_WARNING, L"Port %u not valid", pData->port);
-            nReplyError = FZ_REPLY_ERROR;
-            break;
-          }
 
-          pData->host = m_CurrentServer.host;
+          DebugCheck(m_pTransferSocket->AsyncSelect());
         }
-
-        m_pTransferSocket = new CTransferSocket(this, CSMODE_LIST);
-#ifndef MPEXT_NO_GSS
-        if (m_pGssLayer && m_pGssLayer->AuthSuccessful())
-          m_pTransferSocket->UseGSS(m_pGssLayer);
-#endif
-        m_pTransferSocket->m_nInternalMessageID = m_pOwner->m_nInternalMessageID;
-        m_pTransferSocket->SetFamily(GetFamily());
-        if (!m_pTransferSocket->Create(m_pSslLayer && m_bProtP))
-        {
-          nReplyError = FZ_REPLY_ERROR;
-          break;
-        }
-
-        DebugCheck(m_pTransferSocket->AsyncSelect());
+        m_Operation.nOpState = FILETRANSFER_LIST_LIST;
       }
-      m_Operation.nOpState=FILETRANSFER_LIST_LIST;
       break;
     case FILETRANSFER_LIST_LIST:
       if (IsMisleadingListResponse())
@@ -3369,98 +3328,15 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         m_Operation.nOpState=pData->nWaitNextOpState;
       break;
     case FILETRANSFER_PORTPASV:
-      if (code == 3 || code == 2)
+      ParseResult = ParsePasvPort(code, pData->bTriedPortPasvOnce, pData->bPasv, GetReply(), pData->host, pData->port);
+      if (ParseResult < 0)
+      {
+        nReplyError = FZ_REPLY_ERROR;
+      }
+      else if (ParseResult > 0)
       {
         if (pData->bPasv)
         {
-          CString reply = GetReply();
-          int i,j;
-          // MP EXT
-          if((i=reply.Find(L"("))>=0&&(j=reply.Find(L")"))>=0)
-          {
-            i++;
-            j--;
-          }
-          else
-          {
-            // MP EXT
-            if ((i=reply.Mid(4).FindOneOf(L"0123456789"))>=0)
-            {
-              i += 4;
-              j = reply.GetLength() - 1;
-            }
-            else
-            {
-              if (!pData->bTriedPortPasvOnce)
-              {
-                pData->bTriedPortPasvOnce = TRUE;
-                pData->bPasv = !pData->bPasv;
-              }
-              else
-                nReplyError = FZ_REPLY_ERROR;
-              break;
-            }
-          }
-
-          CString temp = reply.Mid(i,(j-i)+1);
-
-          if (GetFamily() == AF_INET)
-          {
-            int count=0;
-            int pos=0;
-            //Convert commas to dots
-            temp.Replace( L",", L"." );
-            while(1)
-            {
-              pos=temp.Find( L".", pos);
-              if (pos!=-1)
-                count++;
-              else
-                break;
-              pos++;
-            }
-            if (count!=5)
-            {
-              if (!pData->bTriedPortPasvOnce)
-              {
-                pData->bTriedPortPasvOnce = TRUE;
-                pData->bPasv = !pData->bPasv;
-              }
-              else
-                nReplyError = FZ_REPLY_ERROR;
-              break;
-            }
-
-            i=temp.ReverseFind(L'.');
-            pData->port=atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); //get ls byte of server socket
-            temp=temp.Left(i);
-            i=temp.ReverseFind(L'.');
-            pData->port+=256*atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); // add ms byte to server socket
-            pData->host=temp.Left(i);
-            if (!CheckForcePasvIp(pData->host))
-            {
-              nReplyError = FZ_REPLY_ERROR;
-              break;
-            }
-          }
-          else if (GetFamily() == AF_INET6)
-          {
-            temp = temp.Mid(3);
-            pData->port = atol( T2CA(temp.Left(temp.GetLength() - 1) ) );
-            if (pData->port < 0 || pData->port > 65535)
-            {
-              LogMessage(FZ_LOG_WARNING, L"Port %u not valid", pData->port);
-              nReplyError = FZ_REPLY_ERROR;
-              break;
-            }
-
-            pData->host = m_CurrentServer.host;
-          }
-          else
-          {
-            nReplyError = FZ_REPLY_ERROR;
-            break;
-          }
           m_pTransferSocket = new CTransferSocket(this, m_Operation.nOpMode);
 #ifndef MPEXT_NO_GSS
           if (m_pGssLayer && m_pGssLayer->AuthSuccessful())
@@ -3557,14 +3433,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           pData->transferdata.transferleft=pData->transferdata.transfersize;
         }
       }
-      else
-        if (!pData->bTriedPortPasvOnce)
-        {
-          pData->bTriedPortPasvOnce = TRUE;
-          pData->bPasv = !pData->bPasv;
-        }
-        else
-          nReplyError = FZ_REPLY_ERROR;
       break;
     case FILETRANSFER_OPTS_REST:
       // anything else means the resume is allowed (2xx) or the server does not understand OPTS REST STOR (5xx)
@@ -3859,89 +3727,18 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           break;
         }
 
-        CString host;
-        if (GetFamily() == AF_INET)
+        CString cmd = FormatPortCmd(nPort);
+        if (cmd.IsEmpty())
         {
-          host = GetOption(OPTION_TRANSFERIP);
-          if (host != L"")
-          {
-            DWORD ip = inet_addr(T2CA(host));
-            if (ip != INADDR_NONE)
-              host.Format(L"%d,%d,%d,%d", ip%256, (ip>>8)%256, (ip>>16)%256, ip>>24);
-            else
-            {
-              hostent *fullname = gethostbyname(T2CA(host));
-              if (!fullname)
-                host = L"";
-              else
-              {
-                DWORD ip = reinterpret_cast<LPIN_ADDR>(fullname->h_addr)->s_addr;
-                if (ip != INADDR_NONE)
-                  host.Format(L"%d,%d,%d,%d", ip%256, (ip>>8)%256, (ip>>16)%256, ip>>24);
-                else
-                  host = L"";
-              }
-            }
-          }
-          if (host == L"")
-          {
-            UINT temp;
-
-            if (!GetSockName(host, temp))
-            {
-              bError = true;
-              break;
-            }
-
-            host.Replace(L'.', L',');
-          }
-
-          if (!bError)
-          {
-            host.Format(host+L",%d,%d", nPort/256, nPort%256);
-            if (!Send(L"PORT " + host)) // send PORT cmd to server
-              bError = TRUE;
-          }
-        }
-        else if (GetFamily() == AF_INET6)
-        {
-          host = GetOption(OPTION_TRANSFERIP6);
-          if (host != L"")
-          {
-            USES_CONVERSION;
-            addrinfo hints, *res;
-            memset(&hints, 0, sizeof(addrinfo));
-            hints.ai_family = AF_INET6;
-            hints.ai_socktype = SOCK_STREAM;
-            if (!getaddrinfo(T2CA(host), "1024", &hints, &res))
-            {
-              host = Inet6AddrToString(reinterpret_cast<SOCKADDR_IN6 *>(res->ai_addr)->sin6_addr);
-              freeaddrinfo(res);
-            }
-            else
-              host = L"";
-          }
-          if (host == L"")
-          {
-            UINT temp;
-
-            if(!GetSockName(host, temp))
-              bError = true;
-          }
-
-          if (!bError)
-          {
-            // assamble EPRT command
-            CString cmd;
-            cmd.Format(L"EPRT |2|" +  host + L"|%d|", nPort);
-            if (!Send(cmd))
-              bError = TRUE;
-          }
+          bError = TRUE;
+          break;
         }
         else
         {
-          LogMessage(FZ_LOG_WARNING, L"Protocol %d not supported", GetFamily());
-          bError = true;
+          if (!Send(cmd))
+          {
+            bError = TRUE;
+          }
         }
       }
     }
@@ -4053,86 +3850,15 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           break;
         }
 
-        CString host;
-        if (GetFamily() == AF_INET)
+        CString cmd = FormatPortCmd(nPort);
+        if (cmd.IsEmpty())
         {
-          host = GetOption(OPTION_TRANSFERIP);
-          if (host != L"")
-          {
-            DWORD ip = inet_addr(T2CA(host));
-            if (ip != INADDR_NONE)
-              host.Format(L"%d,%d,%d,%d", ip%256, (ip>>8)%256, (ip>>16)%256, ip>>24);
-            else
-            {
-              hostent *fullname = gethostbyname(T2CA(host));
-              if (!fullname)
-                host = L"";
-              else
-              {
-                DWORD ip = reinterpret_cast<LPIN_ADDR>(fullname->h_addr)->s_addr;
-                if (ip != INADDR_NONE)
-                  host.Format(L"%d,%d,%d,%d", ip%256, (ip>>8)%256, (ip>>16)%256, ip>>24);
-                else
-                  host = L"";
-              }
-            }
-          }
-          if (host == L"")
-          {
-            UINT temp;
-
-            if (!GetSockName(host, temp))
-              bError = true;
-
-            host.Replace(L'.', L',');
-          }
-
-          if (!bError)
-          {
-            host.Format(host+L",%d,%d", nPort/256, nPort%256);
-            if (!Send(L"PORT " + host)) // send PORT cmd to server
-              bError = TRUE;
-          }
-        }
-        else if (GetFamily() == AF_INET6)
-        {
-          host = GetOption(OPTION_TRANSFERIP6);
-          if (host != L"")
-          {
-            USES_CONVERSION;
-            addrinfo hints, *res;
-            memset(&hints, 0, sizeof(addrinfo));
-            hints.ai_family = AF_INET6;
-            hints.ai_socktype = SOCK_STREAM;
-            if (!getaddrinfo(T2CA(host), "1024", &hints, &res))
-            {
-              host = Inet6AddrToString(reinterpret_cast<SOCKADDR_IN6 *>(res->ai_addr)->sin6_addr);
-              freeaddrinfo(res);
-            }
-            else
-              host = L"";
-          }
-          if (host == L"")
-          {
-            UINT temp;
-
-            if(!GetSockName(host, temp))
-              bError = true;
-          }
-
-          if (!bError)
-          {
-            // assamble EPRT command
-            CString cmd;
-            cmd.Format(L"EPRT |2|" +  host + L"|%d|", nPort);
-            if (!Send(cmd))
-              bError = TRUE;
-          }
+          bError = TRUE;
         }
         else
         {
-          LogMessage(FZ_LOG_WARNING, L"Protocol %d not supported", GetFamily());
-          bError = true;
+          if (!Send(cmd))
+            bError = TRUE;
         }
 
         if (bError)
