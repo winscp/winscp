@@ -324,8 +324,6 @@ void CFtpControlSocket::SetDirectoryListing(t_directory *pDirectory, bool bSetWo
 
 bool CFtpControlSocket::InitConnect()
 {
-  USES_CONVERSION;
-
   // Reset detected capabilities
   m_bAnnouncesUTF8 = false;
   m_hasClntCmd = false;
@@ -379,8 +377,8 @@ bool CFtpControlSocket::InitConnect()
   {
     m_pProxyLayer = new CAsyncProxySocketLayer;
     m_pProxyLayer->SetProxy(
-      nProxyType, T2CA(GetOption(OPTION_PROXYHOST)), GetOptionVal(OPTION_PROXYPORT),
-      GetOptionVal(OPTION_PROXYUSELOGON), T2CA(GetOption(OPTION_PROXYUSER)), T2CA(GetOption(OPTION_PROXYPASS)));
+      nProxyType, AnsiString(GetOption(OPTION_PROXYHOST)).c_str(), GetOptionVal(OPTION_PROXYPORT),
+      GetOptionVal(OPTION_PROXYUSELOGON), AnsiString(GetOption(OPTION_PROXYUSER)).c_str(), AnsiString(GetOption(OPTION_PROXYPASS)).c_str());
     AddLayer(m_pProxyLayer);
   }
 
@@ -541,7 +539,7 @@ void CFtpControlSocket::Connect(t_server &server)
 
 static CString NormalizePass(const CString & pass)
 {
-  return CString(NormalizeString(UnicodeString(T2CW(pass))).c_str());
+  return CString(NormalizeString(UnicodeString(pass)).c_str());
 }
 
 void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
@@ -900,7 +898,6 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
     hostname.Format(hostname+  L":%d", m_CurrentServer.port); // add port to hostname (only if port is not 21)
 
 #ifndef MPEXT_NO_GSS
-  USES_CONVERSION;
   //**** GSS Authentication ****
   if (m_Operation.nOpState==CONNECT_GSS_INIT)  //authenticate
   {
@@ -1213,7 +1210,6 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
     {
       if (!m_RecvBuffer.empty() && m_RecvBuffer.back() != "")
       {
-        USES_CONVERSION;
         if (m_bUTF8)
         {
           // convert from UTF-8 to ANSI
@@ -1225,7 +1221,7 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
               LogMessage(FZ_LOG_WARNING, L"Server does not send proper UTF-8, falling back to local charset");
               m_bUTF8 = false;
             }
-            ShowStatus(A2CT(utf8), FZ_LOG_REPLY);
+            ShowStatus(UnicodeString(utf8).c_str(), FZ_LOG_REPLY);
           }
           else
           {
@@ -1236,14 +1232,14 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
             {
               LPWSTR p1 = new WCHAR[len + 1];
               MultiByteToWideChar(CP_UTF8, 0, utf8, -1 , p1, len + 1);
-              ShowStatus(W2CT(p1), FZ_LOG_REPLY);
+              ShowStatus(p1, FZ_LOG_REPLY);
               delete [] p1;
             }
           }
         }
         else
         {
-          ShowStatus(A2CT(m_RecvBuffer.back().c_str()), FZ_LOG_REPLY);
+          ShowStatus(UnicodeString(m_RecvBuffer.back().c_str()).c_str(), FZ_LOG_REPLY);
         }
         // Check for multi-line responses
         // Partially duplicated in TFTPFileSystem::HandleReplyStatus
@@ -1408,14 +1404,12 @@ void CFtpControlSocket::OnConnect(int nErrorCode)
 
 BOOL CFtpControlSocket::Send(CString str)
 {
-  USES_CONVERSION;
-
   ShowStatus(str, FZ_LOG_COMMAND);
   str += L"\r\n";
   int res = 0;
   if (m_bUTF8)
   {
-    LPCWSTR unicode = T2CW(str);
+    LPCWSTR unicode = str;
     int len = WideCharToMultiByte(CP_UTF8, 0, unicode, -1, 0, 0, 0, 0);
     if (!len)
     {
@@ -1462,11 +1456,11 @@ BOOL CFtpControlSocket::Send(CString str)
   }
   else
   {
-    LPCSTR lpszAsciiSend = T2CA(str);
+    AnsiString lpszAsciiSend = AnsiString(str);
 
-    int sendLen = strlen(lpszAsciiSend);
+    int sendLen = lpszAsciiSend.Length();
     if (!m_awaitsReply && !m_sendBuffer)
-      res = CAsyncSocketEx::Send(lpszAsciiSend, strlen(lpszAsciiSend));
+      res = CAsyncSocketEx::Send(lpszAsciiSend.c_str(), sendLen);
     else
       res = -2;
     if ((res == SOCKET_ERROR && GetLastError() != WSAEWOULDBLOCK) || !res)
@@ -1482,14 +1476,14 @@ BOOL CFtpControlSocket::Send(CString str)
       if (!m_sendBuffer)
       {
         m_sendBuffer = new char[sendLen - res];
-        memcpy(m_sendBuffer, lpszAsciiSend, sendLen - res);
+        memcpy(m_sendBuffer, lpszAsciiSend.c_str(), sendLen - res);
         m_sendBufferLen = sendLen - res;
       }
       else
       {
         char* tmp = new char[m_sendBufferLen + sendLen - res];
         memcpy(tmp, m_sendBuffer, m_sendBufferLen);
-        memcpy(tmp + m_sendBufferLen, lpszAsciiSend + res, sendLen - res);
+        memcpy(tmp + m_sendBufferLen, lpszAsciiSend.c_str() + res, sendLen - res);
         delete [] m_sendBuffer;
         m_sendBuffer = tmp;
         m_sendBufferLen += sendLen - res;
@@ -5273,7 +5267,6 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
     }
     else if (iter->nType == LAYERCALLBACK_LAYERSPECIFIC)
     {
-      USES_CONVERSION;
       if (iter->pLayer == m_pProxyLayer)
       {
         switch (iter->nParam1)
@@ -5287,7 +5280,7 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
         case PROXYERROR_REQUESTFAILED:
           ShowStatus(IDS_ERRORMSG_PROXY_REQUESTFAILED, FZ_LOG_ERROR);
           if (iter->str)
-            ShowStatus(A2T(iter->str), FZ_LOG_ERROR);
+            ShowStatus(UnicodeString(iter->str).c_str(), FZ_LOG_ERROR);
           break;
         case PROXYERROR_AUTHTYPEUNKNOWN:
           ShowStatus(IDS_ERRORMSG_PROXY_AUTHTYPEUNKNOWN, FZ_LOG_ERROR);
@@ -5704,8 +5697,6 @@ CString CFtpControlSocket::GetReply()
   if (m_RecvBuffer.empty())
     return L"";
 
-  USES_CONVERSION;
-
   LPCSTR line;
 
   if ((m_Operation.nOpMode&CSMODE_LISTFILE) && (m_Operation.nOpState==LISTFILE_MLST) &&
@@ -5729,7 +5720,7 @@ CString CFtpControlSocket::GetReply()
         LogMessage(FZ_LOG_WARNING, L"Server does not send proper UTF-8, falling back to local charset");
         m_bUTF8 = false;
       }
-      return A2CT(line);
+      return CString(line);
     }
 
     // convert from UTF-8 to ANSI
@@ -5745,13 +5736,13 @@ CString CFtpControlSocket::GetReply()
     {
       LPWSTR p1 = new WCHAR[len + 1];
       MultiByteToWideChar(CP_UTF8, 0, line, -1, p1, len + 1);
-      CString reply = W2CT(p1);
+      CString reply = p1;
       delete [] p1;
       return reply;
     }
   }
   else
-    return A2CT(line);
+    return CString(line);
 }
 
 void CFtpControlSocket::OnSend(int nErrorCode)
@@ -5818,8 +5809,6 @@ bool CFtpControlSocket::IsMisleadingListResponse()
 
 bool CFtpControlSocket::IsRoutableAddress(const CString & host)
 {
-  USES_CONVERSION;
-
   if (host.Left(3) == L"127" ||
       host.Left(3) == L"10." ||
       host.Left(7) == L"192.168" ||
@@ -5832,7 +5821,7 @@ bool CFtpControlSocket::IsRoutableAddress(const CString & host)
   {
     CString middle = host.Mid(4);
     int pos = middle.Find(L".");
-    long part = atol(T2CA(middle.Left(pos)));
+    long part = atol(AnsiString(middle.Left(pos)).c_str());
     if ((part >= 16) && (part <= 31))
     {
       return false;

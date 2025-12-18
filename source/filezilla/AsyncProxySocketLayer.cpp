@@ -8,7 +8,6 @@
 //---------------------------------------------------------------------------
 #include "FileZillaPCH.h"
 #include "AsyncProxySocketLayer.h"
-#include "atlconv.h" //Unicode<->Ascii conversion macros declared here
 #include <Soap.EncdDecd.hpp>
 
 //////////////////////////////////////////////////////////////////////
@@ -552,17 +551,16 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
     //Connect normally because there is no proxy
     return ConnectNext(lpszHostAddress, nHostPort);
 
-  USES_CONVERSION;
-
   //Translate the host address
   DebugAssert(lpszHostAddress != NULL);
 
+  AnsiString lpszAscii = lpszHostAddress;
   if (m_ProxyData.nProxyType != PROXYTYPE_SOCKS4)
   {
     // We can send hostname to proxy, no need to resolve it
 
     //Connect to proxy server
-    BOOL res = ConnectNext(A2CT(m_ProxyData.pProxyHost), m_ProxyData.nProxyPort);
+    BOOL res = ConnectNext(UnicodeString(m_ProxyData.pProxyHost).c_str(), m_ProxyData.nProxyPort);
     if (!res)
     {
       if (WSAGetLastError() != WSAEWOULDBLOCK)
@@ -574,8 +572,8 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
     m_nProxyPeerPort = htons(static_cast<u_short>(nHostPort));
     m_nProxyPeerIp = 0;
     delete [] m_pProxyPeerHost;
-    m_pProxyPeerHost = new char[_tcslen(lpszHostAddress)+1];
-    strcpy(m_pProxyPeerHost, T2CA(lpszHostAddress));
+    m_pProxyPeerHost = new char[lpszAscii.Length()+1];
+    strcpy(m_pProxyPeerHost, lpszAscii.c_str());
     m_nProxyOpID=PROXYOP_CONNECT;
     return TRUE;
   }
@@ -583,14 +581,13 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
   SOCKADDR_IN sockAddr;
   memset(&sockAddr,0,sizeof(sockAddr));
 
-  LPCSTR lpszAscii = T2A(lpszHostAddress);
   sockAddr.sin_family = AF_INET;
-  sockAddr.sin_addr.s_addr = inet_addr(lpszAscii);
+  sockAddr.sin_addr.s_addr = inet_addr(lpszAscii.c_str());
 
   if (sockAddr.sin_addr.s_addr == INADDR_NONE)
   {
     LPHOSTENT lphost;
-    lphost = gethostbyname(lpszAscii);
+    lphost = gethostbyname(lpszAscii.c_str());
     if (lphost != NULL)
       sockAddr.sin_addr.s_addr = reinterpret_cast<LPIN_ADDR>(lphost->h_addr)->s_addr;
     else
@@ -607,8 +604,8 @@ BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
   if (res || WSAGetLastError()==WSAEWOULDBLOCK)
   {
     delete [] m_pProxyPeerHost;
-    m_pProxyPeerHost = new char[strlen(T2CA(lpszHostAddress))+1];
-    strcpy(m_pProxyPeerHost, T2CA(lpszHostAddress));
+    m_pProxyPeerHost = new char[lpszAscii.Length()+1];
+    strcpy(m_pProxyPeerHost, lpszAscii.c_str());
   }
   return res;
 
@@ -632,9 +629,7 @@ BOOL CAsyncProxySocketLayer::Connect( const SOCKADDR* lpSockAddr, int nSockAddrL
 
   m_nProxyOpID=PROXYOP_CONNECT;
 
-  USES_CONVERSION;
-
-  BOOL res = ConnectNext(A2T(m_ProxyData.pProxyHost), m_ProxyData.nProxyPort);
+  BOOL res = ConnectNext(UnicodeString(m_ProxyData.pProxyHost).c_str(), m_ProxyData.nProxyPort);
   if (!res)
   {
     if (WSAGetLastError()!=WSAEWOULDBLOCK)
@@ -823,10 +818,8 @@ BOOL CAsyncProxySocketLayer::Listen( int nConnectionBacklog)
   if (m_ProxyData.nProxyType==PROXYTYPE_NOPROXY)
     return ListenNext(nConnectionBacklog);
 
-  USES_CONVERSION;
-
   //Connect to proxy server
-  BOOL res = ConnectNext(A2T(m_ProxyData.pProxyHost), m_ProxyData.nProxyPort);
+  BOOL res = ConnectNext(UnicodeString(m_ProxyData.pProxyHost).c_str(), m_ProxyData.nProxyPort);
   if (!res)
   {
     if (WSAGetLastError()!=WSAEWOULDBLOCK)

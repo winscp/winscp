@@ -662,11 +662,10 @@ BOOL CTransferSocket::Create(BOOL bUseSsl)
   int nProxyType = GetOptionVal(OPTION_PROXYTYPE);
   if (nProxyType != PROXYTYPE_NOPROXY)
   {
-    USES_CONVERSION;
     m_pProxyLayer = new CAsyncProxySocketLayer;
     m_pProxyLayer->SetProxy(
-      nProxyType, T2CA(GetOption(OPTION_PROXYHOST)), GetOptionVal(OPTION_PROXYPORT),
-      GetOptionVal(OPTION_PROXYUSELOGON), T2CA(GetOption(OPTION_PROXYUSER)), T2CA(GetOption(OPTION_PROXYPASS)));
+      nProxyType, AnsiString(GetOption(OPTION_PROXYHOST)).c_str(), GetOptionVal(OPTION_PROXYPORT),
+      GetOptionVal(OPTION_PROXYUSELOGON), AnsiString(GetOption(OPTION_PROXYUSER)).c_str(), AnsiString(GetOption(OPTION_PROXYPASS)).c_str());
     AddLayer(m_pProxyLayer);
   }
 
@@ -822,14 +821,13 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 #ifndef MPEXT_NO_GSS
       else if (iter->pLayer == m_pGssLayer)
       {
-        USES_CONVERSION;
         switch (iter->nParam1)
         {
         case GSS_INFO:
-          LogMessageRaw(FZ_LOG_INFO, A2CT(iter->str));
+          LogMessageRaw(FZ_LOG_INFO, UnicodeString(iter->str).c_str());
           break;
         case GSS_ERROR:
-          LogMessageRaw(FZ_LOG_APIERROR, A2CT(iter->str));
+          LogMessageRaw(FZ_LOG_APIERROR, UnicodeString(iter->str).c_str());
           break;
         case GSS_SHUTDOWN_COMPLETE:
           CloseAndEnsureSendClose(0);

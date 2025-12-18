@@ -548,15 +548,12 @@ bool CFtpListResult::ParseShortDate(const char *str, int len, t_directory::t_dir
 
   if (!numeric)
   {
-    std::map<CString, int>::const_iterator iter;
-
     char *tmpstr = new char[i + 1];
     strncpy(tmpstr, str, i);
     tmpstr[i] = 0;
     strlwr(tmpstr);
 
-    USES_CONVERSION;
-    iter = m_MonthNamesMap.find(A2T(tmpstr));
+    auto iter = m_MonthNamesMap.find(UnicodeString(tmpstr));
     delete [] tmpstr;
     if (iter == m_MonthNamesMap.end())
       return false;
@@ -681,9 +678,7 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
 {
   int tokenlen = 0;
   int pos = 0;
-  USES_CONVERSION;
 
-  std::map<CString, int>::const_iterator iter;
   t_directory::t_direntry dir;
 
   dir.bUnsure = FALSE;
@@ -797,7 +792,7 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
   char buffer[15] = {0};
   memcpy(buffer, pMonth, p-pMonth);
   strlwr(buffer);
-  iter = m_MonthNamesMap.find(A2T(buffer));
+  auto iter = m_MonthNamesMap.find(UnicodeString(buffer));
   if (iter == m_MonthNamesMap.end())
     return FALSE;
   dir.date.month = iter->second;
@@ -1207,7 +1202,6 @@ void CFtpListResult::GuessYearIfUnknown(t_directory::t_direntry::t_date & Date)
 
 BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_directory::t_direntry &direntry)
 {
-  USES_CONVERSION;
   int pos = 0;
   int tokenlen = 0;
 
@@ -1323,7 +1317,6 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   int prevstrlen = 0;
 
   __int64 tmp = 0;
-  std::map<CString, int>::const_iterator iter;
   while (str && !ParseSize(str, tokenlen, tmp) && !IsNumeric(skipped, skippedlen))
   {
     //Maybe the server has left no space between the group and the size
@@ -1333,7 +1326,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     tmpstr[tokenlen] = 0;
     strlwr(tmpstr);
 
-    iter = m_MonthNamesMap.find(A2T(tmpstr));
+    auto iter = m_MonthNamesMap.find(UnicodeString(tmpstr));
     delete [] tmpstr;
     if (iter != m_MonthNamesMap.end())
     {
@@ -1687,7 +1680,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   else
   {
     //Try if we can recognize the month name
-    iter = m_MonthNamesMap.find(A2T(lwr));
+    auto iter = m_MonthNamesMap.find(UnicodeString(lwr));
     delete [] lwr;
     if (iter == m_MonthNamesMap.end())
     {
@@ -2010,8 +2003,6 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
   }
   else
   {
-    std::map<CString, int>::const_iterator iter;
-
     //Get size
     direntry.size = strntoi64(skipped, skippedtokenlen);
 
@@ -2023,8 +2014,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
     memcpy(buffer, str, tokenlen);
     strlwr(buffer);
 
-    USES_CONVERSION;
-    iter = m_MonthNamesMap.find(A2T(buffer));
+    auto iter = m_MonthNamesMap.find(UnicodeString(buffer));
     if (iter == m_MonthNamesMap.end())
     {
       direntry.dir = FALSE;
@@ -2257,8 +2247,6 @@ const char * CFtpListResult::strnstr(const char *str, int len, const char *c) co
 
 void CFtpListResult::copyStr(CString &target, int pos, const char *source, int len, bool mayInvalidateUTF8 /*=false*/)
 {
-  USES_CONVERSION;
-
   char *p = new char[len + 1];
   memcpy(p, source, len);
   p[len] = '\0';
@@ -2272,7 +2260,7 @@ void CFtpListResult::copyStr(CString &target, int pos, const char *source, int l
         LogMessage(FZ_LOG_WARNING, L"Server does not send proper UTF-8, falling back to local charset");
         *m_bUTF8 = false;
       }
-      target = target.Left(pos) + A2CT(p);
+      target = target.Left(pos) + CString(p);
     }
     else
     {
@@ -2282,15 +2270,15 @@ void CFtpListResult::copyStr(CString &target, int pos, const char *source, int l
       {
         LPWSTR p1 = new WCHAR[len + 1];
         MultiByteToWideChar(CP_UTF8, 0, p, -1, p1, len + 1);
-        target = target.Left(pos) + W2CT(p1);
+        target = target.Left(pos) + p1;
         delete [] p1;
       }
       else
-        target = target.Left(pos) + A2CT(p);
+        target = target.Left(pos) + CString(p);
     }
   }
   else
-    target = target.Left(pos) + A2CT(p);
+    target = target.Left(pos) + CString(p);
   delete [] p;
 }
 

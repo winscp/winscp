@@ -10,7 +10,6 @@
 #include "AsyncSocketEx.h"
 #include "wtypes.h"
 #include "oleauto.h"
-#include "atlconv.h"
 
 #include "AsyncSocketExLayer.h"
 
@@ -782,11 +781,9 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
   if (m_SocketData.nFamily == AF_UNSPEC)
     return TRUE;
 
-  USES_CONVERSION;
+  AnsiString lpszAscii = (lpszSocketAddress && *lpszSocketAddress) ? AnsiString(lpszSocketAddress) : AnsiString();
 
-  LPSTR lpszAscii = (lpszSocketAddress && *lpszSocketAddress) ? T2A(lpszSocketAddress) : 0;
-
-  if ((m_SocketData.nFamily == AF_INET6 || m_SocketData.nFamily == AF_INET) && lpszAscii)
+  if ((m_SocketData.nFamily == AF_INET6 || m_SocketData.nFamily == AF_INET) && !lpszAscii.IsEmpty())
   {
     addrinfo hints, *res0, *res;
     int error;
@@ -797,7 +794,7 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
     hints.ai_family = m_SocketData.nFamily;
     hints.ai_socktype = SOCK_STREAM;
     _snprintf(port, 9, "%u", nSocketPort);
-    error = getaddrinfo(lpszAscii, port, &hints, &res0);
+    error = getaddrinfo(lpszAscii.c_str(), port, &hints, &res0);
     if (error)
       return FALSE;
 
@@ -814,7 +811,7 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
 
       return ret ;
   }
-  else if (!lpszAscii && m_SocketData.nFamily == AF_INET6)
+  else if (lpszAscii.IsEmpty() && m_SocketData.nFamily == AF_INET6)
   {
     SOCKADDR_IN6 sockAddr6;
 
@@ -825,7 +822,7 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
 
     return BindToAddr(reinterpret_cast<SOCKADDR*>(&sockAddr6), sizeof(sockAddr6));
   }
-  else if (!lpszAscii && m_SocketData.nFamily == AF_INET)
+  else if (lpszAscii.IsEmpty() && m_SocketData.nFamily == AF_INET)
   {
     SOCKADDR_IN sockAddr;
 
@@ -1045,16 +1042,14 @@ BOOL CAsyncSocketEx::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
   } else
   if (m_SocketData.nFamily == AF_INET)
   {
-    USES_CONVERSION;
-
     DebugAssert(lpszHostAddress != NULL);
 
     SOCKADDR_IN sockAddr;
     memset(&sockAddr,0,sizeof(sockAddr));
 
-    LPSTR lpszAscii = T2A(lpszHostAddress);
+    AnsiString lpszAscii = AnsiString(lpszHostAddress);
     sockAddr.sin_family = AF_INET;
-    sockAddr.sin_addr.s_addr = inet_addr(lpszAscii);
+    sockAddr.sin_addr.s_addr = inet_addr(lpszAscii.c_str());
 
     if (sockAddr.sin_addr.s_addr == INADDR_NONE)
     {
@@ -1064,7 +1059,7 @@ BOOL CAsyncSocketEx::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
 
       m_nAsyncGetHostByNamePort=nHostPort;
 
-      m_hAsyncGetHostByNameHandle=WSAAsyncGetHostByName(GetHelperWindowHandle(), WM_USER+1, lpszAscii, m_pAsyncGetHostByNameBuffer, MAXGETHOSTSTRUCT);
+      m_hAsyncGetHostByNameHandle=WSAAsyncGetHostByName(GetHelperWindowHandle(), WM_USER+1, lpszAscii.c_str(), m_pAsyncGetHostByNameBuffer, MAXGETHOSTSTRUCT);
       if (!m_hAsyncGetHostByNameHandle)
         return FALSE;
 
@@ -1079,8 +1074,6 @@ BOOL CAsyncSocketEx::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
   }
   else
   {
-    USES_CONVERSION;
-
     DebugAssert( lpszHostAddress != NULL );
 
     if (m_SocketData.addrInfo)
@@ -1099,7 +1092,7 @@ BOOL CAsyncSocketEx::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
     hints.ai_family = m_SocketData.nFamily;
     hints.ai_socktype = SOCK_STREAM;
     _snprintf(port, 9, "%u", nHostPort);
-    error = getaddrinfo(T2CA(lpszHostAddress), port, &hints, &m_SocketData.addrInfo);
+    error = getaddrinfo(AnsiString(lpszHostAddress).c_str(), port, &hints, &m_SocketData.addrInfo);
     if (error)
       return FALSE;
 

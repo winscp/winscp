@@ -69,7 +69,7 @@ private:
   tTempData m_TempData;
 
   // Month names map
-  std::map<CString, int> m_MonthNamesMap;
+  std::map<UnicodeString, int> m_MonthNamesMap;
 
   bool m_vmsAllRevisions;
   bool m_debugShowListing;

@@ -275,25 +275,23 @@ BOOL CAsyncSocketExLayer::ConnectNext(LPCTSTR lpszHostAddress, UINT nHostPort)
   DebugAssert(GetLayerState()==unconnected);
   DebugAssert(m_pOwnerSocket);
   BOOL res = FALSE;
+  AnsiString lpszAscii = AnsiString(lpszHostAddress);
   if (m_pNextLayer)
     res = m_pNextLayer->Connect(lpszHostAddress, nHostPort);
   else if (m_nFamily == AF_INET)
   {
-    USES_CONVERSION;
-
     DebugAssert(lpszHostAddress != NULL);
 
     SOCKADDR_IN sockAddr;
     memset(&sockAddr,0,sizeof(sockAddr));
 
-    LPSTR lpszAscii = T2A(lpszHostAddress);
     sockAddr.sin_family = AF_INET;
-    sockAddr.sin_addr.s_addr = inet_addr(lpszAscii);
+    sockAddr.sin_addr.s_addr = inet_addr(lpszAscii.c_str());
 
     if (sockAddr.sin_addr.s_addr == INADDR_NONE)
     {
       LPHOSTENT lphost;
-      lphost = gethostbyname(lpszAscii);
+      lphost = gethostbyname(lpszAscii.c_str());
       if (lphost != NULL)
         sockAddr.sin_addr.s_addr = reinterpret_cast<LPIN_ADDR>(lphost->h_addr)->s_addr;
       else
@@ -309,8 +307,6 @@ BOOL CAsyncSocketExLayer::ConnectNext(LPCTSTR lpszHostAddress, UINT nHostPort)
   }
   else if (m_nFamily == AF_INET6 || m_nFamily == AF_UNSPEC)
   {
-    USES_CONVERSION;
-
     DebugAssert(lpszHostAddress != NULL);
 
     addrinfo hints, *res0, *res1;
@@ -327,7 +323,7 @@ BOOL CAsyncSocketExLayer::ConnectNext(LPCTSTR lpszHostAddress, UINT nHostPort)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = 0;
     _snprintf(port, 9, "%u", nHostPort);
-    error = getaddrinfo(T2CA(lpszHostAddress), port, &hints, &res0);
+    error = getaddrinfo(lpszAscii.c_str(), port, &hints, &res0);
     if (error)
       return FALSE;
 

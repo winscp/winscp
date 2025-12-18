@@ -71,10 +71,8 @@ int CFileZillaApi::Connect(const t_server &server)
   BOOL bUseGSS = FALSE;
   if (GetOptionVal(OPTION_USEGSS))
   {
-    USES_CONVERSION;
-
     CString GssServers = GetOption(OPTION_GSSSERVERS);
-    hostent *fullname = gethostbyname(T2CA(server.host));
+    hostent *fullname = gethostbyname(AnsiString(server.host).c_str());
     CString host;
     if (fullname)
       host = fullname->h_name;

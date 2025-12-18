@@ -175,32 +175,3 @@ void CString::SetAt(int nIndex, TCHAR ch)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// CString conversion helpers (these use the current system locale)
-
-LPWSTR AFXAPI AfxA2WHelper(LPWSTR lpw, LPCSTR lpa, int nChars)
-{
-	if (lpa == NULL)
-		return NULL;
-	ASSERT(lpw != NULL);
-	// verify that no illegal character present
-	// since lpw was allocated based on the size of lpa
-	// don't worry about the number of chars
-	lpw[0] = '\0';
-	VERIFY(MultiByteToWideChar(CP_ACP, 0, lpa, -1, lpw, nChars));
-	return lpw;
-}
-
-LPSTR AFXAPI AfxW2AHelper(LPSTR lpa, LPCWSTR lpw, int nChars)
-{
-	if (lpw == NULL)
-		return NULL;
-	ASSERT(lpa != NULL);
-	// verify that no illegal character present
-	// since lpa was allocated based on the size of lpw
-	// don't worry about the number of chars
-	lpa[0] = '\0';
-	VERIFY(WideCharToMultiByte(CP_ACP, 0, lpw, -1, lpa, nChars, NULL, NULL));
-	return lpa;
-}
-
-///////////////////////////////////////////////////////////////////////////////

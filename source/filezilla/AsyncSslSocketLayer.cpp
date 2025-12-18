@@ -733,7 +733,6 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 
       if (clientMode)
       {
-        USES_CONVERSION;
         SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_PEER, verify_callback);
         SSL_CTX_set_client_cert_cb(m_ssl_ctx, ProvideClientCert);
         // https://www.mail-archive.com/openssl-users@openssl.org/msg86186.html
@@ -742,7 +741,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
         if (!m_CertStorage.IsEmpty() &&
             CFile::IsValid(m_CertStorage.c_str()))
         {
-          SSL_CTX_load_verify_locations(m_ssl_ctx, T2CA(m_CertStorage), 0);
+          SSL_CTX_load_verify_locations(m_ssl_ctx, AnsiString(m_CertStorage).c_str(), 0);
         }
       }
     }
@@ -758,20 +757,18 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 #pragma clang diagnostic ignored "-Wold-style-cast"
     if (clientMode && (host.GetLength() > 0))
     {
-      USES_CONVERSION;
-      SSL_set_tlsext_host_name(m_ssl, T2CA(host));
+      SSL_set_tlsext_host_name(m_ssl, AnsiString(host).c_str());
     }
 
 #ifdef _DEBUG
     if ((main == NULL) && LoggingSocketMessage(FZ_LOG_INFO))
     {
-      USES_CONVERSION;
       LogSocketMessageRaw(FZ_LOG_INFO, L"Supported ciphersuites:");
       STACK_OF(SSL_CIPHER) * ciphers = SSL_get_ciphers(m_ssl);
       for (int i = 0; i < sk_SSL_CIPHER_num(ciphers); i++)
       {
         const SSL_CIPHER * cipher = sk_SSL_CIPHER_value(ciphers, i);
-        LogSocketMessageRaw(FZ_LOG_INFO, A2CT(SSL_CIPHER_get_name(cipher)));
+        LogSocketMessageRaw(FZ_LOG_INFO, UnicodeString(SSL_CIPHER_get_name(cipher)).c_str());
       }
     }
 #endif
@@ -1099,7 +1096,6 @@ BOOL CAsyncSslSocketLayer::ShutDownComplete()
 
 void CAsyncSslSocketLayer::LogSslError(const SSL *s, const char * str, const char * fmt, int nMessageType, char * debug)
 {
-  USES_CONVERSION;
   const char * StateString = SSL_state_string_long(s);
   if ((strcmp(StateString, "error") != 0) || (debug != NULL))
   {
@@ -1110,14 +1106,14 @@ void CAsyncSslSocketLayer::LogSslError(const SSL *s, const char * str, const cha
       sprintf(buffer + strlen(buffer), " [%s]", debug);
       OPENSSL_free(debug);
     }
-    LogSocketMessageRaw(nMessageType, A2T(buffer));
+    UnicodeString S = UnicodeString(buffer);
+    LogSocketMessageRaw(nMessageType, S.c_str());
     delete[] buffer;
   }
 }
 
 void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int ret)
 {
-  USES_CONVERSION;
   CAsyncSslSocketLayer *pLayer = 0;
   {
     TGuard Guard(m_sCriticalSection.get());
@@ -1180,7 +1176,8 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
             str,
             SSL_alert_type_string_long(ret),
             desc);
-        pLayer->LogSocketMessageRaw(FZ_LOG_WARNING, A2T(buffer));
+        UnicodeString S = UnicodeString(buffer);
+        pLayer->LogSocketMessageRaw(FZ_LOG_WARNING, S.c_str());
         pLayer->PrintLastErrorMsg();
         delete [] buffer;
       }
@@ -1367,8 +1364,7 @@ static void NameToContact(X509_NAME *pX509Name, t_SslCertData::t_Contact & conta
         {
           int maxlen = 1024 - _tcslen(contact.Other)-1;
 
-          USES_CONVERSION;
-          _tcsncpy(contact.Other+_tcslen(contact.Other), A2CT(OBJ_nid2sn(OBJ_obj2nid(pObject))), maxlen);
+          _tcsncpy(contact.Other+_tcslen(contact.Other), UnicodeString(OBJ_nid2sn(OBJ_obj2nid(pObject))).c_str(), maxlen);
 
           maxlen = 1024 - _tcslen(contact.Other)-1;
           _tcsncpy(contact.Other+_tcslen(contact.Other), L"=", maxlen);
@@ -1446,7 +1442,6 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 
     if (X509V3_EXT_print(subjectAltNameBio, subjectAltNameExtension, 0, 0) == 1)
     {
-      USES_CONVERSION;
       u_char *data;
       #pragma clang diagnostic push
       #pragma clang diagnostic ignored "-Wold-style-cast"
@@ -1455,7 +1450,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
       char * buf = new char[len + 1];
       memcpy(buf, data, len);
       buf[len] = '\0';
-      _tcsncpy(SslCertData.subjectAltName, A2CT(buf), std::size(SslCertData.subjectAltName));
+      _tcsncpy(SslCertData.subjectAltName, UnicodeString(buf).c_str(), std::size(SslCertData.subjectAltName));
       SslCertData.subjectAltName[std::size(SslCertData.subjectAltName) - 1] = '\0';
       delete [] buf;
     }
@@ -1574,8 +1569,7 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
   sprintf(buffer, "Using %s, cipher %s",
       m_TlsVersionStr.c_str(),
       m_CipherName.c_str());
-  USES_CONVERSION;
-  LogSocketMessageRaw(FZ_LOG_PROGRESS, A2T(buffer));
+  LogSocketMessageRaw(FZ_LOG_PROGRESS, UnicodeString(buffer).c_str());
   delete [] buffer;
   delete [] buffer2;
 }
@@ -1732,14 +1726,12 @@ void CAsyncSslSocketLayer::PrintLastErrorMsg()
   unsigned long err = ERR_get_error();
   while (err)
   {
-    USES_CONVERSION;
-
     unsigned long aerr = err;
     err = ERR_get_error();
 
     char *buffer = new char[512];
     ERR_error_string(aerr, buffer);
-    LogSocketMessageRaw(FZ_LOG_PROGRESS, A2T(buffer));
+    LogSocketMessageRaw(FZ_LOG_PROGRESS, UnicodeString(buffer).c_str());
     delete [] buffer;
 
     std::wstring CustomReason = m_Tools->CustomReason(aerr);
