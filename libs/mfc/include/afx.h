@@ -28,37 +28,7 @@
 // Diagnostic support
 
 #define ASSERT(f)          ((void)0)
-#define VERIFY(f)          ((void)(f))
 #define ASSERT_VALID(pOb)  ((void)0)
-#define TRACE0(sz)
-#define TRACE1(sz, p1)
-#define TRACE2(sz, p1, p2)
-#define TRACE3(sz, p1, p2, p3)
-
-/////////////////////////////////////////////////////////////////////////////
-// Turn off warnings for /W4
-// To resume any of these warning: #pragma warning(default: 4xxx)
-// which should be placed after the AFX include files
-#ifndef ALL_WARNINGS
-// warnings generated with common MFC/Windows code
-#pragma warning(disable: 4127)  // constant expression for TRACE/ASSERT
-#pragma warning(disable: 4134)  // message map member fxn casts
-#pragma warning(disable: 4201)  // nameless unions are part of C++
-#pragma warning(disable: 4511)  // private copy constructors are good to have
-#pragma warning(disable: 4512)  // private operator= are good to have
-#pragma warning(disable: 4514)  // unreferenced inlines are common
-#pragma warning(disable: 4710)  // private constructors are disallowed
-#pragma warning(disable: 4705)  // statement has no effect in optimized code
-#pragma warning(disable: 4191)  // pointer-to-function casting
-// warnings caused by normal optimizations
-#pragma warning(disable: 4701)  // local variable *may* be used without init
-#pragma warning(disable: 4702)  // unreachable code caused by optimizations
-#pragma warning(disable: 4791)  // loss of debugging info in release version
-#pragma warning(disable: 4189)  // initialized but unused variable
-#pragma warning(disable: 4390)  // empty controlled statement
-#endif //!ALL_WARNINGS
-
-#define UNUSED(x) (static_cast<const void *>(&x) == static_cast<const void *>(&x))
 
 /////////////////////////////////////////////////////////////////////////////
 // Basic object model

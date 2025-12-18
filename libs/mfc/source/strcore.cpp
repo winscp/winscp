@@ -34,8 +34,7 @@ CString::CString(LPCTSTR lpsz)
 	if (lpsz != NULL && HIWORD(lpsz) == NULL)
 	{
 		UINT nID = LOWORD((DWORD)lpsz);
-		if (!LoadString(nID))
-			TRACE1("Warning: implicit LoadString(%u) failed\n", nID);
+		LoadString(nID);
 	}
 	else
 	{

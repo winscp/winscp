@@ -202,7 +202,7 @@ void CString::Format(LPCTSTR lpszFormat, ...)
 void CString::Format(UINT nFormatID, ...)
 {
 	CString strFormat;
-	VERIFY(strFormat.LoadString(nFormatID) != 0);
+	strFormat.LoadString(nFormatID);
 
 	va_list argList;
 	va_start(argList, nFormatID);
