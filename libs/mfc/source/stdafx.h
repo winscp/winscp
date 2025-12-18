@@ -21,7 +21,6 @@ inline HINSTANCE AFXAPI AfxGetResourceHandle()
 		return afxCurrentResourceHandle; }
 
 int AFXAPI AfxLoadString(UINT nIDS, LPTSTR lpszBuf, UINT nMaxBuf = 256);
-#define _countof(array) (sizeof(array)/sizeof(array[0]))
 BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn);
 
 #include <stddef.h>

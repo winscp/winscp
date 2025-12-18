@@ -19,8 +19,8 @@ BOOL CString::LoadString(UINT nID)
 {
 	// try fixed buffer first (to avoid wasting space in the heap)
 	TCHAR szTemp[256];
-	int nLen = AfxLoadString(nID, szTemp, _countof(szTemp));
-	if (_countof(szTemp) - nLen > CHAR_FUDGE)
+	int nLen = AfxLoadString(nID, szTemp, std::size(szTemp));
+	if (std::size(szTemp) - nLen > CHAR_FUDGE)
 	{
 		*this = szTemp;
 		return nLen > 0;
