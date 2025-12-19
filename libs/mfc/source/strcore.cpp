@@ -84,17 +84,17 @@ const CString& CString::operator=(LPCSTR lpsz)
 //          CString + ?
 //          ? + CString
 
-CString AFXAPI operator+(const CString& string1, const CString& string2)
+CString operator+(const CString& string1, const CString& string2)
 {
 	return CString(string1.m_Data + string2.m_Data);
 }
 
-CString AFXAPI operator+(const CString& string, LPCTSTR lpsz)
+CString operator+(const CString& string, LPCTSTR lpsz)
 {
 	return CString(string.m_Data + lpsz);
 }
 
-CString AFXAPI operator+(LPCTSTR lpsz, const CString& string)
+CString operator+(LPCTSTR lpsz, const CString& string)
 {
 	return CString(lpsz + string.m_Data);
 }

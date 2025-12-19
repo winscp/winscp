@@ -25,9 +25,9 @@ inline const CString& CString::operator+=(char ch)
 	{ *this += static_cast<TCHAR>(ch); return *this; }
 inline const CString& CString::operator=(char ch)
 	{ *this = static_cast<TCHAR>(ch); return *this; }
-inline CString AFXAPI operator+(const CString& string, char ch)
+inline CString operator+(const CString& string, char ch)
 	{ return string + static_cast<TCHAR>(ch); }
-inline CString AFXAPI operator+(char ch, const CString& string)
+inline CString operator+(char ch, const CString& string)
 	{ return static_cast<TCHAR>(ch) + string; }
 
 inline int CString::GetLength() const
@@ -56,23 +56,23 @@ inline TCHAR CString::operator[](int nIndex) const
 	ASSERT(nIndex < m_Data.Length());
 	return m_Data[nIndex + 1];
 }
-inline bool AFXAPI operator==(const CString& s1, const CString& s2)
+inline bool operator==(const CString& s1, const CString& s2)
 	{ return s1.Compare(s2) == 0; }
-inline bool AFXAPI operator==(const CString& s1, LPCTSTR s2)
+inline bool operator==(const CString& s1, LPCTSTR s2)
 	{ return s1.Compare(s2) == 0; }
-inline bool AFXAPI operator==(LPCTSTR s1, const CString& s2)
+inline bool operator==(LPCTSTR s1, const CString& s2)
 	{ return s2.Compare(s1) == 0; }
-inline bool AFXAPI operator!=(const CString& s1, const CString& s2)
+inline bool operator!=(const CString& s1, const CString& s2)
 	{ return s1.Compare(s2) != 0; }
-inline bool AFXAPI operator!=(const CString& s1, LPCTSTR s2)
+inline bool operator!=(const CString& s1, LPCTSTR s2)
 	{ return s1.Compare(s2) != 0; }
-inline bool AFXAPI operator!=(LPCTSTR s1, const CString& s2)
+inline bool operator!=(LPCTSTR s1, const CString& s2)
 	{ return s2.Compare(s1) != 0; }
-inline bool AFXAPI operator<(const CString& s1, const CString& s2)
+inline bool operator<(const CString& s1, const CString& s2)
 	{ return s1.Compare(s2) < 0; }
-inline bool AFXAPI operator<(const CString& s1, LPCTSTR s2)
+inline bool operator<(const CString& s1, LPCTSTR s2)
 	{ return s1.Compare(s2) < 0; }
-inline bool AFXAPI operator<(LPCTSTR s1, const CString& s2)
+inline bool operator<(LPCTSTR s1, const CString& s2)
 	{ return s2.Compare(s1) > 0; }
 
 inline CTime::CTime()

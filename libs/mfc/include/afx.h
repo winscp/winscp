@@ -17,7 +17,7 @@
 
 /////////////////////////////////////////////////////////////////////////////
 
-#include <afxver_.h>        // Target version control
+#include <windows.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Other includes from standard "C" runtimes
@@ -102,14 +102,14 @@ public:
 	// concatenate a UNICODE character after converting it to TCHAR
 	const CString& operator+=(LPCTSTR lpsz);
 
-	friend CString AFXAPI operator+(const CString& string1,
+	friend CString operator+(const CString& string1,
 			const CString& string2);
-	friend CString AFXAPI operator+(const CString& string, TCHAR ch);
-	friend CString AFXAPI operator+(TCHAR ch, const CString& string);
-	friend CString AFXAPI operator+(const CString& string, char ch);
-	friend CString AFXAPI operator+(char ch, const CString& string);
-	friend CString AFXAPI operator+(const CString& string, LPCTSTR lpsz);
-	friend CString AFXAPI operator+(LPCTSTR lpsz, const CString& string);
+	friend CString operator+(const CString& string, TCHAR ch);
+	friend CString operator+(TCHAR ch, const CString& string);
+	friend CString operator+(const CString& string, char ch);
+	friend CString operator+(char ch, const CString& string);
+	friend CString operator+(const CString& string, LPCTSTR lpsz);
+	friend CString operator+(LPCTSTR lpsz, const CString& string);
 
 	// string comparison
 
@@ -185,15 +185,15 @@ protected:
 };
 
 // Compare helpers
-bool AFXAPI operator==(const CString& s1, const CString& s2);
-bool AFXAPI operator==(const CString& s1, LPCTSTR s2);
-bool AFXAPI operator==(LPCTSTR s1, const CString& s2);
-bool AFXAPI operator!=(const CString& s1, const CString& s2);
-bool AFXAPI operator!=(const CString& s1, LPCTSTR s2);
-bool AFXAPI operator!=(LPCTSTR s1, const CString& s2);
-bool AFXAPI operator<(const CString& s1, const CString& s2);
-bool AFXAPI operator<(const CString& s1, LPCTSTR s2);
-bool AFXAPI operator<(LPCTSTR s1, const CString& s2);
+bool operator==(const CString& s1, const CString& s2);
+bool operator==(const CString& s1, LPCTSTR s2);
+bool operator==(LPCTSTR s1, const CString& s2);
+bool operator!=(const CString& s1, const CString& s2);
+bool operator!=(const CString& s1, LPCTSTR s2);
+bool operator!=(LPCTSTR s1, const CString& s2);
+bool operator<(const CString& s1, const CString& s2);
+bool operator<(const CString& s1, LPCTSTR s2);
+bool operator<(LPCTSTR s1, const CString& s2);
 
 /////////////////////////////////////////////////////////////////////////////
 // Standard Exception classes
@@ -243,7 +243,7 @@ public:
 /////////////////////////////////////////////////////////////////////////////
 // Standard exception throws
 
-void AFXAPI AfxThrowFileException(int cause, LONG lOsError = -1,
+void AfxThrowFileException(int cause, LONG lOsError = -1,
 	LPCTSTR lpszFileName = NULL);
 
 /////////////////////////////////////////////////////////////////////////////

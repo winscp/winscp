@@ -36,7 +36,7 @@ UnicodeString CFileException::GetErrorMessage()
 /////////////////////////////////////////////////////////////////////////////
 // CFileException helpers
 
-void AFXAPI AfxThrowFileException(int cause, LONG lOsError,
+void AfxThrowFileException(int cause, LONG lOsError,
 	LPCTSTR lpszFileName /* == NULL */)
 {
 	throw new CFileException(cause, lOsError, lpszFileName);

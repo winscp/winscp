@@ -39,12 +39,12 @@ const CString& CString::operator=(TCHAR ch)
 //////////////////////////////////////////////////////////////////////////////
 // less common string expressions
 
-CString AFXAPI operator+(const CString& string1, TCHAR ch)
+CString operator+(const CString& string1, TCHAR ch)
 {
 	return CString(string1.m_Data + ch);
 }
 
-CString AFXAPI operator+(TCHAR ch, const CString& string)
+CString operator+(TCHAR ch, const CString& string)
 {
 	return CString(UnicodeString(ch) + string.m_Data);
 }
