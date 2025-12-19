@@ -278,8 +278,6 @@ public:
 // Operations
 	BOOL Open(LPCTSTR lpszFileName, UINT nOpenFlags);
 
-	static BOOL IsValid(LPCTSTR lpszFileName);
-
 // Overridables
 	UINT Read(void* lpBuf, UINT nCount);
 	void Write(const void* lpBuf, UINT nCount);

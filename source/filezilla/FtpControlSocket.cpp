@@ -4673,7 +4673,7 @@ void CFtpControlSocket::SetFileExistsAction(int nAction, COverwriteRequestData *
   case FILEEXISTS_RENAME:
     if (pTransferData->transferfile.get)
     {
-      if (CFile::IsValid(pData->FileName1))
+      if (FileExists(pData->FileName1.c_str()))
       {
         ShowStatus(IDS_ERRORMSG_NAMEINUSE, FZ_LOG_ERROR);
         nReplyError=  FZ_REPLY_CRITICALERROR;

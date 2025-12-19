@@ -739,7 +739,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
         SSL_CTX_set_session_cache_mode(m_ssl_ctx, SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL_STORE | SSL_SESS_CACHE_NO_AUTO_CLEAR);
         SSL_CTX_sess_set_new_cb(m_ssl_ctx, NewSessionCallback);
         if (!m_CertStorage.IsEmpty() &&
-            CFile::IsValid(m_CertStorage.c_str()))
+            FileExists(m_CertStorage.c_str()))
         {
           SSL_CTX_load_verify_locations(m_ssl_ctx, AnsiString(m_CertStorage).c_str(), 0);
         }
