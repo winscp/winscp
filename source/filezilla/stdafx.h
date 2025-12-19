@@ -3,8 +3,6 @@
 #define StdAfxH
 //---------------------------------------------------------------------------
 #define MPEXT_NO_GSS
-#define _AFX_ENABLE_INLINES
-#define _AFX_NOFORCE_LIBS
 //---------------------------------------------------------------------------
 #include <afx.h>
 #include "wtypes.h"
@@ -20,9 +18,6 @@
 #pragma hdrstop
 //---------------------------------------------------------------------------
 #include <Global.h>
-// these create conflict with afxwin.h
-#undef BEGIN_MESSAGE_MAP
-#undef END_MESSAGE_MAP
 //---------------------------------------------------------------------------
 #include "MFC64bitFix.h"
 #include <ApiLog.h>
