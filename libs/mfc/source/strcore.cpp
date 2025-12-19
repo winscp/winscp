@@ -29,15 +29,7 @@ void CString::Empty()
 
 CString::CString(LPCTSTR lpsz)
 {
-	if (lpsz != NULL && HIWORD(lpsz) == NULL)
-	{
-		UINT nID = LOWORD((DWORD)lpsz);
-		m_Data = LoadStr(nID);
-	}
-	else
-	{
-		m_Data = lpsz;
-	}
+	m_Data = lpsz;
 }
 
 /////////////////////////////////////////////////////////////////////////////
