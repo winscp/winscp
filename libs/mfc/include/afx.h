@@ -289,7 +289,7 @@ public:
 	~CFile();
 
 protected:
-	CString m_strFileName;
+	UnicodeString m_strFileName;
 };
 
 /////////////////////////////////////////////////////////////////////////////

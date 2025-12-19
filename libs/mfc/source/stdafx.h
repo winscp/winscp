@@ -17,8 +17,6 @@
 // public headers
 #include "afxres.h"
 
-BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn);
-
 #include <stddef.h>
 #include <malloc.h>
 

@@ -28,11 +28,7 @@ CFile::~CFile()
 BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags)
 {
 	m_hFile = (HANDLE)hFileNull;
-	m_strFileName.Empty();
-
-	TCHAR szTemp[_MAX_PATH];
-	AfxFullPath(szTemp, lpszFileName);
-	m_strFileName = szTemp;
+	m_strFileName = ExpandFileName(lpszFileName);
 
 	ASSERT(sizeof(HANDLE) == sizeof(UINT));
 	ASSERT(shareCompat == 0);
@@ -117,7 +113,7 @@ UINT CFile::Read(void* lpBuf, UINT nCount)
 
 	DWORD dwRead;
 	if (!::ReadFile(m_hFile, lpBuf, nCount, &dwRead, NULL))
-		CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName);
+		CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName.c_str());
 
 	return (UINT)dwRead;
 }
@@ -133,11 +129,11 @@ void CFile::Write(const void* lpBuf, UINT nCount)
 
 	DWORD nWritten;
 	if (!::WriteFile(m_hFile, lpBuf, nCount, &nWritten, NULL))
-		CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName);
+		CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName.c_str());
 
 	// Win32s will not return an error all the time (usually DISK_FULL)
 	if (nWritten != nCount)
-		AfxThrowFileException(CFileException::diskFull, -1, m_strFileName);
+		AfxThrowFileException(CFileException::diskFull, -1, m_strFileName.c_str());
 }
 
 void CFile::Close()
@@ -149,35 +145,10 @@ void CFile::Close()
 		bError = !::CloseHandle(m_hFile);
 
 	m_hFile = (HANDLE) hFileNull;
-	m_strFileName.Empty();
+	m_strFileName = EmptyStr;
 
 	if (bError)
 		CFileException::ThrowOsError((LONG)::GetLastError());
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// CFile implementation helpers
-
-// turn a file, relative path or other into an absolute path
-// Used for error reporting only, so not critical.
-BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn)
-	// lpszPathOut = buffer of _MAX_PATH
-	// lpszFileIn = file, relative path or absolute path
-	// (both in ANSI character set)
-{
-        UnicodeString Path;
-        BOOL Result;
-        try
-        {
-	        Path = ExpandFileName(lpszFileIn);
-	        Result = TRUE;
-	}
-	catch (...)
-	{
-		Path = lpszFileIn; // take it literally
-	        Result = FALSE;
-	}
-	lstrcpyn(lpszPathOut, Path.c_str(), _MAX_PATH);
-	return Result;
-}
 /////////////////////////////////////////////////////////////////////////////
