@@ -69,7 +69,7 @@ protected:
   int m_bufferpos;
   char * m_pBuffer;
   BOOL m_bCheckTimeout;
-  CTime m_LastActiveTime;
+  TDateTime m_LastActiveTime;
   int m_nTransferState;
   int m_nMode;
   int m_nNotifyWaiting;

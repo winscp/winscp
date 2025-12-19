@@ -10,6 +10,7 @@
 #endif
 #include "FileZillaApi.h"
 #include <WideStrUtils.hpp>
+#include <DateUtils.hpp>
 
 class CFtpControlSocket::CFileTransferData : public CFtpControlSocket::t_operation::COpData
 {
@@ -47,7 +48,6 @@ public:
   int nMKDOpState;
   bool hasRemoteDate;
   t_directory::t_direntry::t_date remoteDate;
-  //CTime *pFileTime; //Used when downloading and OPTION_PRESERVEDOWNLOADFILETIME is set or when LIST fails
   _int64 *pFileSize; //Used when LIST failes
   BOOL bUseAbsolutePaths;
   BOOL bTriedPortPasvOnce;
@@ -528,7 +528,7 @@ void CFtpControlSocket::Connect(t_server &server)
     LogMessage(FZ_LOG_INFO, L"Connected");
   }
   m_ServerName = logontype?fwhost:hostname;
-  m_LastRecvTime = m_LastSendTime = CTime::CreateForCurrentTime();
+  m_LastRecvTime = m_LastSendTime = Now();
 
   m_Operation.pData = new CLogonData();
 }
@@ -1151,7 +1151,7 @@ BOOL CFtpControlSocket::SendAuthSsl()
 void CFtpControlSocket::OnReceive(int nErrorCode)
 {
   DebugUsedParam(nErrorCode);
-  m_LastRecvTime = CTime::CreateForCurrentTime();
+  m_LastRecvTime = Now();
 
   if (!m_pOwner->IsConnected())
   {
@@ -1489,7 +1489,7 @@ BOOL CFtpControlSocket::Send(CString str)
   if (res > 0)
   {
     m_awaitsReply = true;
-    m_LastSendTime = CTime::CreateForCurrentTime();
+    m_LastSendTime = Now();
     // Count timeout since the last request, not only since the last received data
     // otherwise we may happen to timeout immediately after sending request if
     // CheckForTimeout occurs in between and we haven't received any data for a while
@@ -1587,13 +1587,13 @@ void CFtpControlSocket::CheckForTimeout()
       if (res == 1)
       {
         // avoid trying to set keepalive command right after the transfer finishes
-        m_LastSendTime = CTime::CreateForCurrentTime();
+        m_LastSendTime = Now();
       }
       return;
     }
   }
-  CTimeSpan span=CTime::CreateForCurrentTime()-m_LastRecvTime;
-  if (span.GetTotalSeconds()>=delay)
+  __int64 Span = SecondsBetween(Now(), m_LastRecvTime);
+  if (Span >= delay)
   {
     ShowTimeoutError(IDS_CONTROL_CONNECTION);
     DoClose();
@@ -2538,7 +2538,7 @@ void CFtpControlSocket::TransferEnd(int nMode)
     LogMessage(FZ_LOG_INFO, L"Ignoring old TransferEnd message");
     return;
   }
-  m_LastRecvTime=CTime::CreateForCurrentTime();
+  m_LastRecvTime = Now();
   int error = nMode & (CSMODE_TRANSFERERROR | CSMODE_TRANSFERTIMEOUT);
   if (error)
   {
@@ -4138,7 +4138,7 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
     }
 
     if (m_Operation.nOpMode & (CSMODE_LIST|CSMODE_LISTFILE|CSMODE_TRANSFER) && nSuccessful==FZ_REPLY_OK)
-      m_LastSendTime=CTime::CreateForCurrentTime();
+      m_LastSendTime=Now();
 
     //Update remote file entry
     if (m_Operation.pData &&
@@ -5090,7 +5090,7 @@ void CFtpControlSocket::SetVerifyCertResult(int nResult, t_SslCertData *pData)
     return;
   m_bCheckForTimeout = TRUE;
   m_pSslLayer->SetNotifyReply(pData->priv_data, SSL_VERIFY_CERT, nResult);
-  m_LastRecvTime = CTime::CreateForCurrentTime();
+  m_LastRecvTime = Now();
 }
 
 void CFtpControlSocket::OnTimer()
@@ -5108,8 +5108,8 @@ void CFtpControlSocket::OnTimer()
       //Choose a new delay
       int delay=low+(rand()*diff)/RAND_MAX;
 
-      CTimeSpan span=CTime::CreateForCurrentTime()-m_LastSendTime;
-      if (span.GetTotalSeconds()>=delay)
+      __int64 Span = SecondsBetween(Now(), m_LastSendTime);
+      if (Span >= delay)
         SendKeepAliveCommand();
     }
   }
@@ -5766,7 +5766,7 @@ void CFtpControlSocket::OnSend(int nErrorCode)
   }
 
   m_awaitsReply = true;
-  m_LastSendTime = CTime::CreateForCurrentTime();
+  m_LastSendTime = Now();
 
   if (res == m_sendBufferLen)
   {

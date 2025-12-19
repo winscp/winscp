@@ -293,31 +293,7 @@ protected:
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// CTimeSpan and CTime
-
-class CTimeSpan
-{
-public:
-
-// Constructors
-	CTimeSpan();
-	CTimeSpan(time_t time);
-
-	CTimeSpan(const CTimeSpan& timeSpanSrc);
-	const CTimeSpan& operator=(const CTimeSpan& timeSpanSrc);
-
-// Attributes
-	// extract parts
-	LONG GetTotalSeconds() const;
-
-// Operations
-	// time math
-	BOOL operator==(CTimeSpan timeSpan) const;
-	BOOL operator!=(CTimeSpan timeSpan) const;
-
-private:
-	time_t m_timeSpan;
-};
+// CTime
 
 class CTime
 {
@@ -328,18 +304,13 @@ public:
 
 	CTime();
 	CTime(time_t time);
-	CTime(int nYear, int nMonth, int nDay, int nHour, int nMin, int nSec,
-		int nDST = -1);
 	CTime(const CTime& timeSrc);
 
-	CTime(const SYSTEMTIME& sysTime, int nDST = -1);
-	CTime(const FILETIME& fileTime, int nDST = -1);
+	CTime(const FILETIME& fileTime);
 	const CTime& operator=(const CTime& timeSrc);
 	const CTime& operator=(time_t t);
 
 // Attributes
-	struct tm* GetLocalTm(struct tm* ptm = NULL) const;
-
 	time_t GetTime() const;
 	int GetYear() const;
 	int GetMonth() const;       // month of year (1 = Jan)
@@ -349,12 +320,14 @@ public:
 
 // Operations
 	// time math
-	CTimeSpan operator-(CTime time) const;
 	BOOL operator==(CTime time) const;
 	BOOL operator!=(CTime time) const;
 
 private:
 	time_t m_time;
+	int operator-(CTime time) const; // make sure it's never used
+	CTime(const SYSTEMTIME& sysTime);
+	struct tm* GetLocalTm(struct tm* ptm = NULL) const;
 };
 
 /////////////////////////////////////////////////////////////////////////////

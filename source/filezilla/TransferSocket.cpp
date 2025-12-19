@@ -6,6 +6,7 @@
 #ifndef MPEXT_NO_GSS
 #include "AsyncGssSocketLayer.h"
 #endif
+#include <DateUtils.hpp>
 
 #define BUFSIZE 16384
 
@@ -108,7 +109,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
     int numread = CAsyncSocketEx::Receive(&Buffer[0], Buffer.size());
     if (numread != SOCKET_ERROR && numread)
     {
-      m_LastActiveTime = CTime::CreateForCurrentTime();
+      m_LastActiveTime = Now();
       m_pListResult->AddData(&Buffer[0], numread);
       m_transferdata.transfersize += numread;
       t_ffam_transferstatus *status = new t_ffam_transferstatus;
@@ -196,7 +197,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
     }
 
     int written = 0;
-    m_LastActiveTime = CTime::CreateForCurrentTime();
+    m_LastActiveTime = Now();
     try
     {
       WriteData(m_pBuffer, numread);
@@ -319,7 +320,7 @@ void CTransferSocket::Start()
 {
   m_nTransferState = STATE_STARTED;
 
-  m_LastActiveTime=CTime::CreateForCurrentTime();
+  m_LastActiveTime = Now();
 
   if (m_pSslLayer)
   {
@@ -378,8 +379,8 @@ int CTransferSocket::CheckForTimeout(int delay)
     // timeout as we are not
     return 0;
   }
-  CTimeSpan span = CTime::CreateForCurrentTime()-m_LastActiveTime;
-  if (span.GetTotalSeconds()>=delay)
+   __int64 Span = SecondsBetween(Now(), m_LastActiveTime);
+  if (Span >= delay)
   {
     m_pOwner->ShowTimeoutError(IDS_DATA_CONNECTION);
     CloseAndEnsureSendClose(CSMODE_TRANSFERTIMEOUT);
@@ -411,7 +412,7 @@ bool CTransferSocket::Activate()
     if (m_nTransferState == STATE_WAITING)
       m_nTransferState = STATE_STARTING;
     m_bCheckTimeout = TRUE;
-    m_LastActiveTime = CTime::CreateForCurrentTime();
+    m_LastActiveTime = Now();
 
     if (m_nNotifyWaiting & FD_READ)
       OnReceive(0);
@@ -543,7 +544,7 @@ void CTransferSocket::OnSend(int nErrorCode)
     if (numsent != SOCKET_ERROR)
     {
       m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
-      m_LastActiveTime = CTime::CreateForCurrentTime();
+      m_LastActiveTime = Now();
       m_transferdata.transferleft -= numsent;
       m_uploaded += numsent;
     }

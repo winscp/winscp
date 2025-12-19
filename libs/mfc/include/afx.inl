@@ -75,21 +75,6 @@ inline bool AFXAPI operator<(const CString& s1, LPCTSTR s2)
 inline bool AFXAPI operator<(LPCTSTR s1, const CString& s2)
 	{ return s2.Compare(s1) > 0; }
 
-// CTime and CTimeSpan
-inline CTimeSpan::CTimeSpan(time_t time)
-	{ m_timeSpan = time; }
-inline CTimeSpan::CTimeSpan(const CTimeSpan& timeSpanSrc)
-	{ m_timeSpan = timeSpanSrc.m_timeSpan; }
-inline const CTimeSpan& CTimeSpan::operator=(const CTimeSpan& timeSpanSrc)
-	{ m_timeSpan = timeSpanSrc.m_timeSpan; return *this; }
-inline LONG CTimeSpan::GetTotalSeconds() const
-	{ return m_timeSpan; }
-inline BOOL CTimeSpan::operator==(CTimeSpan timeSpan) const
-	{ return m_timeSpan == timeSpan.m_timeSpan; }
-inline BOOL CTimeSpan::operator!=(CTimeSpan timeSpan) const
-	{ return m_timeSpan != timeSpan.m_timeSpan; }
-
-
 inline CTime::CTime()
 	{ }
 inline CTime::CTime(time_t time)
@@ -112,8 +97,6 @@ inline int CTime::GetHour() const
 	{ return GetLocalTm(NULL)->tm_hour; }
 inline int CTime::GetMinute() const
 	{ return GetLocalTm(NULL)->tm_min; }
-inline CTimeSpan CTime::operator-(CTime time) const
-	{ return CTimeSpan(m_time - time.m_time); }
 inline BOOL CTime::operator==(CTime time) const
 	{ return m_time == time.m_time; }
 inline BOOL CTime::operator!=(CTime time) const

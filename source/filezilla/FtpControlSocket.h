@@ -185,11 +185,11 @@ protected:
   CFile * m_pDataFile;
   CTransferSocket * m_pTransferSocket;
   RawByteString m_MultiLine;
-  CTime m_LastSendTime;
+  TDateTime m_LastSendTime;
 
   CString m_ServerName;
   std::list<RawByteString> m_RecvBuffer;
-  CTime m_LastRecvTime;
+  TDateTime m_LastRecvTime;
   class CLogonData;
   class CListData;
   class CListFileData;
