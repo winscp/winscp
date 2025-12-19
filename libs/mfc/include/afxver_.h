@@ -21,7 +21,7 @@
 	#define AFX_INLINE inline /*__forceinline*/
 #endif
 
-#include <afxv_w32.h>
+#include <windows.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Standard preprocessor symbols if not already defined
