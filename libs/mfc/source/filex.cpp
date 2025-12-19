@@ -16,7 +16,7 @@
 // CFileException
 
 void CFileException::ThrowOsError(LONG lOsError,
-	LPCTSTR lpszFileName /* = NULL */)
+	const wchar_t * lpszFileName /* = NULL */)
 {
 	if (lOsError != 0)
 		AfxThrowFileException(CFileException::OsErrorToException(lOsError),
@@ -37,7 +37,7 @@ UnicodeString CFileException::GetErrorMessage()
 // CFileException helpers
 
 void AfxThrowFileException(int cause, LONG lOsError,
-	LPCTSTR lpszFileName /* == NULL */)
+	const wchar_t * lpszFileName /* == NULL */)
 {
 	throw new CFileException(cause, lOsError, lpszFileName);
 }

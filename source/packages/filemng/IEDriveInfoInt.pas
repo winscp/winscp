@@ -1069,7 +1069,7 @@ end; {GetNetWorkName}
 
 type
   LPBYTE = ^BYTE;
-  LMSTR = LPWSTR;
+  LMSTR = PWideChar;
   NET_API_STATUS = DWORD;
   _USE_INFO_1 = record
     ui1_local: LMSTR;

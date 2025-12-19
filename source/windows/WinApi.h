@@ -40,8 +40,8 @@ public:
   virtual HRESULT STDMETHODCALLTYPE SetItem(LVITEMW* const pItem) = 0;
   virtual HRESULT STDMETHODCALLTYPE GetItemState(int itemIndex, int subItemIndex, ULONG mask, ULONG* pState) = 0;
   virtual HRESULT STDMETHODCALLTYPE SetItemState(int itemIndex, int subItemIndex, ULONG mask, ULONG state) = 0;
-  virtual HRESULT STDMETHODCALLTYPE GetItemText(int itemIndex, int subItemIndex, LPWSTR pBuffer, int bufferSize) = 0;
-  virtual HRESULT STDMETHODCALLTYPE SetItemText(int itemIndex, int subItemIndex, LPCWSTR pText) = 0;
+  virtual HRESULT STDMETHODCALLTYPE GetItemText(int itemIndex, int subItemIndex, wchar_t * pBuffer, int bufferSize) = 0;
+  virtual HRESULT STDMETHODCALLTYPE SetItemText(int itemIndex, int subItemIndex, const wchar_t * pText) = 0;
   virtual HRESULT STDMETHODCALLTYPE GetBackgroundImage(LVBKIMAGEW* pBkImage) = 0;
   virtual HRESULT STDMETHODCALLTYPE SetBackgroundImage(LVBKIMAGEW* const pBkImage) = 0;
   virtual HRESULT STDMETHODCALLTYPE GetFocusedColumn(PINT pColumnIndex) = 0;
@@ -79,7 +79,7 @@ public:
   virtual HRESULT STDMETHODCALLTYPE RecomputeItems(int unknown) = 0;
   virtual HRESULT STDMETHODCALLTYPE GetEditControl(HWND* pHWndEdit) = 0;
   // TODO: verify that 'initialEditText' really is used to specify the initial text
-  virtual HRESULT STDMETHODCALLTYPE EditLabel(LVITEMINDEX itemIndex, LPCWSTR initialEditText, HWND* phWndEdit) = 0;
+  virtual HRESULT STDMETHODCALLTYPE EditLabel(LVITEMINDEX itemIndex, const wchar_t * initialEditText, HWND* phWndEdit) = 0;
   virtual HRESULT STDMETHODCALLTYPE EditGroupLabel(int groupIndex) = 0;
   virtual HRESULT STDMETHODCALLTYPE CancelEditLabel(void) = 0;
   virtual HRESULT STDMETHODCALLTYPE GetEditItem(LVITEMINDEX* itemIndex, PINT subItemIndex) = 0;
@@ -181,16 +181,16 @@ extern "C"
 #define MAX_GUID_CHARS  38
 #define INSTALLPROPERTY_INSTALLLOCATION       __TEXT("InstallLocation")
 UINT WINAPI MsiEnumRelatedProductsW(
-  __in LPCWSTR  lpUpgradeCode,                               // upgrade code of products to enumerate
+  __in const wchar_t *  lpUpgradeCode,                               // upgrade code of products to enumerate
   __reserved DWORD     dwReserved,                            // reserved, must be 0
   __in DWORD     iProductIndex,                               // 0-based index into registered products
-  __out_ecount(MAX_GUID_CHARS+1)  LPWSTR   lpProductBuf);    // buffer of char count: 39 (size of string GUID)
+  __out_ecount(MAX_GUID_CHARS+1)  wchar_t *   lpProductBuf);    // buffer of char count: 39 (size of string GUID)
 #define MsiEnumRelatedProducts  MsiEnumRelatedProductsW
 //---------------------------------------------------------------------------
 UINT WINAPI MsiGetProductInfoW(
-  __in LPCWSTR   szProduct,                              // product code
-  __in LPCWSTR   szAttribute,                            // attribute name, case-sensitive
-  __out_ecount_opt(*pcchValueBuf) LPWSTR lpValueBuf,     // returned value, NULL if not desired
+  __in const wchar_t *   szProduct,                              // product code
+  __in const wchar_t *   szAttribute,                            // attribute name, case-sensitive
+  __out_ecount_opt(*pcchValueBuf) wchar_t * lpValueBuf,     // returned value, NULL if not desired
   __inout_opt                     LPDWORD pcchValueBuf);  // in/out buffer character count
 #define MsiGetProductInfo  MsiGetProductInfoW
 }

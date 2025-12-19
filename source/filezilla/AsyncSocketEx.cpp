@@ -652,7 +652,7 @@ CAsyncSocketEx::~CAsyncSocketEx()
   FreeAsyncSocketExInstance();
 }
 
-BOOL CAsyncSocketEx::Create(UINT nSocketPort /*=0*/, int nSocketType /*=SOCK_STREAM*/, long lEvent /*=FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE*/, LPCTSTR lpszSocketAddress /*=NULL*/, int nFamily /*=AF_INET*/)
+BOOL CAsyncSocketEx::Create(UINT nSocketPort /*=0*/, int nSocketType /*=SOCK_STREAM*/, long lEvent /*=FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE*/, const wchar_t * lpszSocketAddress /*=NULL*/, int nFamily /*=AF_INET*/)
 {
   DebugAssert(GetSocketHandle() == INVALID_SOCKET);
 
@@ -694,8 +694,8 @@ BOOL CAsyncSocketEx::Create(UINT nSocketPort /*=0*/, int nSocketType /*=SOCK_STR
       delete [] m_lpszSocketAddress;
       if (lpszSocketAddress && *lpszSocketAddress)
       {
-        m_lpszSocketAddress = new TCHAR[_tcslen(lpszSocketAddress) + 1];
-        _tcscpy(m_lpszSocketAddress, lpszSocketAddress);
+        m_lpszSocketAddress = new wchar_t[wcslen(lpszSocketAddress) + 1];
+        wcscpy(m_lpszSocketAddress, lpszSocketAddress);
       }
       else
         m_lpszSocketAddress = 0;
@@ -766,13 +766,13 @@ void CAsyncSocketEx::OnClose(int nErrorCode)
   DebugUsedParam(nErrorCode);
 }
 
-BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
+BOOL CAsyncSocketEx::Bind(UINT nSocketPort, const wchar_t * lpszSocketAddress)
 {
   delete [] m_lpszSocketAddress;
   if (lpszSocketAddress && *lpszSocketAddress)
   {
-    m_lpszSocketAddress = new TCHAR[_tcslen(lpszSocketAddress) + 1];
-    _tcscpy(m_lpszSocketAddress, lpszSocketAddress);
+    m_lpszSocketAddress = new wchar_t[wcslen(lpszSocketAddress) + 1];
+    wcscpy(m_lpszSocketAddress, lpszSocketAddress);
   }
   else
     m_lpszSocketAddress = 0;
@@ -1025,11 +1025,11 @@ int CAsyncSocketEx::Send(const void* lpBuf, int nBufLen, int nFlags /*=0*/)
   }
   else
   {
-    return send(m_SocketData.hSocket, static_cast<LPCSTR>(lpBuf), nBufLen, nFlags);
+    return send(m_SocketData.hSocket, static_cast<const char *>(lpBuf), nBufLen, nFlags);
   }
 }
 
-BOOL CAsyncSocketEx::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
+BOOL CAsyncSocketEx::Connect(const wchar_t * lpszHostAddress, UINT nHostPort)
 {
   if (m_pFirstLayer)
   {
@@ -1224,7 +1224,7 @@ bool CAsyncSocketEx::GetSockName(int family, SOCKADDR * sockAddr, CString& addre
   {
     auto sockAddrIn6 = reinterpret_cast<SOCKADDR_IN6*>(sockAddr);
     peerPort = ntohs(sockAddrIn6->sin6_port);
-    LPTSTR buf = Inet6AddrToString(sockAddrIn6->sin6_addr);
+    wchar_t * buf = Inet6AddrToString(sockAddrIn6->sin6_addr);
     address = buf;
     delete [] buf;
     result = true;
@@ -1514,7 +1514,7 @@ BOOL CAsyncSocketEx::GetSockOpt(int nOptionName, void* lpOptionValue, int* lpOpt
 
 BOOL CAsyncSocketEx::SetSockOpt(int nOptionName, const void* lpOptionValue, int nOptionLen, int nLevel /*=SOL_SOCKET*/)
 {
-  return (SOCKET_ERROR != setsockopt(m_SocketData.hSocket, nLevel, nOptionName, static_cast<LPCSTR>(lpOptionValue), nOptionLen));
+  return (SOCKET_ERROR != setsockopt(m_SocketData.hSocket, nLevel, nOptionName, static_cast<const char *>(lpOptionValue), nOptionLen));
 }
 
 int CAsyncSocketEx::GetState() const
@@ -1527,7 +1527,7 @@ void CAsyncSocketEx::SetState(int nState)
   m_nState = nState;
 }
 
-const TCHAR * CAsyncSocketEx::GetStateDesc(int nState)
+const wchar_t * CAsyncSocketEx::GetStateDesc(int nState)
 {
   switch (nState)
   {

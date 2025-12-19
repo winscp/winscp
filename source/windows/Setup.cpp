@@ -22,8 +22,7 @@
 #include <WinApi.h>
 #include <System.NetEncoding.hpp>
 //---------------------------------------------------------------------------
-#define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
-            _T("Session Manager\\Environment")
+#define KEY L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment"
 // when the PATH registry key is over aprox 2048 characters,
 // PATH as well as WINDIR variables are actually not set, breaking the system
 #define MAX_PATH_LEN 2000
@@ -37,20 +36,20 @@ static UnicodeString PowerShellVersionStr;
 static UnicodeString PowerShellCoreVersionStr;
 //---------------------------------------------------------------------------
 // Display the error "err_msg".
-void err_out(LPCTSTR err_msg)
+void err_out(const wchar_t * err_msg)
 {
   LastPathError = err_msg;
 }
 //---------------------------------------------------------------------------
 // Display "base_err_msg" followed by the description of the system error
 // identified by "sys_err".
-void err_out_sys(LPCTSTR base_err_msg, LONG sys_err)
+void err_out_sys(const wchar_t * base_err_msg, LONG sys_err)
 {
   LastPathError = FORMAT(L"%s %s", (base_err_msg, SysErrorMessage(sys_err)));
 }
 //---------------------------------------------------------------------------
 // Works as "strcmp" but the comparison is not case sensitive.
-int tcharicmp(LPCTSTR str1, LPCTSTR str2){
+int tcharicmp(const wchar_t * str1, const wchar_t * str2){
     for (; towlower(*str1) == towlower(*str2); ++str1, ++str2)
         if (*str1 == L'\0')
             return 0;
@@ -59,19 +58,19 @@ int tcharicmp(LPCTSTR str1, LPCTSTR str2){
 //---------------------------------------------------------------------------
 // Returns un unquoted copy of "str" (or a copy of "str" if the quotes are
 // not present). The returned value must be freed with "free".
-LPTSTR unquote(LPCTSTR str){
+wchar_t * unquote(const wchar_t * str){
     int last_pos;
-    LPTSTR ret;
+    wchar_t * ret;
     size_t new_len;
 
-    last_pos = _tcslen(str) - 1;
+    last_pos = wcslen(str) - 1;
     if (last_pos != -1 && str[0] == L'"' && str[last_pos] == L'"'){
-        new_len= (_tcslen(str) - 1);
-        ret = static_cast<LPTSTR>(malloc(new_len * sizeof(TCHAR)));
+        new_len= (wcslen(str) - 1);
+        ret = static_cast<wchar_t *>(malloc(new_len * sizeof(wchar_t)));
         lstrcpyn(ret, &str[1], new_len);
     }
     else
-        ret = _tcsdup(str);
+        ret = _wcsdup(str);
     return ret;
 }
 //---------------------------------------------------------------------------
@@ -79,17 +78,17 @@ LPTSTR unquote(LPCTSTR str){
 // the first letter of "what" in the string. If "next" is not "NULL" it
 // points to the first letter after "what" (excluding the trailing ";").
 // If "what" isn't find the functions returns "NULL".
-LPTSTR find_reg_str(LPTSTR str, LPCTSTR what, LPTSTR * next){
-    LPTSTR tok_buff;
-    LPTSTR curr_tok;
-    LPTSTR curr_tok_dup;
+wchar_t * find_reg_str(wchar_t * str, const wchar_t * what, wchar_t * * next){
+    wchar_t * tok_buff;
+    wchar_t * curr_tok;
+    wchar_t * curr_tok_dup;
     BOOL path_eq;
-    TCHAR sh_path1[MAX_PATH], sh_path2[MAX_PATH];
+    wchar_t sh_path1[MAX_PATH], sh_path2[MAX_PATH];
     int pos = -1;
-    LPTSTR ret;
+    wchar_t * ret;
 
-    tok_buff = _tcsdup(str);
-    curr_tok = _tcstok(tok_buff, _T(";"));
+    tok_buff = _wcsdup(str);
+    curr_tok = wcstok(tok_buff, L";");
     while (pos == -1 && curr_tok){
         curr_tok_dup = unquote(curr_tok);
         path_eq = GetShortPathName(what, sh_path1, std::size(sh_path1)) &&
@@ -100,12 +99,12 @@ LPTSTR find_reg_str(LPTSTR str, LPCTSTR what, LPTSTR * next){
             pos = curr_tok - tok_buff;
         }
         free(curr_tok_dup);
-        curr_tok = _tcstok(NULL, _T(";"));
+        curr_tok = wcstok(NULL, L";");
         if (pos != -1 && next){
             if (curr_tok)
                 *next = str + (curr_tok - tok_buff);
             else
-                *next = str + _tcslen(str);
+                *next = str + wcslen(str);
         }
     }
     free(tok_buff);
@@ -128,13 +127,13 @@ void path_reg_propagate()
   {
     DWORD send_message_result;
     LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-                             reinterpret_cast<LPARAM>(_T("Environment")), SMTO_ABORTIFHUNG,
+                             reinterpret_cast<LPARAM>(L"Environment"), SMTO_ABORTIFHUNG,
                              5000, &send_message_result);
     if (ret != ERROR_SUCCESS && GetLastError() != 0)
     {
-      err_out_sys(_T("Cannot propagate the new enviroment to ")
-                  _T("other processes. The new value will be ")
-                  _T("available after a reboot."), GetLastError());
+      err_out_sys(
+        L"Cannot propagate the new enviroment to other processes. The new value will be available after a reboot.",
+        GetLastError());
       SimpleErrorDialog(LastPathError);
       LastPathError = L"";
     }
@@ -143,28 +142,28 @@ void path_reg_propagate()
 //---------------------------------------------------------------------------
 // Add "path" to the registry. Return "TRUE" if the path has been added or
 // was already in the registry, "FALSE" otherwise.
-BOOL add_path_reg(LPCTSTR path){
+BOOL add_path_reg(const wchar_t * path){
     HKEY key;
     LONG ret;
     DWORD data_size;
-    LPTSTR reg_str;
+    wchar_t * reg_str;
     BOOL func_ret = TRUE;
 
     ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, KEY, 0,
                        KEY_WRITE | KEY_READ, &key);
     if (ret != ERROR_SUCCESS){
-        err_out_sys(_T("Cannot open registry."), ret);
+        err_out_sys(L"Cannot open registry.", ret);
         return FALSE;
     }
 
-    RegQueryValueEx(key, _T("PATH"), NULL, NULL, NULL, &data_size);
-    data_size += _tcslen(path) + 3 ; /* ";" and quotes, "data_size" already
+    RegQueryValueEx(key, L"PATH", NULL, NULL, NULL, &data_size);
+    data_size += wcslen(path) + 3 ; /* ";" and quotes, "data_size" already
                                         includes '\0'. */
-    reg_str = static_cast<LPTSTR>(malloc(data_size * sizeof(TCHAR)));
-    ret = RegQueryValueEx(key, _T("PATH"), NULL, NULL, reinterpret_cast<LPBYTE>(reg_str),
+    reg_str = static_cast<wchar_t *>(malloc(data_size * sizeof(wchar_t)));
+    ret = RegQueryValueEx(key, L"PATH", NULL, NULL, reinterpret_cast<LPBYTE>(reg_str),
                           &data_size);
     if (ret != ERROR_SUCCESS){
-        err_out_sys(_T("Cannot read \"PATH\" key."), ret);
+        err_out_sys(L"Cannot read \"PATH\" key.", ret);
         func_ret = FALSE;
     }
     else{
@@ -175,9 +174,9 @@ BOOL add_path_reg(LPCTSTR path){
         }
         else
         {
-            _tcscat(reg_str, _T(";"));
-            _tcscat(reg_str, path);
-            size_t len = _tcslen(reg_str);
+            wcscat(reg_str, L";");
+            wcscat(reg_str, path);
+            size_t len = wcslen(reg_str);
             if (len >= MAX_PATH_LEN)
             {
               err_out(LoadStr(PATH_ENV_TOO_LONG).c_str());
@@ -185,11 +184,11 @@ BOOL add_path_reg(LPCTSTR path){
             }
             else
             {
-              ret = RegSetValueEx(key, _T("PATH"), 0, REG_EXPAND_SZ,
+              ret = RegSetValueEx(key, L"PATH", 0, REG_EXPAND_SZ,
                                   reinterpret_cast<LPBYTE>(reg_str),
-                                  (_tcslen(reg_str) + 1) * sizeof(TCHAR));
+                                  (wcslen(reg_str) + 1) * sizeof(wchar_t));
               if (ret != ERROR_SUCCESS){
-                  err_out_sys(_T("Cannot write \"PATH\" key."), ret);
+                  err_out_sys(L"Cannot write \"PATH\" key.", ret);
                   func_ret = FALSE;
               }
               /* Is this needed to make the new key avaible? */
@@ -208,47 +207,47 @@ BOOL add_path_reg(LPCTSTR path){
 //---------------------------------------------------------------------------
 // Removes "path" from the registry. Return "TRUE" if the path has been
 // removed or it wasn't in the registry, "FALSE" otherwise.
-BOOL remove_path_reg(LPCTSTR path){
+BOOL remove_path_reg(const wchar_t * path){
     HKEY key;
     LONG ret;
     DWORD data_size;
-    LPTSTR reg_str;
-    LPTSTR reg_str2;
+    wchar_t * reg_str;
+    wchar_t * reg_str2;
     BOOL func_ret = TRUE;
-    LPTSTR next;
-    LPTSTR del_part;
+    wchar_t * next;
+    wchar_t * del_part;
     int last_pos;
 
     ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, KEY, 0,
                        KEY_WRITE | KEY_READ, &key);
     if (ret != ERROR_SUCCESS){
-        err_out_sys(_T("Cannot open registry."), ret);
+        err_out_sys(L"Cannot open registry.", ret);
         return FALSE;
     }
 
-    RegQueryValueEx(key, _T("PATH"), NULL, NULL, NULL, &data_size);
-    data_size += _tcslen(path) + 3; /* ";" and quotes,"data_size" already
+    RegQueryValueEx(key, L"PATH", NULL, NULL, NULL, &data_size);
+    data_size += wcslen(path) + 3; /* ";" and quotes,"data_size" already
                                         includes '\0'. */
-    reg_str = static_cast<LPTSTR>(malloc(data_size * sizeof(TCHAR)));
-    ret = RegQueryValueEx(key, _T("PATH"), NULL, NULL,
+    reg_str = static_cast<wchar_t *>(malloc(data_size * sizeof(wchar_t)));
+    ret = RegQueryValueEx(key, L"PATH", NULL, NULL,
                           reinterpret_cast<LPBYTE>(reg_str), &data_size);
     if (ret != ERROR_SUCCESS){
-        err_out_sys(_T("Cannot read \"PATH\" key."), ret);
+        err_out_sys(L"Cannot read \"PATH\" key.", ret);
         func_ret = FALSE;
     }
     else{
         if ((del_part = find_reg_str(reg_str, path, &next)) != NULL){
-            reg_str2 = static_cast<LPTSTR>(malloc((_tcslen(reg_str) + 1) * sizeof(TCHAR)));
+            reg_str2 = static_cast<wchar_t *>(malloc((wcslen(reg_str) + 1) * sizeof(wchar_t)));
             *del_part = '\0';
-            _stprintf(reg_str2, _T("%s%s"), reg_str, next);
-            last_pos = _tcslen(reg_str2) - 1;
+            swprintf(reg_str2, L"%s%s", reg_str, next);
+            last_pos = wcslen(reg_str2) - 1;
             if (last_pos != -1 && reg_str2[last_pos] == ';')
                 reg_str2[last_pos] = '\0';
-            ret = RegSetValueEx(key, _T("PATH"), 0, REG_EXPAND_SZ,
+            ret = RegSetValueEx(key, L"PATH", 0, REG_EXPAND_SZ,
                                 reinterpret_cast<LPBYTE>(reg_str2),
-                                (_tcslen(reg_str2) + 1) * sizeof(TCHAR));
+                                (wcslen(reg_str2) + 1) * sizeof(wchar_t));
             if (ret != ERROR_SUCCESS){
-                err_out_sys(_T("Cannot write \"PATH\" key."), ret);
+                err_out_sys(L"Cannot write \"PATH\" key.", ret);
                 func_ret = FALSE;
             }
             free(reg_str2);
@@ -2730,7 +2729,7 @@ bool DoUnregisterChoice(TConsole * Console)
   return (Console->Choice(L"U", -1, -1, -1, 0, 0, 0, UnicodeString()) == 1);
 }
 //---------------------------------------------------------------------------
-typedef HRESULT WINAPI (* RegDeleteTreeProc)(HKEY Key, LPCWSTR SubKey);
+typedef HRESULT WINAPI (* RegDeleteTreeProc)(HKEY Key, const wchar_t * SubKey);
 static RegDeleteTreeProc ARegDeleteTree = NULL;
 //---------------------------------------------------------------------------
 void DoDeleteKey(TConsole * Console, TRegistry * Registry, const UnicodeString & Key, int Platform, bool & AnyDeleted, bool & AllDeleted)

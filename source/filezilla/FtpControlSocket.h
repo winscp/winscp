@@ -50,7 +50,7 @@ public:
   BOOL IsReady();
   void List(BOOL bFinish, int nError = 0, CServerPath path = CServerPath(), CString subdir = L"");
   void ListFile(CString filename, const CServerPath & path);
-  void FtpCommand(LPCTSTR pCommand);
+  void FtpCommand(const wchar_t * pCommand);
   void Disconnect();
   void FileTransfer(t_transferfile * transferfile = 0, BOOL bFinish = FALSE, int nError = 0);
   void Delete(CString filename, const CServerPath & path, bool filenameOnly);
@@ -91,11 +91,11 @@ public:
   };
 
   BOOL RemoveActiveTransfer();
-  BOOL SpeedLimitAddTransferredBytes(enum transferDirection direction, _int64 nBytesTransferred);
+  BOOL SpeedLimitAddTransferredBytes(enum transferDirection direction, __int64 nBytesTransferred);
 
-  _int64 GetSpeedLimit(enum transferDirection direction);
+  __int64 GetSpeedLimit(enum transferDirection direction);
 
-  _int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting);
+  __int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting);
 
   t_server GetCurrentServer();
   CFtpListResult * CreateListResult(bool mlst);
@@ -147,7 +147,7 @@ protected:
   bool CheckForcePasvIp(CString & host);
   void TransferFinished(bool preserveFileTimeForUploads);
 
-  virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
+  virtual void LogSocketMessageRaw(int nMessageType, const wchar_t * pMsg);
   virtual bool LoggingSocketMessage(int nMessageType);
   virtual int GetSocketOptionVal(int OptionID) const;
 
@@ -168,10 +168,10 @@ protected:
   };
   static std::list<t_ActiveList> m_InstanceList[2];
   static CTime m_CurrentTransferTime[2];
-  static _int64 m_CurrentTransferLimit[2];
+  static __int64 m_CurrentTransferLimit[2];
   static CCriticalSectionWrapper m_SpeedLimitSync;
-  _int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, _int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction);
-  _int64 GetSpeedLimit(int valType, int valValue);
+  __int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, __int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction);
+  __int64 GetSpeedLimit(int valType, int valValue);
 
   void SetDirectoryListing(t_directory * pDirectory, bool bSetWorkingDir = true);
   int CheckOverwriteFile();

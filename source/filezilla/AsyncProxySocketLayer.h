@@ -95,7 +95,7 @@ public:
 
 public:
   virtual void Close();
-  virtual BOOL Connect(LPCTSTR lpHostAddress, UINT nHostPort);
+  virtual BOOL Connect(const wchar_t * lpHostAddress, UINT nHostPort);
   virtual BOOL Connect(const SOCKADDR * lpSockAddr, int nSockAddrLen);
   virtual BOOL Listen(int nConnectionBacklog);
 

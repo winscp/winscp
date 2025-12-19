@@ -74,7 +74,7 @@ CTransferSocket::~CTransferSocket()
   delete m_pListResult;
 }
 
-_int64 CTransferSocket::GetTransferSize(CFtpControlSocket::transferDirection direction, bool & beenWaiting)
+__int64 CTransferSocket::GetTransferSize(CFtpControlSocket::transferDirection direction, bool & beenWaiting)
 {
   if (GetState() != closed)
     return m_pOwner->GetAbleToTransferSize(direction, beenWaiting);
@@ -148,7 +148,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
       OnConnect(0);
 
     bool beenWaiting = false;
-    _int64 ableToRead = GetTransferSize(CFtpControlSocket::download, beenWaiting);
+    __int64 ableToRead = GetTransferSize(CFtpControlSocket::download, beenWaiting);
 
     if (!beenWaiting)
       DebugAssert(ableToRead);
@@ -493,7 +493,7 @@ void CTransferSocket::OnSend(int nErrorCode)
   while (TRUE)
   {
     bool beenWaiting = false;
-    _int64 currentBufferSize = GetTransferSize(CFtpControlSocket::upload, beenWaiting);
+    __int64 currentBufferSize = GetTransferSize(CFtpControlSocket::upload, beenWaiting);
 
     int numread;
     if ((currentBufferSize == 0) && (m_bufferpos == 0))
@@ -721,8 +721,8 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
     {
         if (CAsyncSocketEx::LogStateChange(iter->nParam1, iter->nParam2))
         {
-          const TCHAR * state2Desc = CAsyncSocketEx::GetStateDesc(iter->nParam2);
-          const TCHAR * state1Desc = CAsyncSocketEx::GetStateDesc(iter->nParam1);
+          const wchar_t * state2Desc = CAsyncSocketEx::GetStateDesc(iter->nParam2);
+          const wchar_t * state1Desc = CAsyncSocketEx::GetStateDesc(iter->nParam1);
         if (iter->pLayer == m_pProxyLayer)
           LogMessage(FZ_LOG_INFO, L"Proxy layer changed state from %s to %s", state2Desc, state1Desc);
         else if (iter->pLayer == m_pSslLayer)
@@ -804,7 +804,7 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
           break;
         case SSL_VERIFY_CERT:
           t_SslCertData data;
-          LPCTSTR CertError = NULL;
+          const wchar_t * CertError = NULL;
           if (m_pSslLayer->GetPeerCertificateData(data, CertError))
             m_pSslLayer->SetNotifyReply(data.priv_data, SSL_VERIFY_CERT, 1);
           else
@@ -907,7 +907,7 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
   }
 }
 
-void CTransferSocket::LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg)
+void CTransferSocket::LogSocketMessageRaw(int nMessageType, const wchar_t * pMsg)
 {
   LogMessageRaw(nMessageType, pMsg);
 }

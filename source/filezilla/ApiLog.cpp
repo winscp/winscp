@@ -32,7 +32,7 @@ bool CApiLog::LoggingMessageType(int nMessageType) const
     ((nMessageType-FZ_LOG_APIERROR) < FIntern->GetDebugLevel());
 }
 
-void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
+void CApiLog::LogMessage(int nMessageType, const wchar_t * pMsgFormat, ...) const
 {
   DebugAssert(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
   if (!LoggingMessageType(nMessageType))
@@ -50,7 +50,7 @@ void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
   SendLogMessage(nMessageType, text);
 }
 
-void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
+void CApiLog::LogMessageRaw(int nMessageType, const wchar_t * pMsg) const
 {
   DebugAssert(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
   if (!LoggingMessageType(nMessageType))
@@ -61,7 +61,7 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
   SendLogMessage(nMessageType, pMsg);
 }
 
-void CApiLog::SendLogMessage(int nMessageType, LPCTSTR pMsg) const
+void CApiLog::SendLogMessage(int nMessageType, const wchar_t * pMsg) const
 {
   if (!LoggingMessageType(nMessageType))
     return;

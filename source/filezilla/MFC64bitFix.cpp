@@ -6,11 +6,11 @@ __int64 GetLength64(CFile &file)
   DWORD low;
   DWORD high;
   low=GetFileSize(file.m_hFile, &high);
-  _int64 size=(static_cast<_int64>(high)<<32)+low;
+  __int64 size=(static_cast<__int64>(high)<<32)+low;
   return size;
 }
 
-BOOL GetLength64(CString filename, _int64 &size)
+BOOL GetLength64(CString filename, __int64 &size)
 {
   WIN32_FIND_DATA findFileData;
   HANDLE hFind = FindFirstFile(filename, &findFileData);
@@ -18,12 +18,12 @@ BOOL GetLength64(CString filename, _int64 &size)
     return FALSE;
   DebugCheck(FindClose(hFind));
 
-  size=(static_cast<_int64>(findFileData.nFileSizeHigh)<<32)+findFileData.nFileSizeLow;
+  size=(static_cast<__int64>(findFileData.nFileSizeHigh)<<32)+findFileData.nFileSizeLow;
 
   return TRUE;
 }
 
-BOOL PASCAL GetFileStatus(LPCTSTR lpszFileName, CFileStatus& rStatus)
+BOOL PASCAL GetFileStatus(const wchar_t * lpszFileName, CFileStatus& rStatus)
 {
   WIN32_FIND_DATA findFileData;
   HANDLE hFind = FindFirstFile(lpszFileName, &findFileData);

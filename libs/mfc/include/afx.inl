@@ -11,45 +11,45 @@
 // Inlines for AFX.H
 
 inline CFileException::CFileException(int cause, LONG lOsError,
-	LPCTSTR pstrFileName /* = NULL */)
+	const wchar_t * pstrFileName /* = NULL */)
 	{ m_cause = cause; m_lOsError = lOsError; m_strFileName = pstrFileName; }
 
 // CString
 inline CString::CString()
 	{ }
 inline CString::CString(const unsigned char* lpsz)
-	{ *this = reinterpret_cast<LPCSTR>(lpsz); }
+	{ *this = reinterpret_cast<const char *>(lpsz); }
 inline const CString& CString::operator=(const unsigned char* lpsz)
-	{ *this = reinterpret_cast<LPCSTR>(lpsz); return *this; }
+	{ *this = reinterpret_cast<const char *>(lpsz); return *this; }
 inline const CString& CString::operator+=(char ch)
-	{ *this += static_cast<TCHAR>(ch); return *this; }
+	{ *this += static_cast<wchar_t>(ch); return *this; }
 inline const CString& CString::operator=(char ch)
-	{ *this = static_cast<TCHAR>(ch); return *this; }
+	{ *this = static_cast<wchar_t>(ch); return *this; }
 inline CString operator+(const CString& string, char ch)
-	{ return string + static_cast<TCHAR>(ch); }
+	{ return string + static_cast<wchar_t>(ch); }
 inline CString operator+(char ch, const CString& string)
-	{ return static_cast<TCHAR>(ch) + string; }
+	{ return static_cast<wchar_t>(ch) + string; }
 
 inline int CString::GetLength() const
 	{ return m_Data.Length(); }
 inline BOOL CString::IsEmpty() const
 	{ return m_Data.IsEmpty(); }
-inline CString::operator LPCTSTR() const
+inline CString::operator const wchar_t *() const
 	{ return m_Data.c_str(); }
 
 // CString support (windows specific)
-inline int CString::Compare(LPCTSTR lpsz) const
-	{ return _tcscmp(m_Data.c_str(), lpsz); }    // MBCS/Unicode aware
-inline int CString::CompareNoCase(LPCTSTR lpsz) const
-	{ return _tcsicmp(m_Data.c_str(), lpsz); }   // MBCS/Unicode aware
+inline int CString::Compare(const wchar_t * lpsz) const
+	{ return wcscmp(m_Data.c_str(), lpsz); }    // MBCS/Unicode aware
+inline int CString::CompareNoCase(const wchar_t * lpsz) const
+	{ return _wcsicmp(m_Data.c_str(), lpsz); }   // MBCS/Unicode aware
 
-inline TCHAR CString::GetAt(int nIndex) const
+inline wchar_t CString::GetAt(int nIndex) const
 {
 	ASSERT(nIndex >= 0);
 	ASSERT(nIndex < m_Data.Length());
 	return m_Data[nIndex + 1];
 }
-inline TCHAR CString::operator[](int nIndex) const
+inline wchar_t CString::operator[](int nIndex) const
 {
 	// same as GetAt
 	ASSERT(nIndex >= 0);
@@ -58,21 +58,21 @@ inline TCHAR CString::operator[](int nIndex) const
 }
 inline bool operator==(const CString& s1, const CString& s2)
 	{ return s1.Compare(s2) == 0; }
-inline bool operator==(const CString& s1, LPCTSTR s2)
+inline bool operator==(const CString& s1, const wchar_t * s2)
 	{ return s1.Compare(s2) == 0; }
-inline bool operator==(LPCTSTR s1, const CString& s2)
+inline bool operator==(const wchar_t * s1, const CString& s2)
 	{ return s2.Compare(s1) == 0; }
 inline bool operator!=(const CString& s1, const CString& s2)
 	{ return s1.Compare(s2) != 0; }
-inline bool operator!=(const CString& s1, LPCTSTR s2)
+inline bool operator!=(const CString& s1, const wchar_t * s2)
 	{ return s1.Compare(s2) != 0; }
-inline bool operator!=(LPCTSTR s1, const CString& s2)
+inline bool operator!=(const wchar_t * s1, const CString& s2)
 	{ return s2.Compare(s1) != 0; }
 inline bool operator<(const CString& s1, const CString& s2)
 	{ return s1.Compare(s2) < 0; }
-inline bool operator<(const CString& s1, LPCTSTR s2)
+inline bool operator<(const CString& s1, const wchar_t * s2)
 	{ return s1.Compare(s2) < 0; }
-inline bool operator<(LPCTSTR s1, const CString& s2)
+inline bool operator<(const wchar_t * s1, const CString& s2)
 	{ return s2.Compare(s1) > 0; }
 
 inline CTime::CTime()

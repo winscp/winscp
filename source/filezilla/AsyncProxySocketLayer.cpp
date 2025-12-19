@@ -230,8 +230,8 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
             return;
           }
           //Send authentication
-          LPCSTR lpszAsciiUser = m_ProxyData.pProxyUser;
-          LPCSTR lpszAsciiPass = m_ProxyData.pProxyPass;
+          const char * lpszAsciiUser = m_ProxyData.pProxyUser;
+          const char * lpszAsciiPass = m_ProxyData.pProxyPass;
           DebugAssert(strlen(lpszAsciiUser)<=255);
           DebugAssert(strlen(lpszAsciiPass)<=255);
           unsigned char *buffer = new unsigned char[3 + (lpszAsciiUser?strlen(lpszAsciiUser):0) + (lpszAsciiPass?strlen(lpszAsciiPass):0) + 1];
@@ -545,7 +545,7 @@ void CAsyncProxySocketLayer::ConnectionEstablished()
   TriggerEvent(FD_WRITE, 0, TRUE);
 }
 
-BOOL CAsyncProxySocketLayer::Connect( LPCTSTR lpszHostAddress, UINT nHostPort )
+BOOL CAsyncProxySocketLayer::Connect( const wchar_t * lpszHostAddress, UINT nHostPort )
 {
   if (!m_ProxyData.nProxyType)
     //Connect normally because there is no proxy
@@ -679,7 +679,7 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
     if (m_ProxyData.nProxyType==PROXYTYPE_SOCKS4 || m_ProxyData.nProxyType==PROXYTYPE_SOCKS4A)
     { //SOCKS4 proxy
       //Send request
-      LPCSTR lpszAscii = m_pProxyPeerHost?m_pProxyPeerHost:"";
+      const char * lpszAscii = m_pProxyPeerHost?m_pProxyPeerHost:"";
       char *command=new char [9+strlen(lpszAscii)+1];
       memset(command,0,9+strlen(lpszAscii)+1);
       int len=9;

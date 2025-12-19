@@ -433,8 +433,8 @@ void CFtpListResult::AddLine(t_directory::t_direntry & direntry)
 
     FILETIME ft;
     SystemTimeToFileTime(&st, &ft);
-    _int64 nFt = (static_cast<_int64>(ft.dwHighDateTime) << 32) + ft.dwLowDateTime;
-    nFt += static_cast<_int64>(m_server.nTimeZoneOffset) * 10000000 * 60;
+    __int64 nFt = (static_cast<__int64>(ft.dwHighDateTime) << 32) + ft.dwLowDateTime;
+    nFt += static_cast<__int64>(m_server.nTimeZoneOffset) * 10000000 * 60;
     ft.dwHighDateTime = static_cast<unsigned long>(nFt >> 32);
     ft.dwLowDateTime = static_cast<unsigned long>(nFt & 0xFFFFFFFF);
     FileTimeToSystemTime(&ft, &st);
@@ -452,7 +452,7 @@ void CFtpListResult::AddLine(t_directory::t_direntry & direntry)
     int pos=direntry.name.ReverseFind(L';');
     if (pos<=0 || pos>=(direntry.name.GetLength()-1))
       return;
-    int version=_ttoi(direntry.name.Mid(pos+1));
+    int version=_wtoi(direntry.name.Mid(pos+1));
     direntry.name=direntry.name.Left(pos);
 
     tEntryList::iterator entryiter=m_EntryList.begin();
@@ -1667,7 +1667,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   char *lwr = new char[smonthlen + 1];
   memcpy(lwr, smonth, smonthlen);
   lwr[smonthlen] = 0;
-  _strlwr(lwr);
+  strlwr(lwr);
 
   bool gotYear = false;
   int year = static_cast<int>(strntoi64(smonth, smonthlen));
@@ -2152,9 +2152,9 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
   return TRUE;
 }
 
-_int64 CFtpListResult::strntoi64(const char *str, int len) const
+__int64 CFtpListResult::strntoi64(const char *str, int len) const
 {
-  _int64 res = 0;
+  __int64 res = 0;
   const char *p = str;
   while ((p-str) < len)
   {
@@ -2265,10 +2265,10 @@ void CFtpListResult::copyStr(CString &target, int pos, const char *source, int l
     else
     {
       // convert from UTF-8 to ANSI
-      int len = MultiByteToWideChar(CP_UTF8, 0, static_cast<LPCSTR>(p), -1, NULL, 0);
+      int len = MultiByteToWideChar(CP_UTF8, 0, static_cast<const char *>(p), -1, NULL, 0);
       if (len != 0)
       {
-        LPWSTR p1 = new WCHAR[len + 1];
+        wchar_t * p1 = new wchar_t[len + 1];
         MultiByteToWideChar(CP_UTF8, 0, p, -1, p1, len + 1);
         target = target.Left(pos) + p1;
         delete [] p1;

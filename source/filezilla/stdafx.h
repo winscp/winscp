@@ -2,8 +2,6 @@
 #ifndef StdAfxH
 #define StdAfxH
 //---------------------------------------------------------------------------
-#define _int64 __int64
-//---------------------------------------------------------------------------
 #define MPEXT_NO_GSS
 #define _AFX_ENABLE_INLINES
 #define _AFX_NOFORCE_LIBS
@@ -31,8 +29,6 @@
 #include <TextsFileZilla.h>
 //---------------------------------------------------------------------------
 #include <oleauto.h>
-//---------------------------------------------------------------------------
-#define _strlwr strlwr
 //---------------------------------------------------------------------------
 const int FILEEXISTS_OVERWRITE = 0;
 const int FILEEXISTS_RESUME = 1;

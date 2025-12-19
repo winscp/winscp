@@ -14,7 +14,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // More sophisticated construction
 
-CString::CString(LPCTSTR lpch, int nLength)
+CString::CString(const wchar_t * lpch, int nLength)
 {
 	m_Data = UnicodeString(lpch, nLength);
 }
@@ -22,7 +22,7 @@ CString::CString(LPCTSTR lpch, int nLength)
 /////////////////////////////////////////////////////////////////////////////
 // Special conversion constructors
 
-CString::CString(LPCSTR lpsz, int nLength)
+CString::CString(const char * lpsz, int nLength)
 {
 	m_Data = UnicodeString(AnsiString(lpsz, nLength));
 }
@@ -30,7 +30,7 @@ CString::CString(LPCSTR lpsz, int nLength)
 //////////////////////////////////////////////////////////////////////////////
 // Assignment operators
 
-const CString& CString::operator=(TCHAR ch)
+const CString& CString::operator=(wchar_t ch)
 {
 	m_Data = ch;
 	return *this;
@@ -39,12 +39,12 @@ const CString& CString::operator=(TCHAR ch)
 //////////////////////////////////////////////////////////////////////////////
 // less common string expressions
 
-CString operator+(const CString& string1, TCHAR ch)
+CString operator+(const CString& string1, wchar_t ch)
 {
 	return CString(string1.m_Data + ch);
 }
 
-CString operator+(TCHAR ch, const CString& string)
+CString operator+(wchar_t ch, const CString& string)
 {
 	return CString(UnicodeString(ch) + string.m_Data);
 }
@@ -62,7 +62,7 @@ int CString::Delete(int nIndex, int nCount /* = 1 */)
 	return nNewLength;
 }
 
-int CString::Replace(TCHAR chOld, TCHAR chNew)
+int CString::Replace(wchar_t chOld, wchar_t chNew)
 {
 	int nCount = 0;
 
@@ -71,8 +71,8 @@ int CString::Replace(TCHAR chOld, TCHAR chNew)
 	{
 		// otherwise modify each character that matches in the string
 		m_Data.Unique();
-		LPTSTR psz = m_Data.c_str();
-		LPTSTR pszEnd = psz + m_Data.Length();
+		wchar_t * psz = m_Data.c_str();
+		wchar_t * pszEnd = psz + m_Data.Length();
 		while (psz < pszEnd)
 		{
 			// replace instances of the specified character only
@@ -81,13 +81,13 @@ int CString::Replace(TCHAR chOld, TCHAR chNew)
 				*psz = chNew;
 				nCount++;
 			}
-			psz = _tcsinc(psz);
+			psz = _wcsinc(psz);
 		}
 	}
 	return nCount;
 }
 
-BOOL CString::Replace(LPCTSTR lpszOld, LPCTSTR lpszNew)
+BOOL CString::Replace(const wchar_t * lpszOld, const wchar_t * lpszNew)
 {
 	UnicodeString prev = m_Data;
 	m_Data = ReplaceStr(m_Data, lpszOld, lpszNew);
@@ -148,29 +148,29 @@ CString CString::Left(int nCount) const
 //////////////////////////////////////////////////////////////////////////////
 // Finding
 
-int CString::ReverseFind(TCHAR ch) const
+int CString::ReverseFind(wchar_t ch) const
 {
 	// find last single character
-	LPTSTR lpsz = _tcsrchr(m_Data.c_str(), (_TUCHAR) ch);
+	wchar_t * lpsz = wcsrchr(m_Data.c_str(), ch);
 
 	// return -1 if not found, distance from beginning otherwise
 	return (lpsz == NULL) ? -1 : (int)(lpsz - m_Data.c_str());
 }
 
 // find a sub-string (like strstr)
-int CString::Find(LPCTSTR lpszSub) const
+int CString::Find(const wchar_t * lpszSub) const
 {
 	return Find(lpszSub, 0);
 }
 
-int CString::Find(LPCTSTR lpszSub, int nStart) const
+int CString::Find(const wchar_t * lpszSub, int nStart) const
 {
 	int nLength = m_Data.Length();
 	if (nStart > nLength)
 		return -1;
 
 	// find first matching substring
-	LPTSTR lpsz = _tcsstr(m_Data.c_str() + nStart, lpszSub);
+	wchar_t * lpsz = wcsstr(m_Data.c_str() + nStart, lpszSub);
 
 	// return -1 for not found, distance from beginning otherwise
 	return (lpsz == NULL) ? -1 : (int)(lpsz - m_Data.c_str());
@@ -180,13 +180,13 @@ int CString::Find(LPCTSTR lpszSub, int nStart) const
 /////////////////////////////////////////////////////////////////////////////
 // CString formatting
 
-void CString::FormatV(LPCTSTR lpszFormat, va_list argList)
+void CString::FormatV(const wchar_t * lpszFormat, va_list argList)
 {
 	m_Data.vprintf(lpszFormat, argList);
 }
 
 // formatting (using wsprintf style formatting)
-void CString::Format(LPCTSTR lpszFormat, ...)
+void CString::Format(const wchar_t * lpszFormat, ...)
 {
 	va_list argList;
 	va_start(argList, lpszFormat);
@@ -204,7 +204,7 @@ void CString::Format(UINT nFormatID, ...)
 	va_end(argList);
 }
 
-void CString::TrimRight(LPCTSTR lpszTargetList)
+void CString::TrimRight(const wchar_t * lpszTargetList)
 {
 	UnicodeString TargetList(lpszTargetList);
 	while (!m_Data.IsEmpty() && m_Data.IsDelimiter(TargetList, m_Data.Length()))
@@ -213,12 +213,12 @@ void CString::TrimRight(LPCTSTR lpszTargetList)
 	}
 }
 
-void CString::TrimRight(TCHAR chTarget)
+void CString::TrimRight(wchar_t chTarget)
 {
 	TrimRight(UnicodeString(chTarget).c_str());
 }
 
-void CString::TrimLeft(LPCTSTR lpszTargets)
+void CString::TrimLeft(const wchar_t * lpszTargets)
 {
 	UnicodeString Targets(lpszTargets);
 	while (!m_Data.IsEmpty() && m_Data.IsDelimiter(Targets, 1))
@@ -227,7 +227,7 @@ void CString::TrimLeft(LPCTSTR lpszTargets)
 	}
 }
 
-void CString::TrimLeft(TCHAR chTarget)
+void CString::TrimLeft(wchar_t chTarget)
 {
 	TrimLeft(UnicodeString(chTarget).c_str());
 }

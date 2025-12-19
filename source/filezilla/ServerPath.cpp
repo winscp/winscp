@@ -3,7 +3,7 @@
 #include "ServerPath.h"
 #include "structures.h"
 
-#define FTP_MVS_DOUBLE_QUOTA static_cast<TCHAR>(0xDC)
+#define FTP_MVS_DOUBLE_QUOTA static_cast<wchar_t>(0xDC)
 
 //////////////////////////////////////////////////////////////////////
 // Konstruktion/Destruktion

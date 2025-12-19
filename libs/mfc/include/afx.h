@@ -46,14 +46,14 @@ public:
 	CString(const CString& stringSrc);
 	// copy constructor
 	explicit CString(const UnicodeString& str);
-	// from an ANSI string (converts to TCHAR)
-	CString(LPCSTR lpsz);
-	// from a UNICODE string (converts to TCHAR)
-	CString(LPCWSTR lpsz);
-	// subset of characters from an ANSI string (converts to TCHAR)
-	CString(LPCSTR lpch, int nLength);
-	// subset of characters from a UNICODE string (converts to TCHAR)
-	CString(LPCWSTR lpch, int nLength);
+	// from an ANSI string (converts to wchar_t)
+	CString(const char * lpsz);
+	// from a UNICODE string (converts to wchar_t)
+	CString(const wchar_t * lpsz);
+	// subset of characters from an ANSI string (converts to wchar_t)
+	CString(const char * lpch, int nLength);
+	// subset of characters from a UNICODE string (converts to wchar_t)
+	CString(const wchar_t * lpch, int nLength);
 	// from unsigned characters
 	CString(const unsigned char* psz);
 
@@ -67,26 +67,26 @@ public:
 	void Empty();
 
 	// return single character at zero-based index
-	TCHAR GetAt(int nIndex) const;
+	wchar_t GetAt(int nIndex) const;
 	// return single character at zero-based index
-	TCHAR operator[](int nIndex) const;
+	wchar_t operator[](int nIndex) const;
 	// set a single character at zero-based index
-	void SetAt(int nIndex, TCHAR ch);
+	void SetAt(int nIndex, wchar_t ch);
 	// return pointer to const string
-	operator LPCTSTR() const;
-	LPCTSTR c_str() const { return operator LPCTSTR(); }
+	operator const wchar_t *() const;
+	const wchar_t * c_str() const { return operator const wchar_t *(); }
 
 	// overloaded assignment
 
 	// ref-counted copy from another CString
 	const CString& operator=(const CString& stringSrc);
 	// set string content to single character
-	const CString& operator=(TCHAR ch);
+	const CString& operator=(wchar_t ch);
 	const CString& operator=(char ch);
-	// copy string content from ANSI string (converts to TCHAR)
-	const CString& operator=(LPCSTR lpsz);
-	// copy string content from UNICODE string (converts to TCHAR)
-	const CString& operator=(LPCWSTR lpsz);
+	// copy string content from ANSI string (converts to wchar_t)
+	const CString& operator=(const char * lpsz);
+	// copy string content from UNICODE string (converts to wchar_t)
+	const CString& operator=(const wchar_t * lpsz);
 	// copy string content from unsigned chars
 	const CString& operator=(const unsigned char* psz);
 
@@ -96,27 +96,27 @@ public:
 	const CString& operator+=(const CString& string);
 
 	// concatenate a single character
-	const CString& operator+=(TCHAR ch);
-	// concatenate an ANSI character after converting it to TCHAR
+	const CString& operator+=(wchar_t ch);
+	// concatenate an ANSI character after converting it to wchar_t
 	const CString& operator+=(char ch);
-	// concatenate a UNICODE character after converting it to TCHAR
-	const CString& operator+=(LPCTSTR lpsz);
+	// concatenate a UNICODE character after converting it to wchar_t
+	const CString& operator+=(const wchar_t * lpsz);
 
 	friend CString operator+(const CString& string1,
 			const CString& string2);
-	friend CString operator+(const CString& string, TCHAR ch);
-	friend CString operator+(TCHAR ch, const CString& string);
+	friend CString operator+(const CString& string, wchar_t ch);
+	friend CString operator+(wchar_t ch, const CString& string);
 	friend CString operator+(const CString& string, char ch);
 	friend CString operator+(char ch, const CString& string);
-	friend CString operator+(const CString& string, LPCTSTR lpsz);
-	friend CString operator+(LPCTSTR lpsz, const CString& string);
+	friend CString operator+(const CString& string, const wchar_t * lpsz);
+	friend CString operator+(const wchar_t * lpsz, const CString& string);
 
 	// string comparison
 
 	// straight character comparison
-	int Compare(LPCTSTR lpsz) const;
+	int Compare(const wchar_t * lpsz) const;
 	// compare ignoring case
-	int CompareNoCase(LPCTSTR lpsz) const;
+	int CompareNoCase(const wchar_t * lpsz) const;
 
 	// simple sub-string extraction
 
@@ -135,49 +135,49 @@ public:
 	// trimming anything (either side)
 
 	// remove continuous occurrences of chTarget starting from right
-	void TrimRight(TCHAR chTarget);
+	void TrimRight(wchar_t chTarget);
 	// remove continuous occcurrences of characters in passed string,
 	// starting from right
-	void TrimRight(LPCTSTR lpszTargets);
+	void TrimRight(const wchar_t * lpszTargets);
 	// remove continuous occurrences of chTarget starting from left
-	void TrimLeft(TCHAR chTarget);
+	void TrimLeft(wchar_t chTarget);
 	// remove continuous occcurrences of characters in
 	// passed string, starting from left
-	void TrimLeft(LPCTSTR lpszTargets);
+	void TrimLeft(const wchar_t * lpszTargets);
 
 	// advanced manipulation
 
 	// replace occurrences of chOld with chNew
-	int Replace(TCHAR chOld, TCHAR chNew);
+	int Replace(wchar_t chOld, wchar_t chNew);
 	// replace occurrences of substring lpszOld with lpszNew;
 	// empty lpszNew removes instances of lpszOld
-	BOOL Replace(LPCTSTR lpszOld, LPCTSTR lpszNew);
+	BOOL Replace(const wchar_t * lpszOld, const wchar_t * lpszNew);
 	// delete nCount characters starting at zero-based index
 	int Delete(int nIndex, int nCount = 1);
 
 	// searching
 
 	// find character starting at left, -1 if not found
-	int Find(TCHAR ch) const;
+	int Find(wchar_t ch) const;
 	// find character starting at right
-	int ReverseFind(TCHAR ch) const;
+	int ReverseFind(wchar_t ch) const;
 	// find character starting at zero-based index and going right
-	int Find(TCHAR ch, int nStart) const;
+	int Find(wchar_t ch, int nStart) const;
 	// find first instance of any character in passed string
-	int FindOneOf(LPCTSTR lpszCharSet) const;
+	int FindOneOf(const wchar_t * lpszCharSet) const;
 	// find first instance of substring
-	int Find(LPCTSTR lpszSub) const;
+	int Find(const wchar_t * lpszSub) const;
 	// find first instance of substring starting at zero-based index
-	int Find(LPCTSTR lpszSub, int nStart) const;
+	int Find(const wchar_t * lpszSub, int nStart) const;
 
 	// simple formatting
 
 	// printf-like formatting using passed string
-	void Format(LPCTSTR lpszFormat, ...);
+	void Format(const wchar_t * lpszFormat, ...);
 	// printf-like formatting using referenced string resource
 	void Format(UINT nFormatID, ...);
 	// printf-like formatting using variable arguments parameter
-	void FormatV(LPCTSTR lpszFormat, va_list argList);
+	void FormatV(const wchar_t * lpszFormat, va_list argList);
 
 // Implementation
 protected:
@@ -186,14 +186,14 @@ protected:
 
 // Compare helpers
 bool operator==(const CString& s1, const CString& s2);
-bool operator==(const CString& s1, LPCTSTR s2);
-bool operator==(LPCTSTR s1, const CString& s2);
+bool operator==(const CString& s1, const wchar_t * s2);
+bool operator==(const wchar_t * s1, const CString& s2);
 bool operator!=(const CString& s1, const CString& s2);
-bool operator!=(const CString& s1, LPCTSTR s2);
-bool operator!=(LPCTSTR s1, const CString& s2);
+bool operator!=(const CString& s1, const wchar_t * s2);
+bool operator!=(const wchar_t * s1, const CString& s2);
 bool operator<(const CString& s1, const CString& s2);
-bool operator<(const CString& s1, LPCTSTR s2);
-bool operator<(LPCTSTR s1, const CString& s2);
+bool operator<(const CString& s1, const wchar_t * s2);
+bool operator<(const wchar_t * s1, const CString& s2);
 
 /////////////////////////////////////////////////////////////////////////////
 // Standard Exception classes
@@ -221,7 +221,7 @@ public:
 
 // Constructor
 	CFileException(int cause = CFileException::none, LONG lOsError = -1,
-		LPCTSTR lpszArchiveName = NULL);
+		const wchar_t * lpszArchiveName = NULL);
 
 // Attributes
 	int     m_cause;
@@ -233,7 +233,7 @@ public:
 	static int OsErrorToException(LONG lOsError);
 
 	// helper functions to throw exception after converting to a Cause
-	static void ThrowOsError(LONG lOsError, LPCTSTR lpszFileName = NULL);
+	static void ThrowOsError(LONG lOsError, const wchar_t * lpszFileName = NULL);
 
 // Implementation
 public:
@@ -244,7 +244,7 @@ public:
 // Standard exception throws
 
 void AfxThrowFileException(int cause, LONG lOsError = -1,
-	LPCTSTR lpszFileName = NULL);
+	const wchar_t * lpszFileName = NULL);
 
 /////////////////////////////////////////////////////////////////////////////
 // File - raw unbuffered disk file I/O
@@ -276,7 +276,7 @@ public:
 	HANDLE m_hFile;
 
 // Operations
-	BOOL Open(LPCTSTR lpszFileName, UINT nOpenFlags);
+	BOOL Open(const wchar_t * lpszFileName, UINT nOpenFlags);
 
 // Overridables
 	UINT Read(void* lpBuf, UINT nCount);

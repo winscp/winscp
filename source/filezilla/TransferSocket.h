@@ -52,7 +52,7 @@ protected:
   int ReadDataFromFile(char * buffer, int len);
   int ReadData(char * buffer, int len);
   void WriteData(const char * buffer, int len);
-  virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
+  virtual void LogSocketMessageRaw(int nMessageType, const wchar_t * pMsg);
   virtual int GetSocketOptionVal(int OptionID) const;
   virtual void ConfigureSocket();
   bool Activate();
@@ -79,7 +79,7 @@ protected:
   void EnsureSendClose(int Mode);
   void CloseOnShutDownOrError(int Mode);
   void SetBuffers();
-  _int64 GetTransferSize(CFtpControlSocket::transferDirection direction, bool & beenWaiting);
+  __int64 GetTransferSize(CFtpControlSocket::transferDirection direction, bool & beenWaiting);
 
   LARGE_INTEGER m_LastUpdateTime;
   unsigned int m_LastSendBufferUpdate;

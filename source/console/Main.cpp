@@ -370,7 +370,7 @@ static void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceN
     DWORD Error = GetLastError();
     wchar_t * Buffer2 = nullptr;
     DWORD Flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER;
-    Len += FormatMessage(Flags, nullptr, Error, 0, reinterpret_cast<LPTSTR>(&Buffer2), 0, nullptr);
+    Len += FormatMessage(Flags, nullptr, Error, 0, reinterpret_cast<wchar_t *>(&Buffer2), 0, nullptr);
 
     wchar_t* Message = new wchar_t[Len];
     wsprintf(Message, L"Cannot start WinSCP application \"%s\".", ChildPath);

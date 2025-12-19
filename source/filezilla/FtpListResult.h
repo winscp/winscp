@@ -80,7 +80,7 @@ protected:
   void copyStr(CString & target, int pos, const char * source, int len, bool mayInvalidateUTF8 = false);
   const char * strnchr(const char * str, int len, char c) const;
   const char * strnstr(const char * str, int len, const char * c) const;
-  _int64 strntoi64(const char * str, int len) const;
+  __int64 strntoi64(const char * str, int len) const;
   void AddLine(t_directory::t_direntry & direntry);
   bool IsNumeric(const char * str, int len) const;
   bool IsNewLineChar(char C) const;

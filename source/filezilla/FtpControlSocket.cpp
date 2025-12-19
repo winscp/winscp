@@ -48,7 +48,7 @@ public:
   int nMKDOpState;
   bool hasRemoteDate;
   t_directory::t_direntry::t_date remoteDate;
-  _int64 *pFileSize; //Used when LIST failes
+  __int64 *pFileSize; //Used when LIST failes
   BOOL bUseAbsolutePaths;
   BOOL bTriedPortPasvOnce;
   bool askOnResumeFail;
@@ -135,7 +135,7 @@ public:
 std::list<CFtpControlSocket::t_ActiveList> CFtpControlSocket::m_InstanceList[2];
 
 CTime CFtpControlSocket::m_CurrentTransferTime[2] = { CTime::CreateForCurrentTime(), CTime::CreateForCurrentTime() };
-_int64 CFtpControlSocket::m_CurrentTransferLimit[2] = {0, 0};
+__int64 CFtpControlSocket::m_CurrentTransferLimit[2] = {0, 0};
 
 CCriticalSectionWrapper CFtpControlSocket::m_SpeedLimitSync;
 
@@ -383,7 +383,7 @@ bool CFtpControlSocket::InitConnect()
   if (GetOptionVal(OPTION_USEGSS) && !m_pSslLayer)
   {
     CString GssServers=GetOption(OPTION_GSSSERVERS);
-    LPCSTR lpszAscii=T2CA(m_CurrentServer.host);
+    const char * lpszAscii=T2CA(m_CurrentServer.host);
     hostent *fullname=gethostbyname(lpszAscii);
     CString host;
     if (fullname)
@@ -1209,7 +1209,7 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
         if (m_bUTF8)
         {
           // convert from UTF-8 to ANSI
-          LPCSTR utf8 = m_RecvBuffer.back().c_str();
+          const char * utf8 = m_RecvBuffer.back().c_str();
           if (DetectUTF8Encoding(RawByteString(utf8)) == etANSI)
           {
             if (m_CurrentServer.nUTF8 != 1)
@@ -1226,7 +1226,7 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
               m_RecvBuffer.back() = "";
             else
             {
-              LPWSTR p1 = new WCHAR[len + 1];
+              wchar_t * p1 = new wchar_t[len + 1];
               MultiByteToWideChar(CP_UTF8, 0, utf8, -1 , p1, len + 1);
               ShowStatus(p1, FZ_LOG_REPLY);
               delete [] p1;
@@ -1405,7 +1405,7 @@ BOOL CFtpControlSocket::Send(CString str)
   int res = 0;
   if (m_bUTF8)
   {
-    LPCWSTR unicode = str;
+    const wchar_t * unicode = str;
     int len = WideCharToMultiByte(CP_UTF8, 0, unicode, -1, 0, 0, 0, 0);
     if (!len)
     {
@@ -1600,7 +1600,7 @@ void CFtpControlSocket::CheckForTimeout()
   }
 }
 
-void CFtpControlSocket::FtpCommand(LPCTSTR pCommand)
+void CFtpControlSocket::FtpCommand(const wchar_t * pCommand)
 {
   m_Operation.nOpMode=CSMODE_COMMAND;
   Send(pCommand);
@@ -2047,7 +2047,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
       if (pData->lastCmdSentCDUP)
       {
         CString reply = GetReply().Left(3);
-        int replycode = _ttoi(reply);
+        int replycode = _wtoi(reply);
         if (replycode >= 500 && replycode < 505)
           break;
         pData->lastCmdSentCDUP = false;
@@ -3292,7 +3292,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         if (HandleSize(code, size))
         {
           DebugAssert(!pData->pFileSize);
-          pData->pFileSize=new _int64;
+          pData->pFileSize=new __int64;
           *pData->pFileSize=size;
         }
       }
@@ -3386,7 +3386,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
                   break;
                 }
               }
-            _int64 size = pData->transferdata.transfersize-pData->transferdata.transferleft;
+            __int64 size = pData->transferdata.transfersize-pData->transferdata.transferleft;
             LONG low = static_cast<LONG>(size&0xFFFFFFFF);
             LONG high = static_cast<LONG>(size>>32);
             if (SetFilePointer(m_pDataFile->m_hFile, low, &high, FILE_BEGIN)==0xFFFFFFFF && GetLastError()!=NO_ERROR)
@@ -3525,12 +3525,12 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         //Look if we can find any information about the resume offset
         if (!pData->transferfile.get && pData->transferdata.bResumeAppend)
         {
-          _int64 nOffset = -1;
+          __int64 nOffset = -1;
           CString reply = GetReply();
           reply.MakeLower();
           int pos = reply.Find(L"restarting at offset ");
           if (pos != -1)
-            pos += _tcslen(L"restarting at offset ");
+            pos += wcslen(L"restarting at offset ");
 
           reply = reply.Mid(pos);
 
@@ -3541,7 +3541,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
               break;
           }
           if (i == reply.GetLength())
-            nOffset = _ttoi64(reply);
+            nOffset = _wtoi64(reply);
           if (nOffset != -1 && m_pDataFile)
           {
             LONG low = 0;
@@ -3967,7 +3967,7 @@ bool CFtpControlSocket::HandleMdtm(int code, t_directory::t_direntry::t_date & d
               if ((m >= 0) && (line.GetLength() > 2))
               {
                 line=line.Mid(2);
-                s=_ttoi(line.Left(2));
+                s=_wtoi(line.Left(2));
                 hasseconds = true;
               }
             }
@@ -4002,7 +4002,7 @@ bool CFtpControlSocket::HandleSize(int code, __int64 & size)
     CString line = GetReply();
     if ((line.GetLength() > 4) && (line.Left(4) == L"213 "))
     {
-      size = _ttoi64(line.Mid(4));
+      size = _wtoi64(line.Mid(4));
       result = true;
     }
   }
@@ -4554,7 +4554,7 @@ int CFtpControlSocket::CheckOverwriteFile()
     }
     else
     {
-      _int64 localsize;
+      __int64 localsize;
       if (!GetLength64(pData->transferfile.localfile, localsize))
         if (!pData->transferfile.get)
           nReplyError = FZ_REPLY_CRITICALERROR;
@@ -4736,7 +4736,7 @@ void CFtpControlSocket::SendKeepAliveCommand()
   ShowStatus(L"Sending dummy command to keep session alive.", FZ_LOG_PROGRESS);
   m_bKeepAliveActive=TRUE;
   //Choose a random command from the list
-  TCHAR commands[4][7]={L"PWD",L"REST 0",L"TYPE A",L"TYPE I"};
+  wchar_t commands[4][7]={L"PWD",L"REST 0",L"TYPE A",L"TYPE I"};
   int choice=(rand()*4)/(RAND_MAX+1);
   Send(commands[choice]);
 }
@@ -5244,8 +5244,8 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
     {
       if (CAsyncSocketEx::LogStateChange(iter->nParam1, iter->nParam2))
       {
-        const TCHAR * state2Desc = CAsyncSocketEx::GetStateDesc(iter->nParam2);
-        const TCHAR * state1Desc = CAsyncSocketEx::GetStateDesc(iter->nParam1);
+        const wchar_t * state2Desc = CAsyncSocketEx::GetStateDesc(iter->nParam2);
+        const wchar_t * state1Desc = CAsyncSocketEx::GetStateDesc(iter->nParam1);
         if (iter->pLayer == m_pProxyLayer)
           LogMessage(FZ_LOG_INFO, L"Proxy layer changed state from %s to %s", state2Desc, state1Desc);
 #ifndef MPEXT_NO_GSS
@@ -5356,7 +5356,7 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
           break;
         case SSL_VERIFY_CERT:
           t_SslCertData *pData = new t_SslCertData;
-          LPCTSTR CertError = NULL;
+          const wchar_t * CertError = NULL;
           if (m_pSslLayer->GetPeerCertificateData(*pData, CertError))
           {
             CVerifyCertRequestData *pRequestData = new CVerifyCertRequestData;
@@ -5410,17 +5410,17 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
   return 0;
 }
 
-_int64 CFtpControlSocket::GetSpeedLimit(int valType, int valValue)
+__int64 CFtpControlSocket::GetSpeedLimit(int valType, int valValue)
 {
   int type = GetOptionVal(valType);
 
   if ( type == 1)
-    return static_cast<_int64>(GetOptionVal(valValue)) * 1024;
+    return static_cast<__int64>(GetOptionVal(valValue)) * 1024;
 
-  return static_cast<_int64>(1000000000000);  // I hope that when there will be something with 1000GB/s then I'll change it :)
+  return static_cast<__int64>(1000000000000);  // I hope that when there will be something with 1000GB/s then I'll change it :)
 }
 
-_int64 CFtpControlSocket::GetSpeedLimit(enum transferDirection direction)
+__int64 CFtpControlSocket::GetSpeedLimit(enum transferDirection direction)
 {
   if (direction == download)
     return GetSpeedLimit(OPTION_SPEEDLIMIT_DOWNLOAD_TYPE, OPTION_SPEEDLIMIT_DOWNLOAD_VALUE);
@@ -5428,12 +5428,12 @@ _int64 CFtpControlSocket::GetSpeedLimit(enum transferDirection direction)
     return GetSpeedLimit(OPTION_SPEEDLIMIT_UPLOAD_TYPE, OPTION_SPEEDLIMIT_UPLOAD_VALUE);
 }
 
-_int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _int64 &curLimit, std::list<CFtpControlSocket::t_ActiveList>::iterator &iter, enum transferDirection direction)
+__int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, __int64 &curLimit, std::list<CFtpControlSocket::t_ActiveList>::iterator &iter, enum transferDirection direction)
 {
   beenWaiting = false;
 
   CTime nowTime = CTime::CreateForCurrentTime();
-  _int64 ableToRead = BUFSIZE;
+  __int64 ableToRead = BUFSIZE;
 
   if ( nowTime == curTime)
   {
@@ -5480,7 +5480,7 @@ _int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _i
 
     curLimit = GetSpeedLimit(direction);
     __int64 nMax = curLimit / m_InstanceList[direction].size();
-    _int64 nLeft = 0;
+    __int64 nLeft = 0;
     int nCount = 0;
     std::list<t_ActiveList>::iterator iter2;
     for (iter2 = m_InstanceList[direction].begin(); iter2 != m_InstanceList[direction].end(); iter2++)
@@ -5513,12 +5513,12 @@ _int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _i
 
   curTime = nowTime;
 
-  ableToRead = std::min(ableToRead, static_cast<_int64>(BUFSIZE));
+  ableToRead = std::min(ableToRead, static_cast<__int64>(BUFSIZE));
 
   return ableToRead;
 }
 
-_int64 CFtpControlSocket::GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting)
+__int64 CFtpControlSocket::GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting)
 {
   m_SpeedLimitSync.Lock();
   std::list<t_ActiveList>::iterator iter;
@@ -5535,7 +5535,7 @@ _int64 CFtpControlSocket::GetAbleToTransferSize(enum transferDirection direction
     iter = m_InstanceList[direction].end();
     iter--;
   }
-  _int64 limit = GetAbleToUDSize(beenWaiting, m_CurrentTransferTime[direction], m_CurrentTransferLimit[direction], iter, direction);
+  __int64 limit = GetAbleToUDSize(beenWaiting, m_CurrentTransferTime[direction], m_CurrentTransferLimit[direction], iter, direction);
   m_SpeedLimitSync.Unlock();
   return limit;
 }
@@ -5559,7 +5559,7 @@ BOOL CFtpControlSocket::RemoveActiveTransfer()
   return bFound;
 }
 
-BOOL CFtpControlSocket::SpeedLimitAddTransferredBytes(enum transferDirection direction, _int64 nBytesTransferred)
+BOOL CFtpControlSocket::SpeedLimitAddTransferredBytes(enum transferDirection direction, __int64 nBytesTransferred)
 {
   m_SpeedLimitSync.Lock();
   std::list<t_ActiveList>::iterator iter;
@@ -5578,7 +5578,7 @@ BOOL CFtpControlSocket::SpeedLimitAddTransferredBytes(enum transferDirection dir
   return FALSE;
 }
 
-void CFtpControlSocket::LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg)
+void CFtpControlSocket::LogSocketMessageRaw(int nMessageType, const wchar_t * pMsg)
 {
   LogMessageRaw(nMessageType, pMsg);
 }
@@ -5693,7 +5693,7 @@ CString CFtpControlSocket::GetReply()
   if (m_RecvBuffer.empty())
     return L"";
 
-  LPCSTR line;
+  const char * line;
 
   if ((m_Operation.nOpMode&CSMODE_LISTFILE) && (m_Operation.nOpState==LISTFILE_MLST) &&
       (GetReplyCode() == 2))
@@ -5730,7 +5730,7 @@ CString CFtpControlSocket::GetReply()
     }
     else
     {
-      LPWSTR p1 = new WCHAR[len + 1];
+      wchar_t * p1 = new wchar_t[len + 1];
       MultiByteToWideChar(CP_UTF8, 0, line, -1, p1, len + 1);
       CString reply = p1;
       delete [] p1;

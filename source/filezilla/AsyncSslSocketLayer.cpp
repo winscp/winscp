@@ -621,7 +621,7 @@ BOOL CAsyncSslSocketLayer::Connect(const SOCKADDR *lpSockAddr, int nSockAddrLen)
   return res;
 }
 
-BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
+BOOL CAsyncSslSocketLayer::Connect(const wchar_t * lpszHostAddress, UINT nHostPort)
 {
   BOOL res = ConnectNext(lpszHostAddress, nHostPort);
   if (!res)
@@ -1316,64 +1316,64 @@ static void NameToContact(X509_NAME *pX509Name, t_SslCertData::t_Contact & conta
       switch(OBJ_obj2nid(pObject))
       {
       case NID_organizationName:
-        _tcsncpy(contact.Organization, str, 255);
+        wcsncpy(contact.Organization, str, 255);
         contact.Organization[255] = 0;
         break;
       case NID_organizationalUnitName:
-        _tcsncpy(contact.Unit, str, 255);
+        wcsncpy(contact.Unit, str, 255);
         contact.Unit[255] = 0;
         break;
       case NID_commonName:
-        _tcsncpy(contact.CommonName, str, 255);
+        wcsncpy(contact.CommonName, str, 255);
         contact.CommonName[255] = 0;
         break;
       case NID_pkcs9_emailAddress:
-        _tcsncpy(contact.Mail, str, 255);
+        wcsncpy(contact.Mail, str, 255);
         contact.Mail[255] = 0;
         break;
       case NID_countryName:
-        _tcsncpy(contact.Country, str, 255);
+        wcsncpy(contact.Country, str, 255);
         contact.Country[255] = 0;
         break;
       case NID_stateOrProvinceName:
-        _tcsncpy(contact.StateProvince, str, 255);
+        wcsncpy(contact.StateProvince, str, 255);
         contact.StateProvince[255] = 0;
         break;
       case NID_localityName:
-        _tcsncpy(contact.Town, str, 255);
+        wcsncpy(contact.Town, str, 255);
         contact.Town[255] = 0;
         break;
       default:
         if ( !OBJ_nid2sn(OBJ_obj2nid(pObject)) )
         {
-          TCHAR tmp[20];
-          _stprintf(tmp, L"%d", OBJ_obj2nid(pObject));
-          int maxlen = 1024 - _tcslen(contact.Other)-1;
-          _tcsncpy(contact.Other+_tcslen(contact.Other), tmp, maxlen);
+          wchar_t tmp[20];
+          swprintf(tmp, L"%d", OBJ_obj2nid(pObject));
+          int maxlen = 1024 - wcslen(contact.Other)-1;
+          wcsncpy(contact.Other+wcslen(contact.Other), tmp, maxlen);
 
-          maxlen = 1024 - _tcslen(contact.Other)-1;
-          _tcsncpy(contact.Other+_tcslen(contact.Other), L"=", maxlen);
+          maxlen = 1024 - wcslen(contact.Other)-1;
+          wcsncpy(contact.Other+wcslen(contact.Other), L"=", maxlen);
 
-          maxlen = 1024 - _tcslen(contact.Other)-1;
-          _tcsncpy(contact.Other+_tcslen(contact.Other), str, maxlen);
+          maxlen = 1024 - wcslen(contact.Other)-1;
+          wcsncpy(contact.Other+wcslen(contact.Other), str, maxlen);
 
-          maxlen = 1024 - _tcslen(contact.Other)-1;
-          _tcsncpy(contact.Other+_tcslen(contact.Other), L";", maxlen);
+          maxlen = 1024 - wcslen(contact.Other)-1;
+          wcsncpy(contact.Other+wcslen(contact.Other), L";", maxlen);
         }
         else
         {
-          int maxlen = 1024 - _tcslen(contact.Other)-1;
+          int maxlen = 1024 - wcslen(contact.Other)-1;
 
-          _tcsncpy(contact.Other+_tcslen(contact.Other), UnicodeString(OBJ_nid2sn(OBJ_obj2nid(pObject))).c_str(), maxlen);
+          wcsncpy(contact.Other+wcslen(contact.Other), UnicodeString(OBJ_nid2sn(OBJ_obj2nid(pObject))).c_str(), maxlen);
 
-          maxlen = 1024 - _tcslen(contact.Other)-1;
-          _tcsncpy(contact.Other+_tcslen(contact.Other), L"=", maxlen);
+          maxlen = 1024 - wcslen(contact.Other)-1;
+          wcsncpy(contact.Other+wcslen(contact.Other), L"=", maxlen);
 
-          maxlen = 1024 - _tcslen(contact.Other)-1;
-          _tcsncpy(contact.Other+_tcslen(contact.Other), str, maxlen);
+          maxlen = 1024 - wcslen(contact.Other)-1;
+          wcsncpy(contact.Other+wcslen(contact.Other), str, maxlen);
 
-          maxlen = 1024 - _tcslen(contact.Other)-1;
-          _tcsncpy(contact.Other+_tcslen(contact.Other), L";", maxlen);
+          maxlen = 1024 - wcslen(contact.Other)-1;
+          wcsncpy(contact.Other+wcslen(contact.Other), L";", maxlen);
         }
         break;
       }
@@ -1381,7 +1381,7 @@ static void NameToContact(X509_NAME *pX509Name, t_SslCertData::t_Contact & conta
   }
 }
 
-BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LPCTSTR & Error)
+BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, const wchar_t * & Error)
 {
   X509 *pX509=SSL_get_peer_certificate(m_ssl);
   if (!pX509)
@@ -1450,7 +1450,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
       char * buf = new char[len + 1];
       memcpy(buf, data, len);
       buf[len] = '\0';
-      _tcsncpy(SslCertData.subjectAltName, UnicodeString(buf).c_str(), std::size(SslCertData.subjectAltName));
+      wcsncpy(SslCertData.subjectAltName, UnicodeString(buf).c_str(), std::size(SslCertData.subjectAltName));
       SslCertData.subjectAltName[std::size(SslCertData.subjectAltName) - 1] = '\0';
       delete [] buf;
     }

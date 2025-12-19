@@ -3250,27 +3250,27 @@ public:
 
   virtual HRESULT STDMETHODCALLTYPE FinishOperations(HRESULT) { return S_OK; }
 
-  virtual HRESULT STDMETHODCALLTYPE PreRenameItem(DWORD, IShellItem *, LPCWSTR) { return S_OK; }
+  virtual HRESULT STDMETHODCALLTYPE PreRenameItem(DWORD, IShellItem *, const wchar_t *) { return S_OK; }
 
-  virtual HRESULT STDMETHODCALLTYPE PostRenameItem(DWORD, IShellItem * Item, LPCWSTR, HRESULT, IShellItem *)
+  virtual HRESULT STDMETHODCALLTYPE PostRenameItem(DWORD, IShellItem * Item, const wchar_t *, HRESULT, IShellItem *)
   {
     DebugFail();
     FFileOperation->ProcessedItem(Item);
     return S_OK;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE PreMoveItem(DWORD, IShellItem *, IShellItem *, LPCWSTR) { return S_OK; }
+  virtual HRESULT STDMETHODCALLTYPE PreMoveItem(DWORD, IShellItem *, IShellItem *, const wchar_t *) { return S_OK; }
 
-  virtual HRESULT STDMETHODCALLTYPE PostMoveItem(DWORD, IShellItem * Item, IShellItem *, LPCWSTR, HRESULT, IShellItem *)
+  virtual HRESULT STDMETHODCALLTYPE PostMoveItem(DWORD, IShellItem * Item, IShellItem *, const wchar_t *, HRESULT, IShellItem *)
   {
     DebugFail();
     FFileOperation->ProcessedItem(Item);
     return S_OK;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE PreCopyItem(DWORD, IShellItem *, IShellItem *, LPCWSTR) { return S_OK; }
+  virtual HRESULT STDMETHODCALLTYPE PreCopyItem(DWORD, IShellItem *, IShellItem *, const wchar_t *) { return S_OK; }
 
-  virtual HRESULT STDMETHODCALLTYPE PostCopyItem(DWORD, IShellItem * Item, IShellItem *, LPCWSTR, HRESULT, IShellItem *)
+  virtual HRESULT STDMETHODCALLTYPE PostCopyItem(DWORD, IShellItem * Item, IShellItem *, const wchar_t *, HRESULT, IShellItem *)
   {
     FFileOperation->ProcessedItem(Item);
     return S_OK;
@@ -3284,9 +3284,9 @@ public:
     return S_OK;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE PreNewItem(DWORD, IShellItem *, LPCWSTR) { return S_OK; }
+  virtual HRESULT STDMETHODCALLTYPE PreNewItem(DWORD, IShellItem *, const wchar_t *) { return S_OK; }
 
-  virtual HRESULT STDMETHODCALLTYPE PostNewItem(DWORD, IShellItem *, LPCWSTR, LPCWSTR, DWORD, HRESULT, IShellItem *)
+  virtual HRESULT STDMETHODCALLTYPE PostNewItem(DWORD, IShellItem *, const wchar_t *, const wchar_t *, DWORD, HRESULT, IShellItem *)
   {
     DebugFail();
     return S_OK;

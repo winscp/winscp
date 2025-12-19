@@ -75,7 +75,7 @@ public:
 
   // ICopyHook method
   STDMETHODIMP_(UINT) CopyCallback(HWND Hwnd, UINT Func, UINT Flags,
-    LPCWSTR SrcFile, DWORD SrcAttribs, LPCWSTR DestFile, DWORD DestAttribs);
+    const wchar_t * SrcFile, DWORD SrcAttribs, const wchar_t * DestFile, DWORD DestAttribs);
 
 protected:
   unsigned long FReferenceCounter;
@@ -709,7 +709,7 @@ STDMETHODIMP CShellExt::Initialize(LPCITEMIDLIST /*IDFolder*/,
 }
 //---------------------------------------------------------------------------
 STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Flags*/,
-  LPCWSTR SrcFile, DWORD /*SrcAttribs*/, LPCWSTR DestFile, DWORD /*DestAttribs*/)
+  const wchar_t * SrcFile, DWORD /*SrcAttribs*/, const wchar_t * DestFile, DWORD /*DestAttribs*/)
 {
   Debug(L"enter");
 

@@ -3,7 +3,7 @@
 #define MFC64bitFixH
 //---------------------------------------------------------------------------
 __int64 GetLength64(CFile & file);
-BOOL GetLength64(CString filename, _int64 & size);
+BOOL GetLength64(CString filename, __int64 & size);
 //---------------------------------------------------------------------------
 struct CFileStatus
 {
@@ -11,6 +11,6 @@ struct CFileStatus
   BYTE m_attribute; // logical OR of CFile::Attribute enum values
 };
 //---------------------------------------------------------------------------
-BOOL PASCAL GetFileStatus(LPCTSTR lpszFileName, CFileStatus & rStatus);
+BOOL PASCAL GetFileStatus(const wchar_t * lpszFileName, CFileStatus & rStatus);
 //---------------------------------------------------------------------------
 #endif // MFC64bitFixH

@@ -88,14 +88,14 @@ struct t_SslCertData
 
   struct t_Contact
   {
-    TCHAR Organization[256];
-    TCHAR Unit[256];
-    TCHAR CommonName[256];
-    TCHAR Mail[256];
-    TCHAR Country[256];
-    TCHAR StateProvince[256];
-    TCHAR Town[256];
-    TCHAR Other[1024];
+    wchar_t Organization[256];
+    wchar_t Unit[256];
+    wchar_t CommonName[256];
+    wchar_t Mail[256];
+    wchar_t Country[256];
+    wchar_t StateProvince[256];
+    wchar_t Town[256];
+    wchar_t Other[1024];
   } subject, issuer;
 
   struct t_validTime
@@ -104,7 +104,7 @@ struct t_SslCertData
     int y, M, d, h, m, s;
   } validFrom, validUntil;
 
-  TCHAR subjectAltName[10240];
+  wchar_t subjectAltName[10240];
 
   unsigned char hashSha1[20];
   unsigned char hashSha256[32];
@@ -128,7 +128,7 @@ public:
   virtual ~CAsyncSslSocketLayer();
 
   void SetNotifyReply(int nID, int nCode, int result);
-  BOOL GetPeerCertificateData(t_SslCertData & SslCertData, LPCTSTR & Error);
+  BOOL GetPeerCertificateData(t_SslCertData & SslCertData, const wchar_t * & Error);
   std::string GetTlsVersionStr();
   std::string GetCipherName();
   void SetClientCertificate(X509 * Certificate, EVP_PKEY * PrivateKey);
@@ -146,7 +146,7 @@ public:
 
 private:
   virtual void Close();
-  virtual BOOL Connect(LPCTSTR lpszHostAddress, UINT nHostPort);
+  virtual BOOL Connect(const wchar_t * lpszHostAddress, UINT nHostPort);
   virtual BOOL Connect(const SOCKADDR* lpSockAddr, int nSockAddrLen);
   virtual void OnConnect(int nErrorCode);
   virtual void OnReceive(int nErrorCode);

@@ -201,7 +201,7 @@ void CAsyncSocketExLayer::CloseNext()
     m_pNextLayer->Close();
 }
 
-BOOL CAsyncSocketExLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
+BOOL CAsyncSocketExLayer::Connect(const wchar_t * lpszHostAddress, UINT nHostPort)
 {
   return ConnectNext(lpszHostAddress, nHostPort);
 }
@@ -232,7 +232,7 @@ int CAsyncSocketExLayer::SendNext(const void *lpBuf, int nBufLen, int nFlags /*=
   if (!m_pNextLayer)
   {
     DebugAssert(m_pOwnerSocket);
-    int sent = send(m_pOwnerSocket->GetSocketHandle(), static_cast<LPCSTR>(lpBuf), nBufLen, nFlags);
+    int sent = send(m_pOwnerSocket->GetSocketHandle(), static_cast<const char *>(lpBuf), nBufLen, nFlags);
     return sent;
   }
   else
@@ -270,7 +270,7 @@ int CAsyncSocketExLayer::ReceiveNext(void *lpBuf, int nBufLen, int nFlags /*=0*/
   }
 }
 
-BOOL CAsyncSocketExLayer::ConnectNext(LPCTSTR lpszHostAddress, UINT nHostPort)
+BOOL CAsyncSocketExLayer::ConnectNext(const wchar_t * lpszHostAddress, UINT nHostPort)
 {
   DebugAssert(GetLayerState()==unconnected);
   DebugAssert(m_pOwnerSocket);
@@ -653,12 +653,12 @@ void CAsyncSocketExLayer::CallEvent(int nEvent, int nErrorCode)
 
 //Creates a socket
 BOOL CAsyncSocketExLayer::Create(UINT nSocketPort, int nSocketType,
-      long lEvent, LPCTSTR lpszSocketAddress, int nFamily /*=AF_INET*/)
+      long lEvent, const wchar_t * lpszSocketAddress, int nFamily /*=AF_INET*/)
 {
   return CreateNext(nSocketPort, nSocketType, lEvent, lpszSocketAddress, nFamily);
 }
 
-BOOL CAsyncSocketExLayer::CreateNext(UINT nSocketPort, int nSocketType, long lEvent, LPCTSTR lpszSocketAddress, int nFamily /*=AF_INET*/)
+BOOL CAsyncSocketExLayer::CreateNext(UINT nSocketPort, int nSocketType, long lEvent, const wchar_t * lpszSocketAddress, int nFamily /*=AF_INET*/)
 {
   DebugAssert((GetLayerState() == notsock) || (GetLayerState() == unconnected));
   BOOL res = FALSE;
@@ -673,8 +673,8 @@ BOOL CAsyncSocketExLayer::CreateNext(UINT nSocketPort, int nSocketType, long lEv
     delete [] m_lpszSocketAddress;
     if (lpszSocketAddress && *lpszSocketAddress)
     {
-      m_lpszSocketAddress = new TCHAR[_tcslen(lpszSocketAddress) + 1];
-      _tcscpy(m_lpszSocketAddress, lpszSocketAddress);
+      m_lpszSocketAddress = new wchar_t[wcslen(lpszSocketAddress) + 1];
+      wcscpy(m_lpszSocketAddress, lpszSocketAddress);
     }
     else
       m_lpszSocketAddress = 0;
@@ -905,7 +905,7 @@ bool CAsyncSocketExLayer::TryNextProtocol()
     return TRUE;
 }
 
-void CAsyncSocketExLayer::LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg)
+void CAsyncSocketExLayer::LogSocketMessageRaw(int nMessageType, const wchar_t * pMsg)
 {
   if (m_pPrevLayer)
     m_pPrevLayer->LogSocketMessageRaw(nMessageType, pMsg);

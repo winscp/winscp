@@ -1083,7 +1083,7 @@ static int GetOffsetAfterPathRoot(const UnicodeString & Path, PATH_PREFIX_TYPE &
     UnicodeString WinPath = ReplaceChar(Path, L'/', L'\\');
 
      // Now call the API
-    LPCTSTR Buffer = PathSkipRoot(WinPath.c_str());
+    const wchar_t * Buffer = PathSkipRoot(WinPath.c_str());
     if (Buffer != NULL)
     {
       Result = (Buffer - WinPath.c_str()) + 1;
@@ -1133,7 +1133,7 @@ static int GetOffsetAfterPathRoot(const UnicodeString & Path, PATH_PREFIX_TYPE &
       {
         for(; Index <= Len; Index++)
         {
-          TCHAR z = Path[Index];
+          wchar_t z = Path[Index];
           if ((z == L'\\') || (z == L'/') || (Index >= Len))
           {
             Index++;
@@ -3043,12 +3043,12 @@ UnicodeString __fastcall WindowsProductName()
     HMODULE WinBrandLib = LoadLibrary(L"winbrand.dll");
     if (WinBrandLib != NULL)
     {
-      typedef LPWSTR WINAPI (* TBrandingFormatString)(LPCWSTR);
+      typedef wchar_t * WINAPI (* TBrandingFormatString)(const wchar_t *);
       TBrandingFormatString BrandingFormatString =
         reinterpret_cast<TBrandingFormatString>(GetProcAddress(WinBrandLib, "BrandingFormatString"));
       if (BrandingFormatString != NULL)
       {
-        LPWSTR Brand = BrandingFormatString(L"%WINDOWS_LONG%");
+        wchar_t * Brand = BrandingFormatString(L"%WINDOWS_LONG%");
         if (Brand != NULL)
         {
           Result = Brand;
@@ -4424,7 +4424,7 @@ void LogModules()
       }
       for (int Index = 0; Index < Count; ++Index)
       {
-        TCHAR ModuleFileName[MAX_PATH];
+        wchar_t ModuleFileName[MAX_PATH];
         if (!GetModuleFileNameEx(Process, Modules[Index], ModuleFileName, MAX_PATH))
         {
           AppLog(L"Failed to retrieve module path");

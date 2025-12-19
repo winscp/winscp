@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.ShlObj, Winapi.ShellAPI, ActiveX;
 
 function SHGetFileInfoWithTimeout(
-  pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
+  pszPath: PWideChar; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
   cbFileInfo, uFlags: UINT; Timeout: Integer): DWORD_PTR;
 
 function ShellFolderParseDisplayNameWithTimeout(
@@ -127,15 +127,15 @@ end;
 
 procedure SHGetFileInfoOperation(Operation: TOperation);
 var
-  pszPath: LPCWSTR;
+  pszPath: PWideChar;
 begin
   if Operation.uFlags and SHGFI_PIDL <> 0 then
   begin
-    pszPath := LPCWSTR(Operation.PIDL);
+    pszPath := PWideChar(Operation.PIDL);
   end
     else
   begin
-    pszPath := LPCWSTR(Operation.Path);
+    pszPath := PWideChar(Operation.Path);
   end;
 
   Operation.ResultDWordPtr :=
@@ -143,7 +143,7 @@ begin
 end;
 
 function SHGetFileInfoWithTimeout(
-  pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
+  pszPath: PWideChar; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
   cbFileInfo, uFlags: UINT; Timeout: Integer): DWORD_PTR;
 var
   Operation: TOperation;

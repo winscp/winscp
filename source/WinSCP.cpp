@@ -15,7 +15,7 @@ void __fastcall AppLogImpl(UnicodeString S)
   AppLog(S);
 }
 //---------------------------------------------------------------------------
-int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
+int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
 {
   int Result = 0;
   try

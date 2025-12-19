@@ -87,11 +87,11 @@ protected:
   // Operations
   virtual BOOL Accept(CAsyncSocketEx & rConnectedSocket, SOCKADDR * lpSockAddr = NULL, int * lpSockAddrLen = NULL);
   virtual void Close();
-  virtual BOOL Connect(LPCTSTR lpszHostAddress, UINT nHostPort);
+  virtual BOOL Connect(const wchar_t * lpszHostAddress, UINT nHostPort);
   virtual BOOL Connect(const SOCKADDR * lpSockAddr, int nSockAddrLen);
   virtual BOOL Create(UINT nSocketPort = 0, int nSocketType = SOCK_STREAM,
      long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE,
-     LPCTSTR lpszSocketAddress = NULL, int nFamily = AF_INET);
+     const wchar_t * lpszSocketAddress = NULL, int nFamily = AF_INET);
   virtual BOOL GetPeerName(SOCKADDR * lpSockAddr, int * lpSockAddrLen);
   virtual BOOL GetSockName(SOCKADDR * lpSockAddr, int * lpSockAddrLen);
   virtual BOOL GetPeerName(CString& rPeerAddress, UINT& rPeerPort);
@@ -106,9 +106,9 @@ protected:
   BOOL ShutDownNext(int nHow = sends);
   BOOL AcceptNext(CAsyncSocketEx& rConnectedSocket, SOCKADDR * lpSockAddr = NULL, int * lpSockAddrLen = NULL);
   void CloseNext();
-  BOOL ConnectNext(LPCTSTR lpszHostAddress, UINT nHostPort);
+  BOOL ConnectNext(const wchar_t * lpszHostAddress, UINT nHostPort);
   BOOL ConnectNext( const SOCKADDR * lpSockAddr, int nSockAddrLen);
-  BOOL CreateNext(UINT nSocketPort, int nSocketType, long lEvent, LPCTSTR lpszSocketAddress, int nFamily = AF_INET);
+  BOOL CreateNext(UINT nSocketPort, int nSocketType, long lEvent, const wchar_t * lpszSocketAddress, int nFamily = AF_INET);
   BOOL GetPeerNameNext(SOCKADDR * lpSockAddr, int* lpSockAddrLen);
   BOOL GetSockNameNext(SOCKADDR * lpSockAddr, int* lpSockAddrLen);
   BOOL GetPeerNameNext(CString & rPeerAddress, UINT& rPeerPort);
@@ -135,7 +135,7 @@ protected:
   // Iterate through protocols
   bool TryNextProtocol();
 
-  void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
+  void LogSocketMessageRaw(int nMessageType, const wchar_t * pMsg);
   bool LoggingSocketMessage(int nMessageType);
   int GetSocketOptionVal(int OptionID) const;
 
@@ -146,7 +146,7 @@ private:
 
   int m_nFamily;
   int m_lEvent;
-  LPTSTR m_lpszSocketAddress;
+  wchar_t * m_lpszSocketAddress;
   UINT m_nSocketPort;
 
   addrinfo * m_addrInfo, * m_nextAddr;

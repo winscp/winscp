@@ -25,7 +25,7 @@ CFile::~CFile()
 		Close();
 }
 
-BOOL CFile::Open(LPCTSTR lpszFileName, UINT nOpenFlags)
+BOOL CFile::Open(const wchar_t * lpszFileName, UINT nOpenFlags)
 {
 	m_hFile = (HANDLE)hFileNull;
 	m_strFileName = ExpandFileName(lpszFileName);
