@@ -360,11 +360,7 @@ private:
 /////////////////////////////////////////////////////////////////////////////
 // Inline function declarations
 
-#ifdef _AFX_ENABLE_INLINES
-#define _AFX_INLINE AFX_INLINE
-
 #include <afx.inl>
-#endif
 
 #endif // __AFX_H__
 
