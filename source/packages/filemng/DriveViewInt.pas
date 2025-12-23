@@ -56,8 +56,6 @@ type
     DefaultDir: string;        // Current directory
   end;
 
-  TDriveStatusPair = TPair<string, TDriveStatus>;
-
   TScanDirInfo = record
     SearchNewDirs: Boolean;
     StartNode: TTreeNode;
@@ -142,8 +140,6 @@ type
 
   TDriveViewInt = class(TCustomDriveView)
   private
-    FDriveStatus: TObjectDictionary<string, TDriveStatus>;
-
     FConfirmDelete: Boolean;
     FConfirmOverwrite: Boolean;
     FWatchDirectory: Boolean;
@@ -227,6 +223,7 @@ type
 
     function DirAttrMask: Integer;
     function CreateDriveStatus: TDriveStatus;
+    function GetNextDriveStatus(var Iterator: Integer; Drive: PString; var Status: TDriveStatus): Boolean; virtual; abstract;
 
     procedure ValidateDirectoryEx(Node: TTreeNode; Recurse: TRecursiveScan;
       NewDirs: Boolean); override;
@@ -270,7 +267,7 @@ type
     procedure EmptyClipboard; dynamic;
     procedure EmptyClipboardIfCut; override;
     // Drive handling:
-    function GetDriveStatus(Drive: string): TDriveStatus;
+    function GetDriveStatus(Drive: string): TDriveStatus; virtual; abstract;
     function GetDriveTypetoNode(Node: TTreeNode): Integer;  // Returns DRIVE_CDROM etc..
     function GetDriveToNode(Node: TTreeNode): string;
     procedure ScanDrive(Drive: string);
@@ -798,20 +795,12 @@ end;
 // TDriveViewInt
 
 constructor TDriveViewInt.Create(AOwner: TComponent);
-var
-  Drive: TRealDrive;
 begin
   inherited;
 
   FCreating := True;
 
-  FDriveStatus := TObjectDictionary<string, TDriveStatus>.Create([doOwnsValues]);
   FChangeInterval := MSecsPerSec;
-
-  for Drive := FirstDrive to LastDrive do
-  begin
-    FDriveStatus.Add(Drive, CreateDriveStatus);
-  end;
 
   FFileOperator := TFileOperator.Create(Self);
   FSubDirReaderThread := TSubDirReaderThread.Create(Self);
@@ -841,27 +830,25 @@ begin
   FStartPos.Y := -1;
   FDragPos := FStartPos;
 
-  DriveInfo.AddHandler(DriveNotification);
-
   FDragDropFilesEx.ShellExtensions.DragDropHandler := True;
+
+  DriveInfo.AddHandler(DriveNotification);
 end; // Create
 
 destructor TDriveViewInt.Destroy;
-var
-  DriveStatusPair: TDriveStatusPair;
 begin
 
   DriveInfo.RemoveHandler(DriveNotification);
 
-  for DriveStatusPair in FDriveStatus do
+  var Iterator := 0;
+  var DriveStatus: TDriveStatus;
+  while GetNextDriveStatus(Iterator, nil, DriveStatus) do
   begin
-    var DriveStatus := DriveStatusPair.Value;
     if Assigned(DriveStatus.DiscMonitor) then
       FreeAndNil(DriveStatus.DiscMonitor);
     if Assigned(DriveStatus.ChangeTimer) then
       FreeAndNil(DriveStatus.ChangeTimer);
   end;
-  FDriveStatus.Free;
 
   if Assigned(FFileOperator) then
     FFileOperator.Free;
@@ -896,8 +883,6 @@ begin
 end;
 
 procedure TDriveViewInt.CreateWnd;
-var
-  DriveStatus: TDriveStatus;
 begin
   inherited;
 
@@ -910,7 +895,9 @@ begin
     FPrevSelectedIndex := -1;
   end;
 
-  for DriveStatus in FDriveStatus.Values do
+  var Iterator := 0;
+  var DriveStatus: TDriveStatus;
+  while GetNextDriveStatus(Iterator, nil, DriveStatus) do
   begin
     if DriveStatus.RootNodeIndex >= 0 then
     begin
@@ -930,7 +917,6 @@ end; // CreateWnd
 
 procedure TDriveViewInt.DestroyWnd;
 var
-  DriveStatus: TDriveStatus;
   I: Integer;
 begin
   FDelayedNodeTimer.Enabled := False;
@@ -960,7 +946,9 @@ begin
         FPrevSelected := nil;
       end;
 
-      for DriveStatus in FDriveStatus.Values do
+      var Iterator := 0;
+      var DriveStatus: TDriveStatus;
+      while GetNextDriveStatus(Iterator, nil, DriveStatus) do
       begin
         DriveStatus.RootNodeIndex := -1;
         if Assigned(DriveStatus.RootNode) then
@@ -1459,14 +1447,15 @@ end;
 
 function TDriveViewInt.GetDrives: TStrings;
 var
-  DriveStatusPair: TDriveStatusPair;
   Drives: TStringList;
 begin
   Drives := TStringList.Create;
-  // We could iterate only .Keys here, but that crashes IDE for some reason
-  for DriveStatusPair in FDriveStatus do
+  var Iterator := 0;
+  var Drive: string;
+  var DriveStatus: TDriveStatus;
+  while GetNextDriveStatus(Iterator, @Drive, DriveStatus) do
   begin
-    Drives.Add(DriveStatusPair.Key);
+    Drives.Add(Drive);
   end;
   Drives.CustomSort(CompareDrive);
   Result := Drives;
@@ -1625,15 +1614,6 @@ begin
   if GetDriveTypeToNode(ParentNode) <> DRIVE_REMOTE then
     FSubDirReaderThread.Add(NewNode, IncludeTrailingBackslash(ParentPath) + SRec.Name);
 
-end;
-
-function TDriveViewInt.GetDriveStatus(Drive: string): TDriveStatus;
-begin
-  if not FDriveStatus.TryGetValue(Drive, Result) then
-  begin
-    Result := CreateDriveStatus;
-    FDriveStatus.Add(Drive, Result);
-  end;
 end;
 
 function TDriveViewInt.DoScanDir(FromNode: TTreeNode): Boolean;
@@ -2162,12 +2142,11 @@ begin
 end;
 
 procedure TDriveViewInt.RebuildTree;
-var
-  Drive: string;
 begin
-  for Drive in FDriveStatus.Keys do
+  var Iterator := 0;
+  var DriveStatus: TDriveStatus;
+  while GetNextDriveStatus(Iterator, nil, DriveStatus) do
   begin
-    var DriveStatus := GetDriveStatus(Drive);
     if Assigned(DriveStatus.RootNode) and DriveStatus.Scanned then
        ValidateDirectory(DriveStatus.RootNode);
   end;
@@ -2341,28 +2320,29 @@ begin
 end;
 
 procedure TDriveViewInt.ChangeTimerOnTimer(Sender: TObject);
-var
-  DriveStatusPair: TDriveStatusPair;
 begin
   if (FChangeTimerSuspended = 0) and (Sender is TTimer) then
   begin
-    for DriveStatusPair in FDriveStatus do
+    var Iterator := 0;
+    var Drive: string;
+    var DriveStatus: TDriveStatus;
+    while GetNextDriveStatus(Iterator, @Drive, DriveStatus) do
     begin
-      if DriveStatusPair.Value.ChangeTimer = Sender then
+      if DriveStatus.ChangeTimer = Sender then
       begin
         // Messages are processed during ValidateDirectory, so we may detect another change while
         // updating the directory. Prevent the recursion.
         // But retry the update afterwards (by reenabling the timer in ChangeDetected)
         SuspendChangeTimer;
         try
-          var ChangeTimer := DriveStatusPair.Value.ChangeTimer;
+          var ChangeTimer := DriveStatus.ChangeTimer;
           ChangeTimer.Interval := 0;
           ChangeTimer.Enabled := False;
 
-          if Assigned(DriveStatusPair.Value.RootNode) then
+          if Assigned(DriveStatus.RootNode) then
           begin
             // Check also collapsed (invisible) subdirectories:
-            ValidateDirectory(DriveStatusPair.Value.RootNode);
+            ValidateDirectory(DriveStatus.RootNode);
           end;
         finally
           ResumeChangeTimer;
@@ -2432,24 +2412,23 @@ begin
 end;
 
 procedure TDriveViewInt.StartAllWatchThreads;
-var
-  DriveStatusPair: TDriveStatusPair;
-  Drive: string;
 begin
   if (csDesigning in ComponentState) or (not FWatchDirectory) then
      Exit;
 
-  for DriveStatusPair in FDriveStatus do
+  var Iterator := 0;
+  var Drive: string;
+  var DriveStatus: TDriveStatus;
+  while GetNextDriveStatus(Iterator, @Drive, DriveStatus) do
   begin
-    var DriveStatus := DriveStatusPair.Value;
     if DriveStatus.Scanned then
     begin
       if not Assigned(DriveStatus.DiscMonitor) then
-        CreateWatchThread(DriveStatusPair.Key);
+        CreateWatchThread(Drive);
       if Assigned(DriveStatus.DiscMonitor) and (not DriveStatus.DiscMonitor.Active) then
       begin
         DriveStatus.DiscMonitor.Open;
-        SubscribeDriveNotifications(DriveStatusPair.Key);
+        SubscribeDriveNotifications(Drive);
       end;
     end;
   end;
@@ -2465,15 +2444,14 @@ begin
 end;
 
 procedure TDriveViewInt.StopAllWatchThreads;
-var
-  DriveStatusPair: TDriveStatusPair;
 begin
   if (csDesigning in ComponentState) or (not FWatchDirectory) then
      Exit;
 
-  for DriveStatusPair in FDriveStatus do
+  var Iterator := 0;
+  var DriveStatus: TDriveStatus;
+  while GetNextDriveStatus(Iterator, nil, DriveStatus) do
   begin
-    var DriveStatus := DriveStatusPair.Value;
     if Assigned(DriveStatus.DiscMonitor) then
     begin
       DriveStatus.DiscMonitor.Close;

@@ -68,7 +68,7 @@
         <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>DScpComp</SanitizedProjectName>
         <SubProcessesNumber>8</SubProcessesNumber>
-        <TLIB_PageSize>64</TLIB_PageSize>
+        <TLIB_PageSize>128</TLIB_PageSize>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>

@@ -121,7 +121,6 @@ type
     FParentFolder: IShellFolder;
     FDesktopFolder: IShellFolder;
     FDirOK: Boolean;
-    FPath: string;
     FHiddenCount: Integer;
     FFilteredCount: Integer;
     FNotRelative: Boolean;
@@ -131,9 +130,6 @@ type
     // Additional thread components:
     FIconUpdateThread: TIconUpdateThread;
     // only ever accessed by GUI thread
-    FIconUpdateSet: TDictionary<Integer, Boolean>;
-    FIconUpdateQueue: TQueue<TIconUpdateSchedule>;
-    FIconUpdateQueueDeferred: TQueue<TIconUpdateSchedule>;
     FDiscMonitor: TDiscMonitor;
     FHomeDirectory: string;
 
@@ -143,7 +139,6 @@ type
     iRecycleFolder: iShellFolder;
     PIDLRecycle: PItemIDList;
 
-    FLastPath: TDictionary<string, string>;
     FTimeoutShellIconRetrieval: Boolean;
     FAnyCut: Boolean;
 
@@ -157,6 +152,8 @@ type
     procedure SetDirColProperties(Value: TDirViewColProperties);
 
   protected
+    FPath: string;
+
     function NewColProperties: TCustomListViewColProperties; override;
     function SortAscendingByDefault(Index: Integer): Boolean; override;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
@@ -183,7 +180,6 @@ type
     procedure SetLoadEnabled(Value: Boolean); override;
     function GetPath: string; override;
     procedure SetPath(Value: string); override;
-    procedure PathChanged; override;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); override;
     procedure ChangeDetected(Sender: TObject; const Directory: string;
       var SubdirsChanged: Boolean);
@@ -214,9 +210,9 @@ type
     procedure DoFetchIconUpdate;
     procedure DoUpdateIcon;
     procedure StartFileDeleteThread;
-    procedure IconUpdateEnqueue(ListItem: TListItem);
-    function IconUpdatePeek: Integer;
-    procedure IconUpdateDequeue;
+    procedure IconUpdateEnqueue(ListItem: TListItem); virtual; abstract;
+    function IconUpdatePeek: Integer; virtual; abstract;
+    procedure IconUpdateDequeue(Index: Integer); virtual; abstract;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
     procedure Load(DoFocusSomething: Boolean); override;
     procedure DoFetchIcon(
@@ -226,6 +222,9 @@ type
       dwFileAttributes: DWORD; var psfi: TSHFileInfoW; uFlags: UINT): DWORD_PTR;
     function DoCopyToClipboard(Focused: Boolean; Cut: Boolean; Operation: TClipBoardOperation): Boolean;
     procedure ClearCutState;
+    procedure IconUpdateClear; virtual; abstract;
+    function IconUpdateDeprioritize(ItemData: PFileRec; Index: Integer): Boolean; virtual; abstract;
+    function TryGetLastPath(Drive: string; var Path: string): Boolean; virtual; abstract;
 
     function HiddenCount: Integer; override;
     function FilteredCount: Integer; override;
@@ -687,22 +686,12 @@ begin
   DragDropFilesEx.ShellExtensions.DragDropHandler := True;
   DragDropFilesEx.ShellExtensions.DropHandler := True;
 
-  FIconUpdateSet := TDictionary<Integer, Boolean>.Create;
-  FIconUpdateQueue := TQueue<TIconUpdateSchedule>.Create;
-  FIconUpdateQueueDeferred := TQueue<TIconUpdateSchedule>.Create;
-
-  FLastPath := nil;
 end;
 
 destructor TDirViewInt.Destroy;
 begin
-  FreeAndNil(FIconUpdateQueue);
-  FreeAndNil(FIconUpdateQueueDeferred);
-  FreeAndNil(FIconUpdateSet);
-
   if Assigned(PIDLRecycle) then FreePIDL(PIDLRecycle);
 
-  FLastPath.Free;
   FFileOperator.Free;
   FChangeTimer.Free;
 
@@ -751,23 +740,6 @@ end;
 function TDirViewInt.GetPath: string;
 begin
   Result := FPath;
-end;
-
-procedure TDirViewInt.PathChanged;
-var
-  Expanded: string;
-begin
-  inherited;
-
-  // make sure to use PathName as Path maybe just X: what
-  // ExpandFileName resolves to current working directory
-  // on the drive, not to root path
-  Expanded := ExpandFileName(PathName);
-  if not Assigned(FLastPath) then
-  begin
-    FLastPath := TDictionary<string, string>.Create;
-  end;
-  FLastPath.AddOrSetValue(DriveInfo.GetDriveKey(Expanded), Expanded);
 end;
 
 procedure TDirViewInt.SetPath(Value: string);
@@ -1191,9 +1163,7 @@ procedure TDirViewInt.Load(DoFocusSomething: Boolean);
 begin
   try
     StopIconUpdateThread;
-    FIconUpdateQueue.Clear;
-    FIconUpdateQueueDeferred.Clear;
-    FIconUpdateSet.Clear;
+    IconUpdateClear();
 
     StopWatchThread;
 
@@ -2372,40 +2342,6 @@ begin
   end;
 end;
 
-procedure TDirViewInt.IconUpdateEnqueue(ListItem: TListItem);
-var
-  Schedule: TIconUpdateSchedule;
-begin
-  if not FIconUpdateSet.ContainsKey(ListItem.Index) then
-  begin
-    FIconUpdateSet.Add(ListItem.Index, False);
-    Schedule.Index := ListItem.Index;
-    FIconUpdateQueue.Enqueue(Schedule);
-    Assert(FIconUpdateSet.Count = FIconUpdateQueue.Count + FIconUpdateQueueDeferred.Count);
-  end;
-  StartIconUpdateThread;
-end;
-
-function TDirViewInt.IconUpdatePeek: Integer;
-begin
-  if FIconUpdateQueue.Count > 0 then
-    Result := FIconUpdateQueue.Peek.Index
-  else if FIconUpdateQueueDeferred.Count > 0 then
-    Result := FIconUpdateQueueDeferred.Peek.Index
-  else
-    Result := -1;
-end;
-
-procedure TDirViewInt.IconUpdateDequeue;
-begin
-  if FIconUpdateQueue.Count > 0 then
-    FIconUpdateQueue.Dequeue
-  else
-    FIconUpdateQueueDeferred.Dequeue;
-  FIconUpdateSet.Remove(FIconUpdateThread.FCurrentIndex);
-  Assert(FIconUpdateSet.Count = FIconUpdateQueue.Count + FIconUpdateQueueDeferred.Count);
-end;
-
 function TDirViewInt.ThumbnailNeeded(ItemData: PFileRec): Boolean;
 begin
   Result := (not Assigned(ItemData.Thumbnail)) and (ItemData.ThumbnailSize <> ThumbnailNotNeeded);
@@ -2428,7 +2364,7 @@ begin
     if FIconUpdateThread.FCurrentIndex >= Items.Count then
     begin
       FIconUpdateThread.FCurrentIndex := -1;
-      IconUpdateDequeue;
+      IconUpdateDequeue(-1);
     end
       else
     begin
@@ -2448,18 +2384,8 @@ begin
       // Deprioritizing unvisible item taken from priority queue.
       // As we ask Window to cache the image index (LVIF_DI_SETITEM), we won't get asked again,
       // so we have to retrieve the image eventually (but not thumbnail)
-      if (FIconUpdateQueue.Count > 0) and
-         Invisible then
+      if Invisible and IconUpdateDeprioritize(ItemData, FIconUpdateThread.FCurrentIndex) then
       begin
-        Assert(not ThumbnailNeeded(ItemData));
-        if ItemData.IconEmpty then
-        begin
-          FIconUpdateQueueDeferred.Enqueue(FIconUpdateQueue.Dequeue);
-        end
-          else
-        begin
-          IconUpdateDequeue;
-        end;
         FIconUpdateThread.FCurrentIndex := -1;
       end
         else
@@ -2472,7 +2398,7 @@ begin
         end
           else
         begin
-          IconUpdateDequeue;
+          IconUpdateDequeue(FIconUpdateThread.FCurrentIndex);
           FIconUpdateThread.FCurrentIndex := -1;
         end;
       end;
@@ -2492,7 +2418,7 @@ begin
      (not FIconUpdateThread.Terminated) and
      (FIconUpdateThread.FCurrentIndex = IconUpdatePeek) then
   begin
-    IconUpdateDequeue;
+    IconUpdateDequeue(FIconUpdateThread.FCurrentIndex);
 
     if (FIconUpdateThread.FCurrentIndex >= 0) and
        (FIconUpdateThread.FCurrentIndex < Items.Count) then
@@ -2749,18 +2675,7 @@ var
   APath: string;
   DriveRoot: string;
 begin
-  if Assigned(FLastPath) and FLastPath.ContainsKey(Drive) then
-  begin
-    APath := FLastPath[Drive];
-    if not DirectoryExists(ApiPath(APath)) then
-    begin
-      if DriveInfo.IsRealDrive(Drive) then
-        APath := Format('%s:', [Drive])
-      else
-        APath := Drive;
-    end;
-  end
-    else
+  if not TryGetLastPath(Drive, APath) then
   begin
     if DriveInfo.IsRealDrive(Drive) then
     begin

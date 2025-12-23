@@ -83,7 +83,6 @@ type
 
   TDriveInfoInt = class(TObject)
   private
-    FData: TObjectDictionary<string, TDriveInfoRec>;
     FNoDrives: DWORD;
     FNoViewOnDrive: DWORD;
     FDesktop: IShellFolder;
@@ -94,12 +93,9 @@ type
     FHandlers: TList<TDriveNotificationEvent>;
     FChangeNotify: ULONG;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
-    procedure ReadDriveBasicStatus(Drive: string);
-    procedure ResetDrive(Drive: string);
     procedure SetHonorDrivePolicy(Value: Integer);
     function GetFirstFixedDrive: Char;
     procedure Load;
-    function AddDrive(Drive: string): TDriveInfoRec;
     function GetDriveBitMask(Drive: string): Integer;
     function DoAnyValidPath(DriveType: Integer; CanBeHidden: Boolean; var Path: string): Boolean;
     function ReadDriveMask(Reg: TRegistry; ValueName: string): DWORD;
@@ -107,18 +103,25 @@ type
     procedure CancelDriveRefresh;
     procedure InternalWndProc(var Msg: TMessage);
     procedure InvokeHandlers(DriveNotification: TDriveNotification; Drive: string);
-    procedure UpdateDriveNotifications(Drive: string);
-    procedure UpdateDrivesNotifications;
     procedure ProcessThreadResults;
     procedure ReadAsynchronous;
-    procedure DoReadDriveStatus(Drive: string; Flags: Integer);
-    procedure DriveRemoving(Drive: string);
 
   protected
     constructor Create;
 
+    procedure DriveRemoving(Drive: string); overload;
+    procedure ResetDrive(Drive: string);
+    procedure DoReadDriveStatus(Drive: string; Flags: Integer);
+    procedure ReadDriveBasicStatus(Drive: string);
+    procedure UpdateDriveNotifications(Drive: string);
+
+    function AddDrive(Drive: string): TDriveInfoRec; virtual; abstract;
+    function GetInternal(Drive: string): TDriveInfoRec; virtual; abstract;
+    procedure DriveRemoving(DeviceHandle: THandle); overload; virtual; abstract;
+    procedure UpdateDrivesNotifications; virtual; abstract;
+
   public
-    function Get(Drive: string): TDriveInfoRec;
+    function Get(Drive: string): TDriveInfoRec; virtual; abstract;
     property SpecialFolder[Folder: TSpecialFolder]: PSpecialFolderRec read GetFolder;
 
     procedure NeedData;
@@ -228,7 +231,6 @@ begin
   FHonorDrivePolicy := 1;
   FUseABDrives := True;
   FLoaded := False;
-  FData := TObjectDictionary<string, TDriveInfoRec>.Create([doOwnsValues]);
   FHandlers := TList<TDriveNotificationEvent>.Create;
   FChangeNotify := 0;
 end; {TDriveInfoInt.Create}
@@ -237,7 +239,6 @@ destructor TDriveInfoInt.Destroy;
 begin
   Assert(FHandlers.Count = 0);
   FHandlers.Free;
-  FData.Free;
   inherited;
 end; {TDriveInfoInt.Destroy}
 
@@ -262,8 +263,7 @@ begin
     for I := 1 to Length(ReadyDrives) do
     begin
       Drive := ReadyDrives[I];
-      Assert(FData.ContainsKey(Drive));
-      FData[Drive].DriveReady := True;
+      GetInternal(Drive).DriveReady := True;
       UpdateDriveNotifications(Drive);
       AppLog(Format('Drive "%s" is ready', [Drive]))
     end;
@@ -419,8 +419,7 @@ var
   InaccessibleByDrivePolicy, HiddenByDrivePolicy: Boolean;
   DriveBitMask: Integer;
 begin
-  Assert(FData.ContainsKey(Drive));
-  with FData[Drive] do
+  with GetInternal(Drive) do
   begin
     DriveType := Windows.GetDriveType(PChar(GetDriveRoot(Drive)));
     if IsRealDrive(Drive) then DriveBitMask := GetDriveBitMask(Drive)
@@ -439,7 +438,7 @@ end;
 
 procedure TDriveInfoInt.ResetDrive(Drive: string);
 begin
-  with FData[Drive] do
+  with GetInternal(Drive) do
   begin
     DriveReady := False;
     DisplayName := '';
@@ -515,7 +514,7 @@ begin
   for Drive := FirstDrive to LastDrive do
   begin
     // Not using Get as that would recurse into Load
-    if FData[Drive].Valid then
+    if GetInternal(Drive).Valid then
       Drives := Drives + Drive;
   end;
     TDriveInfoThread.Create(Drives);
@@ -525,17 +524,6 @@ begin
     AppLog(Format('Drives to check in the background: %s', [Drives]));
     TDriveInfoThread.Create(Drives);
   end;
-end;
-
-function TDriveInfoInt.AddDrive(Drive: string): TDriveInfoRec;
-begin
-  Result := TDriveInfoRec.Create;
-  FData.Add(Drive, Result);
-  ResetDrive(Drive);
-  if IsFixedDrive(Drive) or (not IsRealDrive(Drive)) then // not floppy
-    DoReadDriveStatus(Drive, dsSynchronous)
-  else
-    ReadDriveBasicStatus(Drive);
 end;
 
 function TDriveInfoInt.GetImageIndex(Drive: string): Integer;
@@ -585,21 +573,6 @@ begin
   if IsRealDrive(Result) then Result := Result + ':';
 end;
 
-function TDriveInfoInt.Get(Drive: string): TDriveInfoRec;
-begin
-  NeedData;
-
-  // We might want to wait for FReadyDrives to be empty before returning
-  // (or even better do that only in DriveReady getter)
-
-  if not FData.TryGetValue(Drive, Result) then
-  begin
-    Assert(IsUncPath(Drive));
-    Result := AddDrive(Drive);
-    DriveRefresh;
-  end;
-end; {TDriveInfoInt.GetData}
-
 procedure TDriveInfoInt.ReadDriveStatus(Drive: string; Flags: Integer);
 begin
   // Among other, this makes sure the pending drive-ready status from the background thread are collected,
@@ -629,8 +602,7 @@ begin
   DriveRoot := GetDriveRoot(Drive);
 
   // When this method is called, the entry always exists already
-  Assert(FData.ContainsKey(Drive));
-  DriveInfoRec := FData[Drive];
+  DriveInfoRec := GetInternal(Drive);
   with DriveInfoRec do
   begin
     Init := True;
@@ -743,12 +715,11 @@ procedure TDriveInfoInt.OverrideDrivePolicy(Drive: string);
 var
   Mask: DWORD;
 begin
-  Assert(FData.ContainsKey(Drive));
-  Assert(FData[Drive].ValidButHiddenByDrivePolicy);
+  Assert(GetInternal(Drive).ValidButHiddenByDrivePolicy);
   Mask := (not GetDriveBitMask(Drive));
   FNoDrives := FNoDrives and Mask;
   ReadDriveStatus(Drive, dsAll);
-  Assert(FData[Drive].Valid);
+  Assert(GetInternal(Drive).Valid);
   DriveRefresh;
 end;
 
@@ -854,7 +825,6 @@ var
   PPIDL: PPItemIDList;
   Event: LONG;
   Lock: THandle;
-  DrivePair: TPair<string, TDriveInfoRec>;
 begin
   with Msg do
   begin
@@ -908,11 +878,7 @@ begin
         if DeviceType = DBT_DEVTYP_HANDLE then
         begin
           DeviceHandle := PDEV_BROADCAST_HANDLE(lParam)^.dbch_handle;
-          for DrivePair in FData do
-            if DrivePair.Value.DriveHandle = DeviceHandle then
-            begin
-              DriveRemoving(DrivePair.Key);
-            end;
+          DriveRemoving(DeviceHandle);
         end;
       end;
     end
@@ -941,7 +907,7 @@ end;
 
 procedure TDriveInfoInt.DriveRemoving(Drive: string);
 begin
-  FData[Drive].DriveReady := False;
+  GetInternal(Drive).DriveReady := False;
   UpdateDriveNotifications(Drive);
   AppLog(Format('Removing drive "%s"', [Drive]));
   InvokeHandlers(dnRemoving, Drive);
@@ -975,7 +941,7 @@ begin
   if IsFixedDrive(Drive) then
   begin
     // Not using Get to avoid recursion
-    DriveInfoRec := FData[Drive];
+    DriveInfoRec := GetInternal(Drive);
     NeedNotifications :=
       (FHandlers.Count > 0) and
       (DriveInfoRec.DriveType <> DRIVE_REMOTE) and
@@ -1022,14 +988,6 @@ begin
       end;
     end;
   end;
-end;
-
-procedure TDriveInfoInt.UpdateDrivesNotifications;
-var
-  Drive: string;
-begin
-  for Drive in FData.Keys do
-    UpdateDriveNotifications(Drive);
 end;
 
 procedure TDriveInfoInt.DriveRefresh;
