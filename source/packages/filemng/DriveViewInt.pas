@@ -262,8 +262,6 @@ type
     property Items stored False;
     property Selected Write SetSelected stored False;
 
-    property DragImageList: TDragImageList read FDragImageList;
-
     procedure EmptyClipboard; dynamic;
     procedure EmptyClipboardIfCut; override;
     // Drive handling:
@@ -828,7 +826,6 @@ begin
   FLastPathCut := '';
   FStartPos.X := -1;
   FStartPos.Y := -1;
-  FDragPos := FStartPos;
 
   FDragDropFilesEx.ShellExtensions.DragDropHandler := True;
 

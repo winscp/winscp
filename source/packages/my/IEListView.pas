@@ -66,8 +66,6 @@ type
     FOnRecreate: TNotifyEvent;
     FOnSecondaryColumnHeader: TListViewSecondaryColumnHeaderEvent;
 
-    FDragImageList: TDragImageList;
-
   protected
     procedure ColPropertiesChange(Sender: TObject); virtual;
 
@@ -88,12 +86,10 @@ type
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
   public
     constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
     procedure SetColumnImages; virtual;
 
     procedure SortBy(Column: Integer);
 
-    property DragImageList: TDragImageList read FDragImageList;
     property ParentForm: TCustomForm read FParentForm;
     {Set the sort column of the listview}
     property SortColumn: Integer read FSortColumn write SetSortColumn;
@@ -281,9 +277,6 @@ type
     property OnStartDrag;
     property OnSecondaryColumnHeader; // TCustomIEListView
   end;
-
-var
-  GlobalDragImageList: TDragImageList;
 
 procedure Register;
 
@@ -559,24 +552,8 @@ begin
   inherited;
 
   FParentForm := GetParentForm(Self);
-  if not (csDesigning in ComponentState) then
-    FDragImageList := TDragImageList.Create(Self);
-  if not Assigned(GlobalDragImageList) then
-    GlobalDragImageList := DragImageList;
   SetColumnImages;
 end; {CreateWnd}
-
-destructor TCustomIEListView.Destroy;
-begin
-  if Assigned(FDragImageList) then
-  begin
-    if GlobalDragImageList = FDragImageList then
-      GlobalDragImageList := nil;
-    FDragImageList.Free;
-  end;
-
-  inherited;
-end; {Destroy}
 
 procedure TCustomIEListView.SortItems;
 begin

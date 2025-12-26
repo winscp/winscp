@@ -134,7 +134,6 @@ __published:
   __property AddParentDir;
   __property DimmHiddenFiles;
   __property ShowHiddenFiles;
-  __property WantUseDragImages;
   __property TargetPopupMenu;
   __property OnSelectItem;
   __property OnStartLoading;

@@ -9175,7 +9175,6 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
   {
     try
     {
-      GlobalDragImageList->HideDragImage();
       try
       {
         RemoteFileControlDDTargetDrop();

@@ -105,12 +105,10 @@ procedure AppLog(S: string);
 
 type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
-  TControlScrollAfterUpdate = procedure of object;
 
   TCustomControlScrollOnDragOver = class
   private
     FOnBeforeUpdate: TControlScrollBeforeUpdate;
-    FOnAfterUpdate: TControlScrollAfterUpdate;
     FDragOverTimer: TTimer;
     FControl: TControl;
     FDragOverTime: FILETIME;
@@ -129,7 +127,6 @@ type
     procedure DragOver(Point: TPoint); virtual; abstract;
 
     property OnBeforeUpdate: TControlScrollBeforeUpdate read FOnBeforeUpdate write FOnBeforeUpdate;
-    property OnAfterUpdate: TControlScrollAfterUpdate read FOnAfterUpdate write FOnAfterUpdate;
   end;
 
   TTreeViewScrollOnDragOver = class(TCustomControlScrollOnDragOver)
@@ -713,7 +710,6 @@ constructor TCustomControlScrollOnDragOver.Create(Control: TControl;
 begin
   FControl := Control;
   FOnBeforeUpdate := nil;
-  FOnAfterUpdate := nil;
 
   if ScheduleDragOver then
   begin
@@ -767,6 +763,7 @@ var
 begin
   if Assigned(FOnBeforeUpdate) then
     FOnBeforeUpdate(ObjectToValidate);
+  // maybe not necessary once we are not using own drag images
   DragImages := TPublicControl(FControl).GetDragImages;
   if Assigned(DragImages) then
     DragImages.HideDragImage;
@@ -776,8 +773,6 @@ procedure TCustomControlScrollOnDragOver.AfterUpdate;
 var
   DragImages: TDragImageList;
 begin
-  if Assigned(FOnAfterUpdate) then
-    FOnAfterUpdate;
   DragImages := TPublicControl(FControl).GetDragImages;
   if Assigned(DragImages) then
     DragImages.ShowDragImage;

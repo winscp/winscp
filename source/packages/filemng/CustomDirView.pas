@@ -115,7 +115,6 @@ type
     FAddParentDir: Boolean;
     FDimmHiddenFiles: Boolean;
     FFormatSizeBytes: TFormatBytesStyle;
-    FWantUseDragImages: Boolean;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
     FUseSystemContextMenu: Boolean;
     FOnStartLoading: TNotifyEvent;
@@ -145,7 +144,6 @@ type
     FLastRenameName: string;
     FContextMenu: Boolean;
     FDragEnabled: Boolean;
-    FDragPos: TPoint;
     FStartPos: TPoint;
     FDDOwnerIsSource: Boolean;
     FAbortLoading: Boolean;
@@ -216,7 +214,6 @@ type
     procedure ViewStyleChanged;
 
     function GetTargetPopupMenu: Boolean;
-    function GetUseDragImages: Boolean;
     procedure SetMaxHistoryCount(Value: Integer);
     procedure SetPathLabel(Value: TCustomPathLabel);
     procedure SetTargetPopupMenu(Value: Boolean);
@@ -338,8 +335,6 @@ type
     procedure SetMask(Value: string); virtual;
     procedure SetNaturalOrderNumericalSorting(Value: Boolean);
     procedure SetAlwaysSortDirectoriesByName(Value: Boolean);
-    procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
-    procedure ScrollOnDragOverAfterUpdate;
     procedure DoHistoryGo(Index: Integer);
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
     procedure WMKillFocus(var Message: TWMKillFocus); message WM_KILLFOCUS;
@@ -418,8 +413,6 @@ type
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
     property DragDropFilesEx: TCustomizableDragDropFilesEx read FDragDropFilesEx;
     property FormatSizeBytes: TFormatBytesStyle read FFormatSizeBytes write SetFormatSizeBytes default fbNone;
-    property WantUseDragImages: Boolean read FWantUseDragImages write FWantUseDragImages default False;
-    property UseDragImages: Boolean read GetUseDragImages stored False;
     property FullDrag default True;
     property TargetPopupMenu: Boolean read GetTargetPopupMenu write SetTargetPopupMenu default True;
     property DDOwnerIsSource: Boolean read FDDOwnerIsSource;
@@ -530,8 +523,6 @@ resourcestring
   SErrorRenameFileExists = 'File already exists: ';
   SErrorInvalidName = 'Filename contains invalid characters:';
   STextFileExt = 'File %s';
-  STextFiles = '%u Files';
-  STextDirectories = '%u Directories';
   SParentDir = 'Parent directory';
   SDragDropError = 'DragDrop Error: %d';
   SDriveNotReady = 'Drive ''%s:'' is not ready.';
@@ -850,7 +841,6 @@ begin
   FDimmHiddenFiles := True;
   FShowHiddenFiles := True;
   FFormatSizeBytes := fbNone;
-  FWantUseDragImages := False;
   FAddParentDir := False;
   FullDrag := True;
   FInvalidNameChars := coInvalidDosChars;
@@ -877,7 +867,6 @@ begin
 
   FStartPos.X := -1;
   FStartPos.Y := -1;
-  FDragPos := FStartPos;
   FDragEnabled := False;
   FDDOwnerIsSource := False;
   FDDLinkOnExeDrag := False;
@@ -932,8 +921,6 @@ begin
   end;
 
   FScrollOnDragOver := TListViewScrollOnDragOver.Create(Self, False);
-  FScrollOnDragOver.OnBeforeUpdate := ScrollOnDragOverBeforeUpdate;
-  FScrollOnDragOver.OnAfterUpdate := ScrollOnDragOverAfterUpdate;
 end;
 
 procedure TCustomDirView.ClearItemsStats;
@@ -1230,11 +1217,6 @@ end; {SetFormatSizeBytes}
 function TCustomDirView.GetDragSourceEffects: TDropEffectSet;
 begin
   Result := [deCopy, deMove, deLink];
-end;
-
-function TCustomDirView.GetUseDragImages: Boolean;
-begin
-  Result := FWantUseDragImages;
 end;
 
 procedure TCustomDirView.SetTargetPopupMenu(Value: Boolean);
@@ -2199,16 +2181,6 @@ begin
   Reload(CacheIcons);
 end;
 
-procedure TCustomDirView.ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
-begin
-  GlobalDragImageList.HideDragImage;
-end;
-
-procedure TCustomDirView.ScrollOnDragOverAfterUpdate;
-begin
-  GlobalDragImageList.ShowDragImage;
-end;
-
 procedure TCustomDirView.DDDragEnter(DataObj: IDataObject; grfKeyState: Longint;
   Point: TPoint; var dwEffect: longint; var Accept: Boolean);
 var
@@ -2255,8 +2227,6 @@ procedure TCustomDirView.DDDragLeave;
 begin
   if Assigned(DropTarget) then
   begin
-    if GlobalDragImageList.Dragging then
-      GlobalDragImageList.HideDragImage;
     DropTarget := nil;
     Update; {ie30}
   end
@@ -2287,23 +2257,8 @@ begin
   if (CanDrop and (DropTarget <> DropItem)) or
      (not CanDrop and Assigned(DropTarget)) then
   begin
-    if GlobalDragImageList.Dragging then
-    begin
-      GlobalDragImageList.HideDragImage;
-      DropTarget := nil;
-      Update;
-      if CanDrop then
-      begin
-        DropTarget := DropItem;
-        Update;
-      end;
-      GlobalDragImageList.ShowDragImage;
-    end
-      else
-    begin
-      DropTarget := nil;
-      if CanDrop then DropTarget := DropItem;
-    end;
+    DropTarget := nil;
+    if CanDrop then DropTarget := DropItem;
   end;
 
   if not Loading then
@@ -2415,9 +2370,6 @@ end;
 procedure TCustomDirView.DDDrop(DataObj: IDataObject; grfKeyState: Integer;
   Point: TPoint; var dwEffect: Integer);
 begin
-  if GlobalDragImageList.Dragging then
-    GlobalDragImageList.HideDragImage;
-
   if dwEffect = DROPEFFECT_NONE then
     DropTarget := nil;
 
@@ -2428,7 +2380,6 @@ end;
 procedure TCustomDirView.DDQueryContinueDrag(FEscapePressed: LongBool;
   grfKeyState: Integer; var Result: HResult);
 var
-  MousePos: TPoint;
   KnowTime: TFileTime;
 begin
   // this method cannot throw exceptions, if it does d&d will not be possible
@@ -2443,35 +2394,6 @@ begin
   if Assigned(OnDDQueryContinueDrag) then
   begin
     OnDDQueryContinueDrag(Self, FEscapePressed, grfKeyState, Result);
-  end;
-
-  try
-    if FEscapePressed then
-    begin
-      if GlobalDragImageList.Dragging then
-        GlobalDragImageList.HideDragImage;
-    end
-      else
-    begin
-      if GlobalDragImageList.Dragging Then
-      begin
-        MousePos := ParentForm.ScreenToClient(Mouse.CursorPos);
-        {Move the drag image to the new position and show it:}
-        if (MousePos.X <> FDragPos.X) or (MousePos.Y <> FDragPos.Y) then
-        begin
-          FDragPos := MousePos;
-          if PtInRect(ParentForm.BoundsRect, Mouse.CursorPos) then
-          begin
-            GlobalDragImageList.DragMove(MousePos.X, MousePos.Y);
-            GlobalDragImageList.ShowDragImage;
-          end
-            else GlobalDragImageList.HideDragImage;
-        end;
-      end;
-    end;
-  except
-    // do not care if the above fails
-    // (Mouse.CursorPos fails when desktop is locked by user)
   end;
 end;
 
@@ -2704,18 +2626,8 @@ end;
 procedure TCustomDirView.DDDragDetect(grfKeyState: Integer; DetectStart,
   Point: TPoint; DragStatus: TDragDetectStatus);
 var
-  FilesCount: Integer;
-  DirsCount: Integer;
   Item: TListItem;
-  FirstItem : TListItem;
-  Bitmap: TBitmap;
-  ImageListHandle: HImageList;
-  Spot: TPoint;
-  ItemPos: TPoint;
-  DragText: string;
-  ClientPoint: TPoint;
   FileListCreated: Boolean;
-  AvoidDragImage: Boolean;
   DataObject: TDataObject;
 begin
   if Assigned(FOnDDDragDetect) then
@@ -2727,19 +2639,11 @@ begin
   begin
     DragDropFilesEx.CompleteFileList := DragCompleteFileList;
     DragDropFilesEx.FileList.Clear;
-    FirstItem := nil;
-    FilesCount := 0;
-    DirsCount := 0;
     FileListCreated := False;
-    AvoidDragImage := False;
 
     if Assigned(OnDDCreateDragFileList) then
     begin
       OnDDCreateDragFileList(Self, DragDropFilesEx.FileList, FileListCreated);
-      if FileListCreated then
-      begin
-        AvoidDragImage := True;
-      end;
     end;
 
     if not FileListCreated then
@@ -2748,10 +2652,7 @@ begin
       begin
         if ItemCanDrag(ItemFocused) then
         begin
-          FirstItem := ItemFocused;
           AddToDragFileList(DragDropFilesEx.FileList, ItemFocused);
-          if ItemIsDirectory(ItemFocused) then Inc(DirsCount)
-            else Inc(FilesCount);
         end;
       end
         else
@@ -2762,10 +2663,7 @@ begin
         begin
           if ItemCanDrag(Item) then
           begin
-            if not Assigned(FirstItem) then FirstItem := Item;
             AddToDragFileList(DragDropFilesEx.FileList, Item);
-            if ItemIsDirectory(Item) then Inc(DirsCount)
-              else Inc(FilesCount);
           end;
           Item := GetNextItem(Item, sdAll, [isSelected]);
         end;
@@ -2775,71 +2673,6 @@ begin
     if DragDropFilesEx.FileList.Count > 0 then
     begin
       FDragEnabled := False;
-      {Create the dragimage:}
-      GlobalDragImageList := DragImageList;
-      // This code is not used anymore
-      if UseDragImages and (not AvoidDragImage) then
-      begin
-        ImageListHandle := ListView_CreateDragImage(Handle, FirstItem.Index, Spot);
-        ItemPos := ClientToScreen(FirstItem.DisplayRect(drBounds).TopLeft);
-        if ImageListHandle <> Invalid_Handle_Value then
-        begin
-          GlobalDragImageList.Handle := ImageListHandle;
-          if FilesCount + DirsCount = 1 then
-          begin
-            ItemPos := ClientToScreen(FirstItem.DisplayRect(drBounds).TopLeft);
-            GlobalDragImageList.SetDragImage(0,
-              DetectStart.X - ItemPos.X, DetectStart.Y - ItemPos.Y);
-          end
-            else
-          begin
-            GlobalDragImageList.Clear;
-            GlobalDragImageList.Width := 32;
-            GlobalDragImageList.Height := 32;
-            if GlobalDragImageList.GetResource(rtBitMap, 'DRAGFILES', 0,
-              [lrTransparent], $FFFFFF) Then
-            begin
-              Bitmap := TBitmap.Create;
-              try
-                try
-                  GlobalDragImageList.GetBitmap(0, Bitmap);
-                  Bitmap.Canvas.Font.Assign(Self.Font);
-                  DragText := '';
-                  if FilesCount > 0 then
-                    DragText := Format(STextFiles, [FilesCount]);
-                  if DirsCount > 0 then
-                  begin
-                    if FilesCount > 0 then
-                      DragText := DragText + ', ';
-                    DragText := DragText + Format(STextDirectories, [DirsCount]);
-                  end;
-                  Bitmap.Width := 33 + Bitmap.Canvas.TextWidth(DragText);
-                  Bitmap.TransparentMode := tmAuto;
-                  Bitmap.Canvas.TextOut(33,
-                    Max(24 - Abs(Canvas.Font.Height), 0), DragText);
-                  GlobalDragImageList.Clear;
-                  GlobalDragImageList.Width := Bitmap.Width;
-                  GlobalDragImageList.AddMasked(Bitmap,
-                    Bitmap.Canvas.Pixels[0, 0]);
-                  GlobalDragImageList.SetDragImage(0, 25, 20);
-                except
-                  if GlobalDragImageList.GetResource(rtBitMap, 'DRAGFILES',
-                    0, [lrTransparent], $FFFFFF) then
-                      GlobalDragImageList.SetDragImage(0, 25, 20);
-                end;
-              finally
-                Bitmap.Free;
-              end;
-            end;
-          end;
-          ClientPoint := ParentForm.ScreenToClient(Point);
-          GlobalDragImageList.BeginDrag(ParentForm.Handle,
-            ClientPoint.X, ClientPoint.Y);
-          GlobalDragImageList.HideDragImage;
-          ShowCursor(True);
-        end;
-      end;
-
       FContextMenu := False;
 
       if IsRecycleBin then DragDropFilesEx.SourceEffects := [deMove]
@@ -2857,17 +2690,6 @@ begin
         end;
         {Execute the drag&drop-Operation:}
         FLastDDResult := DragDropFilesEx.Execute(DataObject);
-
-        // The drag&drop operation is finished, so clean up the used drag image.
-        // This also restores the default mouse cursor
-        // (which is set to "none" in GlobalDragImageList.BeginDrag above)
-        // But it's actually too late, we would need to do it when mouse button
-        // is realesed already. Otherwise the cursor is hidden when hovering over
-        // main window, while target application is processing dropped file
-        // (particularly when Explorer displays progress window or
-        // overwrite confirmation prompt)
-        GlobalDragImageList.EndDrag;
-        GlobalDragImageList.Clear;
 
         Application.ProcessMessages;
       finally

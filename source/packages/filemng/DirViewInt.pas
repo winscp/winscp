@@ -300,7 +300,6 @@ type
 
     property DimmHiddenFiles;
     property ShowHiddenFiles;
-    property WantUseDragImages;
     property TargetPopupMenu;
     property AddParentDir;
     property OnSelectItem;
