@@ -25,6 +25,7 @@ void __fastcall TDirView::IconUpdateEnqueue(TListItem * ListItem)
 {
   if (FIconUpdateSet.find(ListItem->Index) == FIconUpdateSet.end())
   {
+    FIconUpdateSet.insert(ListItem->Index);
     TIconUpdateSchedule Schedule { .Index = ListItem->Index };
     FIconUpdateQueue.push(Schedule);
     DebugAssert(FIconUpdateSet.size() == FIconUpdateQueue.size() + FIconUpdateQueueDeferred.size());
