@@ -841,12 +841,6 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(UnicodeString Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-TTreeNode * __fastcall TCustomUnixDriveView::TryFindNodeToPath(UnicodeString)
-{
-  DebugFail();
-  return nullptr;
-}
-//---------------------------------------------------------------------------
 TTreeNode * __fastcall TCustomUnixDriveView::FindPathNode(UnicodeString Path)
 {
   TTreeNode * Result = NULL;
@@ -876,12 +870,6 @@ void __fastcall TCustomUnixDriveView::ValidateDirectoryEx(TTreeNode * /*Node*/,
   TRecursiveScan /*Recurse*/, bool /*NewDirs*/)
 {
   // nothing
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomUnixDriveView::ValidateCurrentDirectoryIfNotMonitoring()
-{
-  DebugFail();
-  // noop
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::RebuildTree()

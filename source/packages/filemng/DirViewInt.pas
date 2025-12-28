@@ -379,7 +379,7 @@ procedure CheckCanOpenDirectory(Path: string);
 implementation
 
 uses
-  OperationWithTimeout,
+  DriveViewInt, OperationWithTimeout,
   PIDL, Forms, Dialogs,
   ComObj,
   ActiveX, ImgList,
@@ -1209,11 +1209,11 @@ begin
     if DirOK then
     begin
       if Assigned(FDriveView) then
-        SelTreeNode := FDriveView.FindNodeToPath(FPath)
+        SelTreeNode := TDriveViewInt(FDriveView).FindNodeToPath(FPath)
         else SelTreeNode := nil;
 
       if Assigned(FDriveView) and Assigned(SelTreeNode) then
-          FIsRecycleBin := FDriveView.NodeIsRecycleBin(SelTreeNode)
+          FIsRecycleBin := TNodeData(SelTreeNode.Data).IsRecycleBin
         else
       FIsRecycleBin :=
         (Uppercase(Copy(FPath, 2, 10)) = ':\RECYCLED') or
@@ -1268,9 +1268,18 @@ begin
         SysUtils.FindClose(SRec);
 
         // Update TDriveView's subdir indicator:
-        if Assigned(FDriveView) and (FDriveType = DRIVE_REMOTE) and (DirsCount = 0) then
+        if Assigned(FDriveView) and (FDriveType = DRIVE_REMOTE) then
         begin
-          FDriveView.DirHasNoChildren(PathName);
+          var Node := TDriveViewInt(FDriveView).FindNodeToPath(PathName);
+          if Assigned(Node) and Assigned(Node.Data) and
+             not TNodeData(Node.Data).Scanned then
+          begin
+            if DirsCount = 0 then
+            begin
+              Node.HasChildren := False;
+              TNodeData(Node.Data).Scanned := True;
+            end;
+          end;
         end;
       end; // not isRecycleBin
     end
@@ -1505,7 +1514,7 @@ begin
 
       if Assigned(FDriveView) then
       begin
-        FDriveView.ValidateCurrentDirectoryIfNotMonitoring;
+        TDriveViewInt(FDriveView).ValidateCurrentDirectoryIfNotMonitoring;
       end;
     end;
   end;
@@ -2012,7 +2021,7 @@ begin
   if WatchForChanges then StopWatchThread;
 
   if Assigned(FDriveView) then
-    FDriveView.StopWatchThread;
+    TDriveViewInt(FDriveView).StopWatchThread;
 
   StopIconUpdateThread;
   try
@@ -2044,7 +2053,7 @@ begin
     begin
       if Assigned(DriveView.Selected) then
         DriveView.ValidateDirectory(DriveView.Selected);
-      FDriveView.StartWatchThread;
+      TDriveViewInt(FDriveView).StartWatchThread;
     end;
   end;
 end;
@@ -2761,7 +2770,7 @@ begin
 
   StopWatchThread;
   if IsDirectory and Assigned(FDriveView) then
-    FDriveView.StopWatchThread;
+    TDriveViewInt(FDriveView).StopWatchThread;
 
   FFileOperator.Flags := FileOperatorDefaultFlags + [foNoConfirmation];
   FFileOperator.Operation := foRename;
@@ -2817,7 +2826,7 @@ begin
     if FWatchForChanges and (not WatchThreadActive) then
       StartWatchThread;
     if Assigned(FDriveView) then
-      FDriveView.StartWatchThread;
+      TDriveViewInt(FDriveView).StartWatchThread;
   end;
 end;
 
@@ -2915,7 +2924,7 @@ begin
     // This typically happens when right-dragging from remote to local panel,
     // what causes temp directory being created+deleted.
     // This is HACK, we should implement some uniform watch disabling/enabling
-    FDriveView.SuspendChangeTimer;
+    TDriveViewInt(FDriveView).SuspendChangeTimer;
   end;
 
   inherited;
@@ -2931,7 +2940,7 @@ begin
 
   if Assigned(FDriveView) then
   begin
-    FDriveView.ResumeChangeTimer;
+    TDriveViewInt(FDriveView).ResumeChangeTimer;
   end;
 
   inherited;
@@ -3055,7 +3064,7 @@ begin
             StopWatchThread;
 
             if Assigned(DriveView) then
-              DriveView.StopWatchThread;
+              TDriveViewInt(DriveView).StopWatchThread;
 
             if (DropSourceControl <> Self) and
                (DropSourceControl is TDirViewInt) then
@@ -3097,13 +3106,13 @@ begin
           if Assigned(FDriveView) and SourceIsDirectory then
           begin
             try
-              FDriveView.ValidateDirectory(FDriveView.FindNodeToPath(TargetPath));
+              FDriveView.ValidateDirectory(TDriveViewInt(FDriveView).FindNodeToPath(TargetPath));
             except
             end;
 
             if (Effect = DROPEFFECT_MOVE) or IsRecycleBin then
             try
-              Node := FDriveView.TryFindNodeToPath(SourcePath);
+              Node := TDriveViewInt(FDriveView).TryFindNodeToPath(SourcePath);
               // If the path is not even in the tree, do not bother.
               // This is particularly for dragging from remote folder, when the source path in %TEMP% and
               // calling ValidateDirectory would load whole TEMP (and typically also "C:\Users")
@@ -3120,7 +3129,7 @@ begin
           FFileOperator.OperandFrom.Clear;
           FFileOperator.OperandTo.Clear;
           if Assigned(FDriveView) then
-            FDriveView.StartWatchThread;
+            TDriveViewInt(FDriveView).StartWatchThread;
           Sleep(0);
           WatchForChanges := OldWatchForChanges;
           if (DropSourceControl <> Self) and (DropSourceControl is TDirViewInt) then
@@ -3155,9 +3164,10 @@ begin
     end;
     FAnyCut := False;
   end;
-  if Assigned(FDriveView) then
+  if Assigned(FDriveView) and
+     (TDriveViewInt(FDriveView).LastPathCut <> '') then // prevent recursion
   begin
-    FDriveView.EmptyClipboardIfCut;
+    TDriveViewInt(FDriveView).EmptyClipboard;
   end;
 end;
 

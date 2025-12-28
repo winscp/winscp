@@ -240,6 +240,7 @@ type
     procedure SetCustomDirView(Value: TCustomDirView); override;
 
     function NodePath(Node: TTreeNode): string; override;
+    function NodeIsRecycleBin(Node: TTreeNode): Boolean; override;
     function NodePathExists(Node: TTreeNode): Boolean; override;
     function NodeColor(Node: TTreeNode): TColor; override;
     function FindPathNode(Path: string): TTreeNode; override;
@@ -262,8 +263,8 @@ type
     property Items stored False;
     property Selected Write SetSelected stored False;
 
+    property LastPathCut: string read FLastPathCut;
     procedure EmptyClipboard; dynamic;
-    procedure EmptyClipboardIfCut; override;
     // Drive handling:
     function GetDriveStatus(Drive: string): TDriveStatus; virtual; abstract;
     function GetDriveTypetoNode(Node: TTreeNode): Integer;  // Returns DRIVE_CDROM etc..
@@ -273,14 +274,12 @@ type
 
     // Node handling:
     procedure SetImageIndex(Node: TTreeNode); virtual;
-    function FindNodeToPath(Path: string): TTreeNode; override;
-    function TryFindNodeToPath(Path: string): TTreeNode; override;
+    function FindNodeToPath(Path: string): TTreeNode;
+    function TryFindNodeToPath(Path: string): TTreeNode;
     function RootNode(Node: TTreeNode): TTreeNode;
     function GetDirName(Node: TTreeNode): string;
     function GetDisplayName(Node: TTreeNode): string;
     function NodePathName(Node: TTreeNode): string; override;
-    function NodeIsRecycleBin(Node: TTreeNode): Boolean; override;
-    procedure DirHasNoChildren(Path: string); override;
 
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -291,13 +290,13 @@ type
     procedure DisplayPropertiesMenu(Node: TTreeNode); override;
 
     // Watchthread handling:
-    procedure StartWatchThread; override;
-    procedure StopWatchThread; override;
-    procedure SuspendChangeTimer; override;
-    procedure ResumeChangeTimer; override;
+    procedure StartWatchThread;
+    procedure StopWatchThread;
+    procedure SuspendChangeTimer;
+    procedure ResumeChangeTimer;
     procedure StartAllWatchThreads;
     procedure StopAllWatchThreads;
-    procedure ValidateCurrentDirectoryIfNotMonitoring; override;
+    procedure ValidateCurrentDirectoryIfNotMonitoring;
 
     (* Modified Events: *)
     procedure GetImageIndex(Node: TTreeNode); override;
@@ -2857,15 +2856,6 @@ begin
   end;
 end;
 
-procedure TDriveViewInt.EmptyClipboardIfCut;
-begin
-  // interface for TDirViewInt - prevent recursion
-  if FLastPathCut <> '' then
-  begin
-    EmptyClipboard;
-  end;
-end;
-
 function TDriveViewInt.CanPasteFromClipBoard: Boolean;
 begin
   Result := False;
@@ -2903,16 +2893,6 @@ begin
     // This is not perfect, as the handle can be recreated for other reasons.
     // But system color change is by far the most common case.
     FSysColorChangePending := True;
-  end;
-end;
-
-procedure TDriveViewInt.DirHasNoChildren(Path: string);
-begin
-  var Node := FindNodeToPath(Path);
-  if Assigned(Node) and Assigned(Node.Data) and (not TNodeData(Node.Data).Scanned) then
-  begin
-    Node.HasChildren := False;
-    TNodeData(Node.Data).Scanned := True;
   end;
 end;
 
