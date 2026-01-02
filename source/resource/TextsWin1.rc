@@ -712,7 +712,7 @@ BEGIN
         TAG_VALUE, "&Value (optional):"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000–2025 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000–2026 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
