@@ -82,7 +82,7 @@
         <SubProcessesNumber>8</SubProcessesNumber>
         <UsingDelphiRTL>true</UsingDelphiRTL>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP, WebDAV, S3 and SCP client;FileVersion=6.6.0.0;InternalName=winscp;LegalCopyright=(c) 2000-2025 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=6.6.0.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP, WebDAV, S3 and SCP client;FileVersion=6.6.0.0;InternalName=winscp;LegalCopyright=(c) 2000-2026 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=6.6.0.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>6</VerInfo_MajorVer>
         <VerInfo_MinorVer>6</VerInfo_MinorVer>
