@@ -100,6 +100,9 @@ public:
   t_server GetCurrentServer();
   CFtpListResult * CreateListResult(bool mlst);
 
+  static UnicodeString DecodeString(
+    const RawByteString & S, CApiLog * ApiLog, const t_server & Server, bool * UTF8, bool MayInvalidateUTF8);
+
 public:
   virtual void OnReceive(int nErrorCode);
   virtual void OnConnect(int nErrorCode);

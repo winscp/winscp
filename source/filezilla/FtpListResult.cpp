@@ -3,6 +3,7 @@
 #include "FtpListResult.h"
 #include "FileZillaApi.h"
 #include <WideStrUtils.hpp>
+#include <FtpControlSocket.h>
 
 CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vmsAllRevisions, bool debugShowListing)
 {
@@ -717,7 +718,7 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
     dir.name = CString(Buf);
   }
   else
-    copyStr(dir.name, 0, str, tokenlen);
+    dir.name = getStr(str, tokenlen);
 
   // This field is either the size or a username (???) enclosed in [].
   str = GetNextToken(line, linelen, tokenlen, pos, 0);
@@ -740,7 +741,7 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
   {
     if (tokenlen < 3 || str[0] != '[' || str[tokenlen - 1] != ']')
       return false;
-    copyStr(dir.ownergroup, 0, str + 1, tokenlen - 2);
+    dir.ownergroup = getStr(str + 1, tokenlen - 2);
   }
 
   if (!gotSize)
@@ -841,25 +842,19 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
     {
       if (dir.permissionstr != L"")
         dir.permissionstr += L" ";
-      CString tmp;
-      copyStr(tmp, 0, str + 1, tokenlen - 2);
-      dir.permissionstr += tmp;
+      dir.permissionstr += getStr(str + 1, tokenlen - 2);
     }
     else if (tokenlen > 2 && str[0] == '[' && str[tokenlen - 1] == ']')
     {
       if (dir.ownergroup != L"")
         dir.ownergroup += L" ";
-      CString tmp;
-      copyStr(tmp, 0, str + 1, tokenlen - 2);
-      dir.ownergroup += tmp;
+      dir.ownergroup += getStr(str + 1, tokenlen - 2);
     }
     else
     {
       if (dir.permissionstr != L"")
         dir.permissionstr += L" ";
-      CString tmp;
-      copyStr(tmp, 0, str, tokenlen);
-      dir.permissionstr += tmp;
+      dir.permissionstr += getStr(str, tokenlen);
     }
 
     str = GetNextToken(line, linelen, tokenlen, pos, 0);
@@ -1116,8 +1111,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   if (direntry.name.IsEmpty())
   {
     pos++;
-    CString fileName;
-    copyStr(fileName, 0, line + pos, linelen - pos, true);
+    CString fileName = getStr(line + pos, linelen - pos, true);
     if (m_mlst)
     {
       // do not try to detect path type, assume a standard *nix syntax + do not trim
@@ -1224,7 +1218,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
 
   //First check if it is a netware server
   bool bNetWare = false;
-  copyStr(direntry.permissionstr, 0, str, tokenlen);
+  direntry.permissionstr = getStr(str, tokenlen);
   if (tokenlen == 1)
   {
     //Yes, it's most likely a netware server
@@ -1236,7 +1230,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
       return FALSE;
     }
     direntry.permissionstr += L" ";
-    copyStr(direntry.permissionstr, direntry.permissionstr.GetLength(), str, tokenlen);
+    direntry.permissionstr += getStr(str, tokenlen);
   }
 
   //Set directory and link flags
@@ -1277,7 +1271,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
          direntry.permissionstr.Right(3) == L"SSH"))
         groupid = TRUE;
 
-      copyStr(direntry.ownergroup, direntry.ownergroup.GetLength(), str, tokenlen);
+      direntry.ownergroup += getStr(str, tokenlen);
     }
     else
       groupid = TRUE;
@@ -1293,7 +1287,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
 
       if (direntry.ownergroup != L"")
         direntry.ownergroup += L" ";
-      copyStr(direntry.ownergroup, direntry.ownergroup.GetLength(), str, tokenlen);
+      direntry.ownergroup += getStr(str, tokenlen);
     }
   }
 
@@ -1347,7 +1341,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         {
           if (direntry.ownergroup != L"")
             direntry.ownergroup += L" ";
-          copyStr(direntry.ownergroup, direntry.ownergroup.GetLength(), str, tokenlen);
+          direntry.ownergroup += getStr(str, tokenlen);
           skipped = prevstr;
           skippedlen = prevstrlen;
           break;
@@ -1359,7 +1353,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
       if (direntry.ownergroup != L"")
         direntry.ownergroup += L" ";
 
-      copyStr(direntry.ownergroup, direntry.ownergroup.GetLength(), prevstr, prevstrlen);
+      direntry.ownergroup += getStr(prevstr, prevstrlen);
     }
     prevstr = str;
     prevstrlen = tokenlen;
@@ -1400,8 +1394,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         if (direntry.ownergroup != L"")
           direntry.ownergroup += L" ";
 
-        copyStr(direntry.ownergroup, direntry.ownergroup.GetLength(), str, pos-str);
-
+        direntry.ownergroup += getStr(str, pos-str);
       }
       else
       {
@@ -1422,8 +1415,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         if (direntry.ownergroup != L"")
           direntry.ownergroup += L" ";
 
-        copyStr(direntry.ownergroup, direntry.ownergroup.GetLength(), skipped, skippedlen - sizelen);
-
+        direntry.ownergroup += getStr(skipped, skippedlen - sizelen);
       }
       direntry.size = strntoi64(size, sizelen);
     }
@@ -1441,11 +1433,11 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   {
     if (direntry.ownergroup != L"")
       direntry.ownergroup += L" ";
-    copyStr(direntry.ownergroup, direntry.ownergroup.GetLength(), skipped, skippedlen);
+    direntry.ownergroup += getStr(skipped, skippedlen);
     if (prevstr)
     {
       direntry.ownergroup += L" ";
-      copyStr(direntry.ownergroup, direntry.ownergroup.GetLength(), prevstr, prevstrlen);
+      direntry.ownergroup += getStr(prevstr, prevstrlen);
     }
     str = 0;
   }
@@ -1830,7 +1822,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     const char *pos = strnstr(str, tokenlen, " -> ");
     if (pos)
     {
-      copyStr(direntry.linkTarget, 0, pos + 4, tokenlen - (pos - str) - 4);
+      direntry.linkTarget = getStr(pos + 4, tokenlen - (pos - str) - 4);
       tokenlen = pos - str;
     }
 
@@ -1849,7 +1841,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     str[tokenlen - 1] == '|')
     tokenlen--;
 
-  copyStr(direntry.name, 0, str, tokenlen, true);
+  direntry.name = getStr(str, tokenlen, true);
 
   direntry.bUnsure = FALSE;
   direntry.date.hasdate = TRUE;
@@ -1915,7 +1907,7 @@ BOOL CFtpListResult::parseAsDos(const char *line, const int linelen, t_directory
   str = GetNextToken(line, linelen, tokenlen, pos, 1);
   if (!str)
     return FALSE;
-  copyStr(direntry.name, 0, str, tokenlen, true);
+  direntry.name = getStr(str, tokenlen, true);
 
   direntry.bUnsure = FALSE;
 
@@ -1969,7 +1961,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
   //else it's the VShell or OS/2 format
   if (IsNumeric(str, tokenlen))
   {
-    copyStr(direntry.permissionstr, 0, skipped, skippedtokenlen);
+    direntry.permissionstr = getStr(skipped, skippedtokenlen);
 
     if (skippedtokenlen >= 2 && skipped[1] == '4')
       direntry.dir = TRUE;
@@ -1999,7 +1991,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
     str = GetNextToken(line, linelen, tokenlen, pos, 1);
     if (!str)
       return FALSE;
-    copyStr(direntry.name, 0, str, tokenlen, true);
+    direntry.name = getStr(str, tokenlen, true);
   }
   else
   {
@@ -2070,8 +2062,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
           return FALSE;
       }
 
-
-      copyStr(direntry.name, 0, str, tokenlen, true);
+      direntry.name = getStr(str, tokenlen, true);
     }
     else
     {
@@ -2142,7 +2133,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
 
       if (!tokenlen)
         return FALSE;
-      copyStr(direntry.name, 0, str, tokenlen, true);
+      direntry.name = getStr(str, tokenlen, true);
     }
   }
 
@@ -2245,41 +2236,10 @@ const char * CFtpListResult::strnstr(const char *str, int len, const char *c) co
   return NULL;
 }
 
-void CFtpListResult::copyStr(CString &target, int pos, const char *source, int len, bool mayInvalidateUTF8 /*=false*/)
+inline CString CFtpListResult::getStr(const char *source, int len, bool mayInvalidateUTF8)
 {
-  char *p = new char[len + 1];
-  memcpy(p, source, len);
-  p[len] = '\0';
-  if (m_bUTF8 && *m_bUTF8)
-  {
-    // convert from UTF-8 to ANSI
-    if (DetectUTF8Encoding(RawByteString(p, len)) == etANSI)
-    {
-      if (mayInvalidateUTF8 && m_server.nUTF8 != 1)
-      {
-        LogMessage(FZ_LOG_WARNING, L"Server does not send proper UTF-8, falling back to local charset");
-        *m_bUTF8 = false;
-      }
-      target = target.Left(pos) + CString(p);
-    }
-    else
-    {
-      // convert from UTF-8 to ANSI
-      int len = MultiByteToWideChar(CP_UTF8, 0, static_cast<const char *>(p), -1, NULL, 0);
-      if (len != 0)
-      {
-        wchar_t * p1 = new wchar_t[len + 1];
-        MultiByteToWideChar(CP_UTF8, 0, p, -1, p1, len + 1);
-        target = target.Left(pos) + p1;
-        delete [] p1;
-      }
-      else
-        target = target.Left(pos) + CString(p);
-    }
-  }
-  else
-    target = target.Left(pos) + CString(p);
-  delete [] p;
+  RawByteString P(source, len);
+  return CString(CFtpControlSocket::DecodeString(P, this, m_server, m_bUTF8, mayInvalidateUTF8));
 }
 
 BOOL CFtpListResult::parseAsIBM(const char *line, const int linelen, t_directory::t_direntry &direntry)
@@ -2291,7 +2251,7 @@ BOOL CFtpListResult::parseAsIBM(const char *line, const int linelen, t_directory
   if (!str)
     return FALSE;
 
-  copyStr(direntry.ownergroup , 0, str, tokenlen);
+  direntry.ownergroup = getStr(str, tokenlen);
 
   str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
@@ -2335,7 +2295,7 @@ BOOL CFtpListResult::parseAsIBM(const char *line, const int linelen, t_directory
   else
     direntry.dir = FALSE;
 
-  copyStr(direntry.name, 0, str, tokenlen, true);
+  direntry.name = getStr(str, tokenlen, true);
 
   direntry.bUnsure = FALSE;
 
@@ -2379,7 +2339,7 @@ BOOL CFtpListResult::parseAsIBMMVS(const char *line, const int linelen, t_direct
         if (strnchr(str, tokenlen, ' '))
           return FALSE;
 
-        copyStr(direntry.name, 0, str, tokenlen, true);
+        direntry.name = getStr(str, tokenlen, true);
         direntry.dir = false;
         return true;
       }
@@ -2447,7 +2407,7 @@ BOOL CFtpListResult::parseAsIBMMVS(const char *line, const int linelen, t_direct
   str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
     return FALSE;
-  copyStr(direntry.name, 0, str, tokenlen, true);
+  direntry.name = getStr(str, tokenlen, true);
 
   direntry.bUnsure = FALSE;
 
@@ -2463,7 +2423,7 @@ BOOL CFtpListResult::parseAsIBMMVSPDS(const char *line, const int linelen, t_dir
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
     return FALSE;
-  copyStr(direntry.name, 0, str, tokenlen);
+  direntry.name = getStr(str, tokenlen);
 
   // vv.mm
   str = GetNextToken(line, linelen, tokenlen, pos, 0);
@@ -2562,7 +2522,7 @@ BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_di
     }
   }
 
-  copyStr(direntry.name, 0, str, tokenlen);
+  direntry.name = getStr(str, tokenlen);
 
   if (m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_BS2000)
   {
@@ -2727,7 +2687,7 @@ BOOL CFtpListResult::parseAsWfFtp(const char *line, const int linelen, t_directo
   if (!str)
     return FALSE;
 
-  copyStr(direntry.name, 0, str, tokenlen);
+  direntry.name = getStr(str, tokenlen);
 
   str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)

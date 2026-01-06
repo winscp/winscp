@@ -11,6 +11,7 @@
 #include "FileZillaApi.h"
 #include <WideStrUtils.hpp>
 #include <DateUtils.hpp>
+#include <Common.h>
 
 class CFtpControlSocket::CFileTransferData : public CFtpControlSocket::t_operation::COpData
 {
@@ -1147,6 +1148,34 @@ BOOL CFtpControlSocket::SendAuthSsl()
   return true;
 }
 
+UnicodeString CFtpControlSocket::DecodeString(
+  const RawByteString & S, CApiLog * ApiLog, const t_server & Server, bool * UTF8, bool MayInvalidateUTF8)
+{
+  UnicodeString Result;
+  if ((UTF8 != nullptr) && *UTF8)
+  {
+    // convert from UTF-8 to ANSI
+    if (DetectUTF8Encoding(S) == etANSI)
+    {
+      if (MayInvalidateUTF8 && (Server.nUTF8 != 1))
+      {
+        ApiLog->LogMessage(FZ_LOG_WARNING, L"Server does not send proper UTF-8, falling back to local charset");
+        *UTF8 = false;
+      }
+      Result = AnsiToString(S);
+    }
+    else
+    {
+      Result = UTFToString(S);
+    }
+  }
+  else
+  {
+    Result = AnsiToString(S);
+  }
+  return Result;
+}
+
 #define BUFFERSIZE 4096
 void CFtpControlSocket::OnReceive(int nErrorCode)
 {
@@ -1206,37 +1235,8 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
     {
       if (!m_RecvBuffer.empty() && m_RecvBuffer.back() != "")
       {
-        if (m_bUTF8)
-        {
-          // convert from UTF-8 to ANSI
-          const char * utf8 = m_RecvBuffer.back().c_str();
-          if (DetectUTF8Encoding(RawByteString(utf8)) == etANSI)
-          {
-            if (m_CurrentServer.nUTF8 != 1)
-            {
-              LogMessage(FZ_LOG_WARNING, L"Server does not send proper UTF-8, falling back to local charset");
-              m_bUTF8 = false;
-            }
-            ShowStatus(UnicodeString(utf8).c_str(), FZ_LOG_REPLY);
-          }
-          else
-          {
-            int len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
-            if (!len)
-              m_RecvBuffer.back() = "";
-            else
-            {
-              wchar_t * p1 = new wchar_t[len + 1];
-              MultiByteToWideChar(CP_UTF8, 0, utf8, -1 , p1, len + 1);
-              ShowStatus(p1, FZ_LOG_REPLY);
-              delete [] p1;
-            }
-          }
-        }
-        else
-        {
-          ShowStatus(UnicodeString(m_RecvBuffer.back().c_str()).c_str(), FZ_LOG_REPLY);
-        }
+        UnicodeString S = DecodeString(m_RecvBuffer.back(), this, m_CurrentServer, &m_bUTF8, true);
+        ShowStatus(S.c_str(), FZ_LOG_REPLY);
         // Check for multi-line responses
         // Partially duplicated in TFTPFileSystem::HandleReplyStatus
         if (m_RecvBuffer.back().Length() > 3)
@@ -1405,25 +1405,14 @@ BOOL CFtpControlSocket::Send(CString str)
   int res = 0;
   if (m_bUTF8)
   {
-    const wchar_t * unicode = str;
-    int len = WideCharToMultiByte(CP_UTF8, 0, unicode, -1, 0, 0, 0, 0);
-    if (!len)
-    {
-      ShowStatus(IDS_ERRORMSG_CANTSENDCOMMAND, FZ_LOG_ERROR);
-      DoClose();
-      return FALSE;
-    }
-    char* utf8 = new char[len + 1];
-    WideCharToMultiByte(CP_UTF8, 0, unicode, -1, utf8, len + 1, 0, 0);
-
-    int sendLen = strlen(utf8);
+    UTF8String Utf8 = UTF8String(str.c_str());
+    int sendLen = Utf8.Length();
     if (!m_awaitsReply && !m_sendBuffer)
-      res = CAsyncSocketEx::Send(utf8, strlen(utf8));
+      res = CAsyncSocketEx::Send(Utf8.c_str(), sendLen);
     else
       res = -2;
     if ((res == SOCKET_ERROR && GetLastError() != WSAEWOULDBLOCK) || !res)
     {
-      delete [] utf8;
       ShowStatus(IDS_ERRORMSG_CANTSENDCOMMAND, FZ_LOG_ERROR);
       DoClose();
       return FALSE;
@@ -1435,20 +1424,19 @@ BOOL CFtpControlSocket::Send(CString str)
       if (!m_sendBuffer)
       {
         m_sendBuffer = new char[sendLen - res];
-        memcpy(m_sendBuffer, utf8 + res, sendLen - res);
+        memcpy(m_sendBuffer, Utf8.c_str() + res, sendLen - res);
         m_sendBufferLen = sendLen - res;
       }
       else
       {
         char* tmp = new char[m_sendBufferLen + sendLen - res];
         memcpy(tmp, m_sendBuffer, m_sendBufferLen);
-        memcpy(tmp + m_sendBufferLen, utf8 + res, sendLen - res);
+        memcpy(tmp + m_sendBufferLen, Utf8.c_str() + res, sendLen - res);
         delete [] m_sendBuffer;
         m_sendBuffer = tmp;
         m_sendBufferLen += sendLen - res;
       }
     }
-    delete [] utf8;
   }
   else
   {
@@ -5693,52 +5681,20 @@ CString CFtpControlSocket::GetReply()
   if (m_RecvBuffer.empty())
     return L"";
 
-  const char * line;
+  RawByteString * line;
 
   if ((m_Operation.nOpMode&CSMODE_LISTFILE) && (m_Operation.nOpState==LISTFILE_MLST) &&
       (GetReplyCode() == 2))
   {
     // this is probably never used anyway
-    line = m_ListFile.c_str();
+    line = &m_ListFile;
   }
   else
   {
-    line = m_RecvBuffer.front().c_str();
+    line = &m_RecvBuffer.front();
   }
 
-  if (m_bUTF8)
-  {
-    // convert from UTF-8 to ANSI
-    if (DetectUTF8Encoding(RawByteString(line)) == etANSI)
-    {
-      if (m_CurrentServer.nUTF8 != 1)
-      {
-        LogMessage(FZ_LOG_WARNING, L"Server does not send proper UTF-8, falling back to local charset");
-        m_bUTF8 = false;
-      }
-      return CString(line);
-    }
-
-    // convert from UTF-8 to ANSI
-    int len = MultiByteToWideChar(CP_UTF8, 0, line, -1, NULL, 0);
-    if (!len)
-    {
-      m_RecvBuffer.pop_front();
-      if (m_RecvBuffer.empty())
-        m_RecvBuffer.push_back("");
-      return L"";
-    }
-    else
-    {
-      wchar_t * p1 = new wchar_t[len + 1];
-      MultiByteToWideChar(CP_UTF8, 0, line, -1, p1, len + 1);
-      CString reply = p1;
-      delete [] p1;
-      return reply;
-    }
-  }
-  else
-    return CString(line);
+  return CString(DecodeString(*line, this, m_CurrentServer, &m_bUTF8, true));
 }
 
 void CFtpControlSocket::OnSend(int nErrorCode)

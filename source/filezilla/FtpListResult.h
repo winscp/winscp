@@ -77,7 +77,7 @@ private:
 protected:
   bool m_mlst;
   bool * m_bUTF8;
-  void copyStr(CString & target, int pos, const char * source, int len, bool mayInvalidateUTF8 = false);
+  inline CString getStr(const char *source, int len, bool mayInvalidateUTF8 = false);
   const char * strnchr(const char * str, int len, char c) const;
   const char * strnstr(const char * str, int len, const char * c) const;
   __int64 strntoi64(const char * str, int len) const;
