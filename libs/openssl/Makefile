@@ -26,6 +26,7 @@ DEFINES=$(DEFINES);OPENSSL_NO_CAMELLIA;OPENSSL_NO_RC5;OPENSSL_NO_MDC2;OPENSSL_NO
 DEFINES=$(DEFINES);OPENSSL_NO_SEED;OPENSSL_NO_CAPIENG;OPENSSL_NO_ENGINE;OPENSSL_NO_ZLIB
 DEFINES=$(DEFINES);OPENSSL_NO_QUIC;OPENSSL_NO_BROTLI;OPENSSL_NO_COMP;OPENSSL_NO_COMP_ALG
 DEFINES=$(DEFINES);OPENSSL_NO_TFO;OPENSSL_NO_QLOG;OPENSSL_NO_JITTER;OPENSSL_NO_FIPS_JITTER
+DEFINES=$(DEFINES);OPENSSL_NO_DGRAM
 DEFINES=$(DEFINES);WINSCP
 
 CFLAG=$(CFLAG) $(CFLAG_OPENSSL) -D$(DEFINES:;= -D)
@@ -171,11 +172,11 @@ CRYPTOOBJ= \
     $(OBJ_D)\buffer.obj $(OBJ_D)\buf_err.obj \
     $(OBJ_D)\bio_lib.obj $(OBJ_D)\bio_cb.obj $(OBJ_D)\bio_err.obj $(OBJ_D)\bss_mem.obj \
     $(OBJ_D)\bss_null.obj $(OBJ_D)\bss_fd.obj $(OBJ_D)\bss_file.obj $(OBJ_D)\bss_sock.obj \
-    $(OBJ_D)\bss_dgram.obj $(OBJ_D)\bss_dgram_pair.obj $(OBJ_D)\bf_null.obj $(OBJ_D)\bf_buff.obj \
-    $(OBJ_D)\bf_nbio.obj $(OBJ_D)\bf_prefix.obj $(OBJ_D)\bf_readbuff.obj $(OBJ_D)\bio_addr.obj \
-    $(OBJ_D)\bio_dump.obj $(OBJ_D)\bio_meth.obj $(OBJ_D)\bio_print.obj $(OBJ_D)\bio_sock.obj \
-    $(OBJ_D)\bio_sock2.obj $(OBJ_D)\bss_bio.obj $(OBJ_D)\bss_conn.obj $(OBJ_D)\bss_log.obj \
-    $(OBJ_D)\bss_acpt.obj $(OBJ_D)\bss_core.obj $(OBJ_D)\ossl_core_bio.obj \
+    $(OBJ_D)\bf_null.obj $(OBJ_D)\bf_buff.obj $(OBJ_D)\bf_nbio.obj $(OBJ_D)\bf_prefix.obj \
+    $(OBJ_D)\bf_readbuff.obj $(OBJ_D)\bio_addr.obj $(OBJ_D)\bio_dump.obj $(OBJ_D)\bio_meth.obj \
+    $(OBJ_D)\bio_print.obj $(OBJ_D)\bio_sock.obj $(OBJ_D)\bio_sock2.obj $(OBJ_D)\bss_bio.obj \
+    $(OBJ_D)\bss_conn.obj $(OBJ_D)\bss_log.obj $(OBJ_D)\bss_acpt.obj $(OBJ_D)\bss_core.obj \
+    $(OBJ_D)\ossl_core_bio.obj \
     $(OBJ_D)\stack.obj \
     $(OBJ_D)\lhash.obj $(OBJ_D)\lh_stats.obj \
     $(OBJ_D)\rand_lib.obj $(OBJ_D)\rand_err.obj $(OBJ_D)\rand_egd.obj $(OBJ_D)\rand_win.obj \
@@ -646,8 +647,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\bio\bss_fd.c \
     $(SRC_D)\crypto\bio\bss_file.c \
     $(SRC_D)\crypto\bio\bss_sock.c \
-    $(SRC_D)\crypto\bio\bss_dgram.c \
-    $(SRC_D)\crypto\bio\bss_dgram_pair.c \
     $(SRC_D)\crypto\bio\bf_null.c \
     $(SRC_D)\crypto\bio\bf_buff.c \
     $(SRC_D)\crypto\bio\bf_nbio.c \
