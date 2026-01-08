@@ -34,6 +34,7 @@ CFLAG=$(CFLAG) $(CFLAG_OPENSSL) -D$(DEFINES:;= -D)
 # Copied from OpenSSL "makefile" generated with "perl Configure BC-32 --prefix=%CD%"
 # (but the OPENSSL_BUILDING_OPENSSL, _stricmp, _strnicmp and _setmode are not needed)
 # (and DSO_WIN32 removed as it clashes with dso_conf.h)
+# (and L_ENDIAN is determined automatically in endian.h)
 CFLAG= $(CFLAG) \
     -D"OPENSSL_BUILDING_OPENSSL" -D"WIN32_LEAN_AND_MEAN" -D"OPENSSL_SYS_WIN32" -D"L_ENDIAN" \
     -D"_stricmp=stricmp" -D"_strnicmp=strnicmp" -D"_malloca=malloc" -D"_freea=free" -D"_setmode=setmode" \
