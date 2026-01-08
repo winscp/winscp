@@ -40,7 +40,7 @@
         <BCC_UserSuppliedOptions>-Wno-objc-interface-ivars -Wno-return-type-c-linkage -Wno-covered-switch-default -Wno-cast-align -Wno-implicit-fallthrough -Wno-missing-prototypes -Wno-switch -Wno-shadow -Wno-sign-conversion -Wno-global-constructors -Wno-exit-time-destructors -Wno-padded -Wno-c++98-compat-pedantic -Wno-zero-as-null-pointer-constant -Wno-language-extension-token -Wno-ignored-attributes -Wno-float-equal -Wno-switch-enum -Wno-c99-extensions</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-        <Defines>WINSCP;_WINDOWS;WIN32;WINNT;OPENSSL_NO_DEPRECATED_1_1_0;_CRTIMP=;_LIB;UNICODE;$(BUILD_TYPE);$(Defines)</Defines>
+        <Defines>WINSCP;_WINDOWS;WIN32;WINNT;OPENSSL_API_COMPAT=11000;OPENSSL_NO_DEPRECATED;_CRTIMP=;_LIB;UNICODE;$(BUILD_TYPE);$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_LibraryPath>$(BDS)\lib;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>core\;putty;putty\windows;filezilla;resource;..\libs\openssl\include;..\libs\expat\lib;..\libs\neon\src;..\libs\libs3\inc;..\libs\mfc\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>

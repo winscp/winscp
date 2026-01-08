@@ -4,7 +4,7 @@
 DEFINES = WIN32;WIN32_LEAN_AND_MEAN;WINSCP;NE_LFS
 WARNINGS = -Wno-deprecated-declarations
 # Compile like C++
-CFLAG = $(CFLAG_CPP) -D$(DEFINES:;= -D) $(WARNINGS)
+CFLAG = $(CFLAG_CPP) $(CFLAG_OPENSSL) -D$(DEFINES:;= -D) $(WARNINGS)
 # The output directory for all the temporary muck
 TMP_D=tmp
 

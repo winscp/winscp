@@ -64,7 +64,7 @@
         <DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
         <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
         <DCC_UNSUPPORTED_CONSTRUCT>false</DCC_UNSUPPORTED_CONSTRUCT>
-        <Defines>WINSCP;STRICT;UNICODE;$(Defines)</Defines>
+        <Defines>WINSCP;STRICT;UNICODE;OPENSSL_API_COMPAT=11000;OPENSSL_NO_DEPRECATED;$(Defines)</Defines>
         <FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <Icon_MainIcon>resource\Application.ico</Icon_MainIcon>
         <ILINK_GenerateDRC>True</ILINK_GenerateDRC>

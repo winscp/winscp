@@ -19,3 +19,5 @@ CFLAG_COMMON = \
 
 CFLAG_CPP = \
     $(CFLAG_BASE) -x c++ -std=c++17 -fcxx-exceptions -ffunction-sections -fno-use-cxa-atexit
+
+CFLAG_OPENSSL=-DOPENSSL_API_COMPAT=11000 -DOPENSSL_NO_DEPRECATED

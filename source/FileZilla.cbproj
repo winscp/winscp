@@ -39,7 +39,7 @@
         <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-dangling-else -Wno-extra-tokens -Wno-reserved-id-macro -Wno-language-extension-token -Wno-global-constructors -Wno-sign-conversion -Wno-zero-as-null-pointer-constant -Wno-c++98-compat-pedantic -Wno-padded -Wno-sign-compare -Wno-deprecated -Wno-cast-align -Wno-shadow -Wno-overloaded-virtual -Wno-exit-time-destructors -Wno-format-nonliteral -Wno-implicit-fallthrough -Wno-c99-extensions</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-        <Defines>WINSCP;WIN32;UNICODE;$(Defines)</Defines>
+        <Defines>WINSCP;WIN32;UNICODE;OPENSSL_API_COMPAT=11000;OPENSSL_NO_DEPRECATED;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>filezilla\misc\;filezilla\;resource;core;..\libs\openssl\include;..\libs\mfc\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
