@@ -81,9 +81,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\putty\crypto\aes-ni.c" />
-    <ClCompile Include="..\..\source\putty\crypto\aes-sw.c" />
-    <ClCompile Include="..\..\source\putty\crypto\argon2.c" />
-    <ClCompile Include="..\..\source\putty\crypto\sha256-sw.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,24 +5,15 @@
 #include "ssh.h"
 #include "sha256.h"
 
-#ifndef WINSCP_VS
-
 static bool sha256_sw_available(void)
 {
     /* Software SHA-256 is always available */
     return true;
 }
 
-#endif // WINSCP_VS
-
-#ifdef WINSCP_VS
-
 static inline uint32_t ror(uint32_t x, unsigned y)
 {
-    #pragma warning(push)
-    #pragma warning(suppress: 4146) // WINSCP VS
     return (x << (31 & -y)) | (x >> (31 & y));
-    #pragma warning(pop)
 }
 
 static inline uint32_t Ch(uint32_t ctrl, uint32_t if1, uint32_t if0)
@@ -69,7 +60,7 @@ static inline void sha256_sw_round(
     *h = t1 + t2;
 }
 
-/*WINSCP static*/ void sha256_sw_block(uint32_t *core, const uint8_t *block)
+static void sha256_sw_block(uint32_t *core, const uint8_t *block)
 {
     uint32_t w[SHA256_ROUNDS];
     uint32_t a,b,c,d,e,f,g,h;
@@ -99,8 +90,6 @@ static inline void sha256_sw_round(
 
     smemclr(w, sizeof(w));
 }
-
-#else // WINSCP_VS
 
 typedef struct sha256_sw {
     uint32_t core[8];
@@ -166,5 +155,3 @@ static void sha256_sw_digest(ssh_hash *hash, uint8_t *digest)
 }
 
 SHA256_VTABLE(sw, "unaccelerated");
-
-#endif // WINSCP_VS
