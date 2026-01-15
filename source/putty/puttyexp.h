@@ -39,15 +39,6 @@ Seat * get_pfwd_seat(Plug * plug);
 
 void select_result(WPARAM wParam, LPARAM lParam);
 
-// from sshaes.c
-
-typedef void AESContext;
-AESContext * aes_make_context(void);
-void aes_free_context(AESContext * ctx);
-void aes_iv(AESContext * ctx, const void * iv);
-void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen);
-void call_aes_sdctr(unsigned char *blk, int len, AESContext * ctx);
-
 // from sshaesold.c
 
 void *aesold_make_context(void);

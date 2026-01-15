@@ -182,11 +182,6 @@ static void hmac_sha1_end(unsigned char mac[], unsigned long mac_len, hmac_ctx c
 
 #define BLOCK_SIZE  16
 
-void aes_set_encrypt_key(const unsigned char in_key[], unsigned int klen, void * cx)
-{
-  call_aes_setup(cx, const_cast<unsigned char *>(in_key), klen);
-}
-
 void aes_encrypt_block(const unsigned char in_blk[], unsigned char out_blk[], void * cx)
 {
   int Index;
@@ -731,8 +726,9 @@ TEncryption::TEncryption(const RawByteString & Key)
   if (!FKey.IsEmpty())
   {
     DebugAssert(FKey.Length() == KEY_LENGTH(PASSWORD_MANAGER_AES_MODE));
-    FContext = aes_make_context();
-    aes_set_encrypt_key(reinterpret_cast<unsigned char *>(FKey.c_str()), FKey.Length(), FContext);
+    DebugAssert(FKey.Length() == 32);
+    FContext = ssh_cipher_new(&ssh_aes256_sdctr);
+    ssh_cipher_setkey(static_cast<ssh_cipher *>(FContext), FKey.c_str());
   }
   else
   {
@@ -744,7 +740,7 @@ TEncryption::~TEncryption() EXCEPT
 {
   if (FContext != NULL)
   {
-    aes_free_context(FContext);
+    ssh_cipher_free(static_cast<ssh_cipher *>(FContext));
   }
   Shred(FKey);
   if ((FInputHeader.Length() > 0) && (FInputHeader.Length() < GetOverhead()))
@@ -755,7 +751,7 @@ TEncryption::~TEncryption() EXCEPT
 //---------------------------------------------------------------------------
 void TEncryption::SetSalt()
 {
-  aes_iv(FContext, reinterpret_cast<const void *>(FSalt.c_str()));
+  ssh_cipher_setiv(static_cast<ssh_cipher *>(FContext), FSalt.c_str());
 }
 //---------------------------------------------------------------------------
 void TEncryption::NeedSalt()
@@ -788,7 +784,7 @@ int TEncryption::RoundToBlockDown(int Size)
 void TEncryption::Aes(char * Buffer, int Size)
 {
   DebugAssert(!FSalt.IsEmpty());
-  call_aes_sdctr(reinterpret_cast<unsigned char *>(Buffer), Size, FContext);
+  ssh_cipher_encrypt(static_cast<ssh_cipher *>(FContext), Buffer, Size);
 }
 //---------------------------------------------------------------------------
 void TEncryption::Aes(TFileBuffer & Buffer, bool Last)
