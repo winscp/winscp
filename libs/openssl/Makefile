@@ -178,8 +178,8 @@ CRYPTOOBJ= \
     $(OBJ_D)\ossl_core_bio.obj \
     $(OBJ_D)\stack.obj \
     $(OBJ_D)\lhash.obj $(OBJ_D)\lh_stats.obj \
-    $(OBJ_D)\rand_lib.obj $(OBJ_D)\rand_err.obj $(OBJ_D)\rand_egd.obj $(OBJ_D)\rand_win.obj \
-    $(OBJ_D)\rand_pool.obj $(OBJ_D)\rand_meth.obj $(OBJ_D)\prov_seed.obj $(OBJ_D)\rand_uniform.obj \
+    $(OBJ_D)\rand_lib.obj $(OBJ_D)\rand_err.obj $(OBJ_D)\rand_win.obj $(OBJ_D)\rand_pool.obj \
+    $(OBJ_D)\rand_meth.obj $(OBJ_D)\prov_seed.obj $(OBJ_D)\rand_uniform.obj \
     $(OBJ_D)\err.obj $(OBJ_D)\err_all.obj $(OBJ_D)\err_prn.obj $(OBJ_D)\err_blocks.obj \
     $(OBJ_D)\err_mark.obj $(OBJ_D)\err_save.obj \
     $(OBJ_D)\o_names.obj $(OBJ_D)\obj_dat.obj $(OBJ_D)\obj_lib.obj $(OBJ_D)\obj_err.obj \
@@ -268,10 +268,10 @@ CRYPTOOBJ= \
     $(OBJ_D)\ec_err.obj $(OBJ_D)\ec_check.obj $(OBJ_D)\ec_key.obj $(OBJ_D)\ec_lib.obj \
     $(OBJ_D)\ec_mult.obj $(OBJ_D)\ec_oct.obj $(OBJ_D)\ec_pmeth.obj $(OBJ_D)\ec_print.obj \
     $(OBJ_D)\ec2_oct.obj $(OBJ_D)\ec2_smpl.obj $(OBJ_D)\eck_prn.obj $(OBJ_D)\ecp_mont.obj \
-    $(OBJ_D)\ecp_nist.obj $(OBJ_D)\ecp_nistputil.obj $(OBJ_D)\ecp_oct.obj $(OBJ_D)\ecp_smpl.obj \
-    $(OBJ_D)\ecdh_ossl.obj $(OBJ_D)\ec_kmeth.obj $(OBJ_D)\ecx_meth.obj $(OBJ_D)\ecdsa_ossl.obj \
-    $(OBJ_D)\curve25519.obj $(OBJ_D)\ecdsa_sign.obj $(OBJ_D)\ecdsa_vrf.obj $(OBJ_D)\ec_backend.obj \
-    $(OBJ_D)\ecx_key.obj $(OBJ_D)\ecx_backend.obj \
+    $(OBJ_D)\ecp_nist.obj $(OBJ_D)\ecp_oct.obj $(OBJ_D)\ecp_smpl.obj $(OBJ_D)\ecdh_ossl.obj \
+    $(OBJ_D)\ec_kmeth.obj $(OBJ_D)\ecx_meth.obj $(OBJ_D)\ecdsa_ossl.obj $(OBJ_D)\curve25519.obj \
+    $(OBJ_D)\ecdsa_sign.obj $(OBJ_D)\ecdsa_vrf.obj $(OBJ_D)\ec_backend.obj $(OBJ_D)\ecx_key.obj \
+    $(OBJ_D)\ecx_backend.obj \
     $(OBJ_D)\eddsa.obj $(OBJ_D)\curve448.obj $(OBJ_D)\scalar.obj $(OBJ_D)\curve448_tables.obj \
     $(OBJ_D)\f_generic.obj \
     $(OBJ_D)\f_impl32.obj \
@@ -343,10 +343,10 @@ CRYPTOOBJ= \
     $(OBJ_D)\cipher_chacha20_poly1305.obj $(OBJ_D)\cipher_chacha20_poly1305_hw.obj \
     $(OBJ_D)\blake2b_mac.obj $(OBJ_D)\blake2s_mac.obj $(OBJ_D)\cmac_prov.obj $(OBJ_D)\gmac_prov.obj \
     $(OBJ_D)\hmac_prov.obj $(OBJ_D)\kmac_prov.obj $(OBJ_D)\poly1305_prov.obj $(OBJ_D)\siphash_prov.obj \
-    $(OBJ_D)\hkdf.obj $(OBJ_D)\kbkdf.obj $(OBJ_D)\krb5kdf.obj $(OBJ_D)\pbkdf1.obj \
-    $(OBJ_D)\pbkdf2.obj $(OBJ_D)\pbkdf2_fips.obj $(OBJ_D)\pkcs12kdf.obj $(OBJ_D)\scrypt.obj \
-    $(OBJ_D)\sshkdf.obj $(OBJ_D)\sskdf.obj $(OBJ_D)\tls1_prf.obj $(OBJ_D)\x942kdf.obj \
-    $(OBJ_D)\hmacdrbg_kdf.obj $(OBJ_D)\argon2.obj \
+    $(OBJ_D)\hkdf.obj $(OBJ_D)\kbkdf.obj $(OBJ_D)\krb5kdf.obj $(OBJ_D)\pbkdf2.obj \
+    $(OBJ_D)\pbkdf2_fips.obj $(OBJ_D)\pkcs12kdf.obj $(OBJ_D)\scrypt.obj $(OBJ_D)\sshkdf.obj \
+    $(OBJ_D)\sskdf.obj $(OBJ_D)\tls1_prf.obj $(OBJ_D)\x942kdf.obj $(OBJ_D)\hmacdrbg_kdf.obj \
+    $(OBJ_D)\argon2.obj \
     $(OBJ_D)\dh_exch.obj $(OBJ_D)\ecdh_exch.obj $(OBJ_D)\ecx_exch.obj $(OBJ_D)\kdf_exch.obj \
     $(OBJ_D)\dsa_sig.obj $(OBJ_D)\ecdsa_sig.obj $(OBJ_D)\eddsa_sig.obj $(OBJ_D)\mac_legacy_sig.obj \
     $(OBJ_D)\rsa_sig.obj $(OBJ_D)\sm2_sig.obj $(OBJ_D)\ml_dsa_sig.obj $(OBJ_D)\slh_dsa_sig.obj \
@@ -668,7 +668,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\lhash\lh_stats.c \
     $(SRC_D)\crypto\rand\rand_lib.c \
     $(SRC_D)\crypto\rand\rand_err.c \
-    $(SRC_D)\crypto\rand\rand_egd.c \
     $(SRC_D)\crypto\rand\rand_win.c \
     $(SRC_D)\crypto\rand\rand_pool.c \
     $(SRC_D)\crypto\rand\rand_meth.c \
@@ -997,7 +996,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\ec\eck_prn.c \
     $(SRC_D)\crypto\ec\ecp_mont.c \
     $(SRC_D)\crypto\ec\ecp_nist.c \
-    $(SRC_D)\crypto\ec\ecp_nistputil.c \
     $(SRC_D)\crypto\ec\ecp_oct.c \
     $(SRC_D)\crypto\ec\ecp_smpl.c \
     $(SRC_D)\crypto\ec\ecdh_ossl.c \
@@ -1224,7 +1222,6 @@ CRYPTOSRC= \
     $(SRC_D)\providers\implementations\kdfs\hkdf.c \
     $(SRC_D)\providers\implementations\kdfs\kbkdf.c \
     $(SRC_D)\providers\implementations\kdfs\krb5kdf.c \
-    $(SRC_D)\providers\implementations\kdfs\pbkdf1.c \
     $(SRC_D)\providers\implementations\kdfs\pbkdf2.c \
     $(SRC_D)\providers\implementations\kdfs\pbkdf2_fips.c \
     $(SRC_D)\providers\implementations\kdfs\pkcs12kdf.c \
