@@ -1,7 +1,6 @@
 #ifndef OPENSSL_CONFIGURATION_H
 
-#include "configuration_BC32.h"
-#undef OPENSSL_NO_ASM
+#include "configuration_32.h"
 
 #define ENGINESDIR "C:\\Program Files (x86)\\OpenSSL\\lib\\engines-3"
 #define MODULESDIR "C:\\Program Files (x86)\\OpenSSL\\lib\\ossl-modules"
