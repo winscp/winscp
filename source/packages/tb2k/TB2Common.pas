@@ -55,7 +55,6 @@ procedure DrawInvertRect(const DC: HDC; const NewRect, OldRect: PRect;
   const NewSize, OldSize: TSize; const Brush: HBRUSH; BrushLast: HBRUSH);
 function EscapeAmpersands(const S: String): String;
 function FindAccelChar(const S: String): Char;
-function GetInputLocaleCodePage: UINT;
 function GetMenuShowDelay: Integer;
 function GetRectOfMonitorContainingPoint(const P: TPoint; const WorkArea: Boolean): TRect;
 function GetRectOfMonitorContainingRect(const R: TRect; const WorkArea: Boolean): TRect;
@@ -1005,28 +1004,6 @@ begin
     end;
     Inc(P);
   end;
-end;
-
-function GetInputLocaleCodePage: UINT;
-{ Returns the code page identifier of the active input locale, or CP_ACP if
-  for some unknown reason it couldn't be determined. }
-var
-  Buf: array[0..15] of Char;
-  ErrorCode: Integer;
-begin
-  if GetLocaleInfo(GetKeyboardLayout(0) and $FFFF, LOCALE_IDEFAULTANSICODEPAGE,
-     Buf, SizeOf(Buf)) > 0 then begin
-    Buf[High(Buf)] := #0;  { ensure null termination, just in case... }
-    Val(Buf, Result, ErrorCode);
-    { Just to be *completely* safe, verify that the code page returned by
-      GetLocaleInfo actually exists. The result of this function may be fed
-      into WideCharToMultiByte, and we don't want WideCharToMultiByte to fail
-      entirely because of a bad code page. }
-    if (ErrorCode <> 0) or not IsValidCodePage(Result) then
-      Result := CP_ACP;
-  end
-  else
-    Result := CP_ACP;
 end;
 
 end.
