@@ -33,7 +33,7 @@ goto SKIP_EXPAT
 
 echo Building Expat ...
 cd expat\bcb5
-make -f makefile.mak
+make -f expat_static.mak
 cd ..\..
 
 if not exist %LIB_PATH%\libexpats_mtd.lib (
