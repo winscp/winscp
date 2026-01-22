@@ -8,8 +8,6 @@ unit TBX;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, Classes, SysUtils, Controls, Graphics, ImgList, Forms,
   TB2Item, TB2Dock, TB2Toolbar, TB2Anim, TBXUtils, TBXThemes, PasTools;
@@ -3179,7 +3177,6 @@ end;
 procedure TTBXNexus.AddNotifie(AObject: TObject);
 begin
   if FNotifies.IndexOf(AObject) < 0 then FNotifies.Add(AObject);
-  Exit; asm db 0,'TBX (C) 2001-2003 Alex Denisov',0 end;
 end;
 
 procedure TTBXNexus.Broadcast(Msg: Cardinal; WParam, LParam: Integer);

@@ -8,8 +8,6 @@ unit TBXStatusBars;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, Classes, SysUtils, Controls, Forms, Graphics, TBX,
   TBXThemes, TB2ITem, ImgList, UITypes;

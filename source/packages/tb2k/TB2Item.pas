@@ -29,7 +29,6 @@ unit TB2Item;
 
 interface
 
-{$I TB2Ver.inc}
 {x$DEFINE TB2K_NO_ANIMATION}
   { Enabling the above define disables all menu animation. For debugging
     purpose only. }
@@ -5796,7 +5795,6 @@ begin
   end
   else
     EndModal;
-  Exit; asm db 0,'Toolbar2000 (C) 1998-2005 Jordan Russell',0 end;
 end;
 
 procedure TTBView.Scroll(ADown: Boolean);

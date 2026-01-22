@@ -8,8 +8,6 @@ unit TBXThemes;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, Classes, Forms, Graphics, ImgList, Controls, TB2Item;
 

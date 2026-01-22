@@ -28,7 +28,6 @@ unit TB2Anim;
 
 interface
 
-{$I TB2Ver.inc}
 {$Q-}
 
 uses

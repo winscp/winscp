@@ -28,8 +28,6 @@ unit TB2Toolbar;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Types,
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, ImgList,

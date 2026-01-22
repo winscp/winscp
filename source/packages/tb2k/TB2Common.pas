@@ -28,8 +28,6 @@ unit TB2Common;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Classes, SysUtils, Messages, Controls, Forms;
 

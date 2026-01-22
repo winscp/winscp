@@ -8,8 +8,6 @@ unit TBXUtils;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, Classes, SysUtils, Graphics, Controls, Forms, ImgList;
 

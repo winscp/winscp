@@ -9,8 +9,6 @@ unit TBXExtItems;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, Classes, SysUtils, Graphics, Controls, StdCtrls, ExtCtrls,
   TBX, TBXThemes, TB2Item, TB2Toolbar, TB2ExtItems, TBXLists;

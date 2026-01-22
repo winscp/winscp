@@ -8,8 +8,6 @@ unit TBXReg;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Classes, Controls, SysUtils, Graphics, ImgList, Dialogs,
   DesignIntf, DesignEditors, VCLEditors,

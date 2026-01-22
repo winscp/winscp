@@ -34,8 +34,6 @@ interface
   You may want to temporarily enable the define while debugging so you are able
   to see your code window while stepping through the dragging routines. }
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms;
 

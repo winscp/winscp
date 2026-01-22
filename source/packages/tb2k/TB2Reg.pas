@@ -28,8 +28,6 @@ unit TB2Reg;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, SysUtils, Classes, Graphics, Controls, Dialogs, ActnList, ImgList,
   DesignIntf, DesignEditors, VCLEditors,

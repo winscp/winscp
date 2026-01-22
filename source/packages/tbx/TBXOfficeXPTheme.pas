@@ -8,8 +8,6 @@ unit TBXOfficeXPTheme;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, Graphics, TBXThemes, ImgList, Controls, TB2Item, Forms;
 

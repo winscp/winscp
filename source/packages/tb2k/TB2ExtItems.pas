@@ -28,8 +28,6 @@ unit TB2ExtItems;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, CommCtrl, Menus, ActnList,

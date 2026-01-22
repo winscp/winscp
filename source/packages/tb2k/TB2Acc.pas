@@ -31,8 +31,6 @@ unit TB2Acc;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   TB2Item;
