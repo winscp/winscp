@@ -48,7 +48,7 @@ private:
 class TSafeHandleStream : public THandleStream
 {
 public:
-  __fastcall TSafeHandleStream(int AHandle);
+  __fastcall TSafeHandleStream(NativeUInt AHandle);
   __fastcall TSafeHandleStream(THandleStream * Source, bool Own);
   static TSafeHandleStream * CreateFromFile(const UnicodeString & FileName, unsigned short Mode);
   virtual __fastcall ~TSafeHandleStream();

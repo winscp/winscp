@@ -28,7 +28,8 @@ __fastcall TEditorManager::TEditorManager()
 //---------------------------------------------------------------------------
 __fastcall TEditorManager::~TEditorManager()
 {
-  for (unsigned int i = FFiles.size(); i > 0; i--)
+  unsigned int Count = SizeToUIntChecked(FFiles.size());
+  for (unsigned int i = Count; i > 0; i--)
   {
     int Index = i - 1;
     TFileData * FileData = &FFiles[Index];
@@ -174,7 +175,7 @@ bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
   // Traverse from end, as closing internal editor causes deletion of
   // respective file vector element.
   TObject * PrevToken = NULL;
-  for (unsigned int i = FFiles.size(); i > 0; i--)
+  for (unsigned int i = SizeToUIntChecked(FFiles.size()); i > 0; i--)
   {
     // Note that element may be deleted by external cause (like if external editor
     // is closed while "save confirmation" message is displayed).
@@ -209,7 +210,7 @@ bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
 bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
 {
   TGuard Guard(FSection);
-  for (unsigned int i = FFiles.size(); i > 0; i--)
+  for (unsigned int i = SizeToUIntChecked(FFiles.size()); i > 0; i--)
   {
     TFileData * FileData = &FFiles[i - 1];
 
@@ -281,7 +282,7 @@ void __fastcall TEditorManager::Check()
   {
     do
     {
-      Index = WaitFor(FProcesses.size(), &(FProcesses[0]), PROCESS);
+      Index = WaitFor(SizeToUIntChecked(FProcesses.size()), &(FProcesses[0]), PROCESS);
 
       if (Index >= 0)
       {
@@ -307,8 +308,7 @@ void __fastcall TEditorManager::Check()
   {
     do
     {
-      Index = WaitFor(FUploadCompleteEvents.size(), &(FUploadCompleteEvents[0]),
-        EVENT);
+      Index = WaitFor(SizeToUIntChecked(FUploadCompleteEvents.size()), &(FUploadCompleteEvents[0]), EVENT);
 
       if (Index >= 0)
       {

@@ -62,9 +62,10 @@ UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
   RawByteString Dest(sb->s);
   strbuf_free(sb);
   UnicodeString Result;
-  if (Dest.SubString(1, strlen(Bom)) == Bom)
+  int BomLen = static_cast<int>(strlen(Bom));
+  if (Dest.SubString(1, BomLen) == Bom)
   {
-    Dest.Delete(1, strlen(Bom));
+    Dest.Delete(1, BomLen);
     Result = UTF8ToString(Dest);
   }
   else
@@ -774,7 +775,7 @@ size_t __fastcall THierarchicalStorage::BinaryDataSize(const UnicodeString & Nam
 //---------------------------------------------------------------------------
 RawByteString __fastcall THierarchicalStorage::ReadBinaryData(const UnicodeString & Name)
 {
-  size_t Size = BinaryDataSize(Name);
+  int Size = SizeToIntChecked(BinaryDataSize(Name));
   RawByteString Value;
   Value.SetLength(Size);
   ReadBinaryData(Name, Value.c_str(), Size);
@@ -956,7 +957,7 @@ bool __fastcall TRegistryStorage::Copy(TRegistryStorage * Storage)
   while ((Index < Names->Count) && Result)
   {
     UnicodeString Name = MungeStr(Names->Strings[Index], ForceAnsi, false);
-    unsigned long Size = Buffer.size();
+    unsigned long Size = SizeToUIntChecked(Buffer.size());
     unsigned long Type;
     int RegResult;
     do
@@ -1124,12 +1125,12 @@ UnicodeString __fastcall TRegistryStorage::DoReadStringRaw(const UnicodeString &
 //---------------------------------------------------------------------------
 size_t __fastcall TRegistryStorage::DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size)
 {
-  size_t Result;
+  int Result;
   if (FRegistry->ValueExists(Name))
   {
     try
     {
-      Result = FRegistry->ReadBinaryData(Name, Buffer, Size);
+      Result = FRegistry->ReadBinaryData(Name, Buffer, SizeToIntChecked(Size));
     }
     catch(...)
     {

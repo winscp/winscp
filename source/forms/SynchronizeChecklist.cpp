@@ -639,7 +639,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewWindowProc(TMessage & Messa
           (CustomDraw->iSubItem == ImageColumnIndex) &&
           (ActionImages->Width <= ListView2->Columns->Items[CustomDraw->iSubItem]->Width))
       {
-        TListItem * Item = ListView2->Items->Item[CustomDraw->nmcd.dwItemSpec];
+        TListItem * Item = ListView2->Items->Item[static_cast<int>(CustomDraw->nmcd.dwItemSpec)];
         const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
 
         TRect HeaderR = GetColumnHeaderRect(CustomDraw->iSubItem);

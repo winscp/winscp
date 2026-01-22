@@ -1504,7 +1504,7 @@ void __fastcall TNonVisualDataModule::SessionFolderThisItemClick(TObject * Sende
 void __fastcall TNonVisualDataModule::SessionItemClick(TObject * Sender)
 {
   DebugAssert(StoredSessions && (static_cast<TTBCustomItem *>(Sender)->Tag < StoredSessions->Count));
-  ScpExplorer->OpenStoredSession(StoredSessions->Sessions[static_cast<TTBCustomItem *>(Sender)->Tag]);
+  ScpExplorer->OpenStoredSession(StoredSessions->Sessions[static_cast<int>(static_cast<TTBCustomItem *>(Sender)->Tag)]);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateWorkspacesMenu(TAction * Action)
@@ -1538,7 +1538,7 @@ void __fastcall TNonVisualDataModule::WorkspaceItemClick(TObject * Sender)
 {
   std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   ScpExplorer->OpenFolderOrWorkspace(
-    Workspaces->Strings[DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender))->Tag]);
+    Workspaces->Strings[static_cast<int>(DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender))->Tag)]);
 }
 //---------------------------------------------------------------------------
 TShortCut __fastcall TNonVisualDataModule::OpenSessionShortCut(int Index)
@@ -1657,12 +1657,12 @@ void __fastcall TNonVisualDataModule::CreateEditorListMenu(TTBCustomItem * Menu,
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::DoEditorItemClick(TObject * Sender, bool OnFocused)
 {
-  int Tag = dynamic_cast<TTBXItem*>(Sender)->Tag;
+  __int64 Tag = dynamic_cast<TTBXItem*>(Sender)->Tag;
   const TEditorList * EditorList = WinConfiguration->EditorList;
   // sanity check
   if (Tag < EditorList->Count)
   {
-    ScpExplorer->ExecuteFile(osCurrent, efExternalEditor, EditorList->Editors[Tag]->Data,
+    ScpExplorer->ExecuteFile(osCurrent, efExternalEditor, EditorList->Editors[static_cast<int>(Tag)]->Data,
       true, OnFocused);
   }
 }

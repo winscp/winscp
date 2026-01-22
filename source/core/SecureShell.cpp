@@ -628,13 +628,13 @@ struct callback_set * TSecureShell::GetCallbackSet()
   return FCallbackSet;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Length)
+UnicodeString TSecureShell::ConvertFromPutty(const char * Str, size_t Length)
 {
-  int BomLength = strlen(WINSCP_BOM);
+  size_t BomLength = std::size(WINSCP_BOM) - 1;
   if ((Length >= BomLength) &&
       (strncmp(Str, WINSCP_BOM, BomLength) == 0))
   {
-    return UTF8ArrayToString(Str + BomLength, Length - BomLength - 1);
+    return UTF8ArrayToString(Str + BomLength, SizeToIntChecked(Length - BomLength - 1));
   }
   else
   {
@@ -1052,7 +1052,7 @@ void __fastcall TSecureShell::FromBackend(const unsigned char * Data, size_t Len
   // Following is taken from scp.c from_backend() and modified
 
   const unsigned char *p = Data;
-  unsigned Len = Length;
+  unsigned Len = SizeToUIntChecked(Length);
 
   // with event-select mechanism we can now receive data even before we
   // actually expect them (OutPtr can be NULL)
@@ -1334,7 +1334,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
         (BufSize, BufSize - MAX_BUFSIZE)));
     }
     EventSelectLoop(100, false, NULL);
-    BufSize = backend_sendbuffer(FBackendHandle);
+    BufSize = SizeToIntChecked(backend_sendbuffer(FBackendHandle));
     if (Configuration->ActualLogProtocol >= 1)
     {
       LogEvent(FORMAT(L"There are %u bytes remaining in the send buffer", (BufSize)));
@@ -1372,7 +1372,7 @@ void __fastcall TSecureShell::Send(const unsigned char * Buf, Integer Len)
 {
   CheckConnection();
   backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
-  int BufSize = backend_sendbuffer(FBackendHandle);
+  int BufSize = SizeToIntChecked(backend_sendbuffer(FBackendHandle));
   if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT(L"Sent %u bytes", (static_cast<int>(Len))));
@@ -1434,10 +1434,10 @@ int __fastcall TSecureShell::TranslatePuttyMessage(
     }
     else
     {
-      size_t OriginalLen = wcslen(Original);
-      size_t PrefixLen = Div - Original;
-      size_t SuffixLen = OriginalLen - PrefixLen - 1;
-      if ((static_cast<size_t>(Message.Length()) >= OriginalLen - 1) &&
+      int OriginalLen = SizeToIntChecked(wcslen(Original));
+      int PrefixLen = SizeToIntChecked(Div - Original);
+      int SuffixLen = OriginalLen - PrefixLen - 1;
+      if ((Message.Length() >= OriginalLen - 1) &&
           (wcsncmp(Message.c_str(), Original, PrefixLen) == 0) &&
           (wcsncmp(Message.c_str() + Message.Length() - SuffixLen, Div + 1, SuffixLen) == 0))
       {
@@ -1486,7 +1486,7 @@ int __fastcall TSecureShell::TranslateAuthenticationMessage(
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::AddStdError(const char * Data, size_t Length)
 {
-  UnicodeString Str = ConvertInput(RawByteString(Data, Length));
+  UnicodeString Str = ConvertInput(RawByteString(Data, SizeToIntChecked(Length)));
   FStdError += Str;
 
   Integer P;
@@ -1968,7 +1968,7 @@ bool __fastcall TSecureShell::EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS 
   WSANETWORKEVENTS AEvents;
   if (WSAEnumNetworkEvents(Socket, NULL, &AEvents) == 0)
   {
-    noise_ultralight(NOISE_SOURCE_IOID, Socket);
+    noise_ultralight(NOISE_SOURCE_IOID, static_cast<unsigned long>(Socket));
     noise_ultralight(NOISE_SOURCE_IOID, AEvents.lNetworkEvents);
 
     Events.lNetworkEvents |= AEvents.lNetworkEvents;
@@ -2675,7 +2675,7 @@ void __fastcall TSecureShell::VerifyHostKey(
         Params.NoBatchAnswers = qaYes | qaNo | qaRetry | qaIgnore | qaOK;
         Params.HelpKeyword = (Unknown ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
         Params.Aliases = &Aliases[0];
-        Params.AliasesCount = Aliases.size();
+        Params.AliasesCount = SizeToUIntChecked(Aliases.size());
 
         UnicodeString NewLine = L"\n";
         UnicodeString Para = NewLine + NewLine;

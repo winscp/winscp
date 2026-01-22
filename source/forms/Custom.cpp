@@ -1109,12 +1109,12 @@ void __fastcall TCustomCommandOptionsDialog::AddOptionComboBox(
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandOptionsDialog::GetOptionIndex(TControl * Control)
 {
-  return (Control->Tag >> 16);
+  return static_cast<int>(Control->Tag >> 16);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandOptionsDialog::GetControlIndex(TControl * Control)
 {
-  return (Control->Tag & 0xFFFF);
+  return static_cast<int>(Control->Tag & 0xFFFF);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandOptionsDialog::LinkLabelClick(TObject * Sender)

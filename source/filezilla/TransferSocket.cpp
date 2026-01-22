@@ -106,7 +106,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
       OnConnect(0);
 
     std::vector<char> Buffer(BUFSIZE);
-    int numread = CAsyncSocketEx::Receive(&Buffer[0], Buffer.size());
+    int numread = CAsyncSocketEx::Receive(&Buffer[0], SizeToIntChecked(Buffer.size()));
     if (numread != SOCKET_ERROR && numread)
     {
       m_LastActiveTime = Now();
@@ -865,7 +865,7 @@ int CTransferSocket::ReadData(char * buffer, int len)
   int result;
   if (m_OnTransferIn != NULL)
   {
-    result = m_OnTransferIn(NULL, reinterpret_cast<unsigned char *>(buffer), len);
+    result = SizeToIntChecked(m_OnTransferIn(NULL, reinterpret_cast<unsigned char *>(buffer), len));
   }
   else
   {
@@ -883,7 +883,7 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
     // Comparing to Filezilla 2, we do not do any translation locally,
     // leaving it onto the server (what Filezilla 3 seems to do too)
     const char Bom[4] = "\xEF\xBB\xBF";
-    int BomLen = strlen(Bom);
+    int BomLen = static_cast<int>(strlen(Bom));
     int read = ReadData(buffer, len);
     if (GetOptionVal(OPTION_MPEXT_REMOVE_BOM) &&
         m_transferdata.bType && (read >= BomLen) && (memcmp(buffer, Bom, BomLen) == 0))

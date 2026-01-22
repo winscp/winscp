@@ -2235,7 +2235,7 @@ bool __fastcall TScreenTipHintWindow::UseBoldShortHint(TControl * HintControl)
   return
     (dynamic_cast<TTBCustomDockableWindow *>(HintControl) != NULL) ||
     (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL) ||
-    (HintControl->Perform(WM_WANTS_SCREEN_TIPS, 0, 0) == 1);
+    (HintControl->Perform(WM_WANTS_SCREEN_TIPS, 0, NativeInt(0)) == 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScreenTipHintWindow::IsPathLabel(TControl * HintControl)
@@ -2480,7 +2480,7 @@ static int HideAccelFlag(TControl * Control)
     Control = Control->Parent;
   }
   int Result;
-  if (FLAGSET(Control->Perform(WM_QUERYUISTATE, 0, 0), UISF_HIDEACCEL))
+  if (FLAGSET(Control->Perform(WM_QUERYUISTATE, 0, NativeInt(0)), UISF_HIDEACCEL))
   {
     Result = DT_HIDEPREFIX;
   }
@@ -2743,7 +2743,7 @@ void __fastcall TUIStateAwareLabel::Dispatch(void * AMessage)
       TCustomForm * ParentForm = GetParentForm(this);
       if (ParentForm != NULL)
       {
-        ParentForm->Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+        ParentForm->Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), NativeInt(0));
       }
     }
   }

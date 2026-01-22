@@ -3059,7 +3059,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
   {
     WarnPtr = std::find(DefaultList, DefaultList + Count, WarnAlgo);
     DebugAssert(WarnPtr != NULL);
-    WarnDefaultIndex = (WarnPtr - DefaultList);
+    WarnDefaultIndex = SizeToIntChecked(WarnPtr - DefaultList);
   }
 
   int Index = 0;
@@ -3089,7 +3089,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
   int WarnIndex = -1;
   if (HasWarnAlgo)
   {
-    WarnIndex = std::find(NewList.begin(), NewList.end(), WarnAlgo) - NewList.begin();
+    WarnIndex = SizeToIntChecked(std::find(NewList.begin(), NewList.end(), WarnAlgo) - NewList.begin());
   }
 
   bool Priority = true;

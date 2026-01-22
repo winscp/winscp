@@ -863,15 +863,15 @@ bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
       const int Limit = 64*1024;
       ErrorContext = L"size";
       size_t Size = GlobalSize(Handle);
-      int Len = (Size / sizeof(*AText)) - 1;
+      size_t Len = (Size / sizeof(*AText)) - 1;
       if (Len > Limit)
       {
-        ErrorContext = FORMAT(L"substring(%d,%d)", (int(Size), Len));
+        ErrorContext = FORMAT(L"substring(%d,%d)", (int(Size), int(Len)));
         Text = UnicodeString(AText, Limit);
       }
       else
       {
-        ErrorContext = FORMAT(L"string(%d,%d)", (int(Size), Len));
+        ErrorContext = FORMAT(L"string(%d,%d)", (int(Size), int(Len)));
         Text = AText;
       }
       if (Trim)
@@ -1453,8 +1453,8 @@ bool __fastcall DetectSystemExternalEditor(
   }
   else
   {
-    unsigned int File = FileCreate(ApiPath(TempName));
-    if (File == reinterpret_cast<unsigned int>(INVALID_HANDLE_VALUE))
+    THandle File = FileCreate(ApiPath(TempName));
+    if (File == reinterpret_cast<THandle>(INVALID_HANDLE_VALUE))
     {
       TryNextTime = true;
       UsageState = "F";

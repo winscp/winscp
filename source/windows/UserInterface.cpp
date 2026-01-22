@@ -1158,9 +1158,9 @@ static int __fastcall ThreadProc(void * AParam)
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
-  TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
-  TThreadID & ThreadId)
+THandle StartThread(
+  void * SecurityAttributes, unsigned StackSize, TThreadFunc ThreadFunc, void * Parameter,
+  unsigned CreationFlags, TThreadID & ThreadId)
 {
   TThreadParam * Param = new TThreadParam;
   Param->ThreadFunc = ThreadFunc;

@@ -59,7 +59,7 @@ int tcharicmp(const wchar_t * str1, const wchar_t * str2){
 // Returns un unquoted copy of "str" (or a copy of "str" if the quotes are
 // not present). The returned value must be freed with "free".
 wchar_t * unquote(const wchar_t * str){
-    int last_pos;
+    ssize_t last_pos;
     wchar_t * ret;
     size_t new_len;
 
@@ -84,7 +84,7 @@ wchar_t * find_reg_str(wchar_t * str, const wchar_t * what, wchar_t * * next){
     wchar_t * curr_tok_dup;
     BOOL path_eq;
     wchar_t sh_path1[MAX_PATH], sh_path2[MAX_PATH];
-    int pos = -1;
+    ssize_t pos = -1;
     wchar_t * ret;
 
     tok_buff = _wcsdup(str);
@@ -125,8 +125,8 @@ void path_reg_propagate()
   }
   else
   {
-    DWORD send_message_result;
-    LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+    DWORD_PTR send_message_result;
+    __int64 ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
                              reinterpret_cast<LPARAM>(L"Environment"), SMTO_ABORTIFHUNG,
                              5000, &send_message_result);
     if (ret != ERROR_SUCCESS && GetLastError() != 0)
@@ -216,7 +216,7 @@ BOOL remove_path_reg(const wchar_t * path){
     BOOL func_ret = TRUE;
     wchar_t * next;
     wchar_t * del_part;
-    int last_pos;
+    ssize_t last_pos;
 
     ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, KEY, 0,
                        KEY_WRITE | KEY_READ, &key);
@@ -1406,7 +1406,7 @@ void __fastcall TUpdateDownloadThread::CancelForm()
 //---------------------------------------------------------------------------
 void __fastcall TUpdateDownloadThread::UpdateDownloaded()
 {
-  size_t Size = static_cast<size_t>(FHttp->ResponseLength);
+  int Size = SizeToIntChecked(FHttp->ResponseLength);
   const char * Buffer = FHttp->ResponseRaw.c_str();
 
   if (FHttp->ResponseLength != FUpdates.Results.DownloadSize)

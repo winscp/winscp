@@ -17,7 +17,6 @@
 #include <openssl/tls1.h>
 #pragma clang diagnostic pop
 #pragma hdrstop
-#include "Common.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CAsyncSslSocketLayer
@@ -110,7 +109,7 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
     m_mayTriggerRead = false;
 
     //Get number of bytes we can receive and store in the network input bio
-    int len = BIO_ctrl_get_write_guarantee(m_nbio);
+    size_t len = BIO_ctrl_get_write_guarantee(m_nbio);
     if (len > 16384)
       len = 16384;
     else if (!len)
@@ -123,7 +122,7 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
     int numread = 0;
 
     // Receive data
-    numread = ReceiveNext(buffer, len);
+    numread = ReceiveNext(buffer, SizeToIntChecked(len));
     if (numread > 0)
     {
       //Store it in the network input bio and process data
@@ -269,7 +268,7 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
     //Send the data waiting in the network bio
     char buffer[32 * 1024];
     size_t len = BIO_ctrl_pending(m_nbio);
-    int numread = BIO_read(m_nbio, buffer, std::min(len, sizeof(buffer)));
+    int numread = BIO_read(m_nbio, buffer, SizeToIntChecked(std::min(len, sizeof(buffer))));
     if (numread <= 0)
       m_mayTriggerWrite = true;
     while (numread > 0)
@@ -318,7 +317,7 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
         m_mayTriggerWrite = true;
         break;
       }
-      numread = BIO_read(m_nbio, buffer, len);
+      numread = BIO_read(m_nbio, buffer, SizeToIntChecked(len));
       if (numread <= 0)
       {
         m_mayTriggerWrite = true;
@@ -391,9 +390,9 @@ int CAsyncSslSocketLayer::Send(const void* lpBuf, int nBufLen, int nFlags)
       return 0;
     }
 
-    int len = BIO_ctrl_get_write_guarantee(m_sslbio);
+    size_t len = BIO_ctrl_get_write_guarantee(m_sslbio);
     if (nBufLen > len)
-      nBufLen = len;
+      nBufLen = SizeToIntChecked(len);
     if (!len)
     {
       m_mayTriggerWriteUp = true;
@@ -1348,7 +1347,7 @@ static void NameToContact(X509_NAME *pX509Name, t_SslCertData::t_Contact & conta
         {
           wchar_t tmp[20];
           swprintf(tmp, L"%d", OBJ_obj2nid(pObject));
-          int maxlen = 1024 - wcslen(contact.Other)-1;
+          size_t maxlen = 1024 - wcslen(contact.Other)-1;
           wcsncpy(contact.Other+wcslen(contact.Other), tmp, maxlen);
 
           maxlen = 1024 - wcslen(contact.Other)-1;
@@ -1362,7 +1361,7 @@ static void NameToContact(X509_NAME *pX509Name, t_SslCertData::t_Contact & conta
         }
         else
         {
-          int maxlen = 1024 - wcslen(contact.Other)-1;
+          size_t maxlen = 1024 - wcslen(contact.Other)-1;
 
           wcsncpy(contact.Other+wcslen(contact.Other), UnicodeString(OBJ_nid2sn(OBJ_obj2nid(pObject))).c_str(), maxlen);
 
@@ -1774,7 +1773,7 @@ void CAsyncSslSocketLayer::TriggerEvents()
   }
   else
   {
-    int len = BIO_ctrl_get_write_guarantee(m_nbio);
+    size_t len = BIO_ctrl_get_write_guarantee(m_nbio);
     if (len > 0 && m_mayTriggerRead)
     {
       m_mayTriggerRead = false;

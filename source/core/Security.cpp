@@ -145,7 +145,7 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, U
   // Parse the certificate into a context.
   const CERT_CONTEXT * CertContext =
     CertCreateCertificateContext(
-      X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, Certificate, Len);
+      X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, Certificate, SizeToIntChecked(Len));
 
   if (CertContext == NULL)
   {

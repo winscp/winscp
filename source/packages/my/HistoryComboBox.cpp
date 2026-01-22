@@ -146,7 +146,7 @@ void __fastcall THistoryComboBox::DropDown()
   }
   ItemWidth = std::min(ItemWidth, DropSpace);
 
-  Perform(CB_SETDROPPEDWIDTH, static_cast<unsigned int>(ItemWidth), 0);
+  Perform(CB_SETDROPPEDWIDTH, static_cast<WPARAM>(ItemWidth), static_cast<LPARAM>(0));
 }
 //---------------------------------------------------------------------------
 void __fastcall THistoryComboBox::Change()

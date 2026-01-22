@@ -12,7 +12,7 @@ public:
   t_directory();
   ~t_directory();
   CServerPath path;
-  int num;
+  ssize_t num;
   class t_direntry
   {
   public:

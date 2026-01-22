@@ -2716,7 +2716,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewWindowProc(TMessage & Mess
       Message.Result |= CDRF_NOTIFYPOSTPAINT | CDRF_NOTIFYSUBITEMDRAW;
 
       TNMLVCustomDraw * CustomDraw = reinterpret_cast<TNMLVCustomDraw *>(NotifyMessage.NMHdr);
-      int Index = CustomDraw->nmcd.dwItemSpec;
+      int Index = SizeToIntChecked(CustomDraw->nmcd.dwItemSpec);
       int CommandIndex = GetCommandIndex(Index);
       TCustomCommandList * List = GetCommandList(Index);
       // after end of every list, except for the last last list
@@ -3034,7 +3034,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Send
 //---------------------------------------------------------------------------
 void TPreferencesDialog::HideFocus(int State)
 {
-  Perform(WM_CHANGEUISTATE, MAKEWPARAM(State, UISF_HIDEFOCUS), 0);
+  Perform(WM_CHANGEUISTATE, MAKEWPARAM(State, UISF_HIDEFOCUS), NativeInt(0));
 }
 //---------------------------------------------------------------------------
 void TPreferencesDialog::SetFocusIfEnabled(TControl * Control)
@@ -3096,7 +3096,7 @@ void TPreferencesDialog::FocusAndHighlightControl(TControl * Control, const Unic
     }
   }
 
-  FHideFocus = ((Perform(WM_QUERYUISTATE, 0, 0) & UISF_HIDEFOCUS) != 0);
+  FHideFocus = ((Perform(WM_QUERYUISTATE, 0, NativeInt(0)) & UISF_HIDEFOCUS) != 0);
   HideFocus(UIS_CLEAR);
 }
 //---------------------------------------------------------------------------
@@ -3281,7 +3281,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateFileColorsView()
 {
-  FileColorsView->Items->Count = FFileColors.size();
+  FileColorsView->Items->Count = SizeToIntChecked(FFileColors.size());
   AutoSizeListColumnsWidth(FileColorsView);
 }
 //---------------------------------------------------------------------------
@@ -3454,7 +3454,7 @@ void __fastcall TPreferencesDialog::SshHostCAsViewKeyDown(TObject *, WORD & Key,
 //---------------------------------------------------------------------------
 void TPreferencesDialog::UpdateSshHostCAsViewView()
 {
-  SshHostCAsView->Items->Count = GetSshHostCAPlainList().size();
+  SshHostCAsView->Items->Count = SizeToIntChecked(GetSshHostCAPlainList().size());
   AutoSizeListColumnsWidth(SshHostCAsView, 1);
   if (SshHostCAsFromPuTTYCheck->Checked && (SshHostCAsView->Items->Count > 0))
   {
@@ -3470,7 +3470,7 @@ void __fastcall TPreferencesDialog::AddSshHostCAButtonClick(TObject *)
   {
     FSshHostCAPlainList.push_back(SshHostCA);
     UpdateSshHostCAsViewView();
-    SshHostCAsView->ItemIndex = FSshHostCAPlainList.size() - 1;
+    SshHostCAsView->ItemIndex = SizeToIntChecked(FSshHostCAPlainList.size() - 1);
     SshHostCAsView->ItemFocused->MakeVisible(false);
     UpdateControls();
   }
@@ -3541,7 +3541,7 @@ int __fastcall TPreferencesDialog::CompareControlByLocation(void * Item1, void *
     Result = Control1->Left - Control2->Left;
     if (Result == 0)
     {
-      Result = reinterpret_cast<IntPtr>(Control1) - reinterpret_cast<IntPtr>(Control2);
+      Result = (Control1 == Control2) ? 0 : ((Control1 > Control2) ? 1 : -1);
     }
   }
   return Result;
@@ -3633,8 +3633,9 @@ void TPreferencesDialog::Search(TControl * Control, TStrings * Results, bool & N
 void __fastcall TPreferencesDialog::SearchResultClick(TObject * Sender)
 {
   TStaticText * LinkLabel = DebugNotNull(dynamic_cast<TStaticText *>(Sender));
-  UnicodeString Caption = FSearchResults->Strings[LinkLabel->Tag];
-  TControl * Control = dynamic_cast<TControl *>(FSearchResults->Objects[LinkLabel->Tag]);
+  int Index = SizeToIntChecked(LinkLabel->Tag);
+  UnicodeString Caption = FSearchResults->Strings[Index];
+  TControl * Control = dynamic_cast<TControl *>(FSearchResults->Objects[Index]);
 
   FSearchResults.reset(NULL);
 

@@ -696,7 +696,8 @@ TCollectedFileList::TCollectedFileList()
 //---------------------------------------------------------------------------
 __fastcall TCollectedFileList::~TCollectedFileList()
 {
-  for (size_t Index = 0; Index < FList.size(); Index++)
+  int ACount = Count();
+  for (int Index = 0; Index < ACount; Index++)
   {
     Deleting(Index);
   }
@@ -732,7 +733,7 @@ void TCollectedFileList::Delete(int Index)
 //---------------------------------------------------------------------------
 int TCollectedFileList::Count() const
 {
-  return FList.size();
+  return SizeToIntChecked(FList.size());
 }
 //---------------------------------------------------------------------------
 UnicodeString TCollectedFileList::GetFileName(int Index) const
@@ -939,7 +940,7 @@ void TParallelOperation::Done(
           TParallelFileOffsets::const_iterator I = std::find(FParallelFileOffsets.begin(), FParallelFileOffsets.end(), CopyParam->PartOffset);
           if (DebugAlwaysTrue(I != FParallelFileOffsets.end()))
           {
-            int Index = I - FParallelFileOffsets.begin();
+            int Index = SizeToIntChecked(I - FParallelFileOffsets.begin());
             DebugAssert(!FParallelFileDones[Index]);
             FParallelFileDones[Index] = true;
 
@@ -1777,7 +1778,7 @@ void __fastcall TTerminal::OpenTunnel()
         FatalError(NULL, FMTLOAD(TUNNEL_NO_FREE_PORT,
           (Configuration->TunnelLocalPortNumberLow, Configuration->TunnelLocalPortNumberHigh)));
       }
-      int Index = Random(Ports.size());
+      int Index = Random(SizeToIntChecked(Ports.size()));
       int Port = Ports[Index];
       Ports.erase(Ports.begin() + Index);
       if (IsListenerFree(Port))

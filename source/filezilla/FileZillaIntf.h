@@ -219,8 +219,7 @@ protected:
     const TFtpsCertificateData & Data, int & RequestResult) = 0;
   virtual bool __fastcall HandleAsynchRequestNeedPass(
     struct TNeedPassRequestData & Data, int & RequestResult) = 0;
-  virtual bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries,
-    unsigned int Count) = 0;
+  virtual bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries, size_t Count) = 0;
   virtual bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
     __int64 Bytes, bool FileTransfer) = 0;
   virtual bool __fastcall HandleReply(int Command, unsigned int Reply) = 0;

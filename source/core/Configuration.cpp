@@ -122,7 +122,7 @@ void TSshHostCAList::Load(THierarchicalStorage * Storage)
 //---------------------------------------------------------------------------
 int TSshHostCAList::GetCount() const
 {
-  return FList.size();
+  return SizeToIntChecked(FList.size());
 }
 //---------------------------------------------------------------------------
 const TSshHostCA * TSshHostCAList::Get(int Index) const

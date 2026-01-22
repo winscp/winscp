@@ -931,7 +931,7 @@ void __fastcall TCustomCommand::GetToken(
     }
     else
     {
-      Len = NextPattern - Ptr;
+      Len = SizeToIntChecked(NextPattern - Ptr);
     }
   }
 }
@@ -1124,7 +1124,7 @@ int __fastcall TInteractiveCustomCommand::PatternLen(const UnicodeString & Comma
         {
           throw Exception(FMTLOAD(CUSTOM_COMMAND_UNTERMINATED, (Command[Index + 1], Index)));
         }
-        Len = PatternEnd - Ptr + 1;
+        Len = SizeToIntChecked(PatternEnd - Ptr + 1);
       }
       break;
 
@@ -1136,7 +1136,7 @@ int __fastcall TInteractiveCustomCommand::PatternLen(const UnicodeString & Comma
         {
           throw Exception(FMTLOAD(CUSTOM_COMMAND_UNTERMINATED, (Command[Index + 1], Index)));
         }
-        Len = PatternEnd - Ptr + 1;
+        Len = SizeToIntChecked(PatternEnd - Ptr + 1);
       }
       break;
 

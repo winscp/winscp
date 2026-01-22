@@ -1548,7 +1548,7 @@ void TWebDAVFileSystem::NeonPreSend(
   TWebDAVFileSystem * FileSystem = SessionContext->FileSystem;
 
   SessionContext->AuthorizationProtocol = EmptyStr;
-  UnicodeString HeaderBuf(UnicodeString(AnsiString(Header->data, Header->used)));
+  UnicodeString HeaderBuf(UnicodeString(AnsiString(Header->data, SizeToIntChecked(Header->used))));
   const UnicodeString AuthorizationHeaderName(L"Authorization:");
   int P = HeaderBuf.Pos(AuthorizationHeaderName);
   if (P > 0)
@@ -1590,7 +1590,7 @@ void TWebDAVFileSystem::NeonPreSend(
       // all neon request types that use ne_add_request_header
       // use XML content-type, so it's text-based
       DebugAssert(ContainsStr(HeaderBuf, ContentTypeHeaderPrefix + NE_XML_MEDIA_TYPE));
-      FileSystem->FTerminal->Log->Add(llInput, UnicodeString(UTF8String(Buffer, Size)));
+      FileSystem->FTerminal->Log->Add(llInput, UnicodeString(UTF8String(Buffer, SizeToIntChecked(Size))));
     }
   }
 
@@ -1797,7 +1797,7 @@ int TWebDAVFileSystem::NeonBodyReader(void * UserData, const char * Buf, size_t 
           ((ne_strcasecmp(ContentType.type, "text") == 0) ||
            media_type_is_xml(&ContentType)))
       {
-        UnicodeString Content = UnicodeString(UTF8String(Buf, Len)).Trim();
+        UnicodeString Content = UnicodeString(UTF8String(Buf, SizeToIntChecked(Len))).Trim();
         FileSystem->FResponse += Content;
       }
       ne_free(ContentType.value);

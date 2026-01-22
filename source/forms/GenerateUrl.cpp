@@ -55,7 +55,7 @@ __fastcall TRichEditWithLinks::TRichEditWithLinks(TComponent * AOwner) :
 void __fastcall TRichEditWithLinks::CreateWnd()
 {
   TRichEdit::CreateWnd();
-  int Mask = SendMessage(Handle, EM_GETEVENTMASK, 0, 0);
+  __int64 Mask = SendMessage(Handle, EM_GETEVENTMASK, 0, 0);
   SendMessage(Handle, EM_SETEVENTMASK, 0, Mask | ENM_LINK);
   SendMessage(Handle, EM_SETEDITSTYLEEX, 0, SES_EX_HANDLEFRIENDLYURL);
 }
@@ -807,7 +807,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     Stream->Write(ResultUtf.c_str(), ResultUtf.Length());
     Stream->Position = 0;
 
-    FResultMemoWithLinks->Perform(WM_VSCROLL, SB_TOP, 0);
+    FResultMemoWithLinks->Perform(WM_VSCROLL, SB_TOP, NativeInt(0));
     FResultMemoWithLinks->Lines->LoadFromStream(Stream.get(), TEncoding::UTF8);
   }
 }
@@ -817,7 +817,7 @@ void __fastcall TGenerateUrlDialog::Execute()
   int Components = WinConfiguration->GenerateUrlComponents;
   if (Components < 0)
   {
-    Components = UserNameCheck->Tag | RemoteDirectoryCheck->Tag;
+    Components = SizeToIntChecked(UserNameCheck->Tag | RemoteDirectoryCheck->Tag);
   }
   TGenerateUrlCodeTarget Target = WinConfiguration->GenerateUrlCodeTarget;
 

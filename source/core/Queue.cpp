@@ -295,8 +295,7 @@ int __fastcall TSimpleThread::ThreadProc(void * Thread)
 __fastcall TSimpleThread::TSimpleThread() :
   FThread(NULL), FFinished(true)
 {
-  FThread = reinterpret_cast<HANDLE>(
-    StartThread(NULL, 0, ThreadProc, this, CREATE_SUSPENDED, FThreadId));
+  FThread = reinterpret_cast<HANDLE>(StartThread(NULL, 0, ThreadProc, this, CREATE_SUSPENDED, FThreadId));
 }
 //---------------------------------------------------------------------------
 __fastcall TSimpleThread::~TSimpleThread()

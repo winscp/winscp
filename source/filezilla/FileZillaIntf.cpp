@@ -445,7 +445,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
           Dest.LinkTarget = Source.linkTarget;
         }
 
-        int Num = Directory->num;
+        ssize_t Num = Directory->num;
         TListDataEntry * pEntries = Num > 0 ? &Entries[0] : NULL;
         Result = HandleListData(Path, pEntries, Num);
 
@@ -471,7 +471,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       break;
 
     case FZ_MSG_REPLY:
-      Result = HandleReply(FZ_MSG_PARAM(wParam), lParam);
+      Result = HandleReply(FZ_MSG_PARAM(wParam), SizeToIntChecked(lParam));
       break;
 
     case FZ_MSG_CAPABILITIES:

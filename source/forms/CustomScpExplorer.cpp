@@ -1133,7 +1133,7 @@ void __fastcall TCustomScpExplorerForm::UpdateRowSelect(TCustomDirView * DirView
   {
     DirView->RowSelect = WinConfiguration->FullRowSelect;
     // Without this, the panel turns gray and unused part of header turns black
-    DirView->Perform(CM_COLORCHANGED, 0, 0);
+    DirView->Perform(CM_COLORCHANGED, 0, NativeInt(0));
   }
 }
 //---------------------------------------------------------------------------
@@ -3336,8 +3336,8 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
         bool NewFile = !FileExists(ApiPath(LocalFileName));
         if (NewFile)
         {
-          int File = FileCreate(ApiPath(LocalFileName));
-          if (File < 0)
+          THandle File = FileCreate(ApiPath(LocalFileName));
+          if (File == reinterpret_cast<THandle>(INVALID_HANDLE_VALUE))
           {
             if (!RootTempDir.IsEmpty())
             {
@@ -9691,7 +9691,7 @@ void __fastcall TCustomScpExplorerForm::UpdatesNoteClicked(TObject * /*Sender*/)
   bool CanDisplay = !NonVisualDataModule->Busy;
   if (!CanDisplay && (Screen->ActiveForm != NULL))
   {
-    CanDisplay = (Screen->ActiveForm->Perform(WM_CAN_DISPLAY_UPDATES, 0, 0) != 0);
+    CanDisplay = (Screen->ActiveForm->Perform(WM_CAN_DISPLAY_UPDATES, 0, NativeInt(0)) != 0);
   }
 
   if (CanDisplay)
@@ -10482,7 +10482,7 @@ void __fastcall TCustomScpExplorerForm::UnlockWindow()
       ::SetFocus(ActiveControl->Handle);
       if (GetFocus() == ActiveControl->Handle)
       {
-        ActiveControl->Perform(CM_UIACTIVATE, 0, 0);
+        ActiveControl->Perform(CM_UIACTIVATE, 0, NativeInt(0));
       }
     }
   }
@@ -12257,7 +12257,7 @@ void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(
   bool GotExpectedItem =
     (FCalculateSizeOperation->Index < FCalculateSizeOperation->ListItems.size()) &&
     (FCalculateSizeOperation->ListItems[FCalculateSizeOperation->Index] == Item);
-  int Index = -1;
+  ssize_t Index = -1;
   if (DebugAlwaysTrue(GotExpectedItem))
   {
     Index = FCalculateSizeOperation->Index;
@@ -12385,7 +12385,7 @@ void TCustomScpExplorerForm::PostThumbnailDrawRequest(int Index)
 //---------------------------------------------------------------------------
 void TCustomScpExplorerForm::WMQueueCallback(TMessage & Message)
 {
-  int Command = Message.WParam;
+  __int64 Command = Message.WParam;
   if (Command == qccRemoteItemVisible)
   {
     TRemoteItemVisibleData * Data = reinterpret_cast<TRemoteItemVisibleData *>(Message.LParam);
@@ -12413,11 +12413,11 @@ void TCustomScpExplorerForm::WMQueueCallback(TMessage & Message)
   }
   else if (Command == qccRemoteItemRedraw)
   {
-    int Index = Message.LParam;
+    __int64 Index = Message.LParam;
     if ((Index >= 0) &&
         (Index < RemoteDirView->Items->Count))
     {
-      RemoteDirView->InvalidateItem(RemoteDirView->Items->Item[Index]);
+      RemoteDirView->InvalidateItem(RemoteDirView->Items->Item[static_cast<int>(Index)]);
     }
   }
 }

@@ -514,7 +514,7 @@ bool TRightsFrame::IsButtonAccel(TCMDialogChar & Message, TSpeedButton * Button,
   bool Result = IsAccel(Message.CharCode, Button->Caption) && Button->Visible && Button->Enabled;
   if (Result)
   {
-    Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+    Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), NativeInt(0));
     FocusControl->SetFocus();
   }
   return Result;

@@ -1054,7 +1054,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     if (MainForm != ScpExplorer)
     {
       // triggers caption update for some forms
-      MainForm->Perform(WM_MANAGES_CAPTION, 0, 0);
+      MainForm->Perform(WM_MANAGES_CAPTION, 0, NativeInt(0));
     }
 
     UnicodeString NewTitle = FormatMainFormCaption(GetActiveSessionAppTitle());
@@ -1172,12 +1172,12 @@ bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
       {
         // Send it only to windows we tested it with.
         // Though we should sooner or later remove this test and pass it to all our windows.
-        if (Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, 0) == 1))
+        if (Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, NativeInt(0)) == 1))
         {
           SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
           Result = true;
         }
-        else if (!Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL_INACTIVE, 0, 0) == 1))
+        else if (!Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL_INACTIVE, 0, NativeInt(0)) == 1))
         {
           TWinControl * Control2;
           // FindVCLWindow stops on window level, when the window is not active? or when there's a modal window over it?

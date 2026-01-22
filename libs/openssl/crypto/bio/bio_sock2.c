@@ -44,14 +44,14 @@ int BIO_socket(int domain, int socktype, int protocol, int options)
     int sock = -1;
 
     if (BIO_sock_init() != 1)
-        return INVALID_SOCKET;
+        return (int)INVALID_SOCKET; // WINSCP
 
     sock = socket(domain, socktype, protocol);
     if (sock == -1) {
         ERR_raise_data(ERR_LIB_SYS, get_last_socket_error(),
                        "calling socket()");
         ERR_raise(ERR_LIB_BIO, BIO_R_UNABLE_TO_CREATE_SOCKET);
-        return INVALID_SOCKET;
+        return (int)INVALID_SOCKET; // WINSCP
     }
 
     return sock;
@@ -429,12 +429,12 @@ int BIO_accept_ex(int accept_sock, BIO_ADDR *addr_, int options)
                            "calling accept()");
             ERR_raise(ERR_LIB_BIO, BIO_R_ACCEPT_ERROR);
         }
-        return INVALID_SOCKET;
+        return (int)INVALID_SOCKET;
     }
 
     if (!BIO_socket_nbio(accepted_sock, (options & BIO_SOCK_NONBLOCK) != 0)) {
         closesocket(accepted_sock);
-        return INVALID_SOCKET;
+        return (int)INVALID_SOCKET;
     }
 
     return accepted_sock;

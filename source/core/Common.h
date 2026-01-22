@@ -3,6 +3,7 @@
 #define CommonH
 //---------------------------------------------------------------------------
 #include <vector>
+#include <limits>
 #include "Global.h"
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, L"")
@@ -18,6 +19,18 @@
   }
 #define SWAP(TYPE, FIRST, SECOND) \
   { TYPE __Backup = FIRST; FIRST = SECOND; SECOND = __Backup; }
+//---------------------------------------------------------------------------
+template <typename T, typename S>
+constexpr T CheckedCast(S N)
+{
+  if (N > std::numeric_limits<T>::max())
+  {
+    throw Exception(L"Overflow");
+  }
+  return static_cast<T>(N);
+}
+template <typename S> constexpr int SizeToIntChecked(S n) { return CheckedCast<int, S>(n); }
+template <typename S> constexpr unsigned int SizeToUIntChecked(S n) { return CheckedCast<unsigned int, S>(n); }
 //---------------------------------------------------------------------------
 #define PARENTDIRECTORY L".."
 #define THISDIRECTORY L"."

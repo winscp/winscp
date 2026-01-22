@@ -46,8 +46,7 @@ protected:
     const TFtpsCertificateData & Data, int & RequestResult);
   virtual bool __fastcall HandleAsynchRequestNeedPass(
     struct TNeedPassRequestData & Data, int & RequestResult);
-  virtual bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries,
-    unsigned int Count);
+  virtual bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries, size_t Count);
   virtual bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
     __int64 Bytes, bool FileTransfer);
   virtual bool __fastcall HandleReply(int Command, unsigned int Reply);
@@ -115,7 +114,7 @@ bool __fastcall TFileZillaImpl::HandleAsynchRequestNeedPass(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaImpl::HandleListData(const wchar_t * Path,
-  const TListDataEntry * Entries, unsigned int Count)
+  const TListDataEntry * Entries, size_t Count)
 {
   return FFileSystem->HandleListData(Path, Entries, Count);
 }
@@ -4412,7 +4411,7 @@ void __fastcall TFTPFileSystem::RemoteFileTimeToDateTimeAndPrecision(const TRemo
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
-  const TListDataEntry * Entries, unsigned int Count)
+  const TListDataEntry * Entries, size_t Count)
 {
   if (!FActive)
   {
@@ -4440,7 +4439,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         File->FileName = Entry->Name;
         try
         {
-          int PermissionsLen = wcslen(Entry->Permissions);
+          int PermissionsLen = SizeToIntChecked(wcslen(Entry->Permissions));
           if (PermissionsLen >= 10)
           {
             File->Rights->Text = Entry->Permissions + 1;
@@ -4463,7 +4462,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
           const wchar_t * Space = wcschr(Entry->OwnerGroup, L' ');
           if (Space != NULL)
           {
-            File->Owner.Name = UnicodeString(Entry->OwnerGroup, Space - Entry->OwnerGroup);
+            File->Owner.Name = UnicodeString(Entry->OwnerGroup, SizeToIntChecked(Space - Entry->OwnerGroup));
             File->Group.Name = Space + 1;
           }
           else

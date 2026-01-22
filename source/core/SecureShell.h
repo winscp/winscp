@@ -179,7 +179,7 @@ public:
   void AskAlg(const UnicodeString & AlgType, const UnicodeString & AlgName, int WeakCryptoReason);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
   void __fastcall PuttyLogEvent(const char * Str);
-  UnicodeString __fastcall ConvertFromPutty(const char * Str, int Length);
+  UnicodeString ConvertFromPutty(const char * Str, size_t Length);
   struct callback_set * GetCallbackSet();
 
   __property bool Active = { read = FActive };

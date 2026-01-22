@@ -443,7 +443,7 @@ void __fastcall TOpenDirectoryDialog::BookmarkButtonClick(TObject * Sender)
   TControl * Control = dynamic_cast<TControl *>(Sender);
   BookmarkMove(Sender,
     GetBookmarksList(Sender)->ItemIndex,
-    GetBookmarksList(Sender)->ItemIndex + (Control->Tag / abs(Control->Tag)));
+    SizeToIntChecked(GetBookmarksList(Sender)->ItemIndex + (Control->Tag / abs(Control->Tag))));
   UpdateControls();
 }
 //---------------------------------------------------------------------------

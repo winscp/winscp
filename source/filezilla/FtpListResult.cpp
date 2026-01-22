@@ -228,7 +228,7 @@ CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vms
   m_MonthNamesMap[L"avg"] = 8;
 }
 
-t_directory::t_direntry * CFtpListResult::getList(int & Num)
+t_directory::t_direntry * CFtpListResult::getList(ssize_t & Num)
 {
   if (!FBuffer.IsEmpty())
   {
@@ -256,7 +256,7 @@ t_directory::t_direntry * CFtpListResult::getList(int & Num)
   return Result;
 }
 
-BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseLine(const char *lineToParse, const size_t linelen, t_directory::t_direntry &direntry)
 {
   direntry.ownergroup = L"";
   direntry.owner = L"";
@@ -489,7 +489,7 @@ void CFtpListResult::AddLine(t_directory::t_direntry & direntry)
   }
 }
 
-bool CFtpListResult::IsNumeric(const char *str, int len) const
+bool CFtpListResult::IsNumeric(const char *str, size_t len) const
 {
   if (!str)
     return false;
@@ -498,9 +498,8 @@ bool CFtpListResult::IsNumeric(const char *str, int len) const
   const char *p=str;
   while(*p)
   {
-    if (len != -1)
-      if ((p - str) >= len)
-        return true;
+    if ((p - str) >= len)
+      return true;
 
     if (*p<'0' || *p>'9')
     {
@@ -511,7 +510,7 @@ bool CFtpListResult::IsNumeric(const char *str, int len) const
   return true;
 }
 
-bool CFtpListResult::ParseShortDate(const char *str, int len, t_directory::t_direntry::t_date &date) const
+bool CFtpListResult::ParseShortDate(const char *str, size_t len, t_directory::t_direntry::t_date &date) const
 {
   if (!str)
     return false;
@@ -675,10 +674,10 @@ bool CFtpListResult::ParseShortDate(const char *str, int len, t_directory::t_dir
   return true;
 }
 
-BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsVMS(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  int tokenlen = 0;
-  int pos = 0;
+  size_t tokenlen = 0;
+  size_t pos = 0;
 
   t_directory::t_direntry dir;
 
@@ -710,11 +709,12 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
   {
     int i;
     UnicodeString Buf;
-    Buf.SetLength(tokenlen - 4);
-    for (i = 0; i < (separator - str - 4); i++)
+    Buf.SetLength(SizeToIntChecked(tokenlen - 4));
+    int seppos = SizeToIntChecked(separator - str);
+    for (i = 0; i < (seppos - 4); i++)
       Buf[i + 1] = str[i];
-    for (i = 0; i < (tokenlen - (separator - str)); i++)
-      Buf[i + (separator - str) - 4 + 1] = separator[i];
+    for (i = 0; i < (tokenlen - seppos); i++)
+      Buf[i + seppos - 4 + 1] = separator[i];
     dir.name = CString(Buf);
   }
   else
@@ -752,7 +752,7 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
       return FALSE;
 
     const char *p = strnchr(str, tokenlen, '/');
-    int len;
+    size_t len;
     if (p)
       len = p - str;
     else
@@ -865,7 +865,7 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
   return TRUE;
 }
 
-BOOL CFtpListResult::parseAsEPLF(const char *line, const int, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsEPLF(const char *line, const size_t, t_directory::t_direntry &direntry)
 {
   t_directory::t_direntry dir;
   const char *str = strstr(line, "\t");
@@ -889,7 +889,7 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const int, t_directory::t_dir
     //  *nextfact=0;
     while (fact<=(str-2))
     {
-      int len;
+      size_t len;
       if (!nextfact)
         len = str - fact - 1;
       else
@@ -925,7 +925,7 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const int, t_directory::t_dir
   return FALSE;
 }
 
-BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsMlsd(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
   // MLSD format as described here: https://datatracker.ietf.org/doc/html/rfc3659
   // Parsing is done strict, abort on slightest error.
@@ -934,15 +934,15 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   // make sure to add support for resolving the symlink
   // using MLST to TFTPFileSystem::ReadSymlink
 
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
   {
     return FALSE;
   }
-  CString facts(str, tokenlen);
+  CString facts(str, SizeToIntChecked(tokenlen));
   if (facts.IsEmpty())
   {
     return FALSE;
@@ -1194,10 +1194,10 @@ void CFtpListResult::GuessYearIfUnknown(t_directory::t_direntry::t_date & Date)
   }
 }
 
-BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsUnix(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
@@ -1292,8 +1292,8 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   }
 
   //Skip param, may be used for size
-  int skippedlen = 0;
-  const char *skipped = GetNextToken(line, linelen,skippedlen, pos, 0);
+  size_t skippedlen = 0;
+  const char *skipped = GetNextToken(line, linelen, skippedlen, pos, 0);
   if (!skipped)
   {
     return FALSE;
@@ -1308,7 +1308,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   // Keep parsing the information until we get a numerical string,
   // because some broken servers may send 3 tags: domain/network, group and user
   const char *prevstr = 0;
-  int prevstrlen = 0;
+  size_t prevstrlen = 0;
 
   __int64 tmp = 0;
   while (str && !ParseSize(str, tokenlen, tmp) && !IsNumeric(skipped, skippedlen))
@@ -1366,7 +1366,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   }
 
   const char *size = str;
-  int sizelen = tokenlen;
+  size_t sizelen = tokenlen;
   if (!ParseSize(str, tokenlen, direntry.size))
   {
     //Maybe we've skipped too much tokens
@@ -1452,12 +1452,12 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   }
 
   const char *smonth = str;
-  int smonthlen = tokenlen;
+  size_t smonthlen = tokenlen;
   direntry.date.year = 0;
 
   //Day
   const char *sday = 0;
-  int sdaylen = 0;
+  size_t sdaylen = 0;
 
   // Some VShell server send both the year and the time, try to detect them
   BOOL bCouldBeVShell = FALSE;
@@ -1467,7 +1467,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   const char *p = strnchr(smonth, smonthlen, '-');
   if (p)
   {
-    int plen = smonthlen - (p - smonth);
+    size_t plen = smonthlen - (p - smonth);
     const char *pos2 = strnchr(p+1, plen - 1, '-');
     if (!pos2) //26-09 2002
     {
@@ -1492,7 +1492,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         const char *tmp = smonth;
         smonth = sday;
         sday = tmp;
-        int tmplen = smonthlen;
+        size_t tmplen = smonthlen;
         smonthlen = sdaylen;
         sdaylen = tmplen;
       }
@@ -1514,7 +1514,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         const char *tmp = smonth;
         smonth = sday;
         sday = tmp;
-        int tmplen = smonthlen;
+        size_t tmplen = smonthlen;
         smonthlen = sdaylen;
         sdaylen = tmplen;
       }
@@ -1531,7 +1531,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   else if (strnchr(smonth, smonthlen, '/'))
   {
     const char *p = strnchr(smonth, smonthlen, '/');
-    int plen = smonthlen - (p - smonth);
+    size_t plen = smonthlen - (p - smonth);
     const char *pos2 = strnchr(p+1, plen - 1, '/');
     if (!pos2) //Assume 26/09 2002
     {
@@ -1556,7 +1556,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         const char *tmp = smonth;
         smonth = sday;
         sday = tmp;
-        int tmplen = smonthlen;
+        size_t tmplen = smonthlen;
         smonthlen = sdaylen;
         sdaylen = tmplen;
       }
@@ -1578,7 +1578,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         const char *tmp = smonth;
         smonth = sday;
         sday = tmp;
-        int tmplen = smonthlen;
+        size_t tmplen = smonthlen;
         smonthlen = sdaylen;
         sdaylen = tmplen;
       }
@@ -1635,7 +1635,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     const char *tmp = smonth;
     smonth = sday;
     sday = tmp;
-    int tmplen = smonthlen;
+    size_t tmplen = smonthlen;
     smonthlen = sdaylen;
     sdaylen = tmplen;
   }
@@ -1718,7 +1718,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   }
 
   const char *stimeyear = str;
-  int stimeyearlen = tokenlen;
+  size_t stimeyearlen = tokenlen;
 
   //Parse the time/year token
   const char *strpos = strnchr(stimeyear, stimeyearlen, ':');
@@ -1730,7 +1730,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   {
     //stimeyear has delimiter, so it's a time
     direntry.date.hour = static_cast<int>(strntoi64(stimeyear, strpos - stimeyear));
-    int stimeyearrem = stimeyearlen - (strpos - stimeyear) - 1;
+    size_t stimeyearrem = stimeyearlen - (strpos - stimeyear) - 1;
     const char *strpos2 = strnchr(strpos + 1, stimeyearrem, ':');
     if (strpos2 == NULL)
     {
@@ -1780,7 +1780,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   // Check if server could still be one of the newer VShell servers
   if (bCouldBeVShell)
   {
-    int oldpos = pos;
+    size_t oldpos = pos;
 
     //Get time
     str = GetNextToken(line, linelen, tokenlen, pos, 0);
@@ -1849,10 +1849,10 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   return TRUE;
 }
 
-BOOL CFtpListResult::parseAsDos(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsDos(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
@@ -1926,10 +1926,10 @@ void CFtpListResult::TimeTToDate(time_t TimeT, t_directory::t_direntry::t_date &
   Date.hasdate = Date.hastime = TRUE;
 }
 
-BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsOther(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
@@ -1952,7 +1952,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
   //or even an OS2 server
 
   const char *skipped = str;
-  int skippedtokenlen = tokenlen;
+  size_t skippedtokenlen = tokenlen;
   str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
     return FALSE;
@@ -2143,7 +2143,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
   return TRUE;
 }
 
-__int64 CFtpListResult::strntoi64(const char *str, int len) const
+__int64 CFtpListResult::strntoi64(const char *str, size_t len) const
 {
   __int64 res = 0;
   const char *p = str;
@@ -2157,7 +2157,7 @@ __int64 CFtpListResult::strntoi64(const char *str, int len) const
   return res;
 }
 
-const char *CFtpListResult::GetNextToken(const char *line, const int linelen, int &len, int &pos, int type) const
+const char *CFtpListResult::GetNextToken(const char *line, const size_t linelen, size_t &len, size_t &pos, int type) const
 {
   const char *p = line + pos;
   if ((p - line) >= linelen)
@@ -2187,7 +2187,7 @@ const char *CFtpListResult::GetNextToken(const char *line, const int linelen, in
   return res;
 }
 
-const char * CFtpListResult::strnchr(const char *str, int len, char c) const
+const char * CFtpListResult::strnchr(const char *str, size_t len, char c) const
 {
   if (!str)
     return NULL;
@@ -2205,13 +2205,13 @@ const char * CFtpListResult::strnchr(const char *str, int len, char c) const
   return NULL;
 }
 
-const char * CFtpListResult::strnstr(const char *str, int len, const char *c) const
+const char * CFtpListResult::strnstr(const char *str, size_t len, const char *c) const
 {
   if (!str)
     return NULL;
   if (!c)
     return NULL;
-  int clen = strlen(c);
+  size_t clen = strlen(c);
 
   const char *p = str;
   while (len > 0)
@@ -2236,16 +2236,16 @@ const char * CFtpListResult::strnstr(const char *str, int len, const char *c) co
   return NULL;
 }
 
-inline CString CFtpListResult::getStr(const char *source, int len, bool mayInvalidateUTF8)
+inline CString CFtpListResult::getStr(const char *source, size_t len, bool mayInvalidateUTF8)
 {
-  RawByteString P(source, len);
+  RawByteString P(source, SizeToIntChecked(len));
   return CString(CFtpControlSocket::DecodeString(P, this, m_server, m_bUTF8, mayInvalidateUTF8));
 }
 
-BOOL CFtpListResult::parseAsIBM(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsIBM(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
@@ -2302,10 +2302,10 @@ BOOL CFtpListResult::parseAsIBM(const char *line, const int linelen, t_directory
   return true;
 }
 
-BOOL CFtpListResult::parseAsIBMMVS(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsIBMMVS(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   // volume
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
@@ -2351,7 +2351,7 @@ BOOL CFtpListResult::parseAsIBMMVS(const char *line, const int linelen, t_direct
       if (!IsNumeric(str, tokenlen))
         return FALSE;
 
-      int prevLen = tokenlen;
+      size_t prevLen = tokenlen;
 
       // used
       str = GetNextToken(line, linelen, tokenlen, pos, 0);
@@ -2414,10 +2414,10 @@ BOOL CFtpListResult::parseAsIBMMVS(const char *line, const int linelen, t_direct
   return true;
 }
 
-BOOL CFtpListResult::parseAsIBMMVSPDS(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsIBMMVSPDS(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   // pds member name
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
@@ -2482,15 +2482,15 @@ BOOL CFtpListResult::parseAsIBMMVSPDS(const char *line, const int linelen, t_dir
   return true;
 }
 
-BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
   // Use this one only on MVS servers, as it will cause problems on other servers
 
   if (!(m_server.nServerType & (FZ_SERVERTYPE_SUB_FTP_MVS | FZ_SERVERTYPE_SUB_FTP_BS2000)))
     return false;
 
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   direntry.bUnsure = FALSE;
   direntry.dir = FALSE;
@@ -2507,9 +2507,9 @@ BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_di
   if (m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_BS2000 &&
     IsNumeric(str, tokenlen))
   {
-    int prevlen = tokenlen;
+    size_t prevlen = tokenlen;
     const char* prev = str;
-    int oldpos = pos;
+    size_t oldpos = pos;
 
     str = GetNextToken(line, linelen, tokenlen, pos, 0);
     if (!str)
@@ -2583,8 +2583,8 @@ BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_di
 
   const char* prevprev = 0;
   const char* prev = 0;
-  int prevprevlen = 0;
-  int prevlen = 0;
+  size_t prevprevlen = 0;
+  size_t prevlen = 0;
 
   str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
@@ -2615,7 +2615,7 @@ BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_di
   return true;
 }
 
-bool CFtpListResult::parseTime(const char *str, int len, t_directory::t_direntry::t_date &date) const
+bool CFtpListResult::parseTime(const char *str, size_t len, t_directory::t_direntry::t_date &date) const
 {
   int i = 0;
   //Extract the hour
@@ -2678,10 +2678,10 @@ bool CFtpListResult::parseTime(const char *str, int len, t_directory::t_direntry
   return true;
 }
 
-BOOL CFtpListResult::parseAsWfFtp(const char *line, const int linelen, t_directory::t_direntry &direntry)
+BOOL CFtpListResult::parseAsWfFtp(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  int pos = 0;
-  int tokenlen = 0;
+  size_t pos = 0;
+  size_t tokenlen = 0;
 
   const char *str = GetNextToken(line, linelen, tokenlen, pos, 0);
   if (!str)
@@ -2728,7 +2728,7 @@ BOOL CFtpListResult::parseAsWfFtp(const char *line, const int linelen, t_directo
   return TRUE;
 }
 
-bool CFtpListResult::ParseSize(const char* str, int len, __int64 &size) const
+bool CFtpListResult::ParseSize(const char* str, size_t len, __int64 &size) const
 {
   if (len < 1)
     return false;
@@ -2742,7 +2742,7 @@ bool CFtpListResult::ParseSize(const char* str, int len, __int64 &size) const
   size = 0;
   char last = str[--len];
 
-  int delimiter = -1;
+  ssize_t delimiter = -1;
   for (int i = 0; i < len; i++)
   {
     char c = str[i];

@@ -711,7 +711,7 @@ void TS3FileSystem::LibS3ResponseDataCallback(const char * Data, size_t Size, vo
   TS3FileSystem * FileSystem = static_cast<TS3FileSystem *>(CallbackData);
   if (FileSystem->FTerminal->Log->Logging && !FileSystem->FResponseIgnore)
   {
-    UnicodeString Content = UnicodeString(UTF8String(Data, Size)).Trim();
+    UnicodeString Content = UnicodeString(UTF8String(Data, SizeToIntChecked(Size))).Trim();
     FileSystem->FResponse += Content;
   }
 }
@@ -2014,7 +2014,7 @@ void __fastcall TS3FileSystem::ChangeFileProperties(const UnicodeString FileName
 
         S3_set_acl(
           &BucketContext, StrToS3(Key), FileProperties.OwnerId, FileProperties.OwnerDisplayName,
-          NewAclGrants.size(), &NewAclGrants[0],
+          SizeToIntChecked(NewAclGrants.size()), &NewAclGrants[0],
           FRequestContext, FTimeout, &ResponseHandler, &Data);
 
         CheckLibS3Error(Data);
@@ -2289,7 +2289,7 @@ void TS3FileSystem::ConfirmOverwrite(
 
   TQueryParams QueryParams(qpNeverAskAgainCheck);
   QueryParams.Aliases = &Aliases[0];
-  QueryParams.AliasesCount = Aliases.size();
+  QueryParams.AliasesCount = SizeToIntChecked(Aliases.size());
 
   unsigned int Answer;
 

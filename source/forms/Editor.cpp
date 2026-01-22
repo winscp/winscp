@@ -267,7 +267,7 @@ int __fastcall TEditorRichEdit::FindText(const UnicodeString SearchStr, int Star
     FLAGMASK(Options.Contains(stWholeWord), FR_WHOLEWORD) |
     FLAGMASK(Options.Contains(stMatchCase), FR_MATCHCASE) |
     FLAGMASK(Down, FR_DOWN);
-  int Result = SendMessage(Handle, EM_FINDTEXTEX, Flags, reinterpret_cast<LPARAM>(&Find));
+  int Result = SizeToIntChecked(SendMessage(Handle, EM_FINDTEXTEX, Flags, reinterpret_cast<LPARAM>(&Find)));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -292,7 +292,7 @@ void __fastcall TEditorRichEdit::CreateWnd()
   TRichEdit::CreateWnd();
   if (!WinConfiguration->Editor.AutoFont)
   {
-    int LangOptions = SendMessage(Handle, EM_GETLANGOPTIONS, 0, 0);
+    __int64 LangOptions = SendMessage(Handle, EM_GETLANGOPTIONS, 0, 0);
     LangOptions = (LangOptions & ~IMF_AUTOFONT) | IMF_AUTOKEYBOARD;
     SendMessage(Handle, EM_SETLANGOPTIONS, 0, LangOptions);
   }
@@ -367,7 +367,7 @@ static int __fastcall AdjustLineBreaks(unsigned char * Dest, const TBytes & Sour
     *P = Source[I];
     P++;
   }
-  return (P - Dest);
+  return SizeToIntChecked(P - Dest);
 }
 //---------------------------------------------------------------------------
 struct TStreamLoadInfo
@@ -550,7 +550,7 @@ bool __stdcall TEditorRichEdit::StreamLoad(
           if (StreamInfo->Encoding == NULL)
           {
             Buffer = TEncoding::Convert(TEncoding::Default, TEncoding::Unicode, Buffer, 0, WasRead);
-            WasRead = Buffer.Length;
+            WasRead = SizeToIntChecked(Buffer.Length);
           }
           else
           {
@@ -570,7 +570,7 @@ bool __stdcall TEditorRichEdit::StreamLoad(
                 }
               }
               Buffer = TEncoding::Convert(StreamInfo->Encoding, TEncoding::Unicode, Buffer, 0, WasRead);
-              WasRead = Buffer.Length;
+              WasRead = SizeToIntChecked(Buffer.Length);
             }
             // If Unicode preamble is present, set StartIndex to skip over it
             TBytes Preamble = TEncoding::Unicode->GetPreamble();
@@ -1322,7 +1322,7 @@ bool __fastcall TEditorForm::ContainsPreamble(TStream * Stream, const TBytes & S
   bool Result;
   TBytes Buffer;
   int LBufLen;
-  int LSignatureLen = Signature.Length;
+  int LSignatureLen = SizeToIntChecked(Signature.Length);
   __int64 LPosition = Stream->Position;
   try
   {
@@ -1546,7 +1546,7 @@ bool __fastcall TEditorForm::CursorInUpperPart()
   }
 
   int VisibleLines = (Rect.Bottom - Rect.Top) / (TM.tmHeight + TM.tmExternalLeading);
-  int FirstLine = SendMessage(EditorMemo->Handle, EM_GETFIRSTVISIBLELINE, 0, 0);
+  __int64 FirstLine = SendMessage(EditorMemo->Handle, EM_GETFIRSTVISIBLELINE, 0, 0);
   TPoint CaretPos = EditorMemo->CaretPos;
 
   return (CaretPos.y - FirstLine) < VisibleLines / 2;

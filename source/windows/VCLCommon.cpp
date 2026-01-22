@@ -479,7 +479,7 @@ bool __fastcall IsMainFormHidden()
   {
     Result =
       !MainForm->Visible ||
-      (MainForm->Perform(WM_IS_HIDDEN, 0, 0) == 1);
+      (MainForm->Perform(WM_IS_HIDDEN, 0, NativeInt(0)) == 1);
   }
   // we do not expect this to return true when MainLikeForm is set
   DebugAssert(!Result || (MainLikeForm == NULL));
@@ -616,7 +616,7 @@ static void __fastcall ChangeControlScale(TControl * Control)
     }
   }
 
-  Control->Perform(CM_DPICHANGED, 0, 0);
+  Control->Perform(CM_DPICHANGED, 0, NativeInt(0));
 }
 //---------------------------------------------------------------------------
 typedef std::pair<int, int> TRatio;
@@ -694,7 +694,7 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
         }
       }
 
-      if (Form->Perform(WM_MANAGES_CAPTION, 0, 0) == 0)
+      if (Form->Perform(WM_MANAGES_CAPTION, 0, NativeInt(0)) == 0)
       {
         Form->Caption = FormatFormCaption(Form, Form->Caption);
       }
@@ -1006,7 +1006,7 @@ static void __fastcall FormGetObject(TForm * Form, TWndMethod WndProc, TMessage 
       auto I = std::find(HandlesOrder.begin(), HandlesOrder.end(), Control1->Handle);
       if (I != HandlesOrder.end())
       {
-        int Order1 = I - HandlesOrder.begin();
+        int Order1 = SizeToIntChecked(I - HandlesOrder.begin());
         int Index = 1;
         while (Index < TabControlList->Count)
         {
@@ -1014,7 +1014,7 @@ static void __fastcall FormGetObject(TForm * Form, TWndMethod WndProc, TMessage 
           I = std::find(HandlesOrder.begin(), HandlesOrder.end(), Control2->Handle);
           if (I != HandlesOrder.end())
           {
-            int Order2 = I - HandlesOrder.begin();
+            int Order2 = SizeToIntChecked(I - HandlesOrder.begin());
             if (Order1 > Order2)
             {
               Reorder = true;
@@ -1656,7 +1656,7 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
       }
       else
       {
-        Result = P - ACh.c_str() + 1;
+        Result = SizeToIntChecked(P - ACh.c_str() + 1);
         // skip consecutive delimiters
         while ((Result < Len) &&
                IsPathWordDelimiter(ACh[Result + 1]))

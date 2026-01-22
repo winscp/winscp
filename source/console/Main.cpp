@@ -425,7 +425,7 @@ static void PrintException(const exception& e)
   if (ConsoleOutput != nullptr)
   {
     unsigned long Written;
-    WriteFile(ConsoleOutput, e.what(), strlen(e.what()), &Written, nullptr);
+    WriteFile(ConsoleOutput, e.what(), static_cast<unsigned long>(strlen(e.what())), &Written, nullptr);
   }
   else
   {
@@ -445,8 +445,9 @@ static void Print(const wchar_t* Message)
       *Ptr = '\r';
       Ptr += 2;
     }
+    unsigned long Len = static_cast<unsigned long>(strlen(Buffer));
     unsigned long Written;
-    WriteFile(ConsoleOutput, Buffer, strlen(Buffer), &Written, nullptr);
+    WriteFile(ConsoleOutput, Buffer, Len, &Written, nullptr);
     delete[] Buffer;
   }
 }
@@ -500,7 +501,7 @@ static void Print(bool FromBeginning, const wchar_t* Message)
         char* Buffer = new char[static_cast<size_t>(Size)];
         if (WideCharToMultiByte(CP_ACP, 0, Message, -1, Buffer, Size, nullptr, nullptr) > 0)
         {
-          WriteConsoleA(ConsoleOutput, Buffer, strlen(Buffer), &Written, nullptr);
+          WriteConsoleA(ConsoleOutput, Buffer, static_cast<unsigned long>(strlen(Buffer)), &Written, nullptr);
         }
         delete[] Buffer;
       }
@@ -750,7 +751,7 @@ static void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
                            RIGHT_ALT_PRESSED)) == 0))
 
                 {
-                  Event.Result = wcschr(Event.Options, C) - Event.Options + 1;
+                  Event.Result = static_cast<int>(wcschr(Event.Options, C) - Event.Options + 1);
                 }
               }
             }
@@ -854,7 +855,7 @@ inline void ProcessTransferInEvent(TConsoleCommStruct::TTransferEvent& Event)
     }
     else
     {
-      Event.Len = Read;
+      Event.Len = static_cast<unsigned int>(Read);
     }
   }
 }

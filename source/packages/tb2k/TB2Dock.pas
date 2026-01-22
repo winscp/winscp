@@ -2170,7 +2170,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMNCRButtonUp(var Message: TWMNCRButtonUp);
 begin
-  FDockableWindow.ShowNCContextMenu(TSmallPoint(TMessage(Message).LParam));
+  FDockableWindow.ShowNCContextMenu(SmallPoint(Message.XCursor, Message.YCursor));
 end;
 
 procedure TTBFloatingWindowParent.WMClose(var Message: TWMClose);
@@ -4389,12 +4389,12 @@ end;
 procedure TTBCustomDockableWindow.ShowNCContextMenu(const Pos: TSmallPoint);
 begin
   { Delphi 5 and later use the WM_CONTEXTMENU message for popup menus }
-  SendMessage(Handle, WM_CONTEXTMENU, 0, LPARAM(Pos));
+  SendMessage(Handle, WM_CONTEXTMENU, 0, LPARAM(MAKELONG(Pos.X, Pos.Y)));
 end;
 
 procedure TTBCustomDockableWindow.WMNCRButtonUp(var Message: TWMNCRButtonUp);
 begin
-  ShowNCContextMenu(TSmallPoint(TMessage(Message).LParam));
+  ShowNCContextMenu(SmallPoint(Message.XCursor, Message.YCursor));
 end;
 
 procedure TTBCustomDockableWindow.WMContextMenu(var Message: TWMContextMenu);

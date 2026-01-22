@@ -59,7 +59,7 @@ public:
 
     m_hWnd=CreateWindow(L"CAsyncSocketEx Helper Window", L"CAsyncSocketEx Helper Window", 0, 0, 0, 0, 0, 0, 0, GetModuleHandle(0), 0);
     DebugAssert(m_hWnd);
-    SetWindowLongPtr(m_hWnd, GWL_USERDATA, reinterpret_cast<LONG>(this));
+    SetWindowLongPtr(m_hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
   }
 
   virtual ~CAsyncSocketExHelperWindow()
@@ -190,7 +190,7 @@ public:
     DebugAssert(hWnd);
     if (!hWnd)
       return 0;
-    CAsyncSocketExHelperWindow *pWnd=reinterpret_cast<CAsyncSocketExHelperWindow *>(GetWindowLongPtr(hWnd, GWL_USERDATA));
+    CAsyncSocketExHelperWindow *pWnd=reinterpret_cast<CAsyncSocketExHelperWindow *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
     if (message>=WM_SOCKETEX_NOTIFY)
     {
       DebugAssert(pWnd);
@@ -208,7 +208,7 @@ public:
           return 0;
 
         int nEvent=lParam&0xFFFF;
-        int nErrorCode=lParam>>16;
+        int nErrorCode=static_cast<int>(lParam>>16);
 
         //Dispatch notification
         if (!pSocket->m_pFirstLayer)
@@ -525,7 +525,7 @@ public:
 
       // Verify parameters
       DebugAssert(hWnd);
-      CAsyncSocketExHelperWindow *pWnd = reinterpret_cast<CAsyncSocketExHelperWindow *>(GetWindowLongPtr(hWnd, GWL_USERDATA));
+      CAsyncSocketExHelperWindow *pWnd = reinterpret_cast<CAsyncSocketExHelperWindow *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
       DebugAssert(pWnd);
 
       CAsyncSocketEx *pSocket = NULL;
@@ -539,7 +539,7 @@ public:
       if (!pSocket)
         return 0;
 
-      int nErrorCode = lParam >> 16;
+      int nErrorCode = static_cast<int>(lParam >> 16);
       if (nErrorCode)
       {
         pSocket->OnConnect(nErrorCode);
@@ -799,7 +799,7 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, const wchar_t * lpszSocketAddress)
       return FALSE;
 
     for (res = res0; res; res = res->ai_next)
-      if (BindToAddr(res->ai_addr, res->ai_addrlen))
+      if (BindToAddr(res->ai_addr, static_cast<int>(res->ai_addrlen)))
       {
         ret = TRUE;
         break;
@@ -1151,7 +1151,7 @@ BOOL CAsyncSocketEx::Connect(const wchar_t * lpszHostAddress, UINT nHostPort)
         }
       }
 
-      if (!(ret = CAsyncSocketEx::Connect(m_SocketData.nextAddr->ai_addr, m_SocketData.nextAddr->ai_addrlen)) && GetLastError() != WSAEWOULDBLOCK)
+      if (!(ret = CAsyncSocketEx::Connect(m_SocketData.nextAddr->ai_addr, SizeToIntChecked(m_SocketData.nextAddr->ai_addrlen))) && GetLastError() != WSAEWOULDBLOCK)
       {
         if (newSocket)
         {
@@ -1614,7 +1614,7 @@ bool CAsyncSocketEx::TryNextProtocol()
       continue;
     }
 
-    ret = CAsyncSocketEx::Connect(m_SocketData.nextAddr->ai_addr, m_SocketData.nextAddr->ai_addrlen);
+    ret = CAsyncSocketEx::Connect(m_SocketData.nextAddr->ai_addr, SizeToIntChecked(m_SocketData.nextAddr->ai_addrlen));
     if (!ret && GetLastError() != WSAEWOULDBLOCK)
     {
       DetachHandle();

@@ -3579,7 +3579,7 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandType::GetOptionsCount() const
 {
-  return FOptions.size();
+  return SizeToIntChecked(FOptions.size());
 }
 //---------------------------------------------------------------------------
 const TCustomCommandType::TOption & __fastcall TCustomCommandType::GetOption(int Index) const

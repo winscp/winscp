@@ -90,7 +90,7 @@ DWORD __fastcall TFileBuffer::LoadFromIn(TTransferInEvent OnTransferIn, TObject 
   FMemory->Seek(0, soFromBeginning);
   DebugAssert(GetPosition() == 0);
   NeedSpace(Len);
-  size_t Result = OnTransferIn(Sender, reinterpret_cast<unsigned char *>(GetPointer()), Len);
+  DWORD Result = SizeToUIntChecked(OnTransferIn(Sender, reinterpret_cast<unsigned char *>(GetPointer()), Len));
   ProcessRead(Len, Result);
   return Result;
 }
@@ -244,7 +244,7 @@ void __fastcall TFileBuffer::WriteToOut(TTransferOutEvent OnTransferOut, TObject
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TSafeHandleStream::TSafeHandleStream(int AHandle) :
+__fastcall TSafeHandleStream::TSafeHandleStream(NativeUInt AHandle) :
   THandleStream(AHandle),
   FSource(NULL)
 {

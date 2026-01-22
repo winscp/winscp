@@ -203,7 +203,7 @@ static int neon_header_func(void * userdata, ne_request * NeonRequest, const ne_
 
 
 // WINSCP (neon)
-static int neon_read_func(void * userdata, char * buf, size_t len)
+static ssize_t neon_read_func(void * userdata, char * buf, size_t len)
 {
     Request *request = (Request *) userdata;
 

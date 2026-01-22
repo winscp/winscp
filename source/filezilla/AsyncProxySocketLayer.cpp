@@ -239,7 +239,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           buffer[0]=1;
           buffer[1]=static_cast<unsigned char>(strlen(lpszAsciiUser));
           buffer[2+strlen(lpszAsciiUser)]=static_cast<unsigned char>(strlen(lpszAsciiPass));
-          int len=3+strlen(lpszAsciiUser)+strlen(lpszAsciiPass);
+          int len=SizeToIntChecked(3+strlen(lpszAsciiUser)+strlen(lpszAsciiPass));
           int res=SendNext(buffer,len);
           delete [] buffer;
           if (res==SOCKET_ERROR || res<len)
@@ -493,7 +493,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         if (!responseLogged)
         {
           CString status;
-          status.Format(L"HTTP proxy response: %s", UnicodeString(m_pStrBuffer, pos - m_pStrBuffer).c_str());
+          status.Format(L"HTTP proxy response: %s", UnicodeString(m_pStrBuffer, SizeToIntChecked(pos - m_pStrBuffer)).c_str());
           LogSocketMessageRaw(FZ_LOG_PROGRESS, status);
           responseLogged = true;
         }
@@ -766,7 +766,7 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
         char userpass[4096];
         sprintf(userpass, "%s:%s", m_ProxyData.pProxyUser?m_ProxyData.pProxyUser:"", m_ProxyData.pProxyPass?m_ProxyData.pProxyPass:"");
 
-        AnsiString base64str = EncodeBase64(userpass, strlen(userpass));
+        AnsiString base64str = EncodeBase64(userpass, SizeToIntChecked(strlen(userpass)));
         strcat(str, "Authorization: Basic ");
         strcat(str, base64str.c_str());
         strcat(str, "\r\nProxy-Authorization: Basic ");
@@ -778,7 +778,7 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
       CString status;
       status.Format(L"HTTP proxy command: %s", UnicodeString(str).c_str());
       LogSocketMessageRaw(FZ_LOG_PROGRESS, status);
-      int numsent=SendNext(str, strlen(str) );
+      int numsent=SendNext(str, SizeToIntChecked(strlen(str)));
       int nErrorCode=WSAGetLastError();
       if (numsent==SOCKET_ERROR)//nErrorCode!=WSAEWOULDBLOCK)
       {

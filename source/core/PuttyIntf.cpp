@@ -329,7 +329,7 @@ void old_keyfile_warning(void)
 size_t banner(Seat * seat, const void * data, size_t len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  UnicodeString Banner(UTF8String(static_cast<const char *>(data), len));
+  UnicodeString Banner(UTF8String(static_cast<const char *>(data), SizeToIntChecked(len)));
   SecureShell->DisplayBanner(Banner);
   return 0; // PuTTY never uses the value
 }
@@ -998,7 +998,7 @@ void FreeKey(TPrivateKey * PrivateKey)
 //---------------------------------------------------------------------------
 RawByteString StrBufToString(strbuf * StrBuf)
 {
-  return RawByteString(reinterpret_cast<char *>(StrBuf->s), StrBuf->len);
+  return RawByteString(reinterpret_cast<char *>(StrBuf->s), SizeToIntChecked(StrBuf->len));
 }
 //---------------------------------------------------------------------------
 RawByteString LoadPublicKey(
@@ -1201,7 +1201,7 @@ UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
   }
   __finally
   {
-    Buf.SetLength(ssh_hash_alg(Hash)->hlen);
+    Buf.SetLength(SizeToIntChecked(ssh_hash_alg(Hash)->hlen));
     ssh_hash_final(Hash, reinterpret_cast<unsigned char *>(Buf.c_str()));
   }
 
@@ -1286,7 +1286,7 @@ void ParseCertificatePublicKey(const UnicodeString & Str, RawByteString & Public
       throw Exception(LoadStr(SSH_HOST_CA_NO_KEY_TYPE));
     }
 
-    UnicodeString AlgName = UnicodeString(AnsiString(static_cast<const char *>(AlgNamePtrLen.ptr), AlgNamePtrLen.len));
+    UnicodeString AlgName = UnicodeString(AnsiString(static_cast<const char *>(AlgNamePtrLen.ptr), SizeToIntChecked(AlgNamePtrLen.len)));
     const ssh_keyalg * Alg = find_pubkey_alg_len(AlgNamePtrLen);
     if (Alg == NULL)
     {
@@ -1328,8 +1328,8 @@ bool IsCertificateValidityExpressionValid(
   {
     Error = UnicodeString(ErrorMsg);
     sfree(ErrorMsg);
-    ErrorStart = static_cast<const char *>(ErrorLoc.ptr) - StrPtr;
-    ErrorLen = ErrorLoc.len;
+    ErrorStart = SizeToIntChecked(static_cast<const char *>(ErrorLoc.ptr) - StrPtr);
+    ErrorLen = SizeToIntChecked(ErrorLoc.len);
   }
   return Result;
 }

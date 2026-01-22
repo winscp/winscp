@@ -11,7 +11,6 @@
 #include "FileZillaApi.h"
 #include <WideStrUtils.hpp>
 #include <DateUtils.hpp>
-#include <Common.h>
 
 class CFtpControlSocket::CFileTransferData : public CFtpControlSocket::t_operation::COpData
 {
@@ -1894,7 +1893,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
       return;
     }
 
-    int num = 0;
+    ssize_t num = 0;
     pData->pDirectoryListing = new t_directory;
     pData->pDirectoryListing->direntry = m_pTransferSocket->m_pListResult->getList(num);
     pData->pDirectoryListing->num = num;
@@ -2339,7 +2338,7 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
   CString cmd;
   CString retmsg;
   int code = -1;
-  int num = -1;
+  ssize_t num = -1;
   switch (m_Operation.nOpState)
   {
   case LISTFILE_INIT:
@@ -2835,7 +2834,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         return;
       }
 
-      int num=0;
+      ssize_t num=0;
       pData->pDirectoryListing=new t_directory;
       pData->pDirectoryListing->direntry=m_pTransferSocket->m_pListResult->getList(num);
       pData->pDirectoryListing->num=num;

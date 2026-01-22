@@ -682,7 +682,7 @@ void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning, b
     TConsoleCommStruct * CommStruct = GetCommStruct();
     try
     {
-      size_t MaxLen = std::size(CommStruct->PrintEvent.Message) - 1;
+      int MaxLen = static_cast<int>(std::size(CommStruct->PrintEvent.Message) - 1);
       UnicodeString Piece = Str.SubString(1, MaxLen);
       Str.Delete(1, MaxLen);
 
@@ -763,7 +763,7 @@ int __fastcall TExternalConsole::Choice(
     CommStruct->ChoiceEvent.Timeouted = Timeouted;
     CommStruct->ChoiceEvent.Timer = Timer;
     CommStruct->ChoiceEvent.Timeouting = Timeouting;
-    size_t MaxLen = std::size(CommStruct->ChoiceEvent.Message) - 1;
+    int MaxLen = static_cast<int>(std::size(CommStruct->ChoiceEvent.Message) - 1);
     Message = Message.SubString(1, MaxLen);
     wcscpy(CommStruct->ChoiceEvent.Message, Message.c_str());
   }
@@ -800,7 +800,7 @@ void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
   try
   {
     // Truncate to maximum allowed. Title over 10 KB won't fit to screen anyway
-    Title = Title.SubString(1, std::size(CommStruct->TitleEvent.Title) - 1);
+    Title = Title.SubString(1, static_cast<int>(std::size(CommStruct->TitleEvent.Title) - 1));
 
     CommStruct->Event = TConsoleCommStruct::TITLE;
     wcscpy(CommStruct->TitleEvent.Title, Title.c_str());
@@ -961,7 +961,7 @@ void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t
     try
     {
       CommStruct->Event = TConsoleCommStruct::TRANSFEROUT;
-      unsigned int BlockLen = std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data));
+      unsigned int BlockLen = static_cast<unsigned int>(std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data)));
       memcpy(CommStruct->TransferEvent.Data, Data + Offset, BlockLen);
       CommStruct->TransferEvent.Len = BlockLen;
       Offset += BlockLen;
@@ -983,7 +983,7 @@ size_t __fastcall TExternalConsole::TransferIn(unsigned char * Data, size_t Len)
   while ((Result == Offset) && (Offset < Len))
   {
     TConsoleCommStruct * CommStruct;
-    size_t BlockLen = std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data));
+    unsigned int BlockLen = SizeToUIntChecked(std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data)));
 
     CommStruct = GetCommStruct();
     try

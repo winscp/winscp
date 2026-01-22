@@ -33,31 +33,31 @@ public:
   t_server m_server;
   void AddData(const char * data,int size);
   CFtpListResult(t_server server, bool mlst, bool * bUTF8, bool vmsAllRevisions, bool debugShowListing);
-  t_directory::t_direntry * getList(int & num);
+  t_directory::t_direntry * getList(ssize_t & num);
 
 private:
   typedef std::list<t_directory::t_direntry> tEntryList;
   tEntryList m_EntryList;
 
-  BOOL parseLine(const char * lineToParse, const int linelen, t_directory::t_direntry & direntry);
+  BOOL parseLine(const char * lineToParse, const size_t linelen, t_directory::t_direntry & direntry);
 
-  BOOL parseAsVMS(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsEPLF(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsMlsd(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsUnix(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsDos(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsOther(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsIBM(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsIBMMVS(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsIBMMVSPDS(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsIBMMVSPDS2(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsWfFtp(const char * line, const int linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsVMS(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsEPLF(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsMlsd(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsUnix(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsDos(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsOther(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsIBM(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsIBMMVS(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsIBMMVSPDS(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsIBMMVSPDS2(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
+  BOOL parseAsWfFtp(const char * line, const size_t linelen, t_directory::t_direntry & direntry);
 
-  const char * GetNextToken(const char * line, const int linelen, int & len, int & pos, int type) const;
+  const char * GetNextToken(const char * line, const size_t linelen, size_t & len, size_t & pos, int type) const;
 
-  bool ParseShortDate(const char * str, int len, t_directory::t_direntry::t_date & date) const;
-  bool parseTime(const char * str, int len, t_directory::t_direntry::t_date & date) const;
-  bool ParseSize(const char * str, int len, __int64 & size) const;
+  bool ParseShortDate(const char * str, size_t len, t_directory::t_direntry::t_date & date) const;
+  bool parseTime(const char * str, size_t len, t_directory::t_direntry::t_date & date) const;
+  bool ParseSize(const char * str, size_t len, __int64 & size) const;
   void TimeTToDate(time_t TimeT, t_directory::t_direntry::t_date & date) const;
   static void GuessYearIfUnknown(t_directory::t_direntry::t_date & Date);
 
@@ -77,12 +77,12 @@ private:
 protected:
   bool m_mlst;
   bool * m_bUTF8;
-  inline CString getStr(const char *source, int len, bool mayInvalidateUTF8 = false);
-  const char * strnchr(const char * str, int len, char c) const;
-  const char * strnstr(const char * str, int len, const char * c) const;
-  __int64 strntoi64(const char * str, int len) const;
+  inline CString getStr(const char *source, size_t len, bool mayInvalidateUTF8 = false);
+  const char * strnchr(const char * str, size_t len, char c) const;
+  const char * strnstr(const char * str, size_t len, const char * c) const;
+  __int64 strntoi64(const char * str, size_t len) const;
   void AddLine(t_directory::t_direntry & direntry);
-  bool IsNumeric(const char * str, int len) const;
+  bool IsNumeric(const char * str, size_t len) const;
   bool IsNewLineChar(char C) const;
   void SendLineToMessageLog(const RawByteString & Line);
 };

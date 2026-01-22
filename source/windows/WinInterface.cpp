@@ -101,7 +101,7 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
   {
     if (CheckBox->Tag > 0)
     {
-      PositiveAnswer = CheckBox->Tag;
+      PositiveAnswer = static_cast<unsigned int>(CheckBox->Tag);
     }
     else
     {
@@ -871,7 +871,7 @@ int __fastcall CopyParamListPopupClick(TObject * Sender,
   else
   {
     Preset = (Item->Tag >= 0) ?
-      GUIConfiguration->CopyParamList->Names[Item->Tag] : UnicodeString();
+      GUIConfiguration->CopyParamList->Names[static_cast<int>(Item->Tag)] : UnicodeString();
     // The cast strips away the "queue" properties of the TGUICopyParamType
     // that are not configurable in presets
     Param = TCopyParamType(GUIConfiguration->CopyParamPreset[Preset]);
@@ -1561,7 +1561,7 @@ void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
   FTrayIcon->uFlags |= NIF_INFO;
   AppLogFmt("Tray popup balloon: %s - %s", (Title, Str));
   Title = Title + TitleSeparator + AppNameString();
-  StrPLCopy(FTrayIcon->szInfoTitle, Title, std::size(FTrayIcon->szInfoTitle) - 1);
+  StrPLCopy(FTrayIcon->szInfoTitle, Title, SizeToUIntChecked(std::size(FTrayIcon->szInfoTitle) - 1));
   UnicodeString Info = Str;
   // When szInfo is empty, balloon is not shown
   // (or actually it means the balloon should be deleted, if any)
@@ -1569,7 +1569,7 @@ void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
   {
     Info = L" ";
   }
-  StrPLCopy(FTrayIcon->szInfo, Info, std::size(FTrayIcon->szInfo) - 1);
+  StrPLCopy(FTrayIcon->szInfo, Info, SizeToUIntChecked(std::size(FTrayIcon->szInfo) - 1));
   FTrayIcon->uTimeout = Timeout;
   switch (QueryType)
   {
@@ -1765,7 +1765,7 @@ void __fastcall ::TTrayIcon::SetHint(UnicodeString value)
 {
   if (Hint != value)
   {
-    unsigned int Max = std::size(FTrayIcon->szTip);
+    unsigned int Max = SizeToUIntChecked(std::size(FTrayIcon->szTip));
     StrPLCopy(FTrayIcon->szTip, value, Max - 1);
     Update();
   }

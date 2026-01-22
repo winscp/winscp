@@ -84,7 +84,7 @@ begin
     while PIDL^.mkid.cb <> 0 do
     begin
       Inc(Result, PIDL^.mkid.cb);
-      Inc(LongInt(PIDL), PIDL^.mkid.cb);
+      PIDL := PITEMIDLIST(NativeUInt(PIDL) + PIDL^.mkid.cb);
     end;
   end;
 end;

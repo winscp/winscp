@@ -116,7 +116,7 @@ UnicodeString AnsiToString(const RawByteString & S)
 //---------------------------------------------------------------------------
 UnicodeString AnsiToString(const char * S, size_t Len)
 {
-  return UnicodeString(AnsiString(S, Len));
+  return UnicodeString(AnsiString(S, SizeToIntChecked(Len)));
 }
 //---------------------------------------------------------------------------
 UnicodeString UTFToString(const RawByteString & S)
@@ -492,7 +492,7 @@ RawByteString DecodeBase64ToStr(const UnicodeString & Str)
   {
     // This might be the same as TEncoding::ASCII->GetString.
     // const_cast: The operator[] const is (badly?) implemented to return by value
-    Result = RawByteString(reinterpret_cast<const char *>(&const_cast<TBytes &>(Bytes)[0]), Bytes.Length);
+    Result = RawByteString(reinterpret_cast<const char *>(&const_cast<TBytes &>(Bytes)[0]), SizeToIntChecked(Bytes.Length));
   }
   return Result;
 }
@@ -662,7 +662,7 @@ UnicodeString __fastcall AddPathQuotes(UnicodeString Path)
 static wchar_t * __fastcall ReplaceChar(
   UnicodeString & FileName, wchar_t * InvalidChar, wchar_t InvalidCharsReplacement)
 {
-  int Index = InvalidChar - FileName.c_str() + 1;
+  int Index = SizeToIntChecked(InvalidChar - FileName.c_str() + 1);
   if (InvalidCharsReplacement == TokenReplacement)
   {
     // currently we do not support unicode chars replacement
@@ -701,7 +701,7 @@ UnicodeString __fastcall ValidLocalFileName(
     wchar_t * InvalidChar = FileName.c_str();
     while ((InvalidChar = wcspbrk(InvalidChar, Chars)) != NULL)
     {
-      int Pos = (InvalidChar - FileName.c_str() + 1);
+      int Pos = SizeToIntChecked(InvalidChar - FileName.c_str() + 1);
       wchar_t Char;
       if (ATokenReplacement &&
           (*InvalidChar == TokenPrefix) &&
@@ -1086,7 +1086,7 @@ static int GetOffsetAfterPathRoot(const UnicodeString & Path, PATH_PREFIX_TYPE &
     const wchar_t * Buffer = PathSkipRoot(WinPath.c_str());
     if (Buffer != NULL)
     {
-      Result = (Buffer - WinPath.c_str()) + 1;
+      Result = SizeToIntChecked(Buffer - WinPath.c_str()) + 1;
     }
 
     // Now determine the type of prefix
@@ -3402,7 +3402,7 @@ static int PemPasswordCallback(char * Buf, int Size, int /*RWFlag*/, void * User
   strncpy(Buf, UtfPassphrase.c_str(), Size);
   Shred(UtfPassphrase);
   Buf[Size - 1] = '\0';
-  return strlen(Buf);
+  return SizeToIntChecked(strlen(Buf));
 }
 //---------------------------------------------------------------------------
 static bool __fastcall IsTlsPassphraseError(unsigned long Error, bool HasPassphrase)
@@ -4168,7 +4168,7 @@ void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines, boo
   int Offset = 0;
   do
   {
-    Read = Stream->Read(Buffer, Offset, Buffer.Length - Offset);
+    Read = Stream->Read(Buffer, Offset, SizeToIntChecked(Buffer.Length - Offset));
     Offset += Read;
     if (Offset > Buffer.Length / 2)
     {
@@ -4183,7 +4183,7 @@ void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines, boo
   UnicodeString S;
   try
   {
-    S = Encoding->GetString(Buffer, PreambleSize, Buffer.Length - PreambleSize);
+    S = Encoding->GetString(Buffer, PreambleSize, SizeToIntChecked(Buffer.Length - PreambleSize));
   }
   catch (EEncodingError & E)
   {
@@ -4337,7 +4337,7 @@ UnicodeString __fastcall GetAncestorProcessName(int Levels)
         TProcesses::const_iterator I = std::find(Processes.begin(), Processes.end(), ProcessId);
         if (I != Processes.end())
         {
-          int Index = I - Processes.begin();
+          int Index = SizeToIntChecked(I - Processes.begin());
           AddToList(Result, FORMAT(L"cycle-%d", (Index)), Sep);
           ProcessId = 0;
         }

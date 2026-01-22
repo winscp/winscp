@@ -122,7 +122,7 @@ void __fastcall TMessageForm::UpdateForShiftState()
         for (int ItemIndex = 0; ItemIndex < MenuItems->Count; ItemIndex++)
         {
           TMenuItem * Item = MenuItems->Items[ItemIndex];
-          TShiftState GrouppedShiftState(Item->Tag >> 16);
+          TShiftState GrouppedShiftState(SizeToIntChecked(Item->Tag >> 16));
           if (Item->Enabled &&
               ((ShiftState.Empty() && Item->Default) ||
                (!ShiftState.Empty() && (ShiftState == GrouppedShiftState))))

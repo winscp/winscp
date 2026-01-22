@@ -54,9 +54,9 @@ void SystemRequired();
 UnicodeString __fastcall AppNameString();
 UnicodeString __fastcall SshVersionString();
 void __fastcall CopyToClipboard(UnicodeString Text);
-int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
-  TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
-  TThreadID & ThreadId);
+THandle StartThread(
+  void * SecurityAttributes, unsigned StackSize, TThreadFunc ThreadFunc, void * Parameter,
+  unsigned CreationFlags, TThreadID & ThreadId);
 bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim);
 
 // Order of the values also define order of the buttons/answers on the prompts

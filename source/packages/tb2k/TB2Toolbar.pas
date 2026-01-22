@@ -1284,13 +1284,27 @@ begin
   end;
 end;
 
+function PointToPointer(const P: TPoint): Pointer;
+begin
+  Result := Pointer(NativeInt(MAKELONG(Word(P.X), Word(P.Y))));
+end;
+
+function PointerToPoint(P: Pointer): TPoint;
+var
+  V: NativeUInt;
+begin
+  V := NativeUInt(P);
+  Result.X := SmallInt(LOWORD(V));
+  Result.Y := SmallInt(HIWORD(V));
+end;
+
 procedure TTBCustomToolbar.BuildPotentialSizesList(SizesList: TList);
 var
   Margins: TRect;
   MinX, SaveWrapX: Integer;
   X, PrevWrappedLines: Integer;
   S: TPoint;
-  S2: TSmallPoint;
+  P: Pointer;
 begin
   View.GetMargins(tbvoFloating, Margins);
   MinX := Margins.Left + Margins.Right;
@@ -1299,7 +1313,7 @@ begin
     { Add the widest size to the list }
     FFloatingWidth := 0;
     S := DoArrange(False, dtNotDocked, True, nil);
-    SizesList.Add(Pointer(PointToSmallPoint(S)));
+    SizesList.Add(PointToPointer(S));
     { Calculate and add rest of sizes to the list }
     PrevWrappedLines := 1;
     X := S.X-1;
@@ -1310,11 +1324,11 @@ begin
         Break
       else
       if X = S.X then begin
-        S2 := PointToSmallPoint(S);
+        P := PointToPointer(S);
         if FLastWrappedLines <> PrevWrappedLines then
-          SizesList.Add(Pointer(S2))
+          SizesList.Add(P)
         else
-          SizesList[SizesList.Count-1] := Pointer(S2);
+          SizesList[SizesList.Count-1] := P;
         PrevWrappedLines := FLastWrappedLines;
         Dec(X);
       end
@@ -1330,9 +1344,9 @@ function CompareNewSizes(const Item1, Item2, ExtraData: Pointer): Integer; far;
 begin
   { Sorts in descending order }
   if ExtraData = nil then
-    Result := TSmallPoint(Item2).X - TSmallPoint(Item1).X
+    Result := PointerToPoint(Item2).X - PointerToPoint(Item1).X
   else
-    Result := TSmallPoint(Item2).Y - TSmallPoint(Item1).Y;
+    Result := PointerToPoint(Item2).Y - PointerToPoint(Item1).Y;
 end;
 
 procedure TTBCustomToolbar.ResizeBegin(ASizeHandle: TTBSizeHandle);
@@ -1340,7 +1354,7 @@ const
   MaxSizeSens = 12;
 var
   I, NewSize: Integer;
-  S, N: TSmallPoint;
+  S, N: TPoint;
   P: TPoint;
 begin
   inherited;
@@ -1361,9 +1375,9 @@ begin
     NewSizes := TList.Create;
     BuildPotentialSizesList(NewSizes);
     for I := 0 to NewSizes.Count-1 do begin
-      P := SmallPointToPoint(TSmallPoint(NewSizes.List[I]));
+      P := PointerToPoint(NewSizes.List[I]);
       AddFloatingNCAreaToSize(P);
-      NewSizes.List[I] := Pointer(PointToSmallPoint(P));
+      NewSizes.List[I] := PointToPointer(P);
     end;
     ListSortEx(NewSizes, CompareNewSizes,
       Pointer(Ord(ASizeHandle in [twshTop, twshBottom])));
@@ -1371,10 +1385,10 @@ begin
     SizeSens := MaxSizeSens;
     { Adjust sensitivity if it's too high }
     for I := 0 to NewSizes.Count-1 do begin
-      Pointer(S) := NewSizes[I];
+      S := PointerToPoint(NewSizes[I]);
       if (S.X = Width) and (S.Y = Height) then begin
         if I > 0 then begin
-          Pointer(N) := NewSizes[I-1];
+          N := PointerToPoint(NewSizes[I-1]);
           if ASizeHandle in [twshLeft, twshRight] then
             NewSize := N.X - S.X - 1
           else
@@ -1382,7 +1396,7 @@ begin
           if NewSize < SizeSens then SizeSens := NewSize;
         end;
         if I < NewSizes.Count-1 then begin
-          Pointer(N) := NewSizes[I+1];
+          N := PointerToPoint(NewSizes[I+1]);
           if ASizeHandle in [twshLeft, twshRight] then
             NewSize := S.X - N.X - 1
           else
@@ -1402,7 +1416,7 @@ var
   NewOpSide: Boolean;
   Reverse: Boolean;
   I: Integer;
-  P: TSmallPoint;
+  P: TPoint;
 begin
   inherited;
 
@@ -1448,7 +1462,7 @@ begin
       if (not Reverse and (I < 0)) or
          (Reverse and (I >= NewSizes.Count)) then
         Break;
-      Pointer(P) := NewSizes[I];
+      P := PointerToPoint(NewSizes[I]);
       if SizeHandle in [twshLeft, twshRight] then begin
         if (not Reverse and ((I = NewSizes.Count-1) or (Pos.X >= P.X))) or
            (Reverse and ((I = 0) or (Pos.X < P.X))) then begin
