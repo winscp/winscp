@@ -17,7 +17,7 @@ procedure CalcButtonLayout(Canvas: TCanvas; PngImage: TPngImage; const Client:
 implementation
 
 uses
-  Classes;
+  Classes, Types;
 
 procedure CalcButtonLayout(Canvas: TCanvas; PngImage: TPngImage; const Client:
   TRect; Pressed, Down: Boolean; const Caption: string; Layout: TButtonLayout;
