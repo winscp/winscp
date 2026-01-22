@@ -1,7 +1,7 @@
 !include ../Makefile.inc
 
 # Set your compiler options
-DEFINES = WIN32;WIN32_LEAN_AND_MEAN;WINSCP;NE_LFS
+DEFINES = WIN32_LEAN_AND_MEAN;WINSCP;NE_LFS
 WARNINGS = -Wno-deprecated-declarations
 # Compile like C++
 CFLAG = $(CFLAG_CPP) $(CFLAG_OPENSSL) -D$(DEFINES:;= -D) $(WARNINGS)

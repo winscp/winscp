@@ -9,7 +9,7 @@ OBJFILES = \
     $(OBJD)\xmltok.obj \
     $(OBJD)\loadlibrary.obj
 # ---------------------------------------------------------------------------
-DEFINES = _WINDOWS;WIN32;NDEBUG;_LIB;XML_STATIC;WINSCP;_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL
+DEFINES = _WINDOWS;NDEBUG;_LIB;XML_STATIC;WINSCP;_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL
 INCLUDEPATH = ..;..\lib
 CFLAG1 = $(CFLAG_COMMON)
 # ---------------------------------------------------------------------------
