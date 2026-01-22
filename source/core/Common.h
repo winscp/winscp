@@ -37,7 +37,7 @@ template <typename S> constexpr unsigned int SizeToUIntChecked(S n) { return Che
 //---------------------------------------------------------------------------
 extern const UnicodeString AnyMask;
 extern const wchar_t EngShortMonthNames[12][4];
-extern const char Bom[4];
+extern const RawByteString Bom;
 extern const UnicodeString XmlDeclaration;
 extern const wchar_t TokenPrefix;
 extern const wchar_t NoReplacement;
