@@ -20,8 +20,10 @@
 CFLAG_WARNINGS=-Wno-incompatible-function-pointer-types -Wno-deprecated-declarations
 CFLAG=$(CFLAG_COMMON) $(CFLAG_WARNINGS)
 
-DEFINES=MD5_ASM;SHA1_ASM;SHA256_ASM;SHA512_ASM;RMD160_ASM;AES_ASM;DES_ASM
-DEFINES=$(DEFINES);OPENSSL_BN_ASM_PART_WORDS;OPENSSL_BN_ASM_MONT;OPENSSL_BN_ASM_GF2m
+DEFINES=AES_ASM;MD5_ASM;OPENSSL_BN_ASM_GF2m;OPENSSL_BN_ASM_MONT;SHA1_ASM;SHA256_ASM;SHA512_ASM
+DEFINES=$(DEFINES);DES_ASM;RMD160_ASM;OPENSSL_BN_ASM_PART_WORDS
+DEFINES=$(DEFINES);OPENSSL_SYS_WIN32
+
 DEFINES=$(DEFINES);OPENSSL_NO_CAMELLIA;OPENSSL_NO_RC5;OPENSSL_NO_MDC2;OPENSSL_NO_WHIRLPOOL
 DEFINES=$(DEFINES);OPENSSL_NO_SEED;OPENSSL_NO_CAPIENG;OPENSSL_NO_ENGINE
 DEFINES=$(DEFINES);OPENSSL_NO_QUIC;OPENSSL_NO_COMP;OPENSSL_NO_QLOG;OPENSSL_NO_DGRAM;OPENSSL_NO_TS
@@ -34,7 +36,7 @@ CFLAG=$(CFLAG) $(CFLAG_OPENSSL) -D$(DEFINES:;= -D)
 # (and DSO_WIN32 removed as it clashes with dso_conf.h)
 # (and L_ENDIAN is determined automatically in endian.h)
 CFLAG= $(CFLAG) \
-    -D"OPENSSL_BUILDING_OPENSSL" -D"WIN32_LEAN_AND_MEAN" -D"OPENSSL_SYS_WIN32" -D"L_ENDIAN" \
+    -D"OPENSSL_BUILDING_OPENSSL" -D"WIN32_LEAN_AND_MEAN" -D"L_ENDIAN" \
     -D"_stricmp=stricmp" -D"_strnicmp=strnicmp" -D"_malloca=malloc" -D"_freea=free" -D"_setmode=setmode" \
     -D"NDEBUG"
 
@@ -51,7 +53,9 @@ CP=copy
 RM=del
 MKDIR=-mkdir
 
-ASM=$(BUILDTOOLS)\tools\nasm -f obj -d__omf__
+ASM_ARG=-d__omf__ -f obj
+
+ASM=$(BUILDTOOLS)\tools\nasm $(ASM_ARG) -DWINSCP
 
 ######################################################
 # You should not need to touch anything below this point
@@ -110,25 +114,24 @@ SSLOBJ= \
 
 CRYPTOOBJ= \
     $(OBJ_D)\cryptlib.obj $(OBJ_D)\ctype.obj $(OBJ_D)\init.obj $(OBJ_D)\mem.obj \
-    $(OBJ_D)\mem_clr.obj $(OBJ_D)\ex_data.obj $(OBJ_D)\cpt_err.obj $(OBJ_D)\ebcdic.obj \
-    $(OBJ_D)\uid.obj $(OBJ_D)\o_time.obj $(OBJ_D)\o_str.obj $(OBJ_D)\o_dir.obj \
-    $(OBJ_D)\o_fopen.obj $(OBJ_D)\getenv.obj $(OBJ_D)\mem_sec.obj $(OBJ_D)\threads_win.obj \
-    $(OBJ_D)\packet.obj $(OBJ_D)\bsearch.obj $(OBJ_D)\context.obj $(OBJ_D)\cpuid.obj \
-    $(OBJ_D)\initthread.obj $(OBJ_D)\param_build_set.obj $(OBJ_D)\params.obj $(OBJ_D)\params_dup.obj \
-    $(OBJ_D)\params_idx.obj $(OBJ_D)\sparse_array.obj $(OBJ_D)\provider.obj $(OBJ_D)\provider_core.obj \
-    $(OBJ_D)\provider_conf.obj $(OBJ_D)\provider_child.obj $(OBJ_D)\provider_predefined.obj $(OBJ_D)\core_algorithm.obj \
-    $(OBJ_D)\core_namemap.obj $(OBJ_D)\core_fetch.obj $(OBJ_D)\asn1_dsa.obj $(OBJ_D)\self_test_core.obj \
-    $(OBJ_D)\passphrase.obj $(OBJ_D)\punycode.obj $(OBJ_D)\param_build.obj $(OBJ_D)\params_from_text.obj \
-    $(OBJ_D)\trace.obj $(OBJ_D)\der_writer.obj $(OBJ_D)\sleep.obj $(OBJ_D)\deterministic_nonce.obj \
-    $(OBJ_D)\time.obj $(OBJ_D)\ssl_err.obj $(OBJ_D)\defaults.obj $(OBJ_D)\comp_methods.obj \
-    $(OBJ_D)\indicator_core.obj \
+    $(OBJ_D)\ex_data.obj $(OBJ_D)\cpt_err.obj $(OBJ_D)\ebcdic.obj $(OBJ_D)\uid.obj \
+    $(OBJ_D)\o_time.obj $(OBJ_D)\o_str.obj $(OBJ_D)\o_dir.obj $(OBJ_D)\o_fopen.obj \
+    $(OBJ_D)\getenv.obj $(OBJ_D)\mem_sec.obj $(OBJ_D)\threads_win.obj $(OBJ_D)\packet.obj \
+    $(OBJ_D)\bsearch.obj $(OBJ_D)\context.obj $(OBJ_D)\cpuid.obj $(OBJ_D)\initthread.obj \
+    $(OBJ_D)\param_build_set.obj $(OBJ_D)\params.obj $(OBJ_D)\params_dup.obj $(OBJ_D)\params_idx.obj \
+    $(OBJ_D)\sparse_array.obj $(OBJ_D)\provider.obj $(OBJ_D)\provider_core.obj $(OBJ_D)\provider_conf.obj \
+    $(OBJ_D)\provider_child.obj $(OBJ_D)\provider_predefined.obj $(OBJ_D)\core_algorithm.obj $(OBJ_D)\core_namemap.obj \
+    $(OBJ_D)\core_fetch.obj $(OBJ_D)\asn1_dsa.obj $(OBJ_D)\self_test_core.obj $(OBJ_D)\passphrase.obj \
+    $(OBJ_D)\punycode.obj $(OBJ_D)\param_build.obj $(OBJ_D)\params_from_text.obj $(OBJ_D)\trace.obj \
+    $(OBJ_D)\der_writer.obj $(OBJ_D)\sleep.obj $(OBJ_D)\deterministic_nonce.obj $(OBJ_D)\time.obj \
+    $(OBJ_D)\ssl_err.obj $(OBJ_D)\defaults.obj $(OBJ_D)\comp_methods.obj $(OBJ_D)\indicator_core.obj \
     $(OBJ_D)\md4_dgst.obj $(OBJ_D)\md4_one.obj \
     $(OBJ_D)\md5_dgst.obj $(OBJ_D)\md5_one.obj $(OBJ_D)\md5_sha1.obj \
     $(OBJ_D)\cbc128.obj $(OBJ_D)\cfb128.obj $(OBJ_D)\ofb128.obj $(OBJ_D)\ccm128.obj \
     $(OBJ_D)\gcm128.obj $(OBJ_D)\xts128.obj $(OBJ_D)\xts128gb.obj $(OBJ_D)\wrap128.obj \
     $(OBJ_D)\ctr128.obj $(OBJ_D)\ocb128.obj $(OBJ_D)\siv128.obj \
     $(OBJ_D)\sha1dgst.obj $(OBJ_D)\sha1_one.obj $(OBJ_D)\sha256.obj $(OBJ_D)\sha512.obj \
-    $(OBJ_D)\keccak1600.obj $(OBJ_D)\sha3.obj \
+    $(OBJ_D)\sha3.obj \
     $(OBJ_D)\hmac.obj \
     $(OBJ_D)\rmd_dgst.obj $(OBJ_D)\rmd_one.obj \
     $(OBJ_D)\set_key.obj $(OBJ_D)\ecb_enc.obj $(OBJ_D)\cbc_enc.obj $(OBJ_D)\ecb3_enc.obj \
@@ -137,7 +140,6 @@ CRYPTOOBJ= \
     $(OBJ_D)\qud_cksm.obj $(OBJ_D)\rand_key.obj $(OBJ_D)\xcbc_enc.obj $(OBJ_D)\cbc_cksm.obj \
     $(OBJ_D)\rc2_ecb.obj $(OBJ_D)\rc2_skey.obj $(OBJ_D)\rc2_cbc.obj $(OBJ_D)\rc2cfb64.obj \
     $(OBJ_D)\rc2ofb64.obj \
-    $(OBJ_D)\rc4_skey.obj $(OBJ_D)\rc4_enc.obj \
     $(OBJ_D)\i_cbc.obj $(OBJ_D)\i_cfb64.obj $(OBJ_D)\i_ofb64.obj $(OBJ_D)\i_ecb.obj \
     $(OBJ_D)\i_skey.obj \
     $(OBJ_D)\bf_skey.obj $(OBJ_D)\bf_ecb.obj $(OBJ_D)\bf_cfb64.obj $(OBJ_D)\bf_ofb64.obj \
@@ -292,7 +294,6 @@ CRYPTOOBJ= \
     $(OBJ_D)\poly1305.obj \
     $(OBJ_D)\siphash.obj \
     $(OBJ_D)\sm2_crypt.obj $(OBJ_D)\sm2_sign.obj $(OBJ_D)\sm2_key.obj \
-    $(OBJ_D)\chacha_enc.obj \
     $(OBJ_D)\http_err.obj $(OBJ_D)\http_client.obj $(OBJ_D)\http_lib.obj \
     $(OBJ_D)\crmf_err.obj \
     $(OBJ_D)\cmp_err.obj $(OBJ_D)\cmp_util.obj \
@@ -363,7 +364,13 @@ CRYPTOOBJ= \
     $(OBJ_D)\file_store.obj $(OBJ_D)\file_store_any2obj.obj $(OBJ_D)\winstore_store.obj \
     $(OBJ_D)\aes_skmgmt.obj $(OBJ_D)\generic.obj
 
-CRYPTOOBJASM= \
+CRYPTOOBJ32= \
+    $(OBJ_D)\mem_clr.obj \
+    $(OBJ_D)\chacha_enc.obj \
+    $(OBJ_D)\rc4_enc.obj $(OBJ_D)\rc4_skey.obj \
+    $(OBJ_D)\keccak1600.obj
+
+CRYPTOOBJASM32= \
     $(OBJ_D)\des-586.obj \
     $(OBJ_D)\bf-586.obj \
     $(OBJ_D)\cast-586.obj \
@@ -377,6 +384,9 @@ CRYPTOOBJASM= \
     $(OBJ_D)\sha256-586.obj \
     $(OBJ_D)\sha512-586.obj \
     $(OBJ_D)\aes-586.obj
+
+CRYPTOOBJASM=$(CRYPTOOBJASM32)
+CRYPTOOBJ=$(CRYPTOOBJ) $(CRYPTOOBJ32)
 
 ###################################################################
 all: banner $(TMP_D) lib
@@ -443,7 +453,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\ctype.c \
     $(SRC_D)\crypto\init.c \
     $(SRC_D)\crypto\mem.c \
-    $(SRC_D)\crypto\mem_clr.c \
     $(SRC_D)\crypto\ex_data.c \
     $(SRC_D)\crypto\cpt_err.c \
     $(SRC_D)\crypto\ebcdic.c \
@@ -508,7 +517,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\sha\sha1_one.c \
     $(SRC_D)\crypto\sha\sha256.c \
     $(SRC_D)\crypto\sha\sha512.c \
-    $(SRC_D)\crypto\sha\keccak1600.c \
     $(SRC_D)\crypto\sha\sha3.c \
     $(SRC_D)\crypto\hmac\hmac.c \
     $(SRC_D)\crypto\ripemd\rmd_dgst.c \
@@ -534,8 +542,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\rc2\rc2_cbc.c \
     $(SRC_D)\crypto\rc2\rc2cfb64.c \
     $(SRC_D)\crypto\rc2\rc2ofb64.c \
-    $(SRC_D)\crypto\rc4\rc4_skey.c \
-    $(SRC_D)\crypto\rc4\rc4_enc.c \
     $(SRC_D)\crypto\idea\i_cbc.c \
     $(SRC_D)\crypto\idea\i_cfb64.c \
     $(SRC_D)\crypto\idea\i_ofb64.c \
@@ -1060,7 +1066,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\sm2\sm2_crypt.c \
     $(SRC_D)\crypto\sm2\sm2_sign.c \
     $(SRC_D)\crypto\sm2\sm2_key.c \
-    $(SRC_D)\crypto\chacha\chacha_enc.c \
     $(SRC_D)\crypto\http\http_err.c \
     $(SRC_D)\crypto\http\http_client.c \
     $(SRC_D)\crypto\http\http_lib.c \
@@ -1287,6 +1292,15 @@ CRYPTOSRC= \
     $(SRC_D)\providers\implementations\storemgmt\winstore_store.c \
     $(SRC_D)\providers\implementations\skeymgmt\aes_skmgmt.c \
     $(SRC_D)\providers\implementations\skeymgmt\generic.c
+
+CRYPTOSRC32= \
+    $(SRC_D)\crypto\mem_clr.c \
+    $(SRC_D)\crypto\chacha\chacha_enc.c \
+    $(SRC_D)\crypto\rc4\rc4_enc.c \
+    $(SRC_D)\crypto\rc4\rc4_skey.c \
+    $(SRC_D)\crypto\sha\keccak1600.c
+
+CRYPTOSRC=$(CRYPTOSRC) $(CRYPTOSRC32)
 
 $(OBJ_D)\des-586.obj: $(SRC_D)\crypto\des\asm\des-586.asm
     $(ASM) -o$(OBJ_D)\des-586.obj $(SRC_D)\crypto\des\asm\des-586.asm
