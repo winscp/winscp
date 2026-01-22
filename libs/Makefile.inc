@@ -1,5 +1,11 @@
-CC = "$(BDS)\bin\bcc32c"
-MKLIB = "$(BDS)\bin\tlib" /a /C
+BDS_BIN = $(BDS)\bin
+BDS_INCLUDE = $(BDS)/include
+
+MKLIB_ARG = /a /C
+CC = "$(BDS_BIN)\bcc32c"
+CC_ARG = -triple i686-pc-windows-omf -munwind-tables -fno-common
+MKLIB = "$(BDS_BIN)\tlib" $(MKLIB_ARG)
+OBJ_EXT = obj
 
 CFLAG_BASE = -O2
 
@@ -9,10 +15,10 @@ CFLAG_BASE = -O2
 # For nasm, add -g
 
 CFLAG_BASE = \
-    -cc1 -nobuiltininc -nostdsysteminc -triple i686-pc-windows-omf -emit-obj -mrelocation-model static \
-    -masm-verbose -mstack-alignment=16 $(CFLAG_BASE) -tM -tW -fborland-extensions --jobs=8 \
-    -isystem "$(BDS)/include/windows/crtl" -isystem "$(BDS)/include/windows/sdk" \
-    -isystem "$(BDS)/include/dinkumware64"
+    -cc1 -nobuiltininc -nostdsysteminc $(CC_ARG) -emit-obj \
+    $(CFLAG_BASE) -tM -fborland-extensions --jobs=8 \
+    -isystem "$(BDS_INCLUDE)/windows/crtl" -isystem "$(BDS_INCLUDE)/windows/sdk" \
+    -isystem "$(BDS_INCLUDE)/dinkumware64"
 
 CFLAG_COMMON = \
     $(CFLAG_BASE) -std=c99 -x c -fno-threadsafe-statics

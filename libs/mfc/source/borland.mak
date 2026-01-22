@@ -41,7 +41,7 @@ OBJS=$(CPP_OBJS)
 
 CPPFLAGS=$(CFLAG_CPP) $(CL_OPT) -D$(DEFS:;= -D)
 
-BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I) -isystem "$(BDS)/include/windows/rtl"
+BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I) -isystem "$(BDS_INCLUDE)/windows/rtl"
 
 .SUFFIXES: .cpp
 
