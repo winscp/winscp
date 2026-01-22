@@ -466,33 +466,41 @@ begin
 end;
 
 procedure FillLongword(var X; Count: Integer; Value: Longword);
-asm
-// EAX = X;  EDX = Count; ECX = Value
-        PUSH    EDI
-        MOV     EDI,EAX  // Point EDI to destination
-        MOV     EAX,ECX
-        MOV     ECX,EDX
-        TEST    ECX,ECX
-        JS      @exit
-        REP     STOSD    // Fill count dwords
-@exit:
-        POP     EDI
+var
+  P: PLongword;
+  I: Integer;
+begin
+  if Count <= 0 then
+    Exit;
+
+  P := @X;
+  for I := 0 to Count - 1 do
+  begin
+    P^ := Value;
+    Inc(P);
+  end;
 end;
 
 procedure MoveLongword(const Source; var Dest; Count: Integer);
-asm
-// EAX = Source; EDX = Dest; ECX = Count
-        PUSH    ESI
-        PUSH    EDI
-        MOV     ESI,EAX         // Source
-        MOV     EDI,EDX         // Destination
-        MOV     EAX,ECX         // Counter
-        CMP     EDI,ESI
-        JE      @exit
-        REP     MOVSD
-@exit:
-        POP     EDI
-        POP     ESI
+var
+  Src, Dst: PLongword;
+  I: Integer;
+begin
+  if Count <= 0 then
+    Exit;
+
+  Src := @Source;
+  Dst := @Dest;
+
+  if Src = Dst then
+    Exit;
+
+  for I := 0 to Count - 1 do
+  begin
+    Dst^ := Src^;
+    Inc(Dst);
+    Inc(Src);
+  end;
 end;
 
 procedure DrawTBXIcon(Canvas: TCanvas; const R: TRect;
