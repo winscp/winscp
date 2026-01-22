@@ -41,7 +41,6 @@
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
         <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
-        <DCC_AdditionalSwitches>-LUDesignIDE</DCC_AdditionalSwitches>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
         <DCC_UnitSearchPath>packages\png;packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
@@ -60,6 +59,7 @@
         <UsePackages>true</UsePackages>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_AdditionalSwitches>-LUDesignIDE</DCC_AdditionalSwitches>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
@@ -120,7 +120,7 @@
         <CppCompile Include="PngComponents.cpp">
             <BuildOrder>0</BuildOrder>
         </CppCompile>
-        <PackageImport Include="designide.bpi">
+        <PackageImport Include="designide.bpi" Condition="'$(Platform)'=='Win32'">
             <BuildOrder>11</BuildOrder>
         </PackageImport>
         <PackageImport Include="rtl.bpi">

@@ -2,6 +2,8 @@ unit PngComponentEditors;
 
 interface
 
+{$IFDEF CPUX86}
+
 uses
   Windows, SysUtils, Forms, Classes, Controls, PngImageList, TypInfo,
   DesignIntf, DesignEditors, ColnEdit;
@@ -51,7 +53,11 @@ type
     constructor Create(Component: TComponent; const Prop: string; Designer: IDesigner);
   end;
 
+{$ENDIF}
+
 implementation
+
+{$IFDEF CPUX86}
 
 uses
   PngImageListEditor;
@@ -229,5 +235,7 @@ begin
     dlg.Free;
   end;
 end;
+
+{$ENDIF}
 
 end.
