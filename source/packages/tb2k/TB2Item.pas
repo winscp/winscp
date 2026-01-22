@@ -4701,7 +4701,6 @@ var
   Ctl: TControl;
   ChangedBold: Boolean;
   HighestSameWidthViewerWidth, Total, J, TotalVisibleItems: Integer;
-  IsFirst: Boolean;
   Viewer: TTBItemViewer;
   UseChevron, NonControlsOffEdge, TempViewerCreated: Boolean;
   Margins: TRect;
