@@ -193,7 +193,7 @@ begin
   if PIDL <> nil then
   begin
     try
-      ShellMalloc.Free(PIDL);
+      PIDL_Free(PIDL);
       PIDL := NIL;
     except
       PIDL := NIL;
