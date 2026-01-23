@@ -141,10 +141,6 @@
             <BuildOrder>53</BuildOrder>
             <BuildOrder>1</BuildOrder>
         </DelphiCompile>
-        <LibFiles Include="shlwapi.lib" Condition="'$(Platform)'=='Win32'">
-            <BuildOrder>26</BuildOrder>
-            <IgnorePath>true</IgnorePath>
-        </LibFiles>
         <PackageImport Include="DragDropP.bpi">
             <BuildOrder>25</BuildOrder>
         </PackageImport>
