@@ -40,6 +40,7 @@
         <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
         <Manifest_File>None</Manifest_File>
         <Multithreaded>true</Multithreaded>
+        <OutputExt>lib</OutputExt>
         <ProjectType>CppStaticLibrary</ProjectType>
         <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>ScpResources</SanitizedProjectName>
