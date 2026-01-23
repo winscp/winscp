@@ -95,6 +95,9 @@
         <CppCompile Include="putty\crypto\aesgcm-sw.c">
             <BuildOrder>161</BuildOrder>
         </CppCompile>
+        <CppCompile Include="putty\crypto\aes-ni.c">
+            <BuildOrder>176</BuildOrder>
+        </CppCompile>
         <CppCompile Include="putty\crypto\aesold.c">
             <BuildOrder>150</BuildOrder>
         </CppCompile>
