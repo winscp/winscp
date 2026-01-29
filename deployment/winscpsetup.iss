@@ -85,7 +85,7 @@
 #define WebArguments "ver=" +VersionOnly + "&lang={language}&utm_source=winscp&utm_medium=setup&utm_campaign=" + VersionOnly
 #define WebGettingStarted WebRoot + "eng/installed.php?" + WebArguments + "&prevver="
 
-#define MessagesPath(L) TranslationDir + "\" + "WinSCP." + L + ".islu"
+#define MessagesPath(L) TranslationDir + "\" + "WinSCP." + L + ".isl"
 
 #define ExplorerFileBase "Explorer"
 #define CommanderFileBase "Commander"
