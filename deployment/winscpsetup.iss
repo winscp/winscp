@@ -984,6 +984,8 @@ begin
   // add help button
   HelpButton := TButton.Create(WizardForm);
   HelpButton.Parent := WizardForm;
+  // Setting Anchors is no longer necessary since 6.6.0 (as it never resizes the form),
+  // but keeping it for a good measure
   HelpButton.Anchors := [akLeft, akBottom];
   HelpButton.Left := WizardForm.ClientWidth - GetRight(WizardForm.CancelButton);
   HelpButton.Top := WizardForm.CancelButton.Top;
