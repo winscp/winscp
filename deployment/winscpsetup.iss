@@ -114,8 +114,8 @@ AppVerName=WinSCP {#Version}
 OutputBaseFilename={#BaseFilename}
 SolidCompression=yes
 #ifdef ImagesDir
-WizardImageFile={#ImagesDir}\Tall *.bmp
-WizardSmallImageFile={#ImagesDir}\Square *.bmp
+WizardImageFile={#ImagesDir}\Tall *.png
+WizardSmallImageFile={#ImagesDir}\Square *.png
 #endif
 ShowTasksTreeLines=yes
 PrivilegesRequired=admin
