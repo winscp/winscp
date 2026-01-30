@@ -738,6 +738,7 @@ begin
   Bitmap := TBitmap.Create();
   Bitmap.AlphaFormat := afDefined;
   Bitmap.LoadFromFile(FileName);
+  Image.BackColor := clNone;
   Image.Bitmap := Bitmap;
   Bitmap.Free;
 end;
