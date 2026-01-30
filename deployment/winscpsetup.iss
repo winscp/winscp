@@ -114,7 +114,9 @@ OutputBaseFilename={#BaseFilename}
 SolidCompression=yes
 #ifdef ImagesDir
 WizardImageFile={#ImagesDir}\Tall *.png
+WizardImageFileDynamicDark={#ImagesDir}\TallDark *.png
 WizardSmallImageFile={#ImagesDir}\Square *.png
+WizardSmallImageFileDynamicDark={#ImagesDir}\SquareDark *.png
 #endif
 ShowTasksTreeLines=yes
 PrivilegesRequired=admin
@@ -124,7 +126,7 @@ UsePreviousLanguage=no
 DisableProgramGroupPage=yes
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
-WizardStyle=modern
+WizardStyle=modern dynamic
 CloseApplications=yes
 UsedUserAreasWarning=no
 #ifdef Sign
