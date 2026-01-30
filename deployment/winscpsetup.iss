@@ -89,7 +89,6 @@
 
 #define ExplorerFileBase "Explorer"
 #define CommanderFileBase "Commander"
-#define SelectDirFileBase "Opened bookmark folder-stored session folder"
 
 [Setup]
 AppId={#AppId}
@@ -253,7 +252,6 @@ Type: files; Name: "{app}\WinSCP.cgl"
 ; that can take long with solid compression enabled
 Source: "{#ImagesDir}\{#ExplorerFileBase} *.bmp"; Flags: dontcopy
 Source: "{#ImagesDir}\{#CommanderFileBase} *.bmp"; Flags: dontcopy
-Source: "{#ImagesDir}\{#SelectDirFileBase} *.bmp"; Flags: dontcopy
 #ifdef Donations
 Source: "{#ImagesDir}\{#PayPalCardFileBase} *.bmp"; Flags: dontcopy
 #endif
@@ -1240,19 +1238,6 @@ begin
   WizardForm.YesRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   WizardForm.NoRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   UpdatePostInstallRunCheckboxes(nil);
-
-#ifdef ImagesDir
-  // Text does not scale as quick as with DPI,
-  // so the icon may overlap the labels. Shift them.
-  P := WizardForm.SelectDirBitmapImage.Width;
-  LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32);
-  P := (WizardForm.SelectDirBitmapImage.Width - P);
-  // Vertical change should be the same as horizontal
-  WizardForm.SelectDirLabel.Left := WizardForm.SelectDirLabel.Left + P;
-  WizardForm.SelectDirBrowseLabel.Top := WizardForm.SelectDirBrowseLabel.Top + P;
-  WizardForm.DirEdit.Top := WizardForm.DirEdit.Top + P;
-  WizardForm.DirBrowseButton.Top := WizardForm.DirBrowseButton.Top + P;
-#endif
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
