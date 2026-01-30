@@ -1026,6 +1026,9 @@ begin
 
   Caption := TLabel.Create(SetupTypePage);
   Caption.WordWrap := True;
+  Caption.Top := GetBottom(TypicalTypeButton) + ScaleY(6);
+  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
   if not Upgrade then
   begin
     Caption.Caption :=
@@ -1038,9 +1041,6 @@ begin
     Caption.Caption :=
       Bullet(CustomMessage('TypicalUpgradeType1'));
   end;
-  Caption.Left := ScaleX(4) + ScaleX(20);
-  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
-  Caption.Top := GetBottom(TypicalTypeButton) + ScaleY(6);
   Caption.Parent := SetupTypePage.Surface;
   Caption.FocusControl := TypicalTypeButton;
   Caption.OnClick := @CaptionClick;
@@ -1060,6 +1060,9 @@ begin
 
   Caption := TLabel.Create(SetupTypePage);
   Caption.WordWrap := True;
+  Caption.Top := GetBottom(CustomTypeButton) + ScaleY(6);
+  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
   if not Upgrade then
   begin
     Caption.Caption :=
@@ -1071,9 +1074,6 @@ begin
       Bullet(CustomMessage('CustomUpgradeType1')) + NewLine +
       Bullet(CustomMessage('CustomUpgradeType2'));
   end;
-  Caption.Left := ScaleX(4) + ScaleX(20);
-  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
-  Caption.Top := GetBottom(CustomTypeButton) + ScaleY(6);
   Caption.Parent := SetupTypePage.Surface;
   Caption.FocusControl := CustomTypeButton;
   Caption.OnClick := @CaptionClick;
@@ -1119,14 +1119,14 @@ begin
 
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
+  Caption.Top := CommanderRadioButton.Top;
+  Caption.Left := GetRight(CommanderRadioButton);
+  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Caption :=
       Bullet(CustomMessage('NortonCommanderInterface1')) + NewLine +
       Bullet(CustomMessage('NortonCommanderInterface2')) + NewLine +
       Bullet(CustomMessage('NortonCommanderInterface3'));
   Caption.Anchors := [akLeft, akTop, akRight];
-  Caption.Left := GetRight(CommanderRadioButton);
-  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
-  Caption.Top := CommanderRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := CommanderRadioButton;
   Caption.OnClick := @CaptionClick;
@@ -1152,14 +1152,14 @@ begin
 
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
+  Caption.Top := ExplorerRadioButton.Top;
+  Caption.Left := GetRight(ExplorerRadioButton);
+  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Caption :=
       Bullet(CustomMessage('ExplorerInterface1')) + NewLine +
       Bullet(CustomMessage('ExplorerInterface2')) + NewLine +
       Bullet(CustomMessage('ExplorerInterface3'));
   Caption.Anchors := [akLeft, akTop, akRight];
-  Caption.Left := GetRight(ExplorerRadioButton);
-  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
-  Caption.Top := ExplorerRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := ExplorerRadioButton;
   Caption.OnClick := @CaptionClick;
@@ -1192,11 +1192,11 @@ begin
 
   Caption := TLabel.Create(DonationPanel);
   Caption.WordWrap := True;
+  Caption.Top := 0;
+  Caption.Left := 0;
+  Caption.Width := DonationPanel.Width;
   Caption.Caption := CustomMessage('PleaseDonate');
   Caption.Anchors := [akLeft, akTop, akRight];
-  Caption.Left := 0;
-  Caption.Top := 0;
-  Caption.Width := DonationPanel.Width;
   Caption.Parent := DonationPanel;
 
   P := GetBottom(Caption) + ScaleY(12);
