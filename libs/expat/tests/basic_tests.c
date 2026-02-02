@@ -10,7 +10,7 @@
    Copyright (c) 2003      Greg Stein <gstein@users.sourceforge.net>
    Copyright (c) 2005-2007 Steven Solie <steven@solie.ca>
    Copyright (c) 2005-2012 Karl Waclawek <karl@waclawek.net>
-   Copyright (c) 2016-2025 Sebastian Pipping <sebastian@pipping.org>
+   Copyright (c) 2016-2026 Sebastian Pipping <sebastian@pipping.org>
    Copyright (c) 2017-2022 Rhodri James <rhodri@wildebeest.org.uk>
    Copyright (c) 2017      Joe Orton <jorton@redhat.com>
    Copyright (c) 2017      José Gutiérrez de la Concha <jose@zeroc.com>
@@ -4570,6 +4570,46 @@ START_TEST(test_unknown_encoding_invalid_attr_value) {
 }
 END_TEST
 
+START_TEST(test_unknown_encoding_user_data_primary) {
+  // This test is based on ideas contributed by Artiphishell Inc.
+  const char *const text = "<?xml version='1.0' encoding='x-unk'?>\n"
+                           "<root />\n";
+  XML_Parser parser = XML_ParserCreate(NULL);
+  XML_SetUnknownEncodingHandler(parser,
+                                user_data_checking_unknown_encoding_handler,
+                                (void *)(intptr_t)0xC0FFEE);
+
+  assert_true(_XML_Parse_SINGLE_BYTES(parser, text, (int)strlen(text), XML_TRUE)
+              == XML_STATUS_OK);
+
+  XML_ParserFree(parser);
+}
+END_TEST
+
+START_TEST(test_unknown_encoding_user_data_secondary) {
+  // This test is based on ideas contributed by Artiphishell Inc.
+  const char *const text_main = "<!DOCTYPE r [\n"
+                                "  <!ENTITY ext SYSTEM 'ext.ent'>\n"
+                                "]>\n"
+                                "<r>&ext;</r>\n";
+  const char *const text_external = "<?xml version='1.0' encoding='x-unk'?>\n"
+                                    "<e>data</e>";
+  ExtTest2 test_data = {text_external, (int)strlen(text_external), NULL, NULL};
+  XML_Parser parser = XML_ParserCreate(NULL);
+  XML_SetExternalEntityRefHandler(parser, external_entity_loader2);
+  XML_SetUnknownEncodingHandler(parser,
+                                user_data_checking_unknown_encoding_handler,
+                                (void *)(intptr_t)0xC0FFEE);
+  XML_SetUserData(parser, &test_data);
+
+  assert_true(_XML_Parse_SINGLE_BYTES(parser, text_main, (int)strlen(text_main),
+                                      XML_TRUE)
+              == XML_STATUS_OK);
+
+  XML_ParserFree(parser);
+}
+END_TEST
+
 /* Test an external entity parser set to use latin-1 detects UTF-16
  * BOMs correctly.
  */
@@ -6416,6 +6456,8 @@ make_basic_test_case(Suite *s) {
   tcase_add_test(tc_basic, test_unknown_encoding_invalid_surrogate);
   tcase_add_test(tc_basic, test_unknown_encoding_invalid_high);
   tcase_add_test(tc_basic, test_unknown_encoding_invalid_attr_value);
+  tcase_add_test(tc_basic, test_unknown_encoding_user_data_primary);
+  tcase_add_test(tc_basic, test_unknown_encoding_user_data_secondary);
   tcase_add_test__if_xml_ge(tc_basic, test_ext_entity_latin1_utf16le_bom);
   tcase_add_test__if_xml_ge(tc_basic, test_ext_entity_latin1_utf16be_bom);
   tcase_add_test__if_xml_ge(tc_basic, test_ext_entity_latin1_utf16le_bom2);

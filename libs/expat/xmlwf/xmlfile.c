@@ -16,6 +16,7 @@
    Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
    Copyright (c) 2021      Donghee Na <donghee.na@python.org>
    Copyright (c) 2024      Hanno Böck <hanno@gentoo.org>
+   Copyright (c) 2025      Alfonso Gregory <gfunni234@gmail.com>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -225,7 +226,6 @@ processStream(const XML_Char *filename, XML_Parser parser) {
       if (filename != NULL)
         close(fd);
       break;
-      ;
     }
   }
   return 1;
