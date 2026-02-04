@@ -281,9 +281,14 @@ static UnicodeString GetTime(TFileOperationProgressType * ProgressData)
   return Result;
 }
 //---------------------------------------------------------------------------
-static UnicodeString GetOverallProgress(TFileOperationProgressType * ProgressData)
+static UnicodeString FormatProgress(int Progress)
 {
-  return FORMAT(L"%d%%", (ProgressData->OverallProgress()));
+  return FORMAT(L"%d%%", (Progress));
+}
+//---------------------------------------------------------------------------
+static UnicodeString FormatOverallProgress(TFileOperationProgressType * ProgressData)
+{
+  return FormatProgress(ProgressData->OverallProgress());
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
@@ -356,7 +361,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       {
         if (ProgressData->Count > 1)
         {
-          ProgressStr = GetOverallProgress(ProgressData);
+          ProgressStr = FormatOverallProgress(ProgressData);
         }
         else
         {
@@ -414,13 +419,15 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       {
         if (QueueItem->Status != TQueueItem::qsDone)
         {
-          Values[3] = GetTime(ProgressData);
-          Values[4] = FORMAT(L"%s/s", (FormatBytes(ProgressData->CPS())));
+          UnicodeString Time = GetTime(ProgressData);
+          unsigned int CPS = ProgressData->CPS();
+          Values[3] = Time;
+          Values[4] = FORMAT(L"%s/s", (FormatBytes(CPS)));
         }
 
         if (ProgressStr.IsEmpty())
         {
-          ProgressStr = GetOverallProgress(ProgressData);
+          ProgressStr = FormatOverallProgress(ProgressData);
         }
       }
       else if (ProgressData->Operation == foCalculateSize)
@@ -434,23 +441,26 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
   {
     if (ProgressData != NULL)
     {
+      UnicodeString FileName;
       if ((Info->Side == osRemote) || !ProgressData->Temp)
       {
-        Values[0] = ProgressData->FileName;
+        FileName = ProgressData->FileName;
       }
       else
       {
-        Values[0] = ExtractFileName(ProgressData->FileName);
+        FileName = ExtractFileName(ProgressData->FileName);
       }
+      Values[0] = FileName;
 
       if (ProgressData->Operation == Info->Operation)
       {
-        Values[2] =
-          FormatPanelBytes(ProgressData->TransferredSize, WinConfiguration->FormatSizeBytes);
+        __int64 TransferredSize = ProgressData->TransferredSize;
+        Values[2] = FormatPanelBytes(TransferredSize, WinConfiguration->FormatSizeBytes);
 
         if (ProgressStr.IsEmpty())
         {
-          ProgressStr = FORMAT(L"%d%%", (ProgressData->TransferProgress()));
+          int Progress = ProgressData->TransferProgress();
+          ProgressStr = FormatProgress(Progress);
         }
       }
     }

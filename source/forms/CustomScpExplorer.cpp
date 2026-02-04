@@ -5149,17 +5149,18 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
   }
   NoteStatusPanel->Hint = FNoteHints;
 
-  UnicodeString LoginTime;
+  UnicodeString LoginTimeStr;
   // See the comment in TScpCommanderForm::UpdateControls()
   TTerminal * ActiveTerminal = TTerminalManager::Instance()->ActiveTerminal;
   // Active is not enough here
   if ((ActiveTerminal != NULL) && (ActiveTerminal->Status == ssOpened))
   {
     const TSessionInfo & SessionInfo = ActiveTerminal->GetSessionInfo();
-    LoginTime = FormatDateTimeSpan(Now() - SessionInfo.LoginTime);
+    TDateTime LoginTime = Now() - SessionInfo.LoginTime;
+    LoginTimeStr = FormatDateTimeSpan(LoginTime);
   }
   TTBXStatusPanel * DurationStatusPanel = SessionStatusBar->Panels->Items[SessionStatusBar->Panels->Count - 1];
-  DurationStatusPanel->Caption = LoginTime;
+  DurationStatusPanel->Caption = LoginTimeStr;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateStatusPanelText(TTBXStatusPanel * Panel)
