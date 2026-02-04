@@ -6213,7 +6213,7 @@ begin
       end;
       case Msg.message of
         WM_LBUTTONDOWN, WM_RBUTTONDOWN: begin
-            P := Point(LOWORD(Msg.lParam), HIWORD(Msg.lParam));
+            P := Point(SmallInt(LOWORD(NativeUInt(Msg.lParam))), SmallInt(HIWORD(NativeUInt(Msg.lParam))));
             Windows.ClientToScreen(Msg.hwnd, P);
             Ctl := FindDragTarget(P, True);
             { Was the mouse not clicked on a popup, or was it clicked on a
@@ -6334,7 +6334,7 @@ begin
             WM_MOUSEWHEEL:
               if GetSelectedViewer(View, Viewer) then begin
                 P := Viewer.ScreenToClient(Msg.pt);
-                Viewer.MouseWheel(HIWORD(Msg.wParam), P.X, P.Y);
+                Viewer.MouseWheel(Smallint(LongRec(Msg.wParam).Hi), P.X, P.Y);
               end;
             WM_LBUTTONDOWN, WM_LBUTTONDBLCLK, WM_RBUTTONDOWN:
               if (Msg.message <> WM_RBUTTONDOWN) or TrackRightButton then begin
