@@ -440,6 +440,7 @@ void __fastcall TRightsFrame::SetPopup(bool value)
 void __fastcall TRightsFrame::DoCloseUp()
 {
   Hide();
+  FApplicationEvents.reset(nullptr);
 
   if (FDefaultButton != NULL)
   {
@@ -534,17 +535,22 @@ void TRightsFrame::CMDialogChar(TCMDialogChar & Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::CMCancelMode(TCMCancelMode & Message)
+void __fastcall TRightsFrame::ApplicationMessage(TMsg & Msg, __attribute__((unused)) bool & Handled)
 {
-  if (FPopup && Visible && !FPopingContextMenu &&
-      ((Message.Sender == NULL) ||
-       (!IsAncestor(Message.Sender, this) &&
-        !IsAncestor(Message.Sender, FPopupParent) &&
-        (Message.Sender != this))))
+  if ((Msg.message == WM_LBUTTONDOWN) ||
+      (Msg.message == WM_MBUTTONDOWN) ||
+      (Msg.message == WM_RBUTTONDOWN))
   {
-    CloseUp();
+    if (FPopup && Visible && !FPopingContextMenu)
+    {
+      TPoint P;
+      GetCursorPos(&P);
+      if (!ClientRect.Contains(ScreenToClient(P)))
+      {
+        CloseUp();
+      }
+    }
   }
-  TFrame::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void TRightsFrame::CMDPIChanged(TMessage & Message)
@@ -592,10 +598,6 @@ void __fastcall TRightsFrame::Dispatch(void * Message)
 
   switch (AMessage.Msg)
   {
-    case CM_CANCELMODE:
-      CMCancelMode(*static_cast<TCMCancelMode *>(Message));
-      break;
-
     case CM_DIALOGKEY:
       CMDialogKey(*static_cast<TCMDialogKey *>(Message));
       break;
@@ -659,6 +661,8 @@ void __fastcall TRightsFrame::DropDown()
   Top = Origin.y;
   Show();
   SetFocus();
+  FApplicationEvents.reset(new TApplicationEvents(Application));
+  FApplicationEvents->OnMessage = ApplicationMessage;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CloseUp()

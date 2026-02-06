@@ -17,6 +17,7 @@
 #include <RemoteFiles.h>
 #include <GUITools.h>
 #include <System.ImageList.hpp>
+#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TRightsFrame : public TFrame
 {
@@ -86,6 +87,7 @@ private:
   UnicodeString FOwnerCaption;
   UnicodeString FGroupCaption;
   UnicodeString FOthersCaption;
+  std::unique_ptr<TApplicationEvents> FApplicationEvents;
 
   void CycleRights(TRights::TRightGroup RightGroup);
   bool __fastcall GetAddXToDirectories();
@@ -126,7 +128,6 @@ protected:
   virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall CreateWnd();
   virtual void __fastcall Dispatch(void * Message);
-  void __fastcall CMCancelMode(TCMCancelMode & Message);
   void __fastcall CMDialogKey(TCMDialogKey & Message);
   void __fastcall WMContextMenu(TWMContextMenu & Message);
   void CMDPIChanged(TMessage & Message);
@@ -144,6 +145,7 @@ protected:
   void UpdateButtons();
   void UpdateButton(TSpeedButton * Button, UnicodeString & Caption);
   bool IsButtonAccel(TCMDialogChar & Message, TSpeedButton * Button, TWinControl * FocusControl);
+  void __fastcall ApplicationMessage(TMsg & Msg, bool & Handled);
 
   INTERFACE_HOOK_CUSTOM(TFrame)
 
