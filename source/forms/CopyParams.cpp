@@ -358,3 +358,10 @@ void __fastcall TCopyParamsFrame::CreateWnd()
   }
 }
 //---------------------------------------------------------------------------
+void TCopyParamsFrame::Closing()
+{
+  if (FRightsFrame->Visible)
+  {
+    FRightsFrame->CloseUp();
+  }
+}

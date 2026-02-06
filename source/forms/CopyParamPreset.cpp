@@ -185,6 +185,7 @@ void __fastcall TCopyParamPresetDialog::FormShow(TObject * /*Sender*/)
 void __fastcall TCopyParamPresetDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
+  CopyParamsFrame->Closing();
   if (ModalResult == DefaultResult(this))
   {
     UnicodeString Description = DescriptionEdit->Text;

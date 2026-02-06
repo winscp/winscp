@@ -85,6 +85,7 @@ public:
 
   void __fastcall BeforeExecute();
   void __fastcall AfterExecute();
+  void Closing();
 
   __property int CopyParamAttrs = { read = FCopyParamAttrs, write = SetCopyParamAttrs };
   __property TCopyParamType Params = { read = GetParams, write = SetParams };
