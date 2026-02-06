@@ -294,7 +294,9 @@ static void ssh2_connection_free(PacketProtocolLayer *ppl)
 {
     struct ssh2_connection_state *s =
         container_of(ppl, struct ssh2_connection_state, ppl);
+    #ifndef WINSCP
     struct X11FakeAuth *auth;
+    #endif
     struct ssh2_channel *c;
     struct ssh_rportfwd *rpf;
 

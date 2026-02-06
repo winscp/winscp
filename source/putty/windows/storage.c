@@ -18,10 +18,14 @@
 #define CSIDL_LOCAL_APPDATA 0x001c
 #endif
 
+#ifndef WINSCP
 static const char *const reg_jumplist_key = PUTTY_REG_POS "\\Jumplist";
 static const char *const reg_jumplist_value = "Recent sessions";
+#endif
 static const char *const puttystr = PUTTY_REG_POS "\\Sessions";
+#ifndef WINSCP
 static const char *const host_ca_key = PUTTY_REG_POS "\\SshHostCAs";
+#endif
 
 static bool tried_shgetfolderpath = false;
 static HMODULE shell32_module = NULL;

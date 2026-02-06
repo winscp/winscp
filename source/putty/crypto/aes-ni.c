@@ -358,6 +358,6 @@ AES_ALL_VTABLES(_ni, "AES-NI accelerated");
 
 #else
 
-static int aes_ni_dummy_winscp; // unit cannot be empty
+extern int aes_ni_dummy_winscp; // unit cannot be empty
 
 #endif // WINSCP_VS
