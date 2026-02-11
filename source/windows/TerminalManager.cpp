@@ -338,6 +338,11 @@ TManagedTerminal * __fastcall TTerminalManager::NewSessions(TList * DataList)
       {
         Result = Session;
       }
+      else if (WinConfiguration->WorkspaceConnectAll)
+      {
+        Session->NextInactiveReconnect = IncSecond(Now(), 3);
+        AppLogFmt(L"Scheduling connect of session %s", (Data->SessionName));
+      }
     }
   }
   DoSessionListChanged();
@@ -902,12 +907,19 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
       // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateSession)
       // but it seems to be duplicate to call from TCustomScpExporer::SessionChanging
 
+      bool ReconnectingInactiveTerminal =
+        (value != nullptr) &&
+        (FReconnectingInactiveTerminal == value) &&
+        (ScpExplorer != NULL) &&
+        DebugAlwaysTrue(FReconnectingInactiveTerminal->TerminalThread != NULL);
+
       TManagedTerminal * PActiveSession = ActiveSession;
       FActiveSession = value;
       if (ScpExplorer)
       {
         Focus = ScpExplorer->SaveFocus();
         if ((ActiveSession != NULL) &&
+            !ReconnectingInactiveTerminal &&
             ((ActiveSession->Status == ssOpened) || ActiveSession->Disconnected || ActiveSession->LocalBrowser))
         {
           SessionReady();
@@ -937,9 +949,7 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
 
       if (ActiveSession != NULL)
       {
-        if ((FReconnectingInactiveTerminal == ActiveSession) &&
-            DebugAlwaysTrue(ScpExplorer != NULL) &&
-            DebugAlwaysTrue(FReconnectingInactiveTerminal->TerminalThread != NULL))
+        if (ReconnectingInactiveTerminal)
         {
           DebugAssert(FTerminalPendingAction == tpNull); // the only assumed and tested scenario
           ReconnectActiveTerminal();
@@ -1877,7 +1887,19 @@ void TTerminalManager::CheckInactiveTerminalReconnect()
     {
       AppLog(FORMAT(L"Inactive session %s was reconnected", (SessionName)));
       ScpExplorer->CancelNote(FReconnectingNote);
-      ScpExplorer->InactiveTerminalNotify(Terminal, LoadStr(SESSION_RECONNECTED), qtInformation);
+      UnicodeString ReconnectMessage = LoadStr(SESSION_RECONNECTED);
+      // This is an indication that we got tray popup on disconnect, so counter that with the same on reconnect
+      if (!Terminal->InactiveTerminationMessage.IsEmpty())
+      {
+        ScpExplorer->InactiveTerminalNotify(Terminal, ReconnectMessage, qtInformation);
+      }
+      // otherwise (= when connecting a workspace on the background), notify more subtly with just status bar note
+      else
+      {
+        ScpExplorer->PostNote(FormatTerminalNoteMessage(Terminal, ReconnectMessage));
+        // update session tab (implied by InactiveTerminalNotify in the previous branch)
+        ScpExplorer->TerminalStatusChanged(Terminal);
+      }
     }
     else
     {
@@ -1964,7 +1986,8 @@ void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
             Terminal->Idle();
           }
           else if ((Terminal != ActiveTerminal) &&
-                   GUIConfiguration->SessionReopenAutoInactive &&
+                   ((!Terminal->InactiveTerminationMessage.IsEmpty() && GUIConfiguration->SessionReopenAutoInactive) ||
+                    (Terminal->InactiveTerminationMessage.IsEmpty() && WinConfiguration->WorkspaceConnectAll)) &&
                    (FReconnectingInactiveTerminal == NULL) &&
                    (Terminal->NextInactiveReconnect != TDateTime()) &&
                    (Terminal->NextInactiveReconnect < Now()))

@@ -432,6 +432,7 @@ private:
   bool FAutoSaveWorkspace;
   bool FAutoSaveWorkspacePasswords;
   UnicodeString FAutoWorkspace;
+  bool FWorkspaceConnectAll;
   TPathInCaption FPathInCaption;
   TSessionTabNameFormat FSessionTabNameFormat;
   bool FMinimizeToTray;
@@ -554,6 +555,7 @@ private:
   void __fastcall SetAutoSaveWorkspace(bool value);
   void __fastcall SetAutoSaveWorkspacePasswords(bool value);
   void __fastcall SetAutoWorkspace(UnicodeString value);
+  void SetWorkspaceConnectAll(bool value);
   void __fastcall SetPathInCaption(TPathInCaption value);
   void __fastcall SetSessionTabNameFormat(TSessionTabNameFormat value);
   void __fastcall SetMinimizeToTray(bool value);
@@ -768,6 +770,7 @@ public:
   __property bool AutoSaveWorkspace = { read = FAutoSaveWorkspace, write = SetAutoSaveWorkspace };
   __property bool AutoSaveWorkspacePasswords = { read = FAutoSaveWorkspacePasswords, write = SetAutoSaveWorkspacePasswords };
   __property UnicodeString AutoWorkspace = { read = FAutoWorkspace, write = SetAutoWorkspace };
+  __property bool WorkspaceConnectAll = { read = FWorkspaceConnectAll, write = SetWorkspaceConnectAll };
   __property TPathInCaption PathInCaption = { read = FPathInCaption, write = SetPathInCaption };
   __property TSessionTabNameFormat SessionTabNameFormat = { read = FSessionTabNameFormat, write = FSessionTabNameFormat };
   __property bool MinimizeToTray = { read = FMinimizeToTray, write = SetMinimizeToTray };

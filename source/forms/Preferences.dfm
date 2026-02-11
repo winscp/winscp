@@ -2552,7 +2552,7 @@ object PreferencesDialog: TPreferencesDialog
           475)
         object PathInCaptionGroup: TGroupBox
           Left = 8
-          Top = 127
+          Top = 150
           Width = 445
           Height = 95
           Anchors = [akLeft, akTop, akRight]
@@ -2591,7 +2591,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object WindowMiscellaneousGroup: TGroupBox
           Left = 8
-          Top = 228
+          Top = 251
           Width = 445
           Height = 164
           Anchors = [akLeft, akTop, akRight]
@@ -2667,13 +2667,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 2
           Width = 445
-          Height = 119
+          Height = 142
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Workspaces'
           TabOrder = 0
           DesignSize = (
             445
-            119)
+            142)
           object AutoWorkspaceLabel: TLabel
             Left = 27
             Top = 45
@@ -2710,6 +2710,16 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Save &passwords (not recommended) X'
             TabOrder = 2
+            OnClick = ControlChange
+          end
+          object WorkspaceConnectAllCheck: TCheckBox
+            Left = 11
+            Top = 115
+            Width = 408
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Connect all sessions of opened workspace or site folder'
+            TabOrder = 3
             OnClick = ControlChange
           end
         end

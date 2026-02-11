@@ -312,6 +312,7 @@ private:
   TNotifyEvent FOnSynchronizeAbort;
   TTerminal * FSynchronizeTerminal;
   bool FNeedSession;
+  bool FConnectFirstTerminal;
   TTerminal * FFileFindTerminal;
   UnicodeString FFileColorsCurrent;
   bool FInvalid;
@@ -871,6 +872,7 @@ public:
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
   UnicodeString __fastcall GetProgressTitle();
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
+  void TerminalStatusChanged(TManagedTerminal * Terminal);
   void InactiveTerminalNotify(
     TManagedTerminal * Terminal, const UnicodeString & Message, TQueryType Type, Exception * E = NULL);
   void __fastcall SessionReady();

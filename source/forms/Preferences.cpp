@@ -491,14 +491,15 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     }
 
     // window
-    AutoSaveWorkspaceCheck->Checked = WinConfiguration->AutoSaveWorkspace;
+    BOOLPROP(AutoSaveWorkspace);
     AutoWorkspaceCombo->Text =
       DefaultStr(WinConfiguration->AutoWorkspace,
         // It will rarely happen that LastWorkspace is set, while AutoWorkspace not.
         // It can happen only when user saved workspace before opening the Preferences
         // dialog for the first time
         DefaultStr(WinConfiguration->LastWorkspace, LoadStr(NEW_WORKSPACE)));
-    AutoSaveWorkspacePasswordsCheck->Checked = WinConfiguration->AutoSaveWorkspacePasswords;
+    BOOLPROP(AutoSaveWorkspacePasswords);
+    BOOLPROP(WorkspaceConnectAll);
     if (WinConfiguration->PathInCaption == picFull)
     {
       PathInCaptionFullButton->Checked = true;
@@ -901,7 +902,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       WinConfiguration->AutoWorkspace = AutoWorkspaceCombo->Text;
     }
-    WinConfiguration->AutoSaveWorkspacePasswords = AutoSaveWorkspacePasswordsCheck->Checked;
+    BOOLPROP(AutoSaveWorkspacePasswords);
+    BOOLPROP(WorkspaceConnectAll);
     if (PathInCaptionFullButton->Checked)
     {
        WinConfiguration->PathInCaption = picFull;

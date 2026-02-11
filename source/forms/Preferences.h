@@ -361,6 +361,7 @@ __published:
   TCheckBox *SessionReopenAutoInactiveCheck;
   TPanel *NavigationPanel;
   TCheckBox *FlashTaskbarCheck;
+  TCheckBox *WorkspaceConnectAllCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

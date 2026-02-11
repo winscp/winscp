@@ -570,6 +570,7 @@ void __fastcall TWinConfiguration::Default()
   FAutoSaveWorkspace = false;
   FAutoSaveWorkspacePasswords = false;
   FAutoWorkspace = L"";
+  FWorkspaceConnectAll = false;
   FPathInCaption = picShort;
   FSessionTabNameFormat = stnfShortPathTrunc;
   FMinimizeToTray = false;
@@ -1069,6 +1070,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     AutoSaveWorkspace); \
     KEY(Bool,     AutoSaveWorkspacePasswords); \
     KEY(String,   AutoWorkspace); \
+    KEY(Bool,     WorkspaceConnectAll); \
     KEY(Enum,     PathInCaption); \
     KEY(Enum,     SessionTabNameFormat); \
     KEY(Bool,     MinimizeToTray); \
@@ -2259,6 +2261,11 @@ void __fastcall TWinConfiguration::SetAutoSaveWorkspacePasswords(bool value)
 void __fastcall TWinConfiguration::SetAutoWorkspace(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(AutoWorkspace);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetWorkspaceConnectAll(bool value)
+{
+  SET_CONFIG_PROPERTY(WorkspaceConnectAll);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetPathInCaption(TPathInCaption value)

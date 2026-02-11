@@ -189,6 +189,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FOnSynchronizeAbort = NULL;
   FSynchronizeTerminal = NULL;
   FNeedSession = false;
+  FConnectFirstTerminal = false;
   FDoNotIdleCurrentTerminal = 0;
   FIncrementalSearching = 0;
   FQueueFileList.reset(new TQueueFileList());
@@ -7926,6 +7927,7 @@ void __fastcall TCustomScpExplorerForm::DoShow()
       SameText(WinConfiguration->LastStoredSession, WinConfiguration->AutoWorkspace))
   {
     DoOpenFolderOrWorkspace(WinConfiguration->AutoWorkspace, false, true);
+    FConnectFirstTerminal = WinConfiguration->WorkspaceConnectAll;
     Configuration->Usage->Inc(L"OpenedWorkspacesAuto");
   }
 
@@ -8086,16 +8088,20 @@ void __fastcall TCustomScpExplorerForm::SessionReady()
   UpdateSessionTab(SessionsPageControl->Pages[ActiveSessionIndex]);
 }
 //---------------------------------------------------------------------------
-void TCustomScpExplorerForm::InactiveTerminalNotify(
-  TManagedTerminal * Terminal, const UnicodeString & Message, TQueryType Type, Exception * E)
+void TCustomScpExplorerForm::TerminalStatusChanged(TManagedTerminal * Terminal)
 {
-  Notify(Terminal, Message, Type, false, NULL, NULL, E);
-
   int Index = TTerminalManager::Instance()->IndexOf(Terminal);
   if (DebugAlwaysTrue((Index >= 0) && (Index < SessionsPageControl->PageCount)))
   {
     UpdateSessionTab(SessionsPageControl->Pages[Index]);
   }
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::InactiveTerminalNotify(
+  TManagedTerminal * Terminal, const UnicodeString & Message, TQueryType Type, Exception * E)
+{
+  Notify(Terminal, Message, Type, false, NULL, NULL, E);
+  TerminalStatusChanged(Terminal);
 }
 //---------------------------------------------------------------------------
 void TCustomScpExplorerForm::Notify(
@@ -10144,7 +10150,10 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
     InterfaceStarted();
   }
 
-  if (Showing && NoSession)
+  bool ConnectFirstTerminal = FConnectFirstTerminal;
+  FConnectFirstTerminal = false;
+
+  if (Showing && (NoSession || ConnectFirstTerminal))
   {
     // When we are starting minimized (i.e. from an installer),
     // postpone showing Login dialog until we get restored.
@@ -10152,7 +10161,11 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
     // over invisible (minimized) main window.
     if (WindowState == wsMinimized)
     {
-      FNeedSession = true;
+      // Not bothering with ConnectFirstTerminal scenario here
+      if (NoSession)
+      {
+        FNeedSession = true;
+      }
     }
     else
     {
@@ -10167,8 +10180,20 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
         // With Commander interface the ProcessMessages is called already
         // by TDriveView, but with Explorer interface, we need to call it explicily
         Application->ProcessMessages();
-        // do not reload sessions, they have been loaded just now (optimization)
-        NeedSession(true);
+        if (NoSession)
+        {
+          // do not reload sessions, they have been loaded just now (optimization)
+          NeedSession(true);
+        }
+        // This delayed connection of first autoworkspace session is inconsistent with workspace opening from commandline,
+        // when the first session is opened even before main window. That on the other hand is consistent with
+        // opening single session from command-line, when we might really need it opoened asap.
+        if (ConnectFirstTerminal &&
+            (Terminal != nullptr) &&
+            !Terminal->Active)
+        {
+          ReconnectSession();
+        }
       }
       __finally
       {
