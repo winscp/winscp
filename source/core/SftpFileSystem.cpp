@@ -2546,11 +2546,11 @@ void __fastcall TSFTPFileSystem::RemoveReservation(int Reservation)
 //---------------------------------------------------------------------------
 inline int __fastcall TSFTPFileSystem::PacketLength(unsigned char * LenBuf, int ExpectedType)
 {
-  int Length = GET_32BIT(LenBuf);
+  unsigned long Length = GET_32BIT(LenBuf);
   if (Length > SFTP_MAX_PACKET_LEN)
   {
-    UnicodeString Message = FMTLOAD(SFTP_PACKET_TOO_BIG, (
-      int(Length), SFTP_MAX_PACKET_LEN));
+    UnicodeString FormatStr = ReplaceStr(LoadStr(SFTP_PACKET_TOO_BIG), L"%d", L"%u");
+    UnicodeString Message = FORMAT(FormatStr, (Length, SFTP_MAX_PACKET_LEN));
     if (ExpectedType == SSH_FXP_VERSION)
     {
       RawByteString LenString(reinterpret_cast<char *>(LenBuf), 4);
@@ -2559,7 +2559,7 @@ inline int __fastcall TSFTPFileSystem::PacketLength(unsigned char * LenBuf, int 
     }
     FTerminal->FatalError(NULL, Message, HELP_SFTP_PACKET_TOO_BIG);
   }
-  return Length;
+  return static_cast<int>(Length);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::PeekPacket()
