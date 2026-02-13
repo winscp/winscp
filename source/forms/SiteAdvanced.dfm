@@ -70,7 +70,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 22
             Width = 261
             Height = 15
-            Caption = 'End-of-line &characters (if not indicated by server):'
+            Caption = 'End-&of-line characters (if not indicated by server):'
             FocusControl = EOLTypeCombo
           end
           object UtfLabel: TLabel
@@ -335,7 +335,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Syn&chronize browsing'
+            Caption = '&Synchronize browsing'
             TabOrder = 0
           end
         end
@@ -633,7 +633,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 80
             Width = 170
             Height = 15
-            Caption = '&Canonicalize paths on the server'
+            Caption = 'Ca&nonicalize paths on the server'
             FocusControl = SFTPRealPathCombo
           end
           object SFTPMaxVersionCombo: TComboBox
@@ -1848,7 +1848,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Width = 436
           Height = 17
           Anchors = [akLeft, akTop, akRight]
-          Caption = '&Connect through SSH tunnel'
+          Caption = 'Connect &through SSH tunnel'
           TabOrder = 0
           OnClick = DataChange
         end
@@ -2071,7 +2071,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Enable &compression'
+            Caption = '&Enable compression'
             TabOrder = 0
             OnClick = DataChange
           end
@@ -2450,7 +2450,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 401
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Allow GSSAPI &credential delegation'
+            Caption = 'Allow GSSAPI c&redential delegation'
             TabOrder = 1
             OnClick = AuthGSSAPICheck3Click
           end
