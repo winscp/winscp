@@ -279,11 +279,11 @@ void __fastcall TFileSystemInfoDialog::ClipboardButtonClick(
   CopyToClipboard(FClipboard);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileSystemInfoDialog::CopyClick(TObject * Sender)
+void __fastcall TFileSystemInfoDialog::CopyClick(TObject *)
 {
   TInstantOperationVisualizer Visualizer;
 
-  TListView * ListView = dynamic_cast<TListView *>(GetPopupComponent(Sender));
+  TListView * ListView = dynamic_cast<TListView *>(Screen->ActiveControl);
   DebugAssert(ListView != NULL);
 
   UnicodeString Text;
@@ -397,14 +397,21 @@ void __fastcall TFileSystemInfoDialog::SpaceAvailableViewCustomDrawItem(
 //---------------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::EditCopyActionExecute(TObject * /*Sender*/)
 {
-  TEdit * Edit = HostKeyFingerprintSHA256Edit->Focused() ? HostKeyFingerprintSHA256Edit : HostKeyFingerprintMD5Edit;
-  if ((Edit->SelLength == 0) || (Edit->SelLength == Edit->Text.Length()))
+  // Note that on Ctrl+C this is invoked for any control which does not handle it itself,
+  // not only those that have the respective context menu (i.e. any list view for instance).
+  // Because VCL inspects all action lists.
+  TEdit * Edit = dynamic_cast<TEdit *>(Screen->ActiveControl);
+  if (DebugAlwaysTrue(Edit != nullptr))
   {
-    CopyToClipboard(FORMAT(L"%s %s", (HostKeyAlgorithmEdit->Text, Edit->Text)));
-  }
-  else
-  {
-    Edit->CopyToClipboard();
+    if (((Edit == HostKeyFingerprintSHA256Edit) || (Edit == HostKeyFingerprintMD5Edit)) &&
+        ((Edit->SelLength == 0) || (Edit->SelLength == Edit->Text.Length())))
+    {
+      CopyToClipboard(FORMAT(L"%s %s", (HostKeyAlgorithmEdit->Text, Edit->Text)));
+    }
+    else
+    {
+      Edit->CopyToClipboard();
+    }
   }
 }
 //---------------------------------------------------------------------------

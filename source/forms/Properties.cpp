@@ -783,6 +783,7 @@ void __fastcall TPropertiesDialog::CopyClick(TObject * Sender)
 {
   TInstantOperationVisualizer Visualizer;
 
+  // Might use Screen->ActiveControl to support even keyboard shortcut invocation as in TFileSystemInfoDialog
   TListView * ListView = dynamic_cast<TListView *>(GetPopupComponent(Sender));
   DebugAssert(ListView != NULL);
 

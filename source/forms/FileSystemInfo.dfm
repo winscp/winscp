@@ -220,7 +220,6 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           Anchors = [akLeft, akTop, akRight]
           BorderStyle = bsNone
           Color = clBtnFace
-          PopupMenu = FingerprintPopupMenu
           ReadOnly = True
           TabOrder = 1
           Text = 'CertificateFingerprintSha1Edit'
@@ -370,6 +369,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     Top = 354
     object Copy: TMenuItem
       Caption = '&Copy'
+      ShortCut = 16451
       OnClick = CopyClick
     end
   end
