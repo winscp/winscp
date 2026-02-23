@@ -387,6 +387,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(String,   CertificateStorage); \
     KEY(String,   AWSAPI); \
     KEY(String,   ChecksumCommands); \
+    KEY(Integer,  AuthAgent); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
@@ -2378,6 +2379,16 @@ const TSshHostCAList * TConfiguration::GetActiveSshHostCAList()
 bool __fastcall TConfiguration::GetPersistent()
 {
   return (Storage != stNul) && !FDontSave;
+}
+//---------------------------------------------------------------------------
+int TConfiguration::GetAuthAgent()
+{
+  return auth_agent_implementation;
+}
+//---------------------------------------------------------------------------
+void TConfiguration::SetAuthAgent(int value)
+{
+  auth_agent_implementation = static_cast<AuthAgentImplementation>(value);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

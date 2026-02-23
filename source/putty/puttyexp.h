@@ -62,4 +62,13 @@ void win_secur_cleanup(void);
 
 void ec_cleanup(void);
 
+// from agent-client.c
+
+typedef enum AuthAgentImplementation {
+    AAI_PAGEANT,
+    AAI_OPENSSH
+} AuthAgentImplementation;
+
+extern AuthAgentImplementation auth_agent_implementation;
+
 #endif

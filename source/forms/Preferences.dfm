@@ -2765,17 +2765,17 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = UseMasterPasswordCheckClick
           end
         end
-        object PasswordGroupBox: TGroupBox
+        object AuthenticationGroup: TGroupBox
           Left = 8
           Top = 88
           Width = 445
-          Height = 48
+          Height = 78
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Session password'
+          Caption = 'Authentication'
           TabOrder = 1
           DesignSize = (
             445
-            48)
+            78)
           object SessionRememberPasswordCheck: TCheckBox
             Left = 11
             Top = 22
@@ -2785,23 +2785,46 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Remember &password for duration of session'
             TabOrder = 0
           end
+          object Label13: TLabel
+            Left = 9
+            Top = 48
+            Width = 115
+            Height = 15
+            Caption = 'Aut&hentication agent:'
+            FocusControl = AuthAgentCombo
+            OnClick = ControlChange
+          end
+          object AuthAgentCombo: TComboBox
+            Left = 241
+            Top = 45
+            Width = 195
+            Height = 23
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            MaxLength = 1
+            TabOrder = 1
+            OnChange = ControlChange
+            Items.Strings = (
+              'PuTTY Pageant'
+              'OpenSSH ssh-agent')
+          end
         end
         object SshHostCAsGroup: TGroupBox
           Left = 8
-          Top = 142
+          Top = 172
           Width = 445
-          Height = 331
+          Height = 301
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Trusted host certification authorities'
           TabOrder = 2
           DesignSize = (
             445
-            331)
+            301)
           object SshHostCAsView: TListView
             Left = 9
             Top = 45
             Width = 427
-            Height = 245
+            Height = 215
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -2828,7 +2851,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddSshHostCAButton: TButton
             Left = 9
-            Top = 296
+            Top = 266
             Width = 90
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2838,7 +2861,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveSshHostCAButton: TButton
             Left = 201
-            Top = 296
+            Top = 266
             Width = 90
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2848,7 +2871,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditSshHostCAButton: TButton
             Left = 105
-            Top = 296
+            Top = 266
             Width = 90
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2867,7 +2890,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfigureSshHostCAsButton: TButton
             Left = 9
-            Top = 296
+            Top = 266
             Width = 138
             Height = 25
             Anchors = [akLeft, akBottom]

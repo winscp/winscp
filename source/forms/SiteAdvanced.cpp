@@ -237,7 +237,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
-    TryAgentCheck->Checked = FSessionData->TryAgent;
+    TryAgentCheck2->Checked = FSessionData->TryAgent;
     AuthKICheck->Checked = FSessionData->AuthKI;
     AuthKIPasswordCheck->Checked = FSessionData->AuthKIPassword;
     AuthGSSAPICheck3->Checked = FSessionData->AuthGSSAPI;
@@ -469,7 +469,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // Authentication page
   SessionData->SshNoUserAuth = SshNoUserAuthCheck->Checked;
-  SessionData->TryAgent = TryAgentCheck->Checked;
+  SessionData->TryAgent = TryAgentCheck2->Checked;
   SessionData->AuthKI = AuthKICheck->Checked;
   SessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
   SessionData->AuthGSSAPI = AuthGSSAPICheck3->Checked;
@@ -890,7 +890,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(AuthKIPasswordCheck,
       AuthenticationGroup->Enabled && (AuthKICheck->Enabled && AuthKICheck->Checked));
     EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
-    EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && TryAgentCheck->Checked);
+    EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && TryAgentCheck2->Checked);
     if (PrivateKeyEdit3->Text != FLastPrivateKey)
     {
       FLastPrivateKey = PrivateKeyEdit3->Text;

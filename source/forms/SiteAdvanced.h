@@ -173,7 +173,7 @@ __published:
   TLabel *Label9;
   TComboBox *ListingCommandEdit;
   TCheckBox *SshNoUserAuthCheck;
-  TCheckBox *TryAgentCheck;
+  TCheckBox *TryAgentCheck2;
   TLabel *ProxyMethodLabel;
   TComboBox *SshProxyMethodCombo;
   TComboBox *ProxyDNSCombo;

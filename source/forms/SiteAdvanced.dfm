@@ -2300,13 +2300,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           DesignSize = (
             438
             95)
-          object TryAgentCheck: TCheckBox
+          object TryAgentCheck2: TCheckBox
             Left = 11
             Top = 22
             Width = 416
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Attempt authentication using &Pageant'
+            Caption = '&Attempt authentication using agent'
             TabOrder = 0
             OnClick = DataChange
           end

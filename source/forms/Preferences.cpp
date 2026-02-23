@@ -648,6 +648,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // security
     UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
     SessionRememberPasswordCheck->Checked = GUIConfiguration->SessionRememberPassword;
+    AuthAgentCombo->ItemIndex = Configuration->AuthAgent;
     SshHostCAsFromPuTTYCheck->Checked = Configuration->SshHostCAsFromPuTTY;
     FSshHostCAPlainList = Configuration->SshHostCAList->GetList();
     Configuration->RefreshPuttySshHostCAList();
@@ -1017,6 +1018,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // security
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
+    Configuration->AuthAgent = AuthAgentCombo->ItemIndex;
     Configuration->SshHostCAsFromPuTTY = SshHostCAsFromPuTTYCheck->Checked;
     std::unique_ptr<TSshHostCAList> SshHostCAList(new TSshHostCAList(FSshHostCAPlainList));
     Configuration->SshHostCAList = SshHostCAList.get();

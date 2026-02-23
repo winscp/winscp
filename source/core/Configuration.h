@@ -204,6 +204,8 @@ private:
   void SetSshHostCAList(const TSshHostCAList * value);
   const TSshHostCAList * GetPuttySshHostCAList();
   const TSshHostCAList * GetActiveSshHostCAList();
+  int GetAuthAgent();
+  void SetAuthAgent(int value);
 
 protected:
   TStorage FStorage;
@@ -407,6 +409,7 @@ public:
   __property bool SshHostCAsFromPuTTY = { read = FSshHostCAsFromPuTTY, write = FSshHostCAsFromPuTTY };
   __property int HttpsCertificateValidation = { read = FHttpsCertificateValidation, write = FHttpsCertificateValidation };
   __property UnicodeString SynchronizationChecksumAlgs = { read = FSynchronizationChecksumAlgs, write = FSynchronizationChecksumAlgs };
+  __property int AuthAgent = { read = GetAuthAgent, write = SetAuthAgent };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };

@@ -13,7 +13,7 @@
 
 #include "security-api.h"
 
-HANDLE connect_to_named_pipe(const char *pipename, char **err)
+HANDLE connect_to_named_pipe(const char *pipename, char **err, bool allow_system) // WINSCP
 {
     HANDLE pipehandle;
     PSID usersid, pipeowner;
@@ -71,11 +71,38 @@ HANDLE connect_to_named_pipe(const char *pipename, char **err)
     }
 
     if (!EqualSid(pipeowner, usersid)) {
+        #ifdef WINSCP
+        bool trusted_system = false;
+        if (allow_system) {
+            SID_IDENTIFIER_AUTHORITY nt_authority = { SECURITY_NT_AUTHORITY };
+
+            PSID system_sid = NULL;
+            if (AllocateAndInitializeSid(&nt_authority, 1, SECURITY_LOCAL_SYSTEM_RID, 0, 0, 0, 0, 0, 0, 0, &system_sid)) {
+                if (EqualSid(pipeowner, system_sid))
+                    trusted_system = true;
+                FreeSid(system_sid);
+            }
+
+            PSID admin_group_sid = NULL;
+            if (!trusted_system &&
+                AllocateAndInitializeSid(&nt_authority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &admin_group_sid)) {
+                if (EqualSid(pipeowner, admin_group_sid))
+                    trusted_system = true;
+                FreeSid(admin_group_sid);
+            }
+        }
+        if (!trusted_system)
+        {
+        #endif // WINSCP
         CloseHandle(pipehandle);
         LocalFree(psd);
+        // The message is never shown anywhere anyway in WINSCP
         *err = dupprintf(
-            "Owner of named pipe '%s' is not us", pipename);
+            allow_system ? "Owner of named pipe '%s' is neither us nor SYSTEM nor Administrator" : "Owner of named pipe '%s' is not us", pipename);
         return INVALID_HANDLE_VALUE;
+        #ifdef WINSCP
+        }
+        #endif
     }
 
     LocalFree(psd);
@@ -83,10 +110,10 @@ HANDLE connect_to_named_pipe(const char *pipename, char **err)
     return pipehandle;
 }
 
-Socket *new_named_pipe_client(const char *pipename, Plug *plug)
+Socket *new_named_pipe_client(const char *pipename, Plug *plug, bool allow_system) // WINSCP
 {
     char *err = NULL;
-    HANDLE pipehandle = connect_to_named_pipe(pipename, &err);
+    HANDLE pipehandle = connect_to_named_pipe(pipename, &err, allow_system); // WINSCP
     if (pipehandle == INVALID_HANDLE_VALUE)
         return new_error_socket_consume_string(plug, err);
     else

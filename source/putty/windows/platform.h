@@ -377,14 +377,14 @@ Socket *make_deferred_handle_socket(DeferredSocketOpener *opener,
 void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
                          HANDLE stderr_H, bool overlapped);
 void handle_socket_set_psb_prefix(Socket *s, const char *prefix);
-Socket *new_named_pipe_client(const char *pipename, Plug *plug); /* winnpc */
+Socket *new_named_pipe_client(const char *pipename, Plug *plug, bool allow_system); /* winnpc */ // WINSCP
 Socket *new_named_pipe_listener(const char *pipename, Plug *plug); /* winnps */
 
 /* A lower-level function in named-pipe-client.c, which does most of
  * the work of new_named_pipe_client (including checking the ownership
  * of what it's connected to), but returns a plain HANDLE instead of
  * wrapping it into a Socket. */
-HANDLE connect_to_named_pipe(const char *pipename, char **err);
+HANDLE connect_to_named_pipe(const char *pipename, char **err, bool allow_system); // WINSCP
 
 /*
  * Exports from controls.c.

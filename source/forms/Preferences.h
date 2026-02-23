@@ -239,7 +239,7 @@ __published:
   TTabSheet *PanelLocalSheet;
   TGroupBox *LocalPanelGroup;
   TCheckBox *SystemContextMenuCheck;
-  TGroupBox *PasswordGroupBox;
+  TGroupBox *AuthenticationGroup;
   TCheckBox *SessionRememberPasswordCheck;
   TStaticText *PuttyPathHintText;
   TLabel *PuttyRegistryStorageKeyLabel;
@@ -362,6 +362,8 @@ __published:
   TPanel *NavigationPanel;
   TCheckBox *FlashTaskbarCheck;
   TCheckBox *WorkspaceConnectAllCheck;
+  TLabel *Label13;
+  TComboBox *AuthAgentCombo;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

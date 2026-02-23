@@ -12,6 +12,30 @@
 #include "security-api.h"
 #include "cryptoapi.h"
 
+#ifdef WINSCP
+
+#include <puttyexp.h>
+
+AuthAgentImplementation auth_agent_implementation = AAI_PAGEANT;
+
+static char *_agent_named_pipe_name(void)
+{
+    if (auth_agent_implementation == AAI_OPENSSH) {
+        return dupstr("\\\\.\\pipe\\openssh-ssh-agent");
+    } else {
+        return agent_named_pipe_name();
+    }
+}
+
+static bool agent_allow_system(void)
+{
+    return (auth_agent_implementation == AAI_OPENSSH);
+}
+
+#define agent_named_pipe_name _agent_named_pipe_name
+
+#endif
+
 static bool wm_copydata_agent_exists(void)
 {
     HWND hwnd;
@@ -126,7 +150,7 @@ static void wm_copydata_agent_query(strbuf *query, void **out, int *outlen)
 Socket *agent_connect(Plug *plug)
 {
     char *pipename = agent_named_pipe_name();
-    Socket *s = new_named_pipe_client(pipename, plug);
+    Socket *s = new_named_pipe_client(pipename, plug, agent_allow_system()); // WINSCP
     sfree(pipename);
     return s;
 }
@@ -207,7 +231,7 @@ static agent_pending_query *named_pipe_agent_query(
     HANDLE pipehandle;
 
     pipename = agent_named_pipe_name();
-    pipehandle = connect_to_named_pipe(pipename, &err);
+    pipehandle = connect_to_named_pipe(pipename, &err, agent_allow_system()); // WINSCP
     if (pipehandle == INVALID_HANDLE_VALUE)
         goto failure;
 
