@@ -49,7 +49,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Top = 5
         Width = 151
         Height = 17
-        Caption = 'SSH &host Key'
+        Caption = 'SSH &host key'
         TabOrder = 3
         OnClick = ControlChange
       end
