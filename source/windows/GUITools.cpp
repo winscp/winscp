@@ -924,19 +924,13 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeS
 class TSessionColors : public TComponent
 {
 public:
-  __fastcall TSessionColors(TComponent * Owner) : TComponent(Owner)
+  __fastcall TSessionColors() : TComponent(nullptr)
   {
-    Name = QualifiedClassName();
   }
 
   static TSessionColors * __fastcall Retrieve(TComponent * Component)
   {
-    TSessionColors * SessionColors = dynamic_cast<TSessionColors *>(Component->FindComponent(QualifiedClassName()));
-    if (SessionColors == NULL)
-    {
-      SessionColors = new TSessionColors(Component);
-    }
-    return SessionColors;
+    return GetComponentInstance<TSessionColors>(Component);
   }
 
   typedef std::map<TColor, int> TColorMap;

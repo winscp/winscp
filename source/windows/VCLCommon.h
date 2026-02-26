@@ -108,5 +108,28 @@ void AutoSizeLabel(TLabel * Label);
 void AutoSizeLabel(TStaticText * Label);
 void SetAccessibleName(TWinControl * Control, const UnicodeString & Name);
 void SetAccessibleRole(TWinControl * Control, int Role);
+template<class ComponentType>
+ComponentType * FindComponentInstance(TComponent * Owner)
+{
+  TComponent * Component = Owner->FindComponent(ComponentType::QualifiedClassName());
+  return (Component == nullptr) ? nullptr : DebugNotNull(dynamic_cast<ComponentType *>(Component));
+}
+template<class ComponentType>
+void InsertComponentInstance(TComponent * Owner, ComponentType * Component)
+{
+  Component->Name = ComponentType::QualifiedClassName();
+  Owner->InsertComponent(Component);
+}
+template<class ComponentType>
+ComponentType * GetComponentInstance(TComponent * Owner)
+{
+  auto Component = FindComponentInstance<ComponentType>(Owner);
+  if (Component == nullptr)
+  {
+    Component = new ComponentType();
+    InsertComponentInstance(Owner, Component);
+  }
+  return Component;
+}
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

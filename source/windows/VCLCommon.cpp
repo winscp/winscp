@@ -39,15 +39,7 @@ public:
 //---------------------------------------------------------------------------
 static TFormCustomizationComponent * GetFormCustomizationComponent(TCustomForm * Form)
 {
-  TFormCustomizationComponent * FormCustomizationComponent =
-    dynamic_cast<TFormCustomizationComponent *>(Form->FindComponent(TFormCustomizationComponent::QualifiedClassName()));
-  if (FormCustomizationComponent == NULL)
-  {
-    FormCustomizationComponent = new TFormCustomizationComponent();
-    FormCustomizationComponent->Name = TFormCustomizationComponent::QualifiedClassName();
-    Form->InsertComponent(FormCustomizationComponent);
-  }
-  return FormCustomizationComponent;
+  return GetComponentInstance<TFormCustomizationComponent>(Form);
 }
 //---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index)
@@ -320,26 +312,93 @@ TWndMethod __fastcall ControlWndProc(TWinControl * Control)
   return &PublicWinControl->WndProc;
 }
 //---------------------------------------------------------------------------
+class TBrushComponent : public TComponent
+{
+public:
+  __fastcall TBrushComponent() : TComponent(nullptr)
+  {
+    Brush = 0;
+  }
+
+  void ReleaseBrush()
+  {
+    if (Brush != 0)
+    {
+      DeleteObject(Brush);
+      Brush = 0;
+    }
+  }
+
+  virtual __fastcall ~TBrushComponent()
+  {
+    ReleaseBrush();
+  }
+
+  HBRUSH Brush;
+};
+//---------------------------------------------------------------------------
 static void __fastcall ReadOnlyEditWindowProc(void * Data, TMessage & Message)
 {
   TCustomEdit * Edit = static_cast<TCustomEdit *>(Data);
-  TCustomStyleServices * AStyleServices;
-  if ((Message.Msg == CN_CTLCOLORSTATIC) && Edit->ReadOnly && (AStyleServices = StyleServices(Edit))->Enabled)
+  if (((Message.Msg == WM_WINDOWPOSCHANGED) || (Message.Msg == CN_CTLCOLORSTATIC)) &&
+      Edit->ReadOnly)
   {
-    // VCL_COPY Based on TCustomStaticText.CNCtlColorStatic
-
-    // Pure Win32 alternative can be seen at:
     // https://stackoverflow.com/q/75759034/850848#75764544
     // (see my comment to the answer)
 
-    HDC ControlDC = reinterpret_cast<HDC>(Message.WParam);
-    HWND ControlHandle = reinterpret_cast<HWND>(Message.LParam);
-    DebugAssert(ControlHandle == Edit->Handle);
+    auto BrushComponent = GetComponentInstance<TBrushComponent>(Edit);
 
-    SetBkMode(ControlDC, TRANSPARENT);
-    AStyleServices->DrawParentBackground(ControlHandle, ControlDC, NULL, false);
+    if (Message.Msg == WM_WINDOWPOSCHANGED)
+    {
+      BrushComponent->ReleaseBrush();
+      ControlWndProc(Edit)(Message);
+    }
+    else
+    {
+      HWND ControlHandle = reinterpret_cast<HWND>(Message.LParam);
+      DebugAssert(ControlHandle == Edit->Handle);
 
-    Message.Result = reinterpret_cast<LRESULT>(GetStockObject(NULL_BRUSH));
+      TWinControl * Parent = Edit->Parent;
+      while (Parent != NULL)
+      {
+        if (dynamic_cast<TPageControl *>(Parent) != nullptr)
+        {
+          break;
+        }
+        Parent = Parent->Parent;
+      }
+
+      if (Parent != nullptr)
+      {
+        if (BrushComponent->Brush == 0)
+        {
+          HDC DC = GetDC(Parent->Handle);
+          HDC DCNew = CreateCompatibleDC(DC);
+          HBITMAP Bitmap = CreateCompatibleBitmap(DC, Parent->Width, Parent->Height);
+          HBITMAP BitmapOld = static_cast<HBITMAP>(SelectObject(DCNew, Bitmap));
+
+          Parent->Perform(WM_PRINTCLIENT, reinterpret_cast<WPARAM>(DCNew), static_cast<LPARAM>(PRF_ERASEBKGND | PRF_CLIENT | PRF_NONCLIENT));
+          BrushComponent->Brush = CreatePatternBrush(Bitmap);
+          SelectObject(DCNew, BitmapOld);
+
+          DeleteObject(Bitmap);
+          DeleteDC(DCNew);
+          ReleaseDC(Parent->Handle, DC);
+        }
+
+        HDC EditDC = reinterpret_cast<HDC>(Message.WParam);
+        SetBkMode(EditDC, TRANSPARENT);
+
+        TPoint P = Edit->ClientToParent(TPoint(), Parent);
+        SetBrushOrgEx(EditDC, -P.X, -P.Y, nullptr);
+
+        Message.Result = reinterpret_cast<LRESULT>(BrushComponent->Brush);
+      }
+      else
+      {
+        ControlWndProc(Edit)(Message);
+      }
+    }
   }
   else
   {
@@ -359,7 +418,6 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
     TWinControl * Parent = Edit->Parent;
     while (Parent != NULL)
     {
-      // Not necessary, just to limit impact and conflicts
       if (dynamic_cast<TTabSheet *>(Parent) != NULL)
       {
         TWndMethod WindowProc = MakeMethod<TWndMethod>(Edit, ReadOnlyEditWindowProc);
@@ -581,8 +639,7 @@ void __fastcall SetRescaleFunction(
   TComponent * Component, TRescaleEvent OnRescale, TObject * Token, bool OwnsToken)
 {
   TRescaleComponent * RescaleComponent = new TRescaleComponent(OnRescale, Token, OwnsToken);
-  RescaleComponent->Name = TRescaleComponent::QualifiedClassName();
-  Component->InsertComponent(RescaleComponent);
+  InsertComponentInstance(Component, RescaleComponent);
 }
 //---------------------------------------------------------------------------
 static void __fastcall ChangeControlScale(TControl * Control)
@@ -608,8 +665,7 @@ static void __fastcall ChangeControlScale(TControl * Control)
       ChangeControlScale(ChildControl);
     }
 
-    TRescaleComponent * RescaleComponent =
-      dynamic_cast<TRescaleComponent *>(Component->FindComponent(TRescaleComponent::QualifiedClassName()));
+    TRescaleComponent * RescaleComponent = FindComponentInstance<TRescaleComponent>(Component);
     if (RescaleComponent != NULL)
     {
       RescaleComponent->OnRescale(Component, RescaleComponent->Token);

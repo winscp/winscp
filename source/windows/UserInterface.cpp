@@ -855,8 +855,7 @@ __fastcall TColorChangeData::TColorChangeData(
 TColorChangeData * __fastcall TColorChangeData::Retrieve(TObject * Object)
 {
   TComponent * Component = DebugNotNull(dynamic_cast<TComponent *>(Object));
-  TComponent * ColorChangeDataComponent = Component->FindComponent(QualifiedClassName());
-  return DebugNotNull(dynamic_cast<TColorChangeData *>(ColorChangeDataComponent));
+  return FindComponentInstance<TColorChangeData>(Component);
 }
 //---------------------------------------------------------------------------
 static void SaveCustomColors(bool SessionColors, const UnicodeString & Colors)
