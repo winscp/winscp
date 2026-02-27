@@ -355,8 +355,7 @@ static void __fastcall ReadOnlyEditWindowProc(void * Data, TMessage & Message)
     }
     else
     {
-      HWND ControlHandle = reinterpret_cast<HWND>(Message.LParam);
-      DebugAssert(ControlHandle == Edit->Handle);
+      DebugAssert(reinterpret_cast<HWND>(Message.LParam) == Edit->Handle);
 
       TWinControl * Parent = Edit->Parent;
       while (Parent != NULL)
