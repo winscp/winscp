@@ -4065,7 +4065,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
     else
     {
       UnicodeString RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
-      std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(RemoteFilePath));
+      std::unique_ptr<TRemoteFile> File(Data->Terminal->TryReadFile(RemoteFilePath));
       if (File.get() != NULL)
       {
         AppLogFmt(L"Edited remote file timestamp: %s, Original timestamp: %s", (StandardTimestamp(File->Modification), StandardTimestamp(Data->SourceTimestamp)));
