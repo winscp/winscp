@@ -1276,7 +1276,9 @@ private:
 //---------------------------------------------------------------------------
 // Need to have an Owner argument for SafeFormCreate
 __fastcall TMasterPasswordDialog::TMasterPasswordDialog(TComponent *) :
-  TCustomDialog(EmptyStr)
+  // HelpKeyword is provisional, and will be overridein in Init.
+  // It's provided here only to enable the Help button.
+  TCustomDialog(HELP_MASTER_PASSWORD_CURRENT)
 {
 }
 //---------------------------------------------------------------------------
