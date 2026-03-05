@@ -1316,9 +1316,7 @@ procedure TCustomDirView.LVMSetExtendedListViewStyle(var Message: TMessage);
 // on Win7 when moving mouse over list view, not LVS_EX_DOUBLEBUFFER.
 // But LVS_EX_DOUBLEBUFFER brings nice alpha blended marquee selection.
 // Double buffering introduces artefacts when scrolling using
-// keyboard (Page-up/Down). This gets fixed by LVS_EX_TRANSPARENTBKGND,
-// but that works on Vista and newer only. See WMKeyDown
-// for workaround on earlier systems.
+// keyboard (Page-up/Down). This gets fixed by LVS_EX_TRANSPARENTBKGND.
 begin
   // This prevents TCustomListView.ResetExStyles resetting our styles
   if Enabled and
