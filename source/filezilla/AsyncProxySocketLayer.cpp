@@ -115,67 +115,9 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           ConnectionFailed(WSAECONNABORTED);
           return;
         }
-        if (m_nProxyOpID==PROXYOP_CONNECT)
-        {
-          //OK, we are connected with the remote server
-          ConnectionEstablished();
-          return;
-        }
-        else
-        {
-          //Listen socket created
-          m_nProxyOpState++;
-          unsigned long ip;
-          int port;
-          memcpy(&ip,&m_pRecvBuffer[4],4);
-          if (!ip)
-          {
-            //No IP return, use the IP of the proxy server
-            SOCKADDR SockAddr;
-            memset(&SockAddr,0,sizeof(SockAddr));
-            int SockAddrLen=sizeof(SockAddr);
-            if (GetPeerName(&SockAddr, &SockAddrLen ))
-            {
-              ip=(reinterpret_cast<LPSOCKADDR_IN>(&SockAddr))->sin_addr.S_un.S_addr;
-            }
-            else
-            {
-              ConnectionFailed(WSAECONNABORTED);
-              return;
-            }
-          }
-          memcpy(&port,&m_pRecvBuffer[2],2);
-          t_ListenSocketCreatedStruct data;
-          data.ip=ip;
-          data.nPort=port;
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYSTATUS_LISTENSOCKETCREATED, reinterpret_cast<int>(&data));
-        }
-        ClearBuffer();
-      }
-    }
-    else if (m_nProxyOpID==PROXYOP_LISTEN)
-    {
-      if (!m_pRecvBuffer)
-        m_pRecvBuffer=new char[8];
-      int numread=ReceiveNext(m_pRecvBuffer+m_nRecvBufferPos,8-m_nRecvBufferPos);
-      if (numread==SOCKET_ERROR)
-      {
-        if (WSAGetLastError()!=WSAEWOULDBLOCK)
-        {
-          ConnectionFailed(WSAGetLastError());
-        }
-        return;
-      }
-      m_nRecvBufferPos+=numread;
-      if (m_nRecvBufferPos==8)
-      {
-        if (m_pRecvBuffer[1]!=90 || m_pRecvBuffer[0]!=0)
-        {
-          ConnectionFailed(WSAECONNABORTED);
-          return;
-        }
-        //Connection to remote server established
+        //OK, we are connected with the remote server
         ConnectionEstablished();
+        return;
       }
     }
   }
@@ -209,10 +151,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           {
             //Unknown auth type
             DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_AUTHTYPEUNKNOWN, 0);
-            if (m_nProxyOpID==PROXYOP_CONNECT)
-              TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-            else
-              TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
+            TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
             Reset();
             ClearBuffer();
             return;
@@ -221,10 +160,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           if (!m_ProxyData.bUseLogon)
           {
             DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_AUTHNOLOGON, 0);
-            if (m_nProxyOpID==PROXYOP_CONNECT)
-              TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-            else
-              TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
+            TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
             Reset();
             ClearBuffer();
             return;
@@ -261,7 +197,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       char *command=new char[10+strlen(lpszAsciiHost)+1];
       memset(command,0,10+strlen(lpszAsciiHost)+1);
       command[0]=5;
-      command[1]=(m_nProxyOpID==PROXYOP_CONNECT)?1:2;
+      command[1]=1;
       command[2]=0;
       command[3]=m_nProxyPeerIp?1:3;
       int len=4;
@@ -312,10 +248,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         if (m_pRecvBuffer[1]!=0)
         {
           DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_AUTHFAILED, 0);
-          if (m_nProxyOpID==PROXYOP_CONNECT)
-            TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
-          else
-            TriggerEvent(FD_ACCEPT, WSAECONNABORTED, TRUE);
+          TriggerEvent(FD_CONNECT, WSAECONNABORTED, TRUE);
           Reset();
           ClearBuffer();
           return;
@@ -324,7 +257,7 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
         char *command = new char[10+strlen(lpszAsciiHost)+1];
         memset(command,0,10+strlen(lpszAsciiHost)+1);
         command[0]=5;
-        command[1]=(m_nProxyOpID==PROXYOP_CONNECT)?1:2;
+        command[1]=1;
         command[2]=0;
         command[3]=m_nProxyPeerIp?1:3;
         int len=4;
@@ -398,53 +331,16 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
           return;
         }
 
-        if (m_nProxyOpID==PROXYOP_CONNECT)
-        {
-          //OK, we are connected with the remote server
-          ConnectionEstablished();
-        }
-        else
-        {
-          //Listen socket created
-          m_nProxyOpState++;
-          unsigned long ip;
-          unsigned short port;
-          DebugAssert(m_pRecvBuffer[3]==1);
-          memcpy(&ip, &m_pRecvBuffer[4], 4);
-          memcpy(&port, &m_pRecvBuffer[8], 2);
-          t_ListenSocketCreatedStruct data;
-          data.ip=ip;
-          data.nPort=port;
-          DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYSTATUS_LISTENSOCKETCREATED, reinterpret_cast<int>(&data));
-        }
+        //OK, we are connected with the remote server
+        ConnectionEstablished();
         ClearBuffer();
       }
     }
     else if (m_nProxyOpState==4)
     {
-      DebugAssert(m_nProxyOpID == PROXYOP_LISTEN);
-      if (!m_pRecvBuffer)
-        m_pRecvBuffer=new char[10];
-      int numread=ReceiveNext(m_pRecvBuffer+m_nRecvBufferPos,10-m_nRecvBufferPos);
-      if (numread==SOCKET_ERROR)
-      {
-        if (WSAGetLastError()!=WSAEWOULDBLOCK)
-        {
-          ConnectionFailed(WSAGetLastError());
-        }
-        return;
-      }
-      m_nRecvBufferPos+=numread;
-      if (m_nRecvBufferPos==10)
-      {
-        if (m_pRecvBuffer[1]!=0)
-        {
-          ConnectionFailed(WSAECONNABORTED);
-          return;
-        }
-        //Connection to remote server established
-        ConnectionEstablished();
-      }
+      // Listening - unexpected
+      DebugAssert(false);
+      ConnectionFailed(WSAECONNABORTED);
     }
   }
   else if (m_ProxyData.nProxyType==PROXYTYPE_HTTP11)
@@ -522,25 +418,17 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
 void CAsyncProxySocketLayer::ConnectionFailed(int nErrorCode, char * Str)
 {
   DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_REQUESTFAILED, 0, Str);
-  if (m_nProxyOpID == PROXYOP_CONNECT)
-  {
-    TriggerEvent(FD_CONNECT, nErrorCode, TRUE);
-  }
-  else
-  {
-    TriggerEvent(FD_ACCEPT, nErrorCode, TRUE);
-  }
+  TriggerEvent(FD_CONNECT, nErrorCode, TRUE);
   Reset();
   ClearBuffer();
 }
 
 void CAsyncProxySocketLayer::ConnectionEstablished()
 {
-  int Event = (m_nProxyOpID == PROXYOP_CONNECT) ? FD_CONNECT : FD_ACCEPT;
   ClearBuffer();
   Reset();
 
-  TriggerEvent(Event, 0, TRUE);
+  TriggerEvent(FD_CONNECT, 0, TRUE);
   TriggerEvent(FD_READ, 0, TRUE);
   TriggerEvent(FD_WRITE, 0, TRUE);
 }
@@ -659,15 +547,12 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
   if (nErrorCode)
   { //Can't connect to proxy
     DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_NOCONN, 0);
-    if (m_nProxyOpID==PROXYOP_CONNECT)
-      TriggerEvent(FD_CONNECT, nErrorCode, TRUE);
-    else
-      TriggerEvent(FD_ACCEPT, nErrorCode, TRUE);
+    TriggerEvent(FD_CONNECT, nErrorCode, TRUE);
     Reset();
     ClearBuffer();
     return;
   }
-  if (m_nProxyOpID==PROXYOP_CONNECT || m_nProxyOpID==PROXYOP_LISTEN)
+  if (m_nProxyOpID==PROXYOP_CONNECT)
   {
     if (m_nProxyOpState)
       //Somehow OnConnect has been called more than once
@@ -684,7 +569,7 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
       memset(command,0,9+strlen(lpszAscii)+1);
       int len=9;
       command[0]=4;
-      command[1]=(m_nProxyOpID==PROXYOP_CONNECT)?1:2; //CONNECT or BIND request
+      command[1]=1; //CONNECT
       memcpy(&command[2],&m_nProxyPeerPort,2); //Copy target address
       if (!m_nProxyPeerIp || m_ProxyData.nProxyType==PROXYTYPE_SOCKS4A)
       {
@@ -813,26 +698,11 @@ void CAsyncProxySocketLayer::ClearBuffer()
   m_nRecvBufferPos=0;
 }
 
-BOOL CAsyncProxySocketLayer::Listen( int nConnectionBacklog)
+BOOL CAsyncProxySocketLayer::Listen(int)
 {
-  if (m_ProxyData.nProxyType==PROXYTYPE_NOPROXY)
-    return ListenNext(nConnectionBacklog);
-
-  //Connect to proxy server
-  BOOL res = ConnectNext(UnicodeString(m_ProxyData.pProxyHost).c_str(), m_ProxyData.nProxyPort);
-  if (!res)
-  {
-    if (WSAGetLastError()!=WSAEWOULDBLOCK)
-    {
-      DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_NOCONN, 0);
-      return FALSE;
-    }
-  }
-  m_nProxyPeerPort=0;
-  m_nProxyPeerIp=static_cast<unsigned int>(nConnectionBacklog);
-
-  m_nProxyOpID=PROXYOP_LISTEN;
-  return TRUE;
+  DebugAssert(false); // should be never called
+  DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, PROXYERROR_NOCONN, 0);
+  return FALSE;
 }
 
 BOOL CAsyncProxySocketLayer::GetPeerName(CString &rPeerAddress, UINT &rPeerPort)

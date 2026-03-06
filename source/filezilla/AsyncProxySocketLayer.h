@@ -155,18 +155,6 @@ private:
 #define PROXYERROR_AUTHNOLOGON 6
 #define PROXYERROR_CANTRESOLVEHOST 7
 //---------------------------------------------------------------------------
-// Status messages
-// Called when a listen socket was created successfully. Unlike the normal listen function,
-// a socksified socket has to connect to the proxy to negotiate the details with the server
-// on which the listen socket will be created
-// The two parameters will contain the ip and port of the listen socket on the server.
-#define PROXYSTATUS_LISTENSOCKETCREATED 8
-struct t_ListenSocketCreatedStruct
-{
-  unsigned long ip;
-  UINT nPort;
-};
-//---------------------------------------------------------------------------
 // Proxytypes
 #define PROXYTYPE_NOPROXY 0
 #define PROXYTYPE_SOCKS4 1
@@ -175,6 +163,5 @@ struct t_ListenSocketCreatedStruct
 #define PROXYTYPE_HTTP11 4
 //---------------------------------------------------------------------------
 #define PROXYOP_CONNECT 1
-#define PROXYOP_LISTEN 2
 //---------------------------------------------------------------------------
 #endif // AsyncProxySocketLayerH

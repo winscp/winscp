@@ -2211,42 +2211,24 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
     else
     {
       m_pTransferSocket->m_bListening=TRUE;
-      if (m_pProxyLayer)
+      //Set up an active file transfer
+      CString tempHostname;
+      UINT nPort;
+
+      if (// create listen socket (let MFC choose the port) & start the socket listening
+        !m_pTransferSocket->Listen() ||
+        !m_pTransferSocket->GetSockName(tempHostname, nPort))
       {
-        SOCKADDR_IN addr;
-        int len=sizeof(addr);
-        if (!m_pProxyLayer->GetPeerName(reinterpret_cast<SOCKADDR *>(&addr),&len))
-        {
-          ResetOperation(FZ_REPLY_ERROR);
-          return;
-        }
-        else if (!m_pTransferSocket->Listen(addr.sin_addr.S_un.S_addr))
-        {
-          ResetOperation(FZ_REPLY_ERROR);
-          return;
-        }
+        ShowStatus(L"Failed to create listen socket", FZ_LOG_ERROR);
+        ResetOperation(FZ_REPLY_ERROR);
+        return;
       }
-      else
+
+      cmd = FormatPortCmd(nPort);
+      if (cmd.IsEmpty())
       {
-        //Set up an active file transfer
-        CString tempHostname;
-        UINT nPort;
-
-        if (// create listen socket (let MFC choose the port) & start the socket listening
-          !m_pTransferSocket->Listen() ||
-          !m_pTransferSocket->GetSockName(tempHostname, nPort))
-        {
-          ShowStatus(L"Failed to create listen socket", FZ_LOG_ERROR);
-          ResetOperation(FZ_REPLY_ERROR);
-          return;
-        }
-
-        cmd = FormatPortCmd(nPort);
-        if (cmd.IsEmpty())
-        {
-          ResetOperation(FZ_REPLY_ERROR);
-          return;
-        }
+        ResetOperation(FZ_REPLY_ERROR);
+        return;
       }
     }
   }
@@ -3673,49 +3655,29 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       m_pTransferSocket->SetFamily(GetFamily());
       if(!m_pTransferSocket->Create(m_pSslLayer && m_bProtP) || !m_pTransferSocket->AsyncSelect())
         bError=TRUE;
-      else if (m_pProxyLayer)
+      //Set up an active file transfer
+      CString temp;
+      UINT nPort;
+
+      if (//create listen socket (let Windows choose the port) & start listening
+        !m_pTransferSocket->Listen() ||
+        !m_pTransferSocket->GetSockName(temp, nPort))
       {
-        SOCKADDR_IN addr;
-        int len=sizeof(addr);
-        if (!m_pProxyLayer->GetPeerName(reinterpret_cast<SOCKADDR *>(&addr),&len))
-        {
-          ShowStatus(IDS_ERRORMSG_CANTGETLIST,FZ_LOG_ERROR);
-          bError=TRUE;
-        }
-        else if (!m_pTransferSocket->Listen(addr.sin_addr.S_un.S_addr))
-        {
-          ShowStatus(IDS_ERRORMSG_CANTGETLIST,FZ_LOG_ERROR);
-          bError=TRUE;
-        }
-        //Don't send PORT command yet, params are unknown.
-        //will be sent in TransfersocketListenFinished
+        bError = TRUE;
+        break;
+      }
+
+      CString cmd = FormatPortCmd(nPort);
+      if (cmd.IsEmpty())
+      {
+        bError = TRUE;
+        break;
       }
       else
       {
-        //Set up an active file transfer
-        CString temp;
-        UINT nPort;
-
-        if (//create listen socket (let Windows choose the port) & start listening
-          !m_pTransferSocket->Listen() ||
-          !m_pTransferSocket->GetSockName(temp, nPort))
+        if (!Send(cmd))
         {
           bError = TRUE;
-          break;
-        }
-
-        CString cmd = FormatPortCmd(nPort);
-        if (cmd.IsEmpty())
-        {
-          bError = TRUE;
-          break;
-        }
-        else
-        {
-          if (!Send(cmd))
-          {
-            bError = TRUE;
-          }
         }
       }
     }
@@ -3796,23 +3758,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       m_pTransferSocket->SetFamily(GetFamily());
       if(!m_pTransferSocket->Create(m_pSslLayer && m_bProtP) || !m_pTransferSocket->AsyncSelect())
         bError = TRUE;
-      else if (m_pProxyLayer)
-      {
-        SOCKADDR_IN addr;
-        int len=sizeof(addr);
-        if (!m_pProxyLayer->GetPeerName(reinterpret_cast<SOCKADDR *>(&addr),&len))
-        {
-          ShowStatus(IDS_ERRORMSG_CANTGETLIST,FZ_LOG_ERROR);
-          bError=TRUE;
-        }
-        else if (!m_pTransferSocket->Listen(addr.sin_addr.S_un.S_addr))
-        {
-          ShowStatus(IDS_ERRORMSG_CANTGETLIST,FZ_LOG_ERROR);
-          bError=TRUE;
-        }
-        //Don't send PORT command yet, params are unknown.
-        //will be sent in TransfersocketListenFinished
-      }
       else
       {
         //Set up an active file transfer
