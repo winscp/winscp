@@ -1435,6 +1435,7 @@ private:
   void __fastcall SettingsMemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
 
   void DeleteNames(TStrings * Names, TStrings * Options);
+  TStrings * GetSettings();
 };
 //---------------------------------------------------------------------------
 __fastcall TSiteRawDialog::TSiteRawDialog() :
@@ -1495,7 +1496,8 @@ bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
     Data->Password = BackupData->Password;
     Data->Ftps = BackupData->Ftps;
 
-    Data->ApplyRawSettings(SettingsMemo->Lines, false);
+    std::unique_ptr<TStrings> Settings(GetSettings());
+    Data->ApplyRawSettings(Settings.get(), false);
   }
   return Result;
 }
@@ -1503,6 +1505,11 @@ bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
 void __fastcall TSiteRawDialog::SettingsMemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift)
 {
   MemoKeyDown(Sender, Key, Shift);
+}
+//---------------------------------------------------------------------------
+TStrings * TSiteRawDialog::GetSettings()
+{
+  return GetUnwrappedMemoLines(SettingsMemo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
@@ -1527,7 +1534,8 @@ void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
     Names->Add(AllOptions->Names[Index]);
   }
   DeleteNames(Names.get(), BasicOptions.get());
-  DeleteNames(Names.get(), SettingsMemo->Lines);
+  std::unique_ptr<TStrings> Settings(GetSettings());
+  DeleteNames(Names.get(), Settings.get());
 
   std::unique_ptr<TCustomDialog> AddDialog(new TCustomDialog(HelpKeyword));
   AddDialog->Caption = LoadStr(SITE_RAW_ADD_CAPTION);
