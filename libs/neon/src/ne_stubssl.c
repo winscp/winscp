@@ -25,6 +25,7 @@
 
 #include "ne_ssl.h"
 #include "ne_session.h"
+#include "ne_socket.h"
 
 char *ne_ssl_readable_dname(const ne_ssl_dname *dn)
 {
@@ -68,6 +69,12 @@ const ne_ssl_certificate *ne_ssl_clicert_owner(const ne_ssl_client_cert *ccert)
     return NULL;
 }
 
+ne_ssl_client_cert *ne_ssl_clicert_import(const unsigned char *buffer, 
+                                          size_t buflen)
+{
+    return NULL;
+}
+
 int ne_ssl_clicert_encrypted(const ne_ssl_client_cert *ccert)
 {
     return -1;
@@ -80,15 +87,31 @@ int ne_ssl_clicert_decrypt(ne_ssl_client_cert *ccert, const char *password)
 
 void ne_ssl_clicert_free(ne_ssl_client_cert *ccert) {}
 
-void ne_ssl_trust_default_ca(ne_session *sess) {}
-
 ne_ssl_context *ne_ssl_context_create(int mode)
 {
     return NULL;
 }
 
-void ne_ssl_context_trustcert(ne_ssl_context *ctx, const ne_ssl_certificate *cert)
-{}
+void ne_ssl_context_trustcert(ne_ssl_context *ctx, const ne_ssl_certificate *cert) {}
+int ne_ssl_context_keypair(ne_ssl_context *ctx,
+                           const char *cert, const char *key)
+{
+    return -1;
+}
+
+int ne_ssl_context_set_versions(ne_ssl_context *ctx, enum ne_ssl_protocol min,
+                                enum ne_ssl_protocol max)
+{
+    return NE_SOCK_ERROR;
+}
+int ne_ssl_check_certificate(ne_ssl_context *ctx, ne_socket *sock,
+                             const char *hostname,
+                             const ne_inet_addr *address,
+                             const ne_ssl_certificate *cert,
+                             unsigned int flags, int *failures)
+{
+    return -1;
+}
 
 int ne_ssl_context_set_verify(ne_ssl_context *ctx, 
                               int required,
@@ -98,9 +121,16 @@ int ne_ssl_context_set_verify(ne_ssl_context *ctx,
     return -1;
 }
 
-void ne_ssl_context_set_flag(ne_ssl_context *ctx, int flag, int value) {}
+void ne_ssl_context_set_clicert(ne_ssl_context *ctx, const ne_ssl_client_cert *cc)
+{}
 
+void ne_ssl_context_set_flag(ne_ssl_context *ctx, int flag, int value) {}
+int ne_ssl_context_get_flag(ne_ssl_context *ctx, int flag) { return -1; }
+void ne_ssl_context_trustdefca(ne_ssl_context *ctx) {}
 void ne_ssl_context_destroy(ne_ssl_context *ctx) {}
+void ne_ssl_context_set_ccprovide(ne_ssl_context *ctx,
+                                  ne_ssl_ccprovide_fn provider,
+                                  void *userdata) {}
 
 int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
 {
@@ -146,11 +176,30 @@ ne_ssl_certificate *ne_ssl_cert_import(const char *data)
     return NULL;
 }
 
-void ne_ssl_set_clicert(ne_session *sess, const ne_ssl_client_cert *cc) 
-{}
+ne_ssl_client_cert *ne_ssl_clicert_copy(const ne_ssl_client_cert *cc)
+
+{
+    return NULL;
+}
 
 ne_ssl_client_cert *ne_ssl_clicert_fromuri(const char *uri,
                                            unsigned int flags)
 {
     return NULL;
+}
+
+int ne_sock_accept_ssl(ne_socket *sock, ne_ssl_context *ctx) {
+    return NE_SOCK_ERROR;
+}
+
+int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx, void *userdata)
+{
+    return NE_SOCK_ERROR;
+}
+
+int ne_sock_handshake(ne_socket *sock, ne_ssl_context *ctx,
+                      const char *hostname, unsigned int flags)
+
+{
+    return NE_SOCK_ERROR;
 }

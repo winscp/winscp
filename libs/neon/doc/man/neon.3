@@ -2,12 +2,12 @@
 .\"     Title: neon
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NEON" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NEON" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -33,11 +33,11 @@ neon \- HTTP and WebDAV client library
 .PP
 neon is an HTTP and WebDAV client library\&. The major abstractions exposed are the HTTP
 \fIsession\fR, created by
-ne_session_create; and the HTTP
+\fBne_session_create\fR(3); and the HTTP
 \fIrequest\fR, created by
-ne_request_create\&. HTTP authentication is handled transparently for server and proxy servers, see
-ne_set_server_auth; complete SSL/TLS support is also included, see
-ne_ssl_set_verify\&.
+\fBne_request_create\fR(3)\&. HTTP authentication is handled transparently for server and proxy servers, see
+\fBne_set_server_auth\fR(3); complete SSL/TLS support is also included, see
+\fBne_ssl_set_verify\fR(3)\&.
 .SH "CONVENTIONS"
 .PP
 Some conventions are used throughout the neon API, to provide a consistent and simple interface; these are documented below\&.
@@ -51,7 +51,7 @@ using thread\-local storage\&.
 .PP
 To allow thread\-safe use of SSL in the OpenSSL and GnuTLS libraries neon must be configured using the
 \-\-enable\-threadsafe\-ssl; if this is done, locking callbacks will be registered by
-ne_sock_init; note that care must be exercised if neon is used in conjunction with another library which uses OpenSSL or GnuTLS\&.
+\fBne_sock_init\fR(3); note that care must be exercised if neon is used in conjunction with another library which uses OpenSSL or GnuTLS\&.
 .PP
 Some platforms and libraries used by neon require global initialization before use; notably:
 .sp
@@ -93,14 +93,14 @@ The Win32 socket library requires initialization before use\&.
 .RE
 .sp
 The
-ne_sock_init
+\fBne_sock_init\fR(3)
 function should be called before any other use of neon to perform any necessary initialization needed for the particular platform\&. Applications wishing to perform all the necessary process\-global initialization steps themselves may omit to call
-ne_sock_init
+\fBne_sock_init\fR(3)
 (and
-ne_sock_exit); neon neither checks whether these functions are called nor calls them itself\&.
+\fBne_sock_exit\fR(3)); neon neither checks whether these functions are called nor calls them itself\&.
 .PP
 For some applications and configurations it may be necessary to call
-ne_i18n_init
+\fBne_i18n_init\fR(3)
 to initialize the support for internationalization in neon\&.
 .SS "Asynchronous signal safety"
 .PP
@@ -126,9 +126,9 @@ errno, the only functions which use or modify process\-global state in neon are 
 .sp -1
 .IP \(bu 2.3
 .\}
-ne_sock_init,
-ne_i18n_init, and
-ne_sock_exit, as described above
+\fBne_sock_init\fR(3),
+\fBne_i18n_init\fR(3), and
+\fBne_sock_exit\fR(3), as described above
 .RE
 .sp
 .RS 4
@@ -152,7 +152,7 @@ and
 .sp -1
 .IP \(bu 2.3
 .\}
-ne_oom_callback
+\fBne_oom_callback\fR(3)
 for installing a process\-global callback to be invoked on
 \fBmalloc\fR
 failure
@@ -229,7 +229,7 @@ neon does not attempt to cope gracefully with an out\-of\-memory situation; inst
 function is called to immediately terminate the process\&. An application may register a custom function which will be called before
 \fBabort\fR
 in such a situation; see
-ne_oom_callback\&.
+\fBne_oom_callback\fR(3)\&.
 .SS "Callbacks and userdata"
 .PP
 Whenever a callback is registered, a
@@ -254,9 +254,9 @@ macro definition\&.
 .SH "SEE ALSO"
 .PP
 ne_session_create(3),
-ne_oom_callback,
+\fBne_oom_callback\fR(3),
 \m[blue]\fB\%https://notroj.github.io/neon/\fR\m[]
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

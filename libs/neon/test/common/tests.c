@@ -74,6 +74,8 @@ static int use_colour = 0, tty_output = 0;
 
 static int flag_child;
 
+static void print_prefix(int n);
+
 /* resource for ANSI escape codes:
  * http://www.isthe.com/chongo/tech/comp/ansi_escapes.html */
 #define COL(x) do { if (use_colour) printf("\033[" x "m"); } while (0)
@@ -95,6 +97,7 @@ void t_context(const char *context, ...)
 void t_warning(const char *str, ...)
 {
     va_list ap;
+    if (warned) print_prefix(test_num);
     COL("43;01"); printf("WARNING:"); NOCOL;
     putchar(' ');
     va_start(ap, str);
@@ -148,11 +151,13 @@ static void parent_segv(int signo)
 
 void in_child(void)
 {
-    ne_debug_init(child_debug, TEST_DEBUG);    
-    NE_DEBUG(TEST_DEBUG, "**** Child forked for test %s ****\n", test_name);
-    signal(SIGSEGV, child_segv);
-    signal(SIGABRT, child_segv);
-    flag_child = 1;
+    if (child_debug) {
+        ne_debug_init(child_debug, TEST_DEBUG);
+        NE_DEBUG(TEST_DEBUG, "**** Child forked for test %s ****\n", test_name);
+        signal(SIGSEGV, child_segv);
+        signal(SIGABRT, child_segv);
+        flag_child = 1;
+    }
 }
 #endif
 
@@ -212,18 +217,20 @@ int main(int argc, char *argv[])
     test_argc = argc;
     test_argv = argv;
 
-    debug = fopen("debug.log", "a");
-    if (debug == NULL) {
-	fprintf(stderr, "%s: Could not open debug.log: %s\n", test_suite,
-		strerror(errno));
-	return -1;
-    }
-    child_debug = fopen("child.log", "a");
-    if (child_debug == NULL) {
-	fprintf(stderr, "%s: Could not open child.log: %s\n", test_suite,
-		strerror(errno));
-	fclose(debug);
-	return -1;
+    if ((tmp = getenv("TEST_NODEBUG")) == NULL) {
+        debug = fopen("debug.log", "a");
+        if (debug == NULL) {
+            fprintf(stderr, "%s: Could not open debug.log: %s\n", test_suite,
+                    strerror(errno));
+            return -1;
+        }
+        child_debug = fopen("child.log", "a");
+        if (child_debug == NULL) {
+            fprintf(stderr, "%s: Could not open child.log: %s\n", test_suite,
+                    strerror(errno));
+            fclose(debug);
+            return -1;
+        }
     }
 
     if (tests[0].fn == NULL) {
@@ -241,11 +248,13 @@ int main(int argc, char *argv[])
     ne_debug_init(NULL, 0);
     NE_DEBUG(TEST_DEBUG, "This message should go to /dev/null");
 
-    /* enable debugging for real. */
-    ne_debug_init(debug, TEST_DEBUG);
-    NE_DEBUG(TEST_DEBUG | NE_DBG_FLUSH, "Version string: %s\n", 
-             ne_version_string());
-    
+    if (debug) {
+        /* enable debugging for real. */
+        ne_debug_init(debug, TEST_DEBUG);
+        NE_DEBUG(TEST_DEBUG | NE_DBG_FLUSH, "Version string: %s\n", 
+                 ne_version_string());
+    }
+
     /* another silly test. */
     NE_DEBUG(0, "This message should also go to /dev/null");
 
@@ -452,12 +461,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (fclose(debug)) {
+    if (debug && fclose(debug)) {
 	fprintf(stderr, "Error closing debug.log: %s\n", strerror(errno));
 	fails = 1;
     }
        
-    if (fclose(child_debug)) {
+    if (child_debug && fclose(child_debug)) {
 	fprintf(stderr, "Error closing child.log: %s\n", strerror(errno));
 	fails = 1;
     }

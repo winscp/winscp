@@ -1,0 +1,80 @@
+<refentry id="ne_mknonce">
+
+  <refmeta>
+    <refentrytitle>ne_mknonce</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>ne_mknonce</refname>
+    <refpurpose>generate a nonce</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <funcsynopsis>
+      <funcsynopsisinfo>#include &lt;ne_string.h&gt;</funcsynopsisinfo>
+      <funcprototype>
+        <funcdef>int <function>ne_mknonce</function></funcdef>
+        <paramdef>unsigned char *<parameter>nonce</parameter></paramdef>
+        <paramdef>size_t <parameter>len</parameter></paramdef>
+        <paramdef>unsigned int <parameter>flags</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para><function>ne_mknonce</function> fills the buffer pointed to
+    by <parameter>nonce</parameter> with <parameter>len</parameter>
+    bytes of random data suitable for use as a nonce.  The value of
+    <parameter>len</parameter> must be greater than zero and no
+    greater than 256.</para>
+
+    <para>The <parameter>flags</parameter> parameter is reserved for
+    future use and must be set to zero.</para>
+
+    <para>The caller is responsible for ensuring that the buffer
+    pointed to by <parameter>nonce</parameter> is at least
+    <parameter>len</parameter> bytes in size.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>Return value</title>
+
+    <para><function>ne_mknonce</function> returns zero on success.  On
+    error, a non-zero <type>errno</type> value is returned indicating
+    the cause of the failure; the buffer contents are
+    undefined.</para>
+  </refsect1>
+
+
+  <refsect1>
+    <title>Example</title>
+
+    <para>The following example generates a 16-byte nonce and encodes
+    it as a hexadecimal string.</para>
+
+    <programlisting>unsigned char buf[16];
+unsigned char hex[33];
+int i, err;
+
+err = ne_mknonce(buf, sizeof buf, 0);
+if (err) {
+    fprintf(stderr, "ne_mknonce failed: %s\n", strerror(err));
+    return -1;
+}
+
+for (i = 0; i &lt; 16; i++)
+    sprintf(hex + 2 * i, "%02x", buf[i]);
+hex[32] = '\0';</programlisting>
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_mknonce</function> is available in &neon;
+    0.37.0 and later.</para>
+  </refsect1>
+
+</refentry>

@@ -50,7 +50,7 @@
 ne_ssl_context *server_ctx, *client_ctx_tls12, *client_ctx;
 #endif
 
-static ne_sock_addr *localhost;
+static ne_inet_addr *localhost;
 static char buffer[BUFSIZ];
 
 #if defined(AF_INET6) && defined(USE_GETADDRINFO)
@@ -83,21 +83,19 @@ static int multi_init(void)
 }
 
 /* Create and connect *sock to address addr on given port. */
-static int do_connect(ne_socket **sock, ne_sock_addr *addr, unsigned int port)
+static int do_connect(ne_socket **sock, const ne_inet_addr *addr, unsigned int port)
 {
-    const ne_inet_addr *ia;
+    char ianame[256];
 
     *sock = ne_sock_create();
     ONN("could not create socket", *sock == NULL);
-
-    for (ia = ne_addr_first(addr); ia; ia = ne_addr_next(addr)) {
-	if (ne_sock_connect(*sock, ia, port) == 0)
-            return OK;
-    }
     
-    t_context("could not connect to server: %s", ne_sock_error(*sock));
-    ne_sock_close(*sock);
-    return FAIL;
+    ONV(ne_sock_connect(*sock, addr, port) != 0,
+        ("could not connect to server '%s': %s",
+         ne_iaddr_print(addr, ianame, sizeof ianame),
+         ne_sock_error(*sock)));
+
+    return OK;
 }
 
 static int close_and_wait(ne_socket *sock)
@@ -129,10 +127,10 @@ static int init_ssl(void)
 
     ne_ssl_context_keypair(server_ctx, "server.cert", server_key);
 
-    client_ctx = ne_ssl_context_create(0);
+    client_ctx = ne_ssl_context_create(NE_SSL_CTX_CLIENT);
     ONN("SSL_CTX_new failed for client", client_ctx == NULL);
 
-    client_ctx_tls12 = ne_ssl_context_create(0);
+    client_ctx_tls12 = ne_ssl_context_create(NE_SSL_CTX_CLIENT);
     ONN("SSL_CTX_new failed for client", client_ctx_tls12 == NULL);
     ne_ssl_context_set_versions(client_ctx_tls12, NE_SSL_PROTO_TLS_1_2,
                                 NE_SSL_PROTO_TLS_1_2);
@@ -150,13 +148,9 @@ static int init_ssl(void)
 
 static int resolve(void)
 {
-    char buf[256];
-    localhost = ne_addr_resolve("localhost", 0);
-    ONV(ne_addr_result(localhost),
-	("could not resolve `localhost': %s", 
-	 ne_addr_error(localhost, buf, sizeof buf)));
-    /* and again for child.c */
-    return lookup_localhost();
+    CALL(lookup_localhost());
+    localhost = get_lh_inet_addr();
+    return OK;
 }
 
 static int serve_close(ne_socket *sock, void *ud)
@@ -240,9 +234,10 @@ static int resolve_ipv6(void)
 
 static const unsigned char raw_127[4] = "\x7f\0\0\01", /* 127.0.0.1 */
     raw6_nuls[16] = /* :: */ "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+static const unsigned char
+raw6_cafe[16] = /* feed::cafe */ "\xfe\xed\0\0\0\0\0\0\0\0\0\0\0\0\xca\xfe";
 #ifdef TEST_IPV6
 static const unsigned char 
-raw6_cafe[16] = /* feed::cafe */ "\xfe\xed\0\0\0\0\0\0\0\0\0\0\0\0\xca\xfe",
 raw6_babe[16] = /* cafe:babe:: */ "\xca\xfe\xba\xbe\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif
 
@@ -389,6 +384,31 @@ static int addr_compare(void)
     return OK;
 }
 
+static int addr_put(void)
+{
+    ne_inet_addr *ia, *ia2;
+
+    ia = ne_iaddr_parse("127.0.0.1", ne_iaddr_ipv4);
+    ONN("parse failed", ia == NULL);
+    CALL(check_is_raw127(ia));
+
+    ia2 = ne_iaddr_put(ia, ne_iaddr_ipv4, raw_1234);
+    ONN("new pointer returned after _put", ia2 != ia);
+    ONN("bogus ne_iaddr_typeof return", ne_iaddr_typeof(ia) != ne_iaddr_ipv4);
+
+#ifdef TEST_IPV6
+    ia2 = ne_iaddr_put(ia, ne_iaddr_ipv6, raw6_cafe);
+    ONN("new pointer returned after _put", ia2 != ia);
+    ONN("bogus ne_iaddr_typeof return", ne_iaddr_typeof(ia) != ne_iaddr_ipv6);
+#else
+    ia2 = ne_iaddr_put(ia, ne_iaddr_ipv6, raw6_cafe);
+    ONN("new pointer must return NULL for IPv6", ia2 != NULL);
+#endif
+
+    ne_iaddr_free(ia);
+    return OK;
+}
+
 static int addr_reverse(void)
 {
     ne_inet_addr *ia = ne_iaddr_make(ne_iaddr_ipv4, raw_127);
@@ -445,6 +465,38 @@ static int addr_canonical(void)
     
     return OK;
 }
+
+static int addr_failures(void)
+{
+    static const char *hosts[] = {
+        "nonesuch.example.com",
+        "absolutelynodomain1231241255.com",
+        NULL
+    };
+    unsigned n;
+
+    if (getenv("TEST_RESOLVER") == NULL) {
+        t_context("not testing resolver failure cases");
+        return SKIP;
+    }
+
+    for (n = 0; hosts[n]; n++) {
+        ne_sock_addr *sa = ne_addr_resolve(hosts[n], 0);
+        char buf[BUFSIZ], *err;
+
+        ONN("resolver failed", sa == NULL);
+        ONN("should get lookup failure for bad domain", ne_addr_result(sa) == 0);
+        err = ne_addr_error(sa, buf, sizeof buf);
+        ONN("no error pointer", err == NULL);
+        ONN("bad error pointer", err != buf);
+        ONN("empty error", strcmp(err, "") == 0);
+
+        ne_addr_destroy(sa);
+    }
+
+    return OK;
+}
+
 
 static int just_connect(void)
 {
@@ -1472,6 +1524,21 @@ static int proto_tls12(void)
 
     return finish(sock, 1);
 }
+
+static int context_untrusted(void)
+{
+    ne_ssl_context *ctx = ne_ssl_context_create(NE_SSL_CTX_CLIENT);
+    ne_socket *sock;
+
+    ONN("SSL_CTX_new failed for notrust client", ctx == NULL);
+
+    CALL(beginc(&sock, ctx, serve_close, NULL));
+    CALL(finish(sock, 1));
+
+    ne_ssl_context_destroy(ctx);
+
+    return OK;
+}
 #endif
 
 static int error(void)
@@ -1649,11 +1716,13 @@ ne_test tests[] = {
     T(parse_v4),
     T(addr_make_v6),
     T(addr_compare),
+    T(addr_put),
     T(addr_reverse),
     T(just_connect),
     T(addr_connect),
     T(addr_peer),
     T(addr_canonical),
+    T(addr_failures),
     T(read_close),
     T(peek_close),
     T(open_close),
@@ -1667,6 +1736,7 @@ ne_test tests[] = {
     T(protocols),
 #ifdef SOCKET_SSL
     T(proto_tls12),
+    T(context_untrusted),
 #endif
     T(line_simple),
     T(line_closure),

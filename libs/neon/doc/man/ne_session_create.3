@@ -2,12 +2,12 @@
 .\"     Title: ne_session_create
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_SESSION_CREATE" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_SESSION_CREATE" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -60,23 +60,21 @@ parameters specify the origin server to use, along with the
 "http")\&. Before the first use of
 \fBne_session_create\fR
 in a process,
-ne_sock_init
+\fBne_sock_init\fR(3)
 must have been called to perform any global initialization needed by any libraries used by neon\&.
 .PP
 To enable SSL/TLS for the session, pass the string
 "https"
 as the
 \fIscheme\fR, and either register a certificate verification function (see
-ne_ssl_set_verify) or trust the appropriate certificate (see
-ne_ssl_trust_cert,
-ne_ssl_trust_default_ca)\&.
+\fBne_ssl_set_verify\fR(3)) or trust the appropriate certificate (see
+\fBne_ssl_trust_cert\fR(3),
+\fBne_ssl_trust_default_ca\fR(3))\&.
 .PP
 The
 \fIhost\fR
-parameter must follow the definition of host
-host
-in
-\m[blue]\fBRFC 3986\fR\m[]\&\s-2\u[1]\d\s+2, which can be an IP\-literal or registered (DNS) hostname\&. Valid examples of each:
+parameter must follow the "host" grammar in
+\m[blue]\fBSection 3\&.2\&.2 of RFC 3986\fR\m[]\&\s-2\u[1]\d\s+2, which can be an IP\-literal or registered (DNS) hostname\&. Valid examples of each:
 "198\&.51\&.100\&.42"
 (IPv4 literal address),
 "[2001:db8::42]"
@@ -99,10 +97,10 @@ is performed\&. For example, if an HTTP\-to\-FTP proxy is configured, a scheme o
 could be used to access resources\&.
 .PP
 To use a proxy server for the session, it must be configured (see
-ne_session_proxy) before any requests are created from session object\&.
+\fBne_session_proxy\fR(3)) before any requests are created from session object\&.
 .PP
 Further per\-session options may be changed using the
-ne_set_session_flag
+\fBne_set_session_flag\fR(3)
 interface\&.
 .PP
 If it is known that the session will not be used for a significant period of time,
@@ -118,7 +116,7 @@ If a hostname is passed to
 \fBne_session_create\fR, it will be resolved when the first request using the session is dispatched; a DNS resolution failure can only be detected at that time (using the
 NE_LOOKUP
 error code); see
-ne_request_dispatch
+\fBne_request_dispatch\fR(3)
 for details\&.
 .SH "RETURN VALUES"
 .PP
@@ -141,22 +139,33 @@ ne_session_destroy(sess);
 .if n \{\
 .RE
 .\}
+.SH "HISTORY"
+.PP
+The
+\fIscheme\fR
+passed to
+\fBne_session_create\fR
+is lower\-cased internally from neon 0\&.37\&.0 onward, so passing
+"HtTpS"
+and
+"https"
+are equivalent\&. In earlier releases, the scheme is case\-sensitive\&.
 .SH "SEE ALSO"
 .PP
-ne_ssl_set_verify,
-ne_ssl_trust_cert,
-ne_sock_init,
-ne_set_session_flag,
-ne_session_proxy
+\fBne_ssl_set_verify\fR(3),
+\fBne_ssl_trust_cert\fR(3),
+\fBne_sock_init\fR(3),
+\fBne_set_session_flag\fR(3),
+\fBne_session_proxy\fR(3)
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br
 .SH "REFERENCES"
 .IP " 1." 4
-RFC 3986
+Section 3.2.2 of RFC 3986
 .RS 4
-\%https://www.rfc-editor.org/rfc/rfc3986
+\%https://www.rfc-editor.org/rfc/rfc3986#section-3.2.2
 .RE
 .IP " 2." 4
 RFC 6874

@@ -2,12 +2,12 @@
 .\"     Title: ne_ssl_cert_read
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_SSL_CERT_READ" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_SSL_CERT_READ" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -62,7 +62,7 @@ function reads a certificate from a PEM\-encoded file, and returns a certificate
 function returns a certificate object from a base64\-encoded string,
 \fIdata\fR, as returned by
 \fBne_ssl_cert_export\fR\&. The certificate object returned by these functions should be destroyed using
-ne_ssl_cert_free
+\fBne_ssl_cert_free\fR(3)
 after use\&.
 .SH "RETURN VALUE"
 .PP
@@ -89,5 +89,5 @@ is the base64 encoding of the DER representation of the certificate\&. The file 
 uses the PEM format: this is the base64 encoding of the DER representation with newlines every 64 characters, and start and end marker lines\&.
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

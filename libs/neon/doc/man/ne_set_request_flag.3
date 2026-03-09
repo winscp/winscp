@@ -2,12 +2,12 @@
 .\"     Title: ne_set_request_flag
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_SET_REQUEST_FLAG" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_SET_REQUEST_FLAG" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -50,12 +50,12 @@ argument enables the flag, and zero disables it\&.
 .PP
 The following flags are defined:
 .PP
-\fBNE_REQFLAG_EXPECT100\fR
+\fBNE_REQFLAG_EXPECT100\fR (default off)
 .RS 4
 enable this flag to use the "Expect: 100\-continue" feature of HTTP/1\&.1, which allows the server to process request headers without reading the entire request body\&. This saves time and bandwidth if the server gives an authentication challenge (requiring the request to be resent), but has interoperability problems with some older servers\&.
 .RE
 .PP
-\fBNE_REQFLAG_IDEMPOTENT\fR
+\fBNE_REQFLAG_IDEMPOTENT\fR (default on)
 .RS 4
 disable this flag if the request uses a non\-idempotent method such as
 POST
@@ -63,7 +63,7 @@ POST
 .PP
 \fBNE_REQFLAG_1XXTIMEOUT\fR (default on)
 .RS 4
-disable this flag to disable overall timeout when reading interim (1xx) responses;
+disable this flag to disable overall timeout when reading interim (1xx) responses
 .RE
 .SH "RETURN VALUE"
 .PP
@@ -72,8 +72,8 @@ The
 function returns zero if a flag is disabled, less than zero if the flag is not supported, or greater than zero if the flag is enabled\&.
 .SH "SEE ALSO"
 .PP
-ne_request_create\&.
+\fBne_request_create\fR(3)\&.
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

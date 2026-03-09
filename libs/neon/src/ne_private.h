@@ -87,7 +87,7 @@ struct ne_session_s {
     struct host_info *prev_proxy;
 
     /* Pointer to the active .server or .proxies as appropriate: */
-    struct host_info *nexthop;
+    const struct host_info *nexthop;
 
     /* Local address to which sockets should be bound. */
     const ne_inet_addr *local_addr;
@@ -117,20 +117,17 @@ struct ne_session_s {
     char *user_agent; /* full User-Agent: header field */
 
 #ifdef NE_HAVE_SSL
-    ne_ssl_client_cert *client_cert;
     ne_ssl_certificate *server_cert;
     ne_ssl_context *ssl_context;
-    int ssl_cc_requested; /* set to non-zero if a client cert was
-                           * requested during initial handshake, but
-                           * none could be provided. */
+
+    /* Client cert provider callback: */
+    ne_ssl_provide_fn ssl_provide_fn;
+    void *ssl_provide_ud;
 #endif
 
     /* Server cert verification callback: */
     ne_ssl_verify_fn ssl_verify_fn;
     void *ssl_verify_ud;
-    /* Client cert provider callback: */
-    ne_ssl_provide_fn ssl_provide_fn;
-    void *ssl_provide_ud;
 
     ne_session_status_info status;
 
@@ -144,13 +141,5 @@ typedef int (*ne_push_fn)(void *userdata, const char *buf, size_t count);
 
 /* Do the SSL negotiation. */
 NE_PRIVATE int ne__negotiate_ssl(ne_session *sess);
-
-/* Set the session error appropriate for SSL verification failures. */
-NE_PRIVATE void ne__ssl_set_verify_err(ne_session *sess, int failures);
-
-/* Return non-zero if hostname from certificate (cn) matches hostname
- * used for session (hostname); follows RFC2818 logic. */
-NE_PRIVATE int ne__ssl_match_hostname(const char *cn, size_t cnlen, 
-                                      const char *hostname);
 
 #endif /* HTTP_PRIVATE_H */

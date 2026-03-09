@@ -2,12 +2,12 @@
 .\"     Title: ne_strhash
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_STRHASH" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_STRHASH" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -62,6 +62,11 @@ The following hash algorithms are available:
 MD5
 .RE
 .PP
+\fBNE_HASH_SHA1\fR
+.RS 4
+SHA\-1
+.RE
+.PP
 \fBNE_HASH_SHA256\fR
 .RS 4
 SHA\-256 (SHA\-2)
@@ -72,7 +77,7 @@ SHA\-256 (SHA\-2)
 SHA\-512 (SHA\-2)
 .RE
 .PP
-\fBNE_HASH_SHA256_256\fR
+\fBNE_HASH_SHA512_256\fR
 .RS 4
 SHA\-512/256 (SHA\-2)
 .RE
@@ -101,8 +106,12 @@ if the hash cannot be created\&. The string length is determined by the hash alg
 \fBne_strhash\fR
 and
 \fBne_vstrhash\fR
-is available in neon 0\&.32\&.0 and later\&.
+are available in neon 0\&.32\&.0 and later\&.
+.PP
+The
+\fBNE_HASH_SHA1\fR
+flag is available in neon 0\&.37\&.0 and later\&.
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

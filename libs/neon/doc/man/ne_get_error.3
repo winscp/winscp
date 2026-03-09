@@ -2,12 +2,12 @@
 .\"     Title: ne_get_error
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_GET_ERROR" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_GET_ERROR" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -47,7 +47,7 @@ The session error string is used to store any human\-readable error information 
 The
 \fBne_get_error\fR
 function returns the current session error string\&. This string persists only until it is changed by a subsequent operation on the session\&. If localisation was enabled at build time, and if necessary enabled at run\-time if necessary using
-ne_i18n_init, the returned string may have been translated into the user\*(Aqs current locale\&.
+\fBne_i18n_init\fR(3), the returned string may have been translated into the user\*(Aqs current locale\&.
 .PP
 The
 \fBne_set_error\fR
@@ -93,5 +93,5 @@ ne_set_error(sess, "Response missing header %s", "somestring");
 .\}
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

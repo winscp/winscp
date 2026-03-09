@@ -2,12 +2,12 @@
 .\"     Title: ne_buffer
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_BUFFER" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_BUFFER" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -58,16 +58,16 @@ field\&. It is not recommended that the fields of a buffer are manipulated direc
 pointer may change when the buffer is modified\&.
 .PP
 A buffer is created using
-ne_buffer_create
+\fBne_buffer_create\fR(3)
 or
-ne_buffer_ncreate, and destroyed using
-ne_buffer_destroy
+\fBne_buffer_ncreate\fR(3), and destroyed using
+\fBne_buffer_destroy\fR(3)
 or
-ne_buffer_finish\&. The functions
-ne_buffer_append,
-ne_buffer_zappend
+\fBne_buffer_finish\fR(3)\&. The functions
+\fBne_buffer_append\fR(3),
+\fBne_buffer_zappend\fR(3)
 and
-ne_buffer_concat
+\fBne_buffer_concat\fR(3)
 are used to append data to a buffer\&.
 .PP
 If the string referenced by the
@@ -77,5 +77,5 @@ pointer is modified directly (rather than using one of the functions listed abov
 must be called\&.
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

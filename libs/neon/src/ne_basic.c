@@ -321,33 +321,35 @@ int ne_get_content_type(ne_request *req, ne_content_type *ct)
     ct->value = ne_strdup(value);
     
     stype = strchr(ct->value, '/');
-
     *stype++ = '\0';
-    ct->type = ct->value;
+
+    ct->type = ne_strlower(ct->value);
     ct->charset = NULL;
     
     sep = strchr(stype, ';');
 
     if (sep) {
-	char *tok;
-	/* look for the charset parameter. TODO; probably better to
-	 * hand-carve a parser than use ne_token/strstr/shave here. */
+	char *tok, *eq;
+
+        /* NUL-terminate at the ; and iterate through each parameter
+         * (each is ;-separated). Follow grammar at
+         * https://www.rfc-editor.org/rfc/rfc9110#parameter allowing
+         * for OWS */
 	*sep++ = '\0';
 	do {
 	    tok = ne_qtoken(&sep, ';', "\"\'");
-	    if (tok) {
-		tok = strstr(tok, "charset=");
-		if (tok)
-		    ct->charset = ne_shave(tok+8, "\"\'");
+	    if (tok && (eq = strchr(tok, '=')) != NULL) {
+                /* NUL-terminate to split parameter-name (tok) from
+                 * parameter-value (eq). */
+                *eq++ = '\0';
+                if (ne_strcasecmp(ne_shave(tok, " "), "charset") == 0)
+		    ct->charset = ne_shave(eq, "\"\' ");
 	    }
-            else {
-		break;
-	    }
-	} while (sep != NULL);
+	} while (sep && tok);
     }
 
     /* set subtype, losing any trailing whitespace */
-    ct->subtype = ne_shave(stype, " \t");
+    ct->subtype = ne_strlower(ne_shave(stype, " \t"));
     
     return 0;
 }
@@ -456,7 +458,7 @@ static int copy_or_move(ne_session *sess, int is_move, int overwrite,
 {
     ne_request *req = ne_request_create( sess, is_move?"MOVE":"COPY", src );
 
-    /* RFC4918ẞ9.9.2 - "Depth: infinity" is implicit for MOVE. */
+    /* RFC4918§9.9.2 - "Depth: infinity" is implicit for MOVE. */
     if (!is_move) {
 	ne_add_depth_header(req, depth);
     }
@@ -509,7 +511,7 @@ int ne_delete(ne_session *sess, const char *path)
     ne_lock_using_parent(req, path);
 #endif
     
-    /* Per RFC4918ẞ9.6.1 DELETE can get a 207 response. */
+    /* Per RFC4918§9.6.1 DELETE can get a 207 response. */
     return ne_simple_request(sess, req);
 }
 

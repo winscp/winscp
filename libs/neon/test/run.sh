@@ -16,16 +16,17 @@ export MALLOC_CHECK_ MALLOC_PERTURB_
 export GNUTLS_SYSTEM_PRIORITY_FILE=$PWD/neon.prio
 
 export TEST_QUIET=${TEST_QUIET:-1}
+KEEP_GOING=${KEEP_GOING:-0}
 
 RETVAL=0
 
 for f in $*; do
     if ${HARNESS} ./$f ${SRCDIR}; then
-	:
+        :
     else
-	RETVAL=$?
+        RETVAL=$?
         echo ' -->>>' "$f failed => ${RETVAL}"
-        break
+        [ $KEEP_GOING -eq 1 ] || break
     fi
 done
 

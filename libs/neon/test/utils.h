@@ -62,6 +62,8 @@ int make_session(ne_session **sess, server_fn fn, void *userdata);
 /* Returns hostname used for make_session(). */
 const char *get_session_host(void);
 
+unsigned int get_session_port(void);
+
 /* Server which sleeps for 10 seconds then closes the socket. */
 int sleepy_server(ne_socket *sock, void *userdata);
 
@@ -132,7 +134,6 @@ int session_server(ne_session **sess, server_fn fn, void *userdata);
  * failure; initializes *sess with a new session on success.  Uses an
  * unspecified hostname/port for the server. */
 int multi_session_server(ne_session **sess, const char *scheme,
-                         const char *hostname,
                          int count, server_fn fn, void *userdata);
 
 /* Create a session with server process running fn(userdata).  Sets
@@ -162,6 +163,10 @@ int fakeproxied_multi_session_server(int count,
                                      const char *host, unsigned int fakeport,
                                      server_fn fn, void *userdata);
 
+int socksproxied_session_server(ne_session **sess, struct socks_server *srv,
+                                const char *hostname, unsigned int port,
+                                server_fn server, void *userdata);
+
 /* Read contents of file 'filename' into buffer 'buf'. */
 int file_to_buffer(const char *filename, ne_buffer *buf);
 
@@ -170,7 +175,7 @@ int file_to_buffer(const char *filename, ne_buffer *buf);
 void sess_notifier(void *userdata, ne_session_status status,
                    const ne_session_status_info *info);
 
-#define MULTI_207(x) "HTTP/1.0 207 Foo\r\nConnection: close\r\n\r\n" \
+#define MULTI_207(x) "HTTP/1.0 207 Foo\r\nContent-Type: text/xml\r\nConnection: close\r\n\r\n" \
 "<?xml version='1.0'?>\r\n" \
 "<D:multistatus xmlns:D='DAV:'>" x "</D:multistatus>"
 #define RESP_207(href, x) "<D:response><D:href>" href "</D:href>" x \

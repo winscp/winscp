@@ -259,16 +259,13 @@ CERTUTIL=@CERTUTIL@
 PK12UTIL=@PK12UTIL@
 
 if [ ${CERTUTIL} != "notfound" -a ${PK12UTIL} != "notfound" ]; then
-  rm -rf nssdb nssdb-dsa
-  mkdir nssdb nssdb-dsa
+  rm -rf nssdb
+  mkdir nssdb
 
   echo foobar > nssdb.pw
 
   ${CERTUTIL} -d nssdb -N -f nssdb.pw
   ${PK12UTIL} -d nssdb -K foobar -W '' -i unclient.p12
-
-  ${CERTUTIL} -d nssdb-dsa -N -f nssdb.pw
-  ${PK12UTIL} -d nssdb-dsa -K foobar -W '' -i dsaclient.p12
 
   rm -f nssdb.pw
 fi

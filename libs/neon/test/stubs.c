@@ -99,6 +99,7 @@ static int stub_ssl(void)
     ne_session *sess = ne_session_create("https", "localhost", 1234);
     ne_ssl_certificate *cert;
     ne_ssl_client_cert *cc;
+    ne_ssl_context *ctx;
 
     /* these should all fail when SSL is not supported. */
     cert = ne_ssl_cert_read("Makefile");
@@ -131,6 +132,26 @@ static int stub_ssl(void)
     ONN("this code shouldn't succeed", ne_ssl_cert_cmp(NULL, NULL) == 0);
     ONN("this code shouldn't run", ne_ssl_clicert_fromuri("Makefile", 0) != NULL);
 
+    ctx = ne_ssl_context_create(NE_SSL_CTX_CLIENT);
+    if (ctx) {
+        enum ne_ssl_protocol unspec = NE_SSL_PROTO_UNSPEC;
+        int out;
+        
+        (void) ne_ssl_context_trustcert(ctx, cert);
+        (void) ne_ssl_context_trustdefca(ctx);
+        ONN("this code shouldn't run", ne_ssl_context_keypair(ctx, NULL, NULL) == 0);
+        (void) ne_ssl_context_set_clicert(ctx, NULL);
+        (void) ne_ssl_context_set_ccprovide(ctx, NULL, NULL);
+        ONN("this code shouldn't run", ne_ssl_context_set_versions(ctx, unspec, unspec) == 0);
+        ONN("this code shouldn't run", ne_ssl_context_set_verify(ctx, 0, NULL, NULL) == 0);
+        ONN("this code shouldn't run", ne_ssl_context_get_flag(ctx, 0) == 0);
+        (void) ne_ssl_context_set_flag(ctx, 0, 0);
+        ONN("this code shouldn't run", ne_ssl_check_certificate(ctx, NULL, 
+                                                                NULL, NULL, cert,
+                                                                0, &out));
+        (void) ne_ssl_context_destroy(ctx);
+    }
+
     ONN("certificate load succeeded", cert != NULL);
     ne_ssl_cert_free(cert);
 
@@ -143,7 +164,7 @@ static int stub_ssl(void)
         name = ne_ssl_clicert_name(cc);
         ONN("this code shouldn't run", name != NULL);
         ONN("this code shouldn't run", ne_ssl_clicert_decrypt(cc, "fubar"));
-        ne_ssl_set_clicert(sess, cc);
+        ne_ssl_set_clicert(sess, ne_ssl_clicert_copy(cc));
     }
 
     ONN("client certificate load succeeded", cc != NULL);

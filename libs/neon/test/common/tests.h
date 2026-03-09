@@ -63,6 +63,8 @@ extern ne_test tests[];
 #define T_LEAKY(fn) { fn, #fn, 0 }
 /* define a test function which is expected to fail memory leak checks */
 #define T_XLEAKY(fn) { fn, #fn, T_EXPECT_LEAKS }
+/* named test function. */
+#define T_NAMED(fn, name) { fn, name, T_CHECK_LEAKS }
 
 #ifdef NEON_TEST_INIT
 /* If the NEON_TEST_INIT macro is defined, it defines a function which

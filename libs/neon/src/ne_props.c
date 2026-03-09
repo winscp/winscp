@@ -29,7 +29,7 @@
 #endif
 
 #include "ne_alloc.h"
-#include "ne_xml.h"
+#include "ne_xmlreq.h"
 #include "ne_props.h"
 #include "ne_basic.h"
 #include "ne_locks.h"
@@ -134,18 +134,11 @@ static int propfind(ne_propfind_handler *handler,
 
     ne_set_request_body_buffer(req, handler->body->data,
 			       ne_buffer_size(handler->body));
-
     ne_add_request_header(req, "Content-Type", NE_XML_MEDIA_TYPE);
-    
-    ne_add_response_body_reader(req, ne_accept_207, ne_xml_parse_v, 
-				  handler->parser);
 
-    ret = ne_request_dispatch(req);
+    ret = ne_xml_dispatchif_request(req, handler->parser, ne_accept_207, NULL);
 
     if (ret == NE_OK && ne_get_status(req)->klass != 2) {
-	ret = NE_ERROR;
-    } else if (ne_xml_failed(handler->parser)) {
-	ne_set_error(handler->sess, "%s", ne_xml_get_error(handler->parser));
 	ret = NE_ERROR;
     }
 

@@ -190,13 +190,13 @@ typedef union ne_session_status_info_u {
     } lu;
     struct /* ne_status_connecting */ {
         /* The hostname and network address to which a connection
-         * attempt is being made: */
+         * attempt is being made, hostname may be NULL: */
         const char *hostname;
         const ne_inet_addr *address;
     } ci;
     struct /* ne_status_connected, ne_status_disconnected */ {
         /* The hostname to which a connection has just been
-         * established or closed: */
+         * established or closed - may be NULL: */
         const char *hostname;
     } cd;
     struct /* ne_status_sending and ne_status_recving */ {
@@ -232,55 +232,10 @@ typedef void (*ne_notify_status)(void *userdata, ne_session_status status,
  * progress callback, and vice versa. */
 void ne_set_notifier(ne_session *sess, ne_notify_status status, void *userdata);
 
-/* Certificate verification failures. */
-
-/* NE_SSL_NOTYETVALID: the certificate is not yet valid. */
-#define NE_SSL_NOTYETVALID (0x01)
-
-/* NE_SSL_EXPIRED: the certificate has expired. */
-#define NE_SSL_EXPIRED (0x02)
-
-/* NE_SSL_IDMISMATCH: the hostname for which the certificate was
- * issued does not match the hostname of the server; this could mean
- * that the connection is being intercepted. */
-#define NE_SSL_IDMISMATCH (0x04)
-
-/* NE_SSL_UNTRUSTED: the certificate authority which signed the server
- * certificate is not trusted: there is no indicatation the server is
- * who they claim to be: */
-#define NE_SSL_UNTRUSTED (0x08)
-
-/* NE_SSL_BADCHAIN: the certificate chain contained a certificate
- * other than the server cert which failed verification for a reason
- * other than lack of trust; for example, due to a CA cert being
- * outside its validity period. */
-#define NE_SSL_BADCHAIN (0x10)
-
-/* N.B.: 0x20 is reserved. */
-
-/* NE_SSL_REVOKED: the server certificate has been revoked by the
- * issuing authority. */
-#define NE_SSL_REVOKED (0x40)
-
-/* For purposes of forwards-compatibility, the bitmask of all
- * currently exposed failure bits is given as NE_SSL_FAILMASK.  If the
- * expression (failures & ~NE_SSL_FAILMASK) is non-zero a failure type
- * is present which the application does not recognize but must treat
- * as a verification failure nonetheless. */
-#define NE_SSL_FAILMASK (0x5f)
-
-/* A callback which is used when server certificate verification is
- * needed.  The reasons for verification failure are given in the
- * 'failures' parameter, which is a binary OR of one or more of the
- * above NE_SSL_* values. failures is guaranteed to be non-zero.  The
- * callback must return zero to accept the certificate: a non-zero
- * return value will fail the SSL negotiation. */
-typedef int (*ne_ssl_verify_fn)(void *userdata, int failures,
-				const ne_ssl_certificate *cert);
-
-/* Install a callback to handle server certificate verification.  This
- * is required when the CA certificate is not known for the server
- * certificate, or the server cert has other verification problems. */
+/* Install a callback to handle server certificate verification (see
+ * ne_ssl.h for definition of ne_ssl_verify_fn).  This is required
+ * when the CA certificate is not known for the server certificate, or
+ * the server cert has other verification problems. */
 void ne_ssl_set_verify(ne_session *sess, ne_ssl_verify_fn fn, void *userdata);
 
 /* Use the given client certificate for the session.  The client cert

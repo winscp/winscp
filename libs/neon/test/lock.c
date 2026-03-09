@@ -1,6 +1,6 @@
 /* 
    lock tests
-   Copyright (C) 2002-2010, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2002-2026, Joe Orton <joe@manyfish.co.uk>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -482,7 +482,8 @@ static int serve_discovery(ne_socket *sock, void *userdata)
     ONN("no PROPFIND body", clength == 0);
     ON(ne_sock_read(sock, buf, clength) < 0);
     ON(SEND_STRING(sock, "HTTP/1.0 207 OK" EOL
-		   "Connection: close" EOL EOL));
+                   "Content-Type: text/xml" EOL
+                   "Connection: close" EOL EOL));
     ON(SEND_STRING(sock, resp));
     return OK;
 }
@@ -631,7 +632,8 @@ static int fail_discover(void)
     int ret;
     
     CALL(fake_session(&sess, single_serve_string, 
-                      "HTTP/1.0 207 OK\r\n" "Connection: close\r\n" "\r\n"
+                      "HTTP/1.0 207 OK\r\n" "Content-Type: text/xml\r\n"
+                      "Connection: close\r\n" "\r\n"
                       "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
                       "<D:multistatus xmlns:D='DAV:'>\n"
                       "<D:response><D:href>/foo/bar</D:href><D:propstat>\n"

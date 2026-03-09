@@ -1,6 +1,6 @@
 /* 
    Utility functions for HTTP client tests
-   Copyright (C) 2001-2009, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2001-2026, Joe Orton <joe@manyfish.co.uk>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@
 #include "utils.h"
 
 static char session_host[128];
+unsigned int session_port;
 
 int serve_response(ne_socket *s, const char *response)
 {
@@ -203,16 +204,26 @@ int full_write(ne_socket *sock, const char *data, size_t len)
     return OK;
 }
 
-int multi_session_server(ne_session **sess,
-                         const char *scheme, const char *hostname,
-                         int count, server_fn fn, void *userdata)
+static const char *localhost_session_host(void)
 {
-    unsigned int port;
-    
-    CALL(new_spawn_server(count, fn, userdata, &port));
-    
-    *sess = ne_session_create(scheme, hostname, port);
+    if (get_lh_family() == AF_INET6) {
+        ne_snprintf(session_host, sizeof session_host, "[%s]", get_lh_addr());
+    }
+    else {
+        ne_strnzcpy(session_host, get_lh_addr(), sizeof session_host);
+    }
+    return session_host;
+}
 
+int multi_session_server(ne_session **sess, const char *scheme, int count,
+                         server_fn fn, void *userdata)
+{
+    CALL(new_spawn_server(count, fn, userdata, &session_port));
+
+    *sess = ne_session_create(scheme, localhost_session_host(), session_port);
+
+    NE_DEBUG(NE_DBG_HTTP, "test: Created session for %s://%s:%u\n",
+             scheme, session_host, session_port);
     return OK;
 }
 
@@ -221,16 +232,14 @@ const char *get_session_host(void)
     return session_host;
 }
 
+unsigned int get_session_port(void)
+{
+    return session_port;
+}
+
 int session_server(ne_session **sess, server_fn fn, void *userdata)
 {
-    if (get_lh_family() == AF_INET6) {
-        ne_snprintf(session_host, sizeof session_host, "[%s]", get_lh_addr());
-    }
-    else {
-        ne_strnzcpy(session_host, get_lh_addr(), sizeof session_host);
-    }
-
-    return multi_session_server(sess, "http", session_host, 1, fn, userdata);
+    return multi_session_server(sess, "http", 1, fn, userdata);
 }
 
 int proxied_multi_session_server(int count, ne_session **sess,
@@ -238,15 +247,13 @@ int proxied_multi_session_server(int count, ne_session **sess,
                                  unsigned int fakeport,
                                  server_fn fn, void *userdata)
 {
-    unsigned int port;
-    
-    CALL(new_spawn_server(count, fn, userdata, &port));
+    CALL(new_spawn_server(count, fn, userdata, &session_port));
     
     *sess = ne_session_create(scheme, host, fakeport);
 
-    NE_DEBUG(NE_DBG_HTTP, "test: Using proxied session to port %u.\n", port);
+    NE_DEBUG(NE_DBG_HTTP, "test: Using proxied session to port %u.\n", session_port);
 
-    ne_session_proxy(*sess, get_lh_addr(), port);
+    ne_session_proxy(*sess, localhost_session_host(), session_port);
 
     return OK;
 }
@@ -280,23 +287,36 @@ int fakeproxied_multi_session_server(int count,
                                      const char *host, unsigned int fakeport,
                                      server_fn fn, void *userdata)
 {
-    unsigned int port;
     ne_inet_addr *addr;
     const ne_inet_addr *alist[1];
     
-    CALL(new_spawn_server2(count, fn, userdata, &addr, &port));
+    CALL(new_spawn_server2(count, fn, userdata, &addr, &session_port));
 
     NE_DEBUG(NE_DBG_HTTP, "test: Using fake proxied '%s' session for %s using port %u.\n",
-             scheme, host, port);
+             scheme, host, session_port);
     
     alist[0] = addr;
 
     *sess = ne_session_create(scheme, host, fakeport);
 
-    ne_set_addrlist2(*sess, port, alist, 1);
+    ne_set_addrlist2(*sess, session_port, alist, 1);
 
     ne_hook_destroy_session(*sess, fakesess_destroy, addr);
 
+    return OK;
+}
+
+int socksproxied_session_server(ne_session **sess, struct socks_server *srv,
+                                const char *hostname, unsigned int port,
+                                server_fn server, void *userdata)
+{
+    srv->server = server;
+    srv->userdata = userdata;
+
+    CALL(new_spawn_server(1, socks_server, srv, &session_port));
+    *sess = ne_session_create("http", hostname, port);
+    ne_session_socks_proxy(*sess, srv->version, localhost_session_host(), session_port,
+                           srv->username, srv->password);
     return OK;
 }
 
@@ -323,6 +343,8 @@ int file_to_buffer(const char *filename, ne_buffer *buf)
     return 0;
 }
 
+#define sornull(s_) (s_ ? s_ : "[null]")
+
 void sess_notifier(void *userdata, ne_session_status status,
                    const ne_session_status_info *info)
 {
@@ -331,18 +353,18 @@ void sess_notifier(void *userdata, ne_session_status status,
 
     switch (status) {
     case ne_status_lookup:
-        ne_buffer_concat(buf, "lookup(", info->lu.hostname, ")-", NULL);
+        ne_buffer_concat(buf, "lookup(", sornull(info->lu.hostname), ")-", NULL);
         break;
     case ne_status_connecting:
         ne_iaddr_print(info->ci.address, scratch, sizeof scratch);
-        ne_buffer_concat(buf, "connecting(", info->lu.hostname,
+        ne_buffer_concat(buf, "connecting(", sornull(info->lu.hostname),
                          ",", scratch, ")-", NULL);
         break;
     case ne_status_disconnected:
         ne_buffer_czappend(buf, "dis");
         /* fallthrough */
     case ne_status_connected:
-        ne_buffer_concat(buf, "connected(", info->cd.hostname,
+        ne_buffer_concat(buf, "connected(", sornull(info->cd.hostname),
                          ")-", NULL);
         break;
     case ne_status_sending:
@@ -369,3 +391,5 @@ void sess_notifier(void *userdata, ne_session_status status,
     NE_DEBUG(NE_DBG_HTTP, "notifier %d => %s\n",
              status, buf->data);
 }
+
+#undef sornull

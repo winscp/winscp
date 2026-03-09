@@ -753,6 +753,41 @@ static int strhash_sha_512_256(void)
     return OK;
 }
 
+/* FIPS 180-1 standard SHA-1 test vectors from RFC 3174 */
+#define TEST1_SHA1 "abc"
+#define TEST1_SHA1_MD "a9993e364706816aba3e25717850c26c9cd0d89d"
+#define TEST2_SHA1 "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+#define TEST2_SHA1_MD "84983e441c3bd26ebaae4aa1f95129e5e54670f1"
+#define TEST2_SHA1_MDC "84:98:3e:44:1c:3b:d2:6e:ba:ae:4a:a1:f9:51:29:e5:e5:46:70:f1"
+
+static int strhash_sha1(void)
+{
+    char *p = ne_strhash(NE_HASH_SHA1, "", NULL);
+
+    if (p == NULL) {
+        t_context("SHA-1 not supported");
+        return SKIP;
+    }
+    ne_free(p);
+
+    /* Test vector 1: "abc" */
+    ONVEC((NE_HASH_SHA1, TEST1_SHA1, NULL), TEST1_SHA1_MD);
+
+    /* Test vector 2: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" */
+    ONVEC((NE_HASH_SHA1, TEST2_SHA1, NULL), TEST2_SHA1_MD);
+
+    /* Test with colon formatting */
+    ONVEC((NE_HASH_SHA1|NE_HASH_COLON, TEST2_SHA1, NULL), TEST2_SHA1_MDC);
+
+    /* Test with multiple string arguments */
+    ONVEC((NE_HASH_SHA1, "a", "b", "c", NULL), TEST1_SHA1_MD);
+
+    /* Test empty string - da39a3ee5e6b4b0d3255bfef95601890afd80709 */
+    ONVEC((NE_HASH_SHA1, "", NULL), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
+
+    return OK;
+}
+
 static int strparam(void)
 {
     static const struct {
@@ -838,6 +873,93 @@ static int strhextoul(void)
     return OK;
 }
 
+static int strlower(void)
+{
+    char buf[256];
+
+    ne_strnzcpy(buf, "HELLO", sizeof buf);
+    ONN("unexpected return value", ne_strlower(buf) != buf);
+    ONV(strcmp(buf, "hello"), ("strlower failed: got %s", buf));
+
+    ne_strnzcpy(buf, "MiXeD CaSe 123", sizeof buf);
+    ne_strlower(buf);
+    ONV(strcmp(buf, "mixed case 123"), ("strlower failed: got %s", buf));
+
+    ne_strnzcpy(buf, "already lower", sizeof buf);
+    ne_strlower(buf);
+    ONV(strcmp(buf, "already lower"), ("strlower failed: got %s", buf));
+
+    ne_strnzcpy(buf, "", sizeof buf);
+    ne_strlower(buf);
+    ONV(strcmp(buf, ""), ("strlower failed on empty string"));
+
+    return OK;
+}
+
+static int strupper(void)
+{
+    static const struct {
+        const char *input;
+        const char *expected;
+    } ts[] = {
+        { "hello", "HELLO" },
+        { "MiXeD CaSe 123", "MIXED CASE 123" },
+        { "ALREADY UPPER", "ALREADY UPPER" },
+        { "", "" },
+        { NULL, NULL }
+    };
+    unsigned int i;
+
+    for (i = 0; ts[i].input != NULL; i++) {
+        char buf[256];
+
+        ne_strnzcpy(buf, ts[i].input, sizeof buf);
+        
+        ONN("unexpected return value", ne_strupper(buf) != buf);
+        ONV(strcmp(buf, ts[i].expected),
+            ("strupper failed: got %s, expected %s", buf, ts[i].expected));
+    }
+
+    return OK;
+}
+
+static int mknonce(void)
+{
+    size_t ts[3] = {16, 32, 64};
+    unsigned int n;
+
+    for (n = 0; n < sizeof(ts)/sizeof(ts[0]); n++) {
+        unsigned char nonce1[256], nonce2[256];
+
+        ONN("nonce generation failed", ne_mknonce(nonce1, ts[n], 0));
+        ONN("second nonce generation failed", ne_mknonce(nonce2, ts[n], 0));
+        ONV(memcmp(nonce1, nonce2, ts[0]) == 0,
+            ("two consecutive nonces are identical"));
+    }
+
+    return OK;
+}
+
+/* Test multiple nonces for uniqueness */
+static int mknonce_uniqueness(void)
+{
+    unsigned char nonces[10][16];
+    unsigned int i, j;
+
+    /* Generate 10 nonces */
+    for (i = 0; i < 10; i++)
+        ONN("nonce generation failed", ne_mknonce(nonces[i], sizeof nonces[i], 0));
+
+    /* Check all are unique */
+    for (i = 0; i < 10; i++)
+        for (j = i + 1; j < 10; j++)
+            ONV(memcmp(nonces[i], nonces[j], sizeof nonces[i]) == 0,
+                ("nonces at positions %u and %u are identical",
+                 i, j));
+
+    return OK;
+}
+
 ne_test tests[] = {
     T(simple),
     T(buf_concat),
@@ -867,11 +989,16 @@ ne_test tests[] = {
     T(buf_print),
     T(qappend),
     T(strhash),
+    T(strhash_sha1),
     T(strhash_sha_256),
     T(strhash_sha_512),
     T(strhash_sha_512_256),
     T(strparam),
     T(strhextoul),
+    T(strlower),
+    T(strupper),
+    T(mknonce),
+    T(mknonce_uniqueness),
     T(NULL)
 };
 

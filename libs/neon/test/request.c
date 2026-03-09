@@ -51,11 +51,8 @@ static unsigned int fail_request_last_port;
 static int prepare_request(server_fn fn, void *ud)
 {
     static char uri[100];
-    unsigned int port;
 
-    CALL(new_spawn_server(1, fn, ud, &port));
-
-    def_sess = ne_session_create("http", "localhost", port);
+    CALL(session_server(&def_sess, fn, ud));
 
     sprintf(uri, "/test%d", test_num);
 
@@ -136,8 +133,11 @@ static int expect_header_value(const char *name, const char *value,
     ONREQ(ne_request_dispatch(req));
     ne_close_connection(sess);
     CALL(await_server());
-    
-    gotval = ne_get_response_header(req, name);
+
+    if (strcmp(name, "X-Trailer") == 0)
+        gotval = ne_get_response_trailer(req, name);
+    else
+        gotval = ne_get_response_header(req, name);
     ONV(value && !gotval, ("header '%s: %s' not sent", name, value));
     ONV(!value && gotval, ("header '%s: %s' not expected", name, gotval));
 
@@ -403,11 +403,9 @@ static int serve_eof(ne_socket *sock, void *ud)
 static int fail_early_eof(const char *resp)
 {
     ne_session *sess;
-    unsigned int port;
 
-    CALL(new_spawn_server(3, serve_eof, (char *)resp, &port));
+    CALL(multi_session_server(&sess, "http", 3, serve_eof, (char *)resp));
     
-    sess = ne_session_create("http", "localhost", port);
     ONREQ(any_request(sess, "/foo"));
     ONN("request retried after early EOF",
 	any_request(sess, "/foobar") == NE_OK);
@@ -444,12 +442,9 @@ static int fail_eof_badclen(void)
 static int ptimeout_eof(void)
 {
     ne_session *sess;
-    unsigned int port;
 
-    CALL(new_spawn_server(4, single_serve_string, 
-                          RESP200 "Content-Length: 0\r\n" "\r\n",
-                          &port));
-    sess = ne_session_create("http", "localhost", port);
+    CALL(multi_session_server(&sess, "http", 4, single_serve_string, 
+                              RESP200 "Content-Length: 0\r\n" "\r\n"));
     
     CALL(any_2xx_request(sess, "/first"));
     CALL(any_2xx_request(sess, "/second"));
@@ -467,13 +462,10 @@ static int ptimeout_eof(void)
 static int ptimeout_eof2(void)
 {
     ne_session *sess;
-    unsigned int port;
 
-    CALL(new_spawn_server(4, single_serve_string, 
-                          RESP200 "Content-Length: 0\r\n" "\r\n",
-                          &port));
-    
-    sess = ne_session_create("http", "localhost", port);
+    CALL(multi_session_server(&sess, "http", 4, single_serve_string, 
+                              RESP200 "Content-Length: 0\r\n" "\r\n"));
+
     CALL(any_2xx_request(sess, "/first"));
     minisleep();
     CALL(any_2xx_request_body(sess, "/second"));
@@ -507,15 +499,12 @@ static int persist_timeout(void)
     ne_session *sess;
     ne_buffer *buf = ne_buffer_create();
     struct many_serve_args args;
-    unsigned int port;
     int n;
 
     args.str = RESP200 "Content-Length: 5\r\n\r\n" "abcde";
     args.count = 1;
 
-    CALL(new_spawn_server(9, incr_server, &args, &port));
-    
-    sess = ne_session_create("http", "localhost", port);
+    CALL(multi_session_server(&sess, "http", 9, incr_server, &args));
 
     for (args.count = 1; args.count < 10; args.count++) {
 
@@ -542,16 +531,12 @@ static int persist_timeout(void)
 static int no_persist_http10(void)
 {
     ne_session *sess;
-    unsigned int port;
 
-    CALL(new_spawn_server(4, single_serve_string,
-                          "HTTP/1.0 200 OK\r\n"
-                          "Content-Length: 5\r\n\r\n"
-                          "abcde"
-                          "Hello, world - what a nice day!\r\n",
-                          &port));
-
-    sess = ne_session_create("http", "localhost", port);
+    CALL(multi_session_server(&sess, "http", 4, single_serve_string,
+                              "HTTP/1.0 200 OK\r\n"
+                              "Content-Length: 5\r\n\r\n"
+                              "abcde"
+                              "Hello, world - what a nice day!\r\n"));
 
     /* if the connection is treated as persistent, the status-line for
      * the second request will be "Hello, world...", which will
@@ -645,8 +630,6 @@ static int response_headers(void)
         { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr: \t    fishy\r\n" NO_BODY},
         { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr: fishy  \r\n" NO_BODY },
         { "ranDom-HEader", "geezer", single_serve_string, RESP200 "RANDom-HeADEr: \t \tgeezer\r\n" NO_BODY },
-        { "gONe", "fishing", single_serve_string,
-          RESP200 TE_CHUNKED "\r\n0\r\n" "Hello: world\r\n" "GONE: fishing\r\n" "\r\n" },
         { "hello", "w o r l d", single_serve_string,
           RESP200 "Hello:  \n\tw\r\n\to r l\r\n\td  \r\n" NO_BODY },
         { "X-Header", "jim, jab, jar", single_serve_string,
@@ -667,10 +650,15 @@ static int response_headers(void)
         { "X-Header", "foo", single_serve_string,
           RESP200 TE_CHUNKED "X-Header: foo\r\n\r\n"
           CHUNK(6, "foobar") "0\r\nX-Trailer: barish\r\n\r\n" },
-        /* Test that merging between trailers and main response headers works. */
-        { "X-Trailer", "fooish, barish", single_serve_string,
+        /* Test retrieving trailers. */
+        { "X-Trailer", "barish", single_serve_string,
           RESP200 TE_CHUNKED "X-Trailer: fooish\r\n\r\n"
           CHUNK(6, "foobar") "0\r\nX-Trailer: barish\r\n\r\n" },
+        { "X-Trailer", "fishing", single_serve_string,
+          RESP200 TE_CHUNKED "\r\n0\r\n" "Hello: world\r\n" "X-Trailer: fishing\r\n" "\r\n" },
+        { "X-Trailer", "fish, food", single_serve_string,
+          RESP200 TE_CHUNKED "\r\n0\r\n" "Hello: world\r\n"
+          "X-Trailer: fish\r\n" "X-Trailer: food\r\n\r\n" },
         /* Test that bare LFs are treated as a spaces. */
         { "X-Test", "just plain spaces", single_serve_string,
           RESP200 "X-Test: just\rplain\rspaces\r\n" NO_BODY },
@@ -684,9 +672,8 @@ static int response_headers(void)
     };
     unsigned n;
 
-    for (n = 0; ts[n].name != NULL; n++ ){
+    for (n = 0; ts[n].name != NULL; n++ )
         CALL(expect_header_value(ts[n].name, ts[n].value, ts[n].fn, (void *)ts[n].response));
-    }
 
     return OK;
 }
@@ -741,6 +728,8 @@ static int iterate_none(void)
 
     ONN("iterator was not NULL for no headers",
         ne_response_header_iterate(req, NULL, NULL, NULL) != NULL);
+    ONN("trailer iterator was not NULL for no headers",
+        ne_response_trailer_iterate(req, NULL, NULL, NULL) != NULL);
 
     ne_request_destroy(req);
 
@@ -749,7 +738,9 @@ static int iterate_none(void)
 
 #define MANY_HEADERS (90)
 
-static int iterate_many(void)
+typedef void *request_iterator(ne_request *r, void *c, const char **n, const char **v);
+
+static int iterate_test(int trailer, request_iterator *iterator)
 {
     ne_request *req;
     ne_buffer *buf = ne_buffer_create();
@@ -761,8 +752,11 @@ static int iterate_many(void)
     } hdrs[MANY_HEADERS];
     void *cursor = NULL;
     const char *name, *value;
-    
+
     ne_buffer_czappend(buf, "HTTP/1.0 200 OK\r\n");
+
+    if (trailer) ne_buffer_czappend(buf, TE_CHUNKED "\r\n"
+                                     "0\r\n");
 
     for (n = 0; n < MANY_HEADERS; n++) {
         sprintf(hdrs[n].name, "x-%d", n);
@@ -771,7 +765,7 @@ static int iterate_many(void)
         
         ne_buffer_concat(buf, hdrs[n].name, ": ", hdrs[n].value, "\r\n", NULL);
     }
-    
+
     ne_buffer_czappend(buf, "\r\n");
 
     CALL(make_session(&sess, single_serve_string, buf->data));
@@ -779,7 +773,7 @@ static int iterate_many(void)
     req = ne_request_create(sess, "GET", "/foo");
     ONREQ(ne_request_dispatch(req));
 
-    while ((cursor = ne_response_header_iterate(req, cursor, &name, &value))) {
+    while ((cursor = iterator(req, cursor, &name, &value))) {
         ONV(strncmp(name, "x-", 2) || strncmp(value, "Y-", 2)
             || strcmp(name + 2, value + 2)
             || (n = atoi(name + 2)) >= MANY_HEADERS
@@ -803,6 +797,11 @@ static int iterate_many(void)
     return destroy_and_wait(sess);
 }
 
+static int iterate_many(void)
+{
+    CALL(iterate_test(0, ne_response_header_iterate));
+    return iterate_test(1, ne_response_trailer_iterate);
+}
 
 struct s1xx_args {
     int count;
@@ -1009,11 +1008,9 @@ static int fail_request_with_error(int with_body, server_fn fn, void *ud,
 {
     ne_session *sess;
     ne_request *req;
-    unsigned int port;
     int ret;
 
-    CALL(new_spawn_server(forever ? 100 : 1, fn, ud, &port));
-    sess = ne_session_create("http", "localhost", port);
+    CALL(multi_session_server(&sess, "http", forever ? 100 : 1, fn, ud));
 
     /* Set default timeout, required by e.g. fail_excess_1xx. */
     ne_set_read_timeout(sess, 2);
@@ -1047,7 +1044,7 @@ static int fail_request_with_error(int with_body, server_fn fn, void *ud,
     ne_request_destroy(req);
     ne_session_destroy(sess);
 
-    fail_request_last_port = port;
+    fail_request_last_port = get_session_port();
    
     return OK;    
 }
@@ -2061,22 +2058,6 @@ static int addrlist(void)
     return destroy_and_wait(sess);
 }
 
-static int socks_session(ne_session **sess, struct socks_server *srv,
-                         const char *hostname, unsigned int port,
-                         server_fn server, void *userdata)
-{
-    unsigned int realport;
-
-    srv->server = server;
-    srv->userdata = userdata;
-    
-    CALL(new_spawn_server(1, socks_server, srv, &realport));
-    *sess = ne_session_create("http", hostname, port);
-    ne_session_socks_proxy(*sess, srv->version, "localhost", realport,
-                           srv->username, srv->password);
-    return OK;    
-}
-
 static int socks_proxy(void)
 {
     ne_session *sess;
@@ -2090,8 +2071,8 @@ static int socks_proxy(void)
     srv.username = "bloggs";
     srv.password = "guessme";
     
-    CALL(socks_session(&sess, &srv, srv.expect_fqdn, srv.expect_port,
-                       single_serve_string, EMPTY_RESP));
+    CALL(socksproxied_session_server(&sess, &srv, srv.expect_fqdn, srv.expect_port,
+                                     single_serve_string, EMPTY_RESP));
 
     CALL(any_2xx_request(sess, "/blee"));
 
@@ -2111,8 +2092,8 @@ static int socks_v4_proxy(void)
     srv.username = "bloggs";
     srv.password = "guessme";
     
-    CALL(socks_session(&sess, &srv, srv.expect_fqdn, srv.expect_port,
-                       single_serve_string, EMPTY_RESP));
+    CALL(socksproxied_session_server(&sess, &srv, srv.expect_fqdn, srv.expect_port,
+                                     single_serve_string, EMPTY_RESP));
 
     CALL(any_2xx_request(sess, "/blee"));
 
@@ -2195,8 +2176,8 @@ static int socks_fail(void)
     srv.username = "bloggs";
     srv.password = "guessme";
     
-    CALL(socks_session(&sess, &srv, srv.expect_fqdn, srv.expect_port,
-                       single_serve_string, EMPTY_RESP));
+    CALL(socksproxied_session_server(&sess, &srv, srv.expect_fqdn, srv.expect_port,
+                                     single_serve_string, EMPTY_RESP));
 
     ret = any_request(sess, "/blee");
     ONV(ret != NE_ERROR,
@@ -2330,7 +2311,7 @@ static int retry_408(void)
     /* Serve two responses down a single persistent connection, the
      * second of which should be treated as a timed-out persistent
      * connection, i.e. should be retried on a new connection. */
-    CALL(multi_session_server(&sess, "http", "localhost",
+    CALL(multi_session_server(&sess, "http",
                               2, single_serve_string,
                               EMPTY_RESP
                               "HTTP/1.1 408 Request Timeout\r\n"

@@ -2,12 +2,12 @@
 .\"     Title: ne_version_match
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_VERSION_MATCH" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_VERSION_MATCH" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_version_match, ne_version_string \- library versioning
+ne_version_match, ne_version_string, ne_version_library \- library versioning
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -40,20 +40,29 @@ ne_version_match, ne_version_string \- library versioning
 .BI "int ne_version_match(int\ " "major" ", int\ " "minor" ");"
 .HP \w'const\ char\ *ne_version_string('u
 .BI "const char *ne_version_string(void);"
+.HP \w'const\ char\ *ne_version_library('u
+.BI "const char *ne_version_library(void);"
 .SH "DESCRIPTION"
 .PP
 The
 \fBne_version_match\fR
-function returns non\-zero if the library version is not of major version
-\fImajor\fR, or the minor version is less than
-\fIminor\fR\&. For neon versions 0\&.x, every minor version is assumed to be incompatible with every other minor version\&.
+function returns zero if the library version is backwards\-compatible with the version given in the
+\fImajor\fR
+and
+\fIminor\fR
+parameters\&.
 .PP
 The
 \fBne_version_string\fR
-function returns a string giving the library version\&.
+function returns a string giving the library version and build information\&.
+.PP
+The
+\fBne_version_library\fR
+function returns a string giving the library version number alone, for example
+"0\&.37\&.0"\&.
 .SH "EXAMPLES"
 .PP
-To require neon 1\&.x, version 1\&.2 or later:
+To require a version of neon which is backwards\-compatible with version 1\&.2\&.0:
 .sp
 .if n \{\
 .RS 4
@@ -68,7 +77,12 @@ if (ne_version_match(1, 2)) {
 .if n \{\
 .RE
 .\}
+.SH "HISTORY"
+.PP
+The
+\fBne_version_library\fR
+function is available in neon 0\&.37\&.0 and later\&.
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

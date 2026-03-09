@@ -1,0 +1,151 @@
+'\" t
+.\"     Title: ne_ssl_context_create
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date:  1 March 2026
+.\"    Manual: neon API reference
+.\"    Source: neon 0.37.0
+.\"  Language: English
+.\"
+.TH "NE_SSL_CONTEXT_CREAT" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_ssl_context_create, ne_ssl_context_trustcert, ne_ssl_context_trustdefca, ne_ssl_context_keypair, ne_ssl_context_set_clicert, ne_ssl_context_set_ccprovide, ne_ssl_context_set_versions, ne_ssl_context_set_verify, ne_ssl_context_set_flag, ne_ssl_context_get_flag, ne_ssl_context_destroy \- SSL context management functions
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_ssl\&.h>
+.fi
+.ft
+.HP \w'ne_ssl_context\ *ne_ssl_context_create('u
+.BI "ne_ssl_context *ne_ssl_context_create(int\ " "mode" ");"
+.HP \w'void\ ne_ssl_context_trustcert('u
+.BI "void ne_ssl_context_trustcert(ne_ssl_context\ *" "ctx" ", const\ ne_ssl_certificate\ *" "cert" ");"
+.HP \w'void\ ne_ssl_context_trustdefca('u
+.BI "void ne_ssl_context_trustdefca(ne_ssl_context\ *" "ctx" ");"
+.HP \w'int\ ne_ssl_context_keypair('u
+.BI "int ne_ssl_context_keypair(ne_ssl_context\ *" "ctx" ", const\ char\ *" "cert" ", const\ char\ *" "key" ");"
+.HP \w'void\ ne_ssl_context_set_clicert('u
+.BI "void ne_ssl_context_set_clicert(ne_ssl_context\ *" "ctx" ", const\ ne_ssl_client_cert\ *" "cc" ");"
+.HP \w'void\ ne_ssl_context_set_ccprovide('u
+.BI "void ne_ssl_context_set_ccprovide(ne_ssl_context\ *" "ctx" ", ne_ssl_ccprovide_fn\ " "provider" ", void\ *" "userdata" ");"
+.HP \w'int\ ne_ssl_context_set_versions('u
+.BI "int ne_ssl_context_set_versions(ne_ssl_context\ *" "ctx" ", enum\ ne_ssl_protocol\ " "min" ", enum\ ne_ssl_protocol\ " "max" ");"
+.HP \w'int\ ne_ssl_context_set_verify('u
+.BI "int ne_ssl_context_set_verify(ne_ssl_context\ *" "ctx" ", int\ " "required" ", const\ char\ *" "ca_names" ", const\ char\ *" "verify_cas" ");"
+.HP \w'void\ ne_ssl_context_set_flag('u
+.BI "void ne_ssl_context_set_flag(ne_ssl_context\ *" "ctx" ", int\ " "flag" ", int\ " "value" ");"
+.HP \w'int\ ne_ssl_context_get_flag('u
+.BI "int ne_ssl_context_get_flag(ne_ssl_context\ *" "ctx" ", int\ " "flag" ");"
+.HP \w'void\ ne_ssl_context_destroy('u
+.BI "void ne_ssl_context_destroy(ne_ssl_context\ *" "ctx" ");"
+.SH "DESCRIPTION"
+.PP
+The
+\fBne_ssl_context_create\fR
+function creates an SSL context object\&. The
+\fImode\fR
+parameter should be
+\fBNE_SSL_CTX_CLIENT\fR
+for a client context,
+\fBNE_SSL_CTX_SERVER\fR
+for a server context\&.
+.PP
+For a client context, the
+\fBne_ssl_context_trustcert\fR
+function configures the context to trust the certificate
+\fIcert\fR\&. The
+\fBne_ssl_context_trustdefca\fR
+function configures the context to trust the default system certificate authorities\&.
+.PP
+For a server context, the
+\fBne_ssl_context_keypair\fR
+function configures the server certificate and private key\&. The
+\fIcert\fR
+and
+\fIkey\fR
+parameters are filenames to PEM\-encoded certificates\&.
+.PP
+The
+\fBne_ssl_context_set_clicert\fR
+function configures a client certificate for a client context\&. The client certificate
+\fIcc\fR
+must be in the decrypted state\&. The certificate object is duplicated internally and may be destroyed by the caller after the function returns\&.
+.PP
+The
+\fBne_ssl_context_set_ccprovide\fR
+function registers a callback to provide a client certificate on demand if requested by the server\&. The
+\fIprovider\fR
+callback is passed the
+\fIuserdata\fR
+pointer, an array of acceptable CA distinguished names, and the count of names in the array\&.
+.PP
+The
+\fBne_ssl_context_set_versions\fR
+function sets the minimum and maximum SSL/TLS protocol versions allowed for the connection\&. This must be called before initiating the SSL handshake\&.
+.PP
+For a server context, the
+\fBne_ssl_context_set_verify\fR
+function configures client certificate verification\&. If
+\fIrequired\fR
+is non\-zero, a client certificate is required\&. If
+\fIca_names\fR
+is non\-NULL, it specifies a filename containing PEM certificates from which CA names are sent in the client certificate request\&. The
+\fIverify_cas\fR
+parameter specifies CAs used for verification\&.
+.PP
+The
+\fBne_ssl_context_set_flag\fR
+function sets a flag for the SSL context\&. The
+\fBne_ssl_context_get_flag\fR
+function retrieves the current value of a flag\&. No flags are currently defined\&.
+.PP
+The
+\fBne_ssl_context_destroy\fR
+function destroys an SSL context object and frees all associated resources\&.
+.SH "RETURN VALUE"
+.PP
+\fBne_ssl_context_create\fR
+returns an SSL context object, or
+NULL
+on error\&.
+.PP
+\fBne_ssl_context_keypair\fR,
+\fBne_ssl_context_set_versions\fR, and
+\fBne_ssl_context_set_verify\fR
+return zero on success, or non\-zero on error\&.
+.PP
+\fBne_ssl_context_get_flag\fR
+returns the flag value\&.
+.SH "HISTORY"
+.PP
+\fBne_ssl_context_set_clicert\fR
+and
+\fBne_ssl_context_trustdefca\fR
+are available in neon 0\&.37\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+\fBne_sock_handshake\fR(3)
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2026 Joe Orton
+.br

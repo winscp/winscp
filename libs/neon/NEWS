@@ -1,3 +1,24 @@
+Changes in release 0.37.0:
+* Interface changes:
+ - API and ABI backwards-compatible with 0.27.x and later
+* New interfaces and feaures:
+ - ne_socket.h: add ne_sock_handshake(); deprecate ne_ssl_connect_ssl();
+   add ne_sock_getcert(), ne_iaddr_put()
+ - ne_ssl.h: add ne_ssl_clicert_copy(), ne_ssl_context_trustdefca(),
+   ne_ssl_check_certificate(), ne_ssl_context_set_clicert(),
+   ne_ssl_context_set_ccprovide()
+ - ne_request.h: add ne_get_response_trailer(), ne_response_trailer_iterate()
+   headers from the chunked trailer section are no longer merged with
+   response headers to conform with RFC 9110 section 6.5
+ - ne_string.h: add ne_strlower(), ne_strupper(), ne_mknonce(), NE_HASH_SHA1
+ - dropped bundled NTLM code; Libntlm <https://gitlab.com/gsasl/libntlm>
+   is now required for NTLM authentication support
+ - ne_utils.h: ne_version_match() description fixed to match code;
+   add ne_version_library()
+* Bug fixes:
+ - fix ne_xml_set_encoding() failure case with libxml 2.13+.
+ - ne_session_create() passed-in scheme now always lower-cased
+
 Changes in release 0.36.0:
 * Interface changes:
  - API and ABI backwards-compatible with 0.27.x and later

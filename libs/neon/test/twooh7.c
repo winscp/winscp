@@ -122,8 +122,7 @@ static int simples(void)
             ONREQ(ret);
         }
 
-        ne_session_destroy(sess);
-        CALL(await_server());
+        CALL(destroy_and_wait(sess));
     }
 
     return OK;

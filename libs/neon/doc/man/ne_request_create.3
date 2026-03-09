@@ -2,12 +2,12 @@
 .\"     Title: ne_request_create
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_REQUEST_CREATE" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_REQUEST_CREATE" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -75,13 +75,13 @@ functions; see
 \fBne_begin_request\fR\&.
 \fIDispatching\fR
 a request may require multiple iterations of a request being sent and response received, for example if authentication is used (see
-ne_set_server_auth), or if a persistent connection times out; this is handled internally by
+\fBne_set_server_auth\fR(3)), or if a persistent connection times out; this is handled internally by
 \fBne_request_dispatch\fR\&.
 .PP
 To add extra headers in the request, the functions
-ne_add_request_header
+\fBne_add_request_header\fR(3)
 and
-ne_print_request_header
+\fBne_print_request_header\fR(3)
 can be used\&. To include a message body with the request, one of the functions
 \fBne_set_request_body_buffer\fR,
 \fBne_set_request_body_fd\fR, or
@@ -91,7 +91,7 @@ can be used\&.
 The return value of
 \fBne_request_dispatch\fR
 indicates merely whether the request was sent and the response read successfully\&. To discover the result of the operation,
-ne_get_status, along with any processing of the response headers and message body\&.
+\fBne_get_status\fR(3), along with any processing of the response headers and message body\&.
 .PP
 A request can only be dispatched once: calling
 \fBne_request_dispatch\fR
@@ -107,7 +107,7 @@ by default\&. For a request using a non\-idempotent method such as
 POST, the
 NE_REQFLAG_IDEMPOTENT
 flag must be disabled using
-ne_set_request_flag\&.
+\fBne_set_request_flag\fR(3)\&.
 .SH "RETURN VALUE"
 .PP
 The
@@ -123,7 +123,7 @@ function returns zero if the request was dispatched successfully, and a non\-zer
 Error codes have a non\-zero value, and correspond to an
 NE_*
 macro definition, as listed below\&. Future versions of neon may introduce additional error code definitions\&. Functions which return an error code and have an associated session object set the session error string (see
-ne_get_error) unless documented otherwise\&.
+\fBne_get_error\fR(3)) unless documented otherwise\&.
 .PP
 \fBNE_ERROR\fR
 .RS 4
@@ -160,7 +160,7 @@ A timeout occurred while waiting for the server to respond\&.
 A valid redirect was retuerned\&.
 \fINote:\fR
 Only returned if redirect handling is registered for the session using
-ne_redirect_register\&.
+\fBne_redirect_register\fR(3)\&.
 .RE
 .SH "NOTES"
 .PP
@@ -197,16 +197,17 @@ ne_request_destroy(req);
 .\}
 .SH "SEE ALSO"
 .PP
-ne_get_error,
-ne_set_error,
-ne_get_status,
-ne_add_request_header,
-ne_set_request_body_buffer,
-ne_set_request_flag,
-ne_redirect_register\&.
+\fBne_session_create\fR(3),
+\fBne_get_error\fR(3),
+\fBne_set_error\fR(3),
+\fBne_get_status\fR(3),
+\fBne_add_request_header\fR(3),
+\fBne_set_request_body_buffer\fR(3),
+\fBne_set_request_flag\fR(3),
+\fBne_redirect_register\fR(3)\&.
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br
 .SH "REFERENCES"
 .IP " 1." 4

@@ -1,0 +1,79 @@
+'\" t
+.\"     Title: ne_strlower
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date:  1 March 2026
+.\"    Manual: neon API reference
+.\"    Source: neon 0.37.0
+.\"  Language: English
+.\"
+.TH "NE_STRLOWER" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_strlower, ne_tolower, ne_tolower_array \- convert string or characters to lower\-case
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_string\&.h>
+
+const unsigned char *ne_tolower_array(void);
+#define ne_tolower(c) (\&.\&.\&.)
+.fi
+.ft
+.HP \w'char\ *ne_strlower('u
+.BI "char *ne_strlower(char\ *" "str" ");"
+.SH "DESCRIPTION"
+.PP
+The
+\fBne_strlower\fR
+function modifies every character in the
+\fIstr\fR
+parameter to lower\-case equivalent in\-place, and returns
+\fIstr\fR\&.
+.PP
+The
+\fBne_tolower\fR
+macro returns a lower\-case equivalent of
+\fBchar\fR
+\fIc\fR\&. The
+\fBne_tolower_array\fR
+returns a character mapping table which is an implementation detail of this macro\&.
+.PP
+All the above operate on ASCII characters, independent of the locale\&.
+.SH "RETURN VALUE"
+.PP
+\fBne_strlower\fR
+returns the
+\fIstr\fR
+parameter\&.
+.SH "HISTORY"
+.PP
+The
+\fBne_strlower\fR
+function is available in neon 0\&.37\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+\fBne_strdup\fR(3)
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2026 Joe Orton
+.br

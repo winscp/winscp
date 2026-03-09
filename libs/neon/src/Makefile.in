@@ -44,7 +44,7 @@ NEON_BASEOBJS = ne_request.@NEON_OBJEXT@ ne_session.@NEON_OBJEXT@	\
 	ne_auth.@NEON_OBJEXT@ ne_redirect.@NEON_OBJEXT@			\
 	ne_compress.@NEON_OBJEXT@ ne_i18n.@NEON_OBJEXT@			\
 	ne_pkcs11.@NEON_OBJEXT@ ne_socks.@NEON_OBJEXT@			\
-	ne_ntlm.@NEON_OBJEXT@
+	ne_ssl.@NEON_OBJEXT@
 
 NEON_DAVOBJS = $(NEON_BASEOBJS) \
 	ne_207.@NEON_OBJEXT@ ne_xml.@NEON_OBJEXT@ \
@@ -140,8 +140,7 @@ ne_request.@NEON_OBJEXT@: ne_request.c $(top_builddir)/config.h ne_internal.h ne
  ne_request.h ne_utils.h ne_string.h ne_session.h ne_ssl.h ne_uri.h \
  ne_socket.h ne_dates.h ne_private.h
 ne_session.@NEON_OBJEXT@: ne_session.c $(top_builddir)/config.h \
- ne_session.h \
- ne_ssl.h ne_defs.h ne_uri.h ne_socket.h ne_alloc.h ne_utils.h \
+ ne_session.h ne_ssl.h ne_defs.h ne_uri.h ne_socket.h ne_alloc.h ne_utils.h \
  ne_internal.h ne_string.h ne_dates.h ne_private.h ne_request.h
 ne_basic.@NEON_OBJEXT@: ne_basic.c $(top_builddir)/config.h ne_request.h ne_utils.h ne_defs.h \
  ne_string.h ne_alloc.h ne_session.h ne_ssl.h ne_uri.h ne_socket.h \
@@ -159,7 +158,7 @@ ne_socket.@NEON_OBJEXT@: ne_socket.c $(top_builddir)/config.h ne_privssl.h ne_ss
  ne_socket.h ne_internal.h ne_utils.h ne_string.h ne_alloc.h ne_sspi.h
 ne_auth.@NEON_OBJEXT@: ne_auth.c $(top_builddir)/config.h ne_dates.h ne_defs.h ne_request.h \
  ne_utils.h ne_string.h ne_alloc.h ne_session.h ne_ssl.h ne_uri.h \
- ne_socket.h ne_auth.h ne_internal.h ne_ntlm.h
+ ne_socket.h ne_auth.h ne_internal.h
 ne_redirect.@NEON_OBJEXT@: ne_redirect.c $(top_builddir)/config.h ne_session.h ne_ssl.h ne_defs.h \
  ne_uri.h ne_socket.h ne_request.h ne_utils.h ne_string.h ne_alloc.h \
  ne_redirect.h ne_internal.h
@@ -169,16 +168,17 @@ ne_compress.@NEON_OBJEXT@: ne_compress.c $(top_builddir)/config.h ne_request.h n
 ne_i18n.@NEON_OBJEXT@: ne_i18n.c $(top_builddir)/config.h ne_i18n.h ne_defs.h
 ne_socks.@NEON_OBJEXT@: ne_socks.c $(top_builddir)/config.h ne_internal.h ne_defs.h ne_string.h \
  ne_alloc.h ne_socket.h ne_ssl.h ne_utils.h
-ne_ntlm.@NEON_OBJEXT@: ne_ntlm.c ne_ntlm.h $(top_builddir)/config.h ne_defs.h ne_string.h \
- ne_alloc.h
+ne_ssl.@NEON_OBJEXT@: ne_ssl.c $(top_builddir)/config.h ne_alloc.h ne_defs.h ne_utils.h \
+ ne_internal.h ne_string.h ne_privssl.h ne_ssl.h ne_socket.h
 ne_207.@NEON_OBJEXT@: ne_207.c $(top_builddir)/config.h ne_alloc.h ne_defs.h ne_utils.h ne_xml.h \
  ne_xmlreq.h ne_request.h ne_string.h ne_session.h ne_ssl.h ne_uri.h \
  ne_socket.h ne_207.h ne_basic.h ne_internal.h
 ne_xml.@NEON_OBJEXT@: ne_xml.c $(top_builddir)/config.h ne_internal.h ne_defs.h ne_alloc.h \
  ne_xml.h ne_utils.h ne_string.h
-ne_props.@NEON_OBJEXT@: ne_props.c $(top_builddir)/config.h ne_alloc.h ne_defs.h ne_xml.h \
- ne_props.h ne_request.h ne_utils.h ne_string.h ne_session.h ne_ssl.h \
- ne_uri.h ne_socket.h ne_207.h ne_basic.h ne_locks.h ne_internal.h
+ne_props.@NEON_OBJEXT@: ne_props.c $(top_builddir)/config.h ne_alloc.h ne_defs.h ne_xmlreq.h \
+ ne_request.h ne_utils.h ne_string.h ne_session.h ne_ssl.h ne_uri.h \
+ ne_socket.h ne_xml.h ne_props.h ne_207.h ne_basic.h ne_locks.h \
+ ne_internal.h
 ne_locks.@NEON_OBJEXT@: ne_locks.c $(top_builddir)/config.h ne_alloc.h ne_defs.h ne_request.h \
  ne_utils.h ne_string.h ne_session.h ne_ssl.h ne_uri.h ne_socket.h \
  ne_xml.h ne_locks.h ne_basic.h ne_props.h ne_207.h ne_internal.h \

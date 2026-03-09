@@ -2,12 +2,12 @@
 .\"     Title: ne_has_support
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_HAS_SUPPORT" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_HAS_SUPPORT" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -73,7 +73,7 @@ Indicates support for SOCKSv5
 \fBNE_FEATURE_TS_SSL\fR
 .RS 4
 Indicates support for thread\-safe SSL initialization \(em see
-ne_sock_init
+\fBne_sock_init\fR(3)
 .RE
 .PP
 \fBNE_FEATURE_GSSAPI\fR
@@ -84,7 +84,12 @@ Indicates support for Negotiate authentication via GSSAPI
 \fBNE_FEATURE_LIBPXY\fR
 .RS 4
 Indicates support for libproxy (in
-ne_session_system_proxy)
+\fBne_session_system_proxy\fR(3))
+.RE
+.PP
+\fBNE_FEATURE_NTLM\fR
+.RS 4
+Indicates support for NTLM authentication via Libntlm
 .RE
 .SH "RETURN VALUE"
 .PP
@@ -96,12 +101,16 @@ The
 \fBNE_FEATURE_GSSAPI\fR
 and
 \fBNE_FEATURE_LIBPXY\fR
-constants are only available in neon 0\&.34\&.0 and later\&.
+constants are only available in neon 0\&.34\&.0 and newer\&.
+.PP
+The
+\fBNE_FEATURE_NTLM\fR
+is only available in neon 0\&.37\&.0 and newer\&.
 .SH "SEE ALSO"
 .PP
 ne_version_match(3),
 ne_sock_init(3)
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

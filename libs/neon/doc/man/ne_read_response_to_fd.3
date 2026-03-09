@@ -2,12 +2,12 @@
 .\"     Title: ne_read_response_to_fd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_READ_RESPONSE_TO_" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_READ_RESPONSE_TO_" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -69,7 +69,7 @@ is updated with the number of bytes written to the buffer\&.
 After the response body has been read successfully,
 \fBne_end_request\fR
 must be called\&. If a failure occurs while reading the response body, the connection must be closed using
-ne_close_connection\&.
+\fBne_close_connection\fR(3)\&.
 .SH "RETURN VALUE"
 .PP
 Both functions return zero on success, or an
@@ -85,9 +85,9 @@ if the response message length is larger than the buffer length\&.
 is available in neon 0\&.36\&.0 and later\&.
 .SH "SEE ALSO"
 .PP
-ne_request_create,
-ne_set_error
+\fBne_request_create\fR(3),
+\fBne_set_error\fR(3)
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

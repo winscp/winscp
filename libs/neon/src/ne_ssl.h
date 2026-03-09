@@ -172,6 +172,10 @@ int ne_ssl_clicert_decrypt(ne_ssl_client_cert *ccert, const char *password);
  * object which is in the encrypted state. */
 const ne_ssl_certificate *ne_ssl_clicert_owner(const ne_ssl_client_cert *ccert);
 
+/* Copy a client certificate object. This function has undefined
+ * behaviour for a ccert object which is in the encrypted state. */
+ne_ssl_client_cert *ne_ssl_clicert_copy(const ne_ssl_client_cert *ccert);
+
 /* Destroy a client certificate object.  This function may be used on
  * a ccert object in either the encrypted or decrypted state. */
 void ne_ssl_clicert_free(ne_ssl_client_cert *ccert);
@@ -189,6 +193,50 @@ enum ne_ssl_protocol {
 /* Return the SSL/TLS protocol name for the protocol version. */
 const char *ne_ssl_proto_name(enum ne_ssl_protocol proto);
 
+/* NE_SSL_NOTYETVALID: the certificate is not yet valid. */
+#define NE_SSL_NOTYETVALID (0x01)
+
+/* NE_SSL_EXPIRED: the certificate has expired. */
+#define NE_SSL_EXPIRED (0x02)
+
+/* NE_SSL_IDMISMATCH: the hostname for which the certificate was
+ * issued does not match the hostname of the server; this could mean
+ * that the connection is being intercepted. */
+#define NE_SSL_IDMISMATCH (0x04)
+
+/* NE_SSL_UNTRUSTED: the certificate authority which signed the server
+ * certificate is not trusted: there is no indicatation the server is
+ * who they claim to be: */
+#define NE_SSL_UNTRUSTED (0x08)
+
+/* NE_SSL_BADCHAIN: the certificate chain contained a certificate
+ * other than the server cert which failed verification for a reason
+ * other than lack of trust; for example, due to a CA cert being
+ * outside its validity period. */
+#define NE_SSL_BADCHAIN (0x10)
+
+/* N.B.: 0x20 is reserved. */
+
+/* NE_SSL_REVOKED: the server certificate has been revoked by the
+ * issuing authority. */
+#define NE_SSL_REVOKED (0x40)
+
+/* For purposes of forwards-compatibility, the bitmask of all
+ * currently exposed failure bits is given as NE_SSL_FAILMASK.  If the
+ * expression (failures & ~NE_SSL_FAILMASK) is non-zero a failure type
+ * is present which the application does not recognize but must treat
+ * as a verification failure nonetheless. */
+#define NE_SSL_FAILMASK (0x5f)
+
+/* A callback which is used when server certificate verification is
+ * needed.  The reasons for verification failure are given in the
+ * 'failures' parameter, which is a binary OR of one or more of the
+ * above NE_SSL_* values. failures is guaranteed to be non-zero.  The
+ * callback must return zero to accept the certificate: a non-zero
+ * return value will fail the SSL negotiation. */
+typedef int (*ne_ssl_verify_fn)(void *userdata, int failures,
+				const ne_ssl_certificate *cert);
+
 /* SSL context object.  The interfaces to manipulate an SSL context
  * are only needed when interfacing directly with ne_socket.h. */
 typedef struct ne_ssl_context_s ne_ssl_context;
@@ -196,7 +244,7 @@ typedef struct ne_ssl_context_s ne_ssl_context;
 /* Context creation modes: */
 #define NE_SSL_CTX_CLIENT (0) /* client context */
 #define NE_SSL_CTX_SERVER (1) /* default server context */
-#define NE_SSL_CTX_SERVERv2 (2) /* SSLv2-specific server context */
+#define NE_SSL_CTX_SERVERv2 (2) /* unused */
 
 /* Create an SSL context. */
 ne_ssl_context *ne_ssl_context_create(int mode);
@@ -204,9 +252,33 @@ ne_ssl_context *ne_ssl_context_create(int mode);
 /* Client mode: trust the given certificate 'cert' in context 'ctx'. */
 void ne_ssl_context_trustcert(ne_ssl_context *ctx, const ne_ssl_certificate *cert);
 
+/* Trust the default system CAs. */
+void ne_ssl_context_trustdefca(ne_ssl_context *ctx);
+
 /* Server mode: use given cert and key (filenames to PEM certificates). */
 int ne_ssl_context_keypair(ne_ssl_context *ctx,
                            const char *cert, const char *key);
+
+/* Client mode: use the given client certificate 'cc'.  The client
+ * cert MUST be in the decrypted state, otherwise behaviour is
+ * undefined.  The client cert object is duplicated internally so can
+ * be destroyed by the caller.  */
+void ne_ssl_context_set_clicert(ne_ssl_context *ctx, const ne_ssl_client_cert *cc);
+
+/* Callback used to load a client certificate on demand.  If dncount
+ * is > 0, the 'dnames' array dnames[0] through dnames[dncount-1]
+ * gives the list of CA names which the server indicated were
+ * acceptable.  The callback should load an appropriate client
+ * certificate and then pass it to 'ne_ssl_set_clicert'. */
+typedef void (*ne_ssl_ccprovide_fn)(void *userdata,
+                                    const ne_ssl_dname *const *dnames,
+                                    int dncount);
+
+/* Client mode: register a callback to provide a client certificate if
+ * requested by the server. */
+void ne_ssl_context_set_ccprovide(ne_ssl_context *ctx,
+                                  ne_ssl_ccprovide_fn provider,
+                                  void *userdata);
 
 /* Set the minimum and maximum protocol version which is allowed for
  * the connection. This must be called prior to ne_sock_connect_ssl()

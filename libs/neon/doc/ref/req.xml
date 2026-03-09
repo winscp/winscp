@@ -195,7 +195,7 @@ ne_request_destroy(req);</programlisting>
       <refsect1>
 	<title>See also</title>
 	
-	<para><xref linkend="ne_get_error"/>, <xref
+	<para><xref linkend="ne_session_create"/>, <xref linkend="ne_get_error"/>, <xref
 linkend="ne_set_error"/>, <xref linkend="ne_get_status"/>, <xref
 linkend="ne_add_request_header"/>, <xref
 linkend="ne_set_request_body_buffer"/>, <xref linkend="ne_set_request_flag"/>, <xref linkend="ne_redirect_register"/>.</para>

@@ -63,3 +63,20 @@ NEON_0_36 {
     ne_getbuf;
     ne_read_response_to_buffer;
 };
+
+NEON_0_37 {
+    ne_strlower;
+    ne_strupper;
+    ne_mknonce;
+    ne_ssl_clicert_copy;
+    ne_ssl_context_set_clicert;
+    ne_ssl_context_set_ccprovide;
+    ne_ssl_context_trustdefca;
+    ne_ssl_check_certificate;
+    ne_sock_getcert;
+    ne_sock_handshake;
+    ne_response_trailer_iterate;
+    ne_get_response_trailer;
+    ne_version_library;
+    ne_iaddr_put;
+};

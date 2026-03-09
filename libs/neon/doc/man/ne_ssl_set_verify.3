@@ -2,12 +2,12 @@
 .\"     Title: ne_ssl_set_verify
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_SSL_SET_VERIFY" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_SSL_SET_VERIFY" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -44,7 +44,7 @@ ne_ssl_set_verify \- register an SSL certificate verification callback
 .PP
 To enable manual SSL certificate verification, a callback can be registered using
 \fBne_ssl_set_verify\fR\&. If such a callback is not registered, when a connection is established to an SSL server which does not present a certificate signed by a trusted CA (see
-ne_ssl_trust_cert), or if the certificate presented is invalid in some way, the connection will fail\&.
+\fBne_ssl_trust_cert\fR(3)), or if the certificate presented is invalid in some way, the connection will fail\&.
 .PP
 When the callback is invoked, the
 \fIfailures\fR
@@ -80,7 +80,7 @@ failures is given, the connection may have been intercepted by a third party, an
 The
 \fIcert\fR
 parameter passed to the callback represents the certificate which was presented by the server\&. If the server presented a chain of certificates, the chain can be accessed using
-ne_ssl_cert_signedby\&. The
+\fBne_ssl_cert_signedby\fR(3)\&. The
 \fIcert\fR
 object given is not valid after the callback returns\&.
 .SH "RETURN VALUE"
@@ -91,7 +91,7 @@ The verification callback must return zero to indicate that the certificate shou
 The following code implements an example verification callback, using the
 \fBdump_cert\fR
 function from
-ne_ssl_cert_subject
+\fBne_ssl_cert_subject\fR(3)
 to display certification information\&. Notice that the hostname of the server used for the session is passed as the
 \fIuserdata\fR
 parameter to the callback\&.
@@ -143,10 +143,10 @@ main(\&.\&.\&.)
 .\}
 .SH "SEE ALSO"
 .PP
-ne_ssl_trust_cert,
-ne_ssl_readable_dname,
-ne_ssl_cert_subject
+\fBne_ssl_trust_cert\fR(3),
+\fBne_ssl_readable_dname\fR(3),
+\fBne_ssl_cert_subject\fR(3)
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

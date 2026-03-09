@@ -350,7 +350,6 @@ static int matches(void)
           "<{}hello><{}merry><{}abort-end>ABORT", match_invalid },
         { PFX "<hello>!ABORT!</hello>", "<{}hello>!ABORT!", match_invalid },
         { PFX "<hello>!ABORT!<foo/></hello>", "<{}hello>!ABORT!", match_invalid },
-        { PFX "<hello>!ABORT!</fish>", "<{}hello>!ABORT!", match_invalid },
 
         /* tests for encodings */
         { "<?xml version='1.0' encoding='ISO-8859-1'?><hello/>",

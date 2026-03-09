@@ -1,0 +1,167 @@
+'\" t
+.\"     Title: ne_sock_handshake
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date:  1 March 2026
+.\"    Manual: neon API reference
+.\"    Source: neon 0.37.0
+.\"  Language: English
+.\"
+.TH "NE_SOCK_HANDSHAKE" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_sock_handshake, ne_sock_sessid, ne_sock_cipher, ne_sock_getproto, ne_sock_getcert, ne_ssl_check_certificate \- SSL socket functions
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_socket\&.h>
+.fi
+.ft
+.HP \w'int\ ne_sock_handshake('u
+.BI "int ne_sock_handshake(ne_socket\ *" "sock" ", ne_ssl_context\ *" "ctx" ", const\ char\ *" "hostname" ", unsigned\ int\ " "flags" ");"
+.HP \w'int\ ne_sock_sessid('u
+.BI "int ne_sock_sessid(ne_socket\ *" "sock" ", unsigned\ char\ *" "buf" ", size_t\ *" "buflen" ");"
+.HP \w'char\ *ne_sock_cipher('u
+.BI "char *ne_sock_cipher(ne_socket\ *" "sock" ");"
+.HP \w'enum\ ne_ssl_protocol\ ne_sock_getproto('u
+.BI "enum ne_ssl_protocol ne_sock_getproto(ne_socket\ *" "sock" ");"
+.HP \w'ne_ssl_certificate\ *ne_sock_getcert('u
+.BI "ne_ssl_certificate *ne_sock_getcert(ne_socket\ *" "sock" ", ne_ssl_context\ *" "ctx" ");"
+.HP \w'int\ ne_ssl_check_certificate('u
+.BI "int ne_ssl_check_certificate(ne_ssl_context\ *" "ctx" ", ne_socket\ *" "sock" ", const\ char\ *" "hostname" ", const\ ne_inet_addr\ *" "address" ", const\ ne_ssl_certificate\ *" "cert" ", unsigned\ int\ " "flags" ", int\ *" "failures" ");"
+.SH "DESCRIPTION"
+.PP
+The
+\fBne_sock_handshake\fR
+function initiates an SSL handshake on socket
+\fIsock\fR
+using SSL context
+\fIctx\fR\&. If
+\fIhostname\fR
+is non\-NULL, it is used as the Server Name Indication (SNI) hint\&. The
+\fIflags\fR
+parameter must be zero\&.
+.PP
+The
+\fBne_sock_sessid\fR
+function retrieves the session ID of the current SSL session\&. If
+\fIbuf\fR
+is non\-NULL, on success, copies at most
+*buflen
+bytes to
+\fIbuf\fR
+and sets
+*buflen
+to the exact number of bytes copied\&. If
+\fIbuf\fR
+is
+NULL, on success, sets
+*buflen
+to the length of the session ID\&.
+.PP
+The
+\fBne_sock_cipher\fR
+function returns a human\-readable name of the SSL/TLS cipher used for the connection, or
+NULL
+if none\&. The format of this string is not intended to be fixed or parseable, but is informational only\&. The return value is a
+NUL\-terminated malloc\-allocated string which must be freed by the caller\&.
+.PP
+The
+\fBne_sock_getproto\fR
+function returns the SSL/TLS protocol version used for socket
+\fIsock\fR, or
+\fBNE_SSL_PROTO_UNSPEC\fR
+if SSL/TLS is not in use for the socket\&.
+.PP
+The
+\fBne_sock_getcert\fR
+function returns the server certificate for the socket\&.
+.PP
+The
+\fBne_ssl_check_certificate\fR
+function checks the identity of a server certificate against the hostname or address used to establish the connection, following rules specified by
+\m[blue]\fBRFC 2818\fR\m[]\&\s-2\u[1]\d\s+2
+and
+\m[blue]\fBRFC 3280\fR\m[]\&\s-2\u[2]\d\s+2\&. Either
+\fIhostname\fR
+or
+\fIaddress\fR
+can be non\-NULL; whichever was used to identify the server when establishing the SSL connection\&. If both are
+NULL, matching will fail but the
+*identity
+output parameter will still be set\&. The
+\fIflags\fR
+parameter must be zero\&. If verification fails, the failure reasons are stored in
+*failures
+as a binary OR of
+\fBNE_SSL_*\fR
+values\&.
+.SH "RETURN VALUE"
+.PP
+\fBne_sock_handshake\fR
+returns zero on success, or non\-zero on error\&.
+.PP
+\fBne_sock_sessid\fR
+returns zero on success, or non\-zero on error\&.
+.PP
+\fBne_sock_cipher\fR
+returns a malloc\-allocated string on success which must be freed by the caller, or
+NULL
+if no cipher is in use\&.
+.PP
+\fBne_sock_getproto\fR
+returns the SSL/TLS protocol version, or
+\fBNE_SSL_PROTO_UNSPEC\fR\&.
+.PP
+\fBne_sock_getcert\fR
+returns the server certificate, or
+NULL
+on error\&.
+.PP
+\fBne_ssl_check_certificate\fR
+returns zero if the identity matches, 1 if the identity does not match, or less than zero if the certificate had no identity\&.
+.SH "HISTORY"
+.PP
+\fBne_sock_getproto\fR
+is available in neon 0\&.34\&.0 and later\&.
+\fBne_sock_handshake\fR
+and
+\fBne_sock_getcert\fR
+are available in neon 0\&.37\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+\fBne_ssl_context_create\fR(3)
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2026 Joe Orton
+.br
+.SH "REFERENCES"
+.IP " 1." 4
+RFC 2818
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc2818
+.RE
+.IP " 2." 4
+RFC 3280
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc3280
+.RE

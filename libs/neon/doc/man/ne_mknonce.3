@@ -1,0 +1,99 @@
+'\" t
+.\"     Title: ne_mknonce
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date:  1 March 2026
+.\"    Manual: neon API reference
+.\"    Source: neon 0.37.0
+.\"  Language: English
+.\"
+.TH "NE_MKNONCE" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_mknonce \- generate a nonce
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_string\&.h>
+.fi
+.ft
+.HP \w'int\ ne_mknonce('u
+.BI "int ne_mknonce(unsigned\ char\ *" "nonce" ", size_t\ " "len" ", unsigned\ int\ " "flags" ");"
+.SH "DESCRIPTION"
+.PP
+\fBne_mknonce\fR
+fills the buffer pointed to by
+\fInonce\fR
+with
+\fIlen\fR
+bytes of random data suitable for use as a nonce\&. The value of
+\fIlen\fR
+must be greater than zero and no greater than 256\&.
+.PP
+The
+\fIflags\fR
+parameter is reserved for future use and must be set to zero\&.
+.PP
+The caller is responsible for ensuring that the buffer pointed to by
+\fInonce\fR
+is at least
+\fIlen\fR
+bytes in size\&.
+.SH "RETURN VALUE"
+.PP
+\fBne_mknonce\fR
+returns zero on success\&. On error, a non\-zero
+\fBerrno\fR
+value is returned indicating the cause of the failure; the buffer contents are undefined\&.
+.SH "EXAMPLE"
+.PP
+The following example generates a 16\-byte nonce and encodes it as a hexadecimal string\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+unsigned char buf[16];
+unsigned char hex[33];
+int i, err;
+
+err = ne_mknonce(buf, sizeof buf, 0);
+if (err) {
+    fprintf(stderr, "ne_mknonce failed: %s\en", strerror(err));
+    return \-1;
+}
+
+for (i = 0; i < 16; i++)
+    sprintf(hex + 2 * i, "%02x", buf[i]);
+hex[32] = \*(Aq\e0\*(Aq;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "HISTORY"
+.PP
+\fBne_mknonce\fR
+is available in neon 0\&.37\&.0 and later\&.
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2026 Joe Orton
+.br

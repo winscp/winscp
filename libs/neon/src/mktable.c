@@ -36,6 +36,11 @@ static unsigned char gen_lower(unsigned char ch)
     return tolower(ch);
 }
 
+static unsigned char gen_upper(unsigned char ch)
+{
+    return toupper(ch);
+}
+
 static unsigned char gen_quote(unsigned char ch)
 {
     return !isascii(ch) || !isprint(ch) ? 4 : 1;
@@ -152,6 +157,7 @@ static const struct {
 } generators[] = {
     { "strclean", gen_clean, 0 },
     { "tolower", gen_lower, 0 },
+    { "toupper", gen_upper, 0 },
     { "validb64", valid_b64, FLAG_DECIMAL | FLAG_SHORT },
     { "decodeb64", decode_b64, 0 },
     { "quote", gen_quote, FLAG_DECIMAL | FLAG_SHORT },

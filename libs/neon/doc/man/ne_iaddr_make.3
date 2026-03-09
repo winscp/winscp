@@ -2,12 +2,12 @@
 .\"     Title: ne_iaddr_make
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_IADDR_MAKE" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_IADDR_MAKE" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_iaddr_make, ne_iaddr_cmp, ne_iaddr_print, ne_iaddr_typeof, ne_iaddr_parse, ne_iaddr_raw, ne_iaddr_reverse, ne_iaddr_free \- functions to manipulate network addresses
+ne_iaddr_make, ne_iaddr_cmp, ne_iaddr_print, ne_iaddr_typeof, ne_iaddr_parse, ne_iaddr_raw, ne_iaddr_put, ne_iaddr_reverse, ne_iaddr_free \- functions to manipulate network addresses
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -53,10 +53,12 @@ typedef enum {
 .BI "ne_inet_addr *ne_iaddr_parse(const\ char\ *" "address" ", ne_iaddr_type\ " "type" ");"
 .HP \w'unsigned\ char\ *ne_iaddr_raw('u
 .BI "unsigned char *ne_iaddr_raw(const\ ne_inet_addr\ *" "ia" ", unsigned\ char\ *" "buffer" ");"
+.HP \w'ne_inet_addr\ *ne_iaddr_put('u
+.BI "ne_inet_addr *ne_iaddr_put(ne_inet_addr\ *" "ia" ", ne_iaddr_type\ " "type" ", const\ unsigned\ char\ *" "raw" ");"
 .HP \w'int\ ne_iaddr_reverse('u
 .BI "int ne_iaddr_reverse(const\ ne_inet_addr\ *" "ia" ", char\ *" "buffer" ", size_t\ " "buflen" ");"
 .HP \w'void\ ne_iaddr_free('u
-.BI "void ne_iaddr_free(const\ ne_inet_addr\ *" "ia" ");"
+.BI "void ne_iaddr_free(ne_inet_addr\ *" "ia" ");"
 .SH "DESCRIPTION"
 .PP
 \fBne_iaddr_make\fR
@@ -77,6 +79,11 @@ prints a human\-readable string representation of a network address into a buffe
 .PP
 \fBne_iaddr_typeof\fR
 returns the type of the given network address object\&.
+.PP
+\fBne_iaddr_put\fR
+changes an existing network address object to a new raw byte representation given by parameter
+\fItype\fR
+(which can be different to the current type of the object)\&. The raw data must be of length 4 bytes for an IPv4 address, or 16 bytes for an IPv6 address\&.
 .PP
 \fBne_iaddr_parse\fR
 parses a string representation of a network address (such as
@@ -120,6 +127,13 @@ returns the
 \fIbuffer\fR
 parameter, and never
 NULL\&.
+.PP
+\fBne_iaddr_put\fR
+returns the passed in
+\fIia\fR
+parameter, or
+NULL
+if the address type passed is not supported (for instance on a platform which does not support IPv6)\&.
 .SH "EXAMPLES"
 .PP
 The following example connects a socket to port 80 at the address
@@ -144,10 +158,19 @@ if (ia != NULL) {
 .if n \{\
 .RE
 .\}
+.SH "HISTORY"
+.PP
+The
+\fBne_iaddr_raw\fR
+function is available in neon 0\&.29\&.0 and later\&.
+.PP
+The
+\fBne_iaddr_put\fR
+function is available in neon 0\&.37\&.0 and later\&.
 .SH "SEE ALSO"
 .PP
-ne_addr_resolve
+\fBne_addr_resolve\fR(3)
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

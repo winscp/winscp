@@ -29,7 +29,7 @@ dnl CPPFLAGS which make "gcc -Werror" fail in NEON_FORMAT; suggest
 dnl this macro is used first.
 AC_BEFORE([$0], [NEON_XML_PARSER])
 
-AC_CHECK_HEADERS(sys/time.h signal.h stdint.h locale.h)
+AC_CHECK_HEADERS(sys/time.h signal.h stdint.h locale.h sys/endian.h endian.h)
 
 AC_CHECK_FUNCS(pipe isatty usleep shutdown setlocale gethostname)
 

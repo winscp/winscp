@@ -73,7 +73,6 @@ static int parse_for_ctype(const char *ctype, const char *body, size_t len,
     ne_request *req;
     ne_xml_parser *parser;
     ne_buffer *buf = ne_buffer_create();
-    char response[BUFSIZ];
 
     ne_buffer_concat(buf, "HTTP/1.1 200 OK\r\n" "Content-Type: ", ctype, "\r\n",
                      "Connection: close\r\n" "\r\n", NULL);
@@ -253,8 +252,7 @@ static int types(void)
         
         ne_xml_destroy(parser);
         ne_request_destroy(req);
-        ne_session_destroy(sess);
-        CALL(await_server());
+        CALL(destroy_and_wait(sess));
     }
 
     return OK;
