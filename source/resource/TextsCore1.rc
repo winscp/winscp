@@ -270,6 +270,7 @@ BEGIN
   TLS_UNSUPPORTED, "The server is using unsupported protocol. Your WinSCP session is configured to use %s through %s. It can be configured to use %s through %s. Though, avoid using old insecure protocols, whenever possible."
   OPENSSL_INIT_ERROR, "OpenSSL initialization failed"
   NO_PRIVATE_KEY, "No private key found in %s file."
+  ANCESTOR_TARGET_ERROR, "Target of copy or move cannot be an ancestor directory of source."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"

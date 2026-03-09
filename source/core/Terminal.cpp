@@ -5011,6 +5011,12 @@ bool TTerminal::DoRenameOrCopyFile(
 
   if (Result)
   {
+    // deliberatelly after confirmation, so that the user can see what files are being overwritten
+    if (StartsStr(UnixIncludeTrailingBackslash(AbsoluteNewName), AbsoluteFileName))
+    {
+      throw ExtException(MainInstructions(LoadStr(ANCESTOR_TARGET_ERROR)), FORMAT(L"%s => %s", (AbsoluteFileName, AbsoluteNewName)));
+    }
+
     // Prevent destroying TRemoteFile between delete and rename
     BeginTransaction();
     try
