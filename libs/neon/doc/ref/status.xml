@@ -47,7 +47,7 @@ typedef struct {
 	<para>There are five classes of response status code defined
 	for HTTP/1.1 (see <ulink
 	url="https://www.rfc-editor.org/rfc/rfc9110#name-status-codes">RFC
-	9110 ẞ15</ulink>):</para>
+	9110 §15</ulink>):</para>
 	
 	<variablelist>
 	  <varlistentry>

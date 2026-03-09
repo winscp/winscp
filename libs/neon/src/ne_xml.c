@@ -175,6 +175,31 @@ static const char *const empty_atts[] = {NULL, NULL};
 /* macro for determining the attributes array to pass */
 #define PASS_ATTS(atts) (atts ? (const char **)(atts) : empty_atts)
 
+#if LIBXML_VERSION >= 21300
+/* Structured error handling from 2.13.x onwards. */
+static void error_handler(void *userdata, const xmlError *err)
+{
+    ne_xml_parser *p = userdata;
+
+    /* Catch any error, fatal error, or an unsupported encoding
+     * warning, to get equivalent error handling to expat. */
+    if (err->level == XML_ERR_ERROR || err->level == XML_ERR_FATAL
+        || (err->level == XML_ERR_WARNING && err->domain == XML_FROM_PARSER
+            && err->code == XML_ERR_UNSUPPORTED_ENCODING)) {
+        ne_snprintf(p->error, sizeof p->error,
+                    _("XML parse error: %s"), err->message);
+
+        /* Strip trailing newlines. */
+        ne_shave(p->error, "\r\n");
+
+        NE_DEBUG(NE_DBG_XMLPARSE,
+                 "xml: Structured error (domain %d level %d code %d): - '%s'\n",
+                 err->domain, err->level, err->code, p->error);
+        p->failure = 1;
+    }
+}
+#endif
+
 #else
 
 #define PASS_ATTS(atts) ((const char **)(atts))
@@ -508,6 +533,10 @@ ne_xml_parser *ne_xml_create(void)
     xmlCtxtUseOptions(p->parser, XML_PARSE_NOENT | XML_PARSE_NONET);
 #endif
 
+#if LIBXML_VERSION >= 21300
+    xmlCtxtSetErrorHandler(p->parser, error_handler, p);
+#endif
+
 #endif /* HAVE_LIBXML || HAVE_EXPAT */
     return p;
 }
@@ -517,11 +546,16 @@ int ne_xml_set_encoding(ne_xml_parser *p, const char *encoding)
 #ifdef HAVE_EXPAT
     if (XML_SetEncoding(p->parser, encoding))
         return 0;
-#else
-    if (xmlCtxtResetPush(p->parser, NULL, 0, NULL, encoding) == 0)
-        return 0;
-#endif
     return 1;
+#else
+    if (xmlCtxtResetPush(p->parser, NULL, 0, NULL, encoding)) {
+        return 1;
+    }
+    /* For libxml 2.13+ the unknown encoding is raised via the
+     * structured error log handler, which set p->failure.
+     * See https://github.com/notroj/neon/issues/217 */
+    return p->failure;
+#endif
 }
 
 void ne_xml_push_handler(ne_xml_parser *p,
@@ -674,6 +708,7 @@ static void sax_error(void *ctx, const char *msg, ...)
     ne_vsnprintf(buf, 1024, msg, ap);
     va_end(ap);
 
+    NE_DEBUG(NE_DBG_XMLPARSE, "xml: Error thrown: %s\n", buf);
     if (p->failure == 0) {
         ne_snprintf(p->error, ERR_SIZE, 
                     _("XML parse error at line %d: %s"),
@@ -695,7 +730,7 @@ ne_xml_get_attr(ne_xml_parser *p, const char **attrs,
     int n;
 
     for (n = 0; attrs[n] != NULL; n += 2) {
-	char *pnt = strchr(attrs[n], ':');
+	const char *pnt = strchr(attrs[n], ':');
 
 	if (!nspace && !pnt && strcmp(attrs[n], name) == 0) {
 	    return attrs[n+1];

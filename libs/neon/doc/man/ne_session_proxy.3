@@ -2,12 +2,12 @@
 .\"     Title: ne_session_proxy
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_SESSION_PROXY" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_SESSION_PROXY" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -52,6 +52,19 @@ One (and no more than one) of the functions
 \fBne_session_socks_proxy\fR,
 \fBne_set_addrlist\fR
 can be used to configure a proxy server for a given session object\&. If more than one function is invoked for any given session object, only the last call has effect\&. If one of the functions is to be used, it must be used before the creation of any request object for the session\&.
+.PP
+The
+\fIhostname\fR
+parameter used with
+\fBne_session_proxy\fR
+and
+\fBne_session_socks_proxy\fR
+must follow the same rules as the
+\fIhost\fR
+for
+\fBne_session_create\fR; see
+\fBne_session_create\fR(3)
+for examples\&.
 .SS "HTTP proxy specification"
 .PP
 The
@@ -61,7 +74,7 @@ function configures use of an HTTP proxy server for the session, the location of
 and
 \fIport\fR
 parameters\&. If the proxy requires authentication,
-ne_set_proxy_auth
+\fBne_set_proxy_auth\fR(3)
 should be used\&.
 .SS "System proxy configuration"
 .PP
@@ -143,11 +156,9 @@ ne_session_destroy(sess);
 .\}
 .SH "SEE ALSO"
 .PP
-ne_ssl_set_verify,
-ne_ssl_trust_cert,
-ne_sock_init,
-ne_set_session_flag
+\fBne_session_create\fR(3),
+\fBne_set_proxy_auth\fR(3)
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

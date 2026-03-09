@@ -2,12 +2,12 @@
 .\"     Title: ne_get_response_header
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_GET_RESPONSE_HEAD" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_GET_RESPONSE_HEAD" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_get_response_header, ne_response_header_iterate \- functions to access response headers
+ne_get_response_header, ne_get_response_trailer, ne_response_header_iterate, ne_response_trailer_iterate \- functions to access response headers and trailers
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -38,13 +38,23 @@ ne_get_response_header, ne_response_header_iterate \- functions to access respon
 .ft
 .HP \w'const\ char\ *ne_get_response_header('u
 .BI "const char *ne_get_response_header(ne_request\ *" "request" ", const\ char\ *" "name" ");"
+.HP \w'const\ char\ *ne_get_response_trailer('u
+.BI "const char *ne_get_response_trailer(ne_request\ *" "req" ", const\ char\ *" "name" ");"
 .HP \w'void\ *ne_response_header_iterate('u
 .BI "void *ne_response_header_iterate(ne_request\ *" "request" ", void\ *" "cursor" ", const\ char\ **" "name" ", const\ char\ **" "value" ");"
+.HP \w'void\ *ne_response_trailer_iterate('u
+.BI "void *ne_response_trailer_iterate(ne_request\ *" "request" ", void\ *" "cursor" ", const\ char\ **" "name" ", const\ char\ **" "value" ");"
 .SH "DESCRIPTION"
 .PP
 To retrieve the value of a response header field, the
 \fBne_get_response_header\fR
-function can be used, and is given the name of the header to return\&.
+function can be used, and is given the name of the header to return\&. If multiple HTTP response headers are received with the same name, their values are combined together in a comma\-separated list\&.
+.PP
+To retrieve the value of a header from a chunked response trailer section (sent after, rather than before, the response body),
+\fBne_get_response_trailer\fR
+can be used\&. This function otherwise has the same semantics as
+\fBne_get_response_header\fR\&. Note that trailer fields are used rarely and should be interpreted with care, see
+\m[blue]\fBRFC 9110 \(sc6\&.5\fR\m[]\&\s-2\u[1]\d\s+2\&.
 .PP
 To iterate over all the response headers returned, the
 \fBne_response_header_iterate\fR
@@ -59,16 +69,29 @@ and
 parameters, and returns a new cursor pointer which can be passed to
 \fBne_response_header_iterate\fR
 to retrieve the next header\&.
+.PP
+The
+\fBne_response_trailer_iterate\fR
+function has the same semantics as
+\fBne_response_header_iterate\fR
+except it operates on the response trailer fields rather than the header section\&.
 .SH "RETURN VALUE"
 .PP
 \fBne_get_response_header\fR
-returns a string, or
+and
+\fBne_get_response_trailer\fR
+each return a string, or
 NULL
-if no header with that name was given\&. If used during request processing, the return value pointer is valid only until the next call to
-\fBne_begin_request\fR, or else, until the request object is destroyed\&.
+if no header or trailer field with that name was found\&. The return value pointer is valid only until the next call to
+\fBne_begin_request\fR
+or
+\fBne_request_destroy\fR
+for the same request\&.
 .PP
 Likewise, the cursor, names, and values returned by
 \fBne_response_header_iterate\fR
+or
+\fBne_response_trailer_iterate\fR
 are only valid until the next call to
 \fBne_begin_request\fR
 or until the request object is destroyed\&.
@@ -94,11 +117,26 @@ ne_request_destroy(req);
 .if n \{\
 .RE
 .\}
+.SH "HISTORY"
+.PP
+\fBne_get_response_trailer\fR
+and
+\fBne_response_trailer_iterate\fR
+are available in neon 0\&.37\&.0 and later\&. In older releases, trailer fields were merged with normal response headers and could be accessed using
+\fBne_get_response_header\fR
+or
+\fBne_response_header_iterate\fR\&.
 .SH "SEE ALSO"
 .PP
-ne_request_create,
-ne_request_destroy\&.
+\fBne_request_create\fR(3),
+\fBne_request_destroy\fR(3)\&.
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br
+.SH "REFERENCES"
+.IP " 1." 4
+RFC 9110 \(sc6.5
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc9110.html#name-trailer-fields
+.RE

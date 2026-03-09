@@ -98,6 +98,7 @@ while test $# -gt 0; do
 	lfs|LFS) support @NE_FLAG_LFS@ ;;
 	i18n|I18N) support @NE_FLAG_I18N@ ;;
 	ts_ssl|TS_SSL) support @NE_FLAG_TS_SSL@ ;;
+	ntlm|NTLM) support @NE_FLAG_NTLM@ ;;
 	*) support no ;;
 	esac
 	;;

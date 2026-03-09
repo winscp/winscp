@@ -61,7 +61,7 @@ dnl is not available.
 m4_ifdef([AC_LIBTOOL_TAGS], [AC_LIBTOOL_TAGS([])])
 
 AC_DISABLE_SHARED
-m4_ifdef([LT_INIT], [LT_INIT], [AC_PROG_LIBTOOL])
+m4_ifdef([LT_INIT], [LT_INIT(pic-only)], [AC_PROG_LIBTOOL])
 
 AC_EXEEXT
 
@@ -167,11 +167,6 @@ else
   NEON_LINK_FLAGS="$NEON_LINK_FLAGS -export-symbols-regex '^ne_[[^_]]'"
 fi 
 
-if test x${enable_shared}${pic_mode}z = xnodefaultz; then
-   CFLAGS="$CFLAGS -prefer-pic"
-   AC_MSG_NOTICE([Using PIC for static library build])
-fi
-
 if test x${enable_shared} = xno; then
    # Defining NE_PRIVATE as the empty string would work; using a
    # non-empty but redundant string 'extern' avoids any possible cpp
@@ -203,13 +198,16 @@ test -d test/common || mkdir test/common
 
 AC_MSG_NOTICE([Configured to build AC_PACKAGE_STRING:
 
-  Install prefix:  ${prefix}
-  Compiler:        ${CC}
-  XML Parser:      ${neon_xml_parser_message}
-  SSL library:     ${ne_SSL_message}
-  zlib support:    ${ne_ZLIB_message}
-  GSSAPI support:  ${ne_GSSAPI_message}
-  Build libraries: Shared=${enable_shared}, Static=${enable_static}
+  Install prefix:   ${prefix}
+  Compiler:         ${CC}
+  XML Parser:       ${neon_xml_parser_message}
+  SSL library:      ${ne_SSL_message}
+  zlib support:     ${ne_ZLIB_message}
+  GSSAPI support:   ${ne_GSSAPI_message}
+  NTLM support:     ${ne_NTLM_message}
+  libproxy support: ${ne_LIBPXY_message}
+
+  Building:         Shared=${enable_shared}, Static=${enable_static}, Libtool Version=${NE_LIBTOOL_VERSINFO}
 ])
 
 case $ALLOW_INSTALL in

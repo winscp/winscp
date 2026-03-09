@@ -31,8 +31,10 @@
 
 /* Handle an XML response parse error, setting session error string
  * and closing the connection. */
-static int parse_error(ne_session *sess, ne_xml_parser *parser)
+static int parse_error(ne_request *req, ne_xml_parser *parser)
 {
+    ne_session *const sess = ne_get_session(req);
+
     ne_set_error(sess, _("Could not parse response: %s"),
                  ne_xml_get_error(parser));
     NE_DEBUG(NE_DBG_XML, "xmlreq: Parse failed, set error: %s\n",
@@ -56,7 +58,7 @@ int ne_xml_parse_response(ne_request *req, ne_xml_parser *parser)
         #endif
         ret = ne_xml_parse(parser, buf, bytes);
         if (ret)
-            return parse_error(ne_get_session(req), parser);
+            return parse_error(req, parser);
     }
 
     if (bytes == 0) {
@@ -69,7 +71,7 @@ int ne_xml_parse_response(ne_request *req, ne_xml_parser *parser)
         if (ne_xml_parse(parser, NULL, 0) == 0)
             return NE_OK;
         else
-            return parse_error(ne_get_session(req), parser);
+            return parse_error(req, parser);
     } else {
         return NE_ERROR;
     }    
@@ -119,7 +121,10 @@ int ne_xml_dispatchif_request(ne_request *req, ne_xml_parser *parser,
                 if (parseit && ctype.charset) {
                     NE_DEBUG(NE_DBG_XML, "xmlreq: Using charset '%s'\n",
                              ctype.charset);
-                    parseit = ne_xml_set_encoding(parser, ctype.charset) == 0;
+                    if (ne_xml_set_encoding(parser, ctype.charset)) {
+                        ne_free(ctype.value);
+                        return parse_error(req, parser);
+                    }
                 }
                 ne_free(ctype.value);
             }

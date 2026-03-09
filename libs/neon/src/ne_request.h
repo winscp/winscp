@@ -1,6 +1,6 @@
 /* 
    HTTP Request Handling
-   Copyright (C) 1999-2025, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2026, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -153,6 +153,14 @@ void ne_add_response_body_reader(ne_request *req, ne_accept_response accpt,
 const char *ne_get_response_header(ne_request *req, const char *name)
     ne_attribute((nonnull));
 
+/* Retrieve the value of the response header field from any chunked
+ * trailer with given name; returns NULL if no response header with
+ * the given name was found.  The return value is valid only until the
+ * next call to either ne_request_destroy or ne_begin_request for this
+ * request. */
+const char *ne_get_response_trailer(ne_request *req, const char *name)
+    ne_attribute((nonnull));
+
 /* Iterator interface for response headers: if passed a NULL cursor,
  * returns the first header; if passed a non-NULL cursor pointer,
  * returns the next header.  The return value is a cursor pointer: if
@@ -166,6 +174,13 @@ const char *ne_get_response_header(ne_request *req, const char *name)
  * request. */
 void *ne_response_header_iterate(ne_request *req, void *cursor,
                                  const char **name, const char **value);
+
+/* Iterator interface for response trailers; this has exactly the same
+ * semantics as ne_response_header_iterate() except it operates on
+ * fields in the trailer section (sent after a chunked response body)
+ * rather than the header section (sent before any response body). */
+void *ne_response_trailer_iterate(ne_request *req, void *cursor,
+                                  const char **name, const char **value);
 
 /* Adds a header to the request with given name and value. */
 void ne_add_request_header(ne_request *req, const char *name, 

@@ -23,9 +23,6 @@
 
 #include <sys/types.h>
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -34,24 +31,6 @@
 #endif
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h> /* for getpid() */
-#endif
-
-#ifdef WIN32
-#include <windows.h> /* for GetCurrentThreadId() etc */
-#endif
-
-#ifdef HAVE_OPENSSL
-#include <openssl/rand.h>
-#elif defined(HAVE_GNUTLS)
-#include <gnutls/gnutls.h>
-#if LIBGNUTLS_VERSION_NUMBER < 0x020b00
-#include <gcrypt.h>
-#else
-#include <gnutls/crypto.h>
-#endif
 #endif
 
 #include <errno.h>
@@ -77,12 +56,12 @@
 #endif
 #endif
 
-#ifdef HAVE_SSPI
-#include "ne_sspi.h"
+#ifdef NE_HAVE_NTLM
+#include <ntlm.h>
 #endif
 
-#ifdef HAVE_NTLM
-#include "ne_ntlm.h"
+#ifdef HAVE_SSPI
+#include "ne_sspi.h"
 #endif
  
 #define HOOK_SERVER_ID "http://webdav.org/neon/hooks/server-auth"
@@ -200,9 +179,10 @@ typedef struct {
     void *sspi_context;
     char *sspi_host;
 #endif
-#ifdef HAVE_NTLM
-     /* This is used for NTLM auth */
-     ne_ntlm_context *ntlm_context;
+#ifdef NE_HAVE_NTLM
+    enum {NTLM_INIT=0, NTLM_SENT, NTLM_DONE} ntlm_state;
+    char *ntlm_token;
+    char *ntlm_password;
 #endif
     /* These all used for Digest auth */
     char *realm;
@@ -336,11 +316,9 @@ static void clean_session(auth_session *sess)
     ne_sspi_destroy_context(sess->sspi_context);
     sess->sspi_context = NULL;
 #endif
-#ifdef HAVE_NTLM
-    if (sess->ntlm_context) {
-        ne__ntlm_destroy_context(sess->ntlm_context);
-        sess->ntlm_context = NULL;
-    }
+#ifdef NE_HAVE_NTLM
+    if (sess->ntlm_token) zero_and_free(sess->ntlm_token);
+    if (sess->ntlm_password) zero_and_free(sess->ntlm_password);
 #endif
 #ifdef WINSCP
     ne_uri_free(&sess->passport_login_uri);
@@ -362,67 +340,6 @@ static void clean_session(auth_session *sess)
 #endif
 
     sess->protocol = NULL;
-}
-
-/* Returns client nonce string using given hash algorithm. Returns
- * NULL on error, in which case challenge_error(errmsg) is called. */
-static char *get_cnonce(const struct hashalg *alg, ne_buffer **errmsg)
-{
-#ifdef NE_HAVE_SSL
-    unsigned char data[32];
-
-#ifdef HAVE_GNUTLS
-#if LIBGNUTLS_VERSION_NUMBER < 0x020b00
-    gcry_create_nonce(data, sizeof data);
-#else
-    gnutls_rnd(GNUTLS_RND_NONCE, data, sizeof data);
-#endif
-    return ne_base64(data, sizeof data);
-
-#else /* !HAVE_GNUTLS */
-    if (RAND_status() == 1 && RAND_bytes(data, sizeof data) >= 0) {
-        return ne_base64(data, sizeof data);
-    } 
-    else {
-        challenge_error(errmsg,
-                        _("cannot create client nonce for Digest challenge, "
-                          "OpenSSL PRNG not seeded"));
-        return NULL;
-    }
-#endif /* HAVE_GNUTLS */
-
-#else /* !NE_HAVE_SSL */
-    /* Fallback sources of random data: all bad, but no good sources
-     * are available. */
-    ne_buffer *buf = ne_buffer_create();
-    char *ret;
-
-#ifdef HAVE_GETTIMEOFDAY
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == 0)
-        ne_buffer_snprintf(buf, 64, "%" NE_FMT_TIME_T ".%ld",
-                           tv.tv_sec, (long)tv.tv_usec);
-#else /* !HAVE_GETTIMEOFDAY */
-    ne_buffer_snprintf(buf, 64, "%" NE_FMT_TIME_T, time(NULL));
-#endif
-
-    {
-#ifdef WIN32
-        DWORD pid = GetCurrentThreadId();
-#else
-        pid_t pid = getpid();
-#endif
-        ne_buffer_snprintf(buf, 32, "%lu", (unsigned long) pid);
-    }
-
-    ret = ne_strhash(alg->hash, buf->data, NULL);
-    if (!ret)
-        challenge_error(errmsg, _("%s hash failed for Digest challenge"),
-                        alg->name);
-
-    ne_buffer_destroy(buf);
-    return ret;
-#endif
 }
 
 /* Callback to retrieve user credentials for given session on given
@@ -874,18 +791,36 @@ static int parse_domain(auth_session *sess, const char *domain)
     return invalid;
 }
 
-#ifdef HAVE_NTLM
-
+#ifdef NE_HAVE_NTLM
 static char *request_ntlm(auth_session *sess, struct auth_request *request) 
 {
-    char *token = ne__ntlm_getRequestToken(sess->ntlm_context);
-    if (token) {
-        char *req = ne_concat(sess->protocol->name, " ", token, "\r\n", NULL);
-        ne_free(token);
-        return req;
-    } else {
+    const char *token = sess->ntlm_token;
+
+    if (token)
+        return ne_concat(sess->protocol->name, " ", token, "\r\n", NULL);
+    else
         return NULL;
+}
+
+static const unsigned char ntlm_type2_prefix[] = {"NTLMSSP\0" "\02\0\0\0"};
+#define TYPE2_PREFIX_LEN (sizeof(ntlm_type2_prefix)-1)
+
+#define MIN_TYPE2_LEN (48)
+
+/* Parse a type 2 message from token 'blob', return non-zero on error. */
+static int parse_type2_message(tSmbNtlmAuthChallenge *challenge, const char *blob)
+{
+    unsigned char *raw;
+    size_t len = ne_unbase64(blob, &raw);
+    int ret = -1;
+
+    if (len > MIN_TYPE2_LEN && len <= sizeof *challenge
+        && memcmp(raw, ntlm_type2_prefix, TYPE2_PREFIX_LEN) == 0) {
+        memcpy(challenge, raw, len);
+        ret = 0;
     }
+    if (len) ne_free(raw);
+    return ret;
 }
 
 static int ntlm_challenge(auth_session *sess, int attempt,
@@ -897,31 +832,67 @@ static int ntlm_challenge(auth_session *sess, int attempt,
                           )
 {
     NE_DEBUG_WINSCP_CONTEXT(sess->sess);
-    int status;
-    
-    NE_DEBUG(NE_DBG_HTTPAUTH, "auth: NTLM challenge.\n");
-    
-    if (!parms->opaque && (!sess->ntlm_context || (attempt > 1))) {
-        char password[ABUFSIZE];
+    NE_DEBUG(NE_DBG_HTTPAUTH, "auth: NTLM challenge (state %d).\n",
+             sess->ntlm_state);
 
-        if (get_credentials(sess, errmsg, attempt, parms, password)) {
+    if (sess->ntlm_token) {
+        ne_free(sess->ntlm_token);
+        sess->ntlm_token = NULL;
+    }
+
+    if (!parms->opaque) {
+        NE_DEBUG(NE_DBG_HTTPAUTH, "auth: NTLM challenge, reset state.\n");
+        sess->ntlm_state = NTLM_INIT;
+    }
+    else if (sess->ntlm_state == NTLM_INIT) {
+        challenge_error(errmsg, _("unexpected token in NTLM challenge"));
+        return -1;
+    }
+
+    if (sess->ntlm_state == NTLM_INIT) {
+        tSmbNtlmAuthRequest req;
+
+        sess->ntlm_password = ne_calloc(NE_ABUFSIZ);
+        if (get_credentials(sess, errmsg, attempt, parms,
+                            sess->ntlm_password)) {
             /* Failed to get credentials */
+            ne_free(sess->ntlm_password);
+            sess->ntlm_password = NULL;
             return -1;
         }
 
-        if (sess->ntlm_context) {
-            ne__ntlm_destroy_context(sess->ntlm_context);
-            sess->ntlm_context = NULL;
+        /* Libntlm uses some default flags in the type 1 message which
+         * are possibly not appropriate, it would be better to
+         * manipulate via an API call. */
+        buildSmbNtlmAuthRequest(&req, sess->username, NULL);
+        sess->ntlm_token = ne_base64((void *)&req, SmbLength(&req));
+        sess->ntlm_state = NTLM_SENT;
+    }
+    else if (sess->ntlm_state == NTLM_SENT) {
+        tSmbNtlmAuthChallenge chall;
+        tSmbNtlmAuthResponse resp;
+
+        if (parse_type2_message(&chall, parms->opaque)) {
+            challenge_error(errmsg, _("malformed NTLM challenge"));
+            return -1;
         }
 
-        sess->ntlm_context = ne__ntlm_create_context(sess->username, password);
+#ifdef NE_DEBUGGING
+        if (ne_debug_mask & NE_DBG_HTTPAUTH) {
+            NE_DEBUG(NE_DBG_HTTPAUTH, "auth: NTLM type 2 message - ");
+            dumpSmbNtlmAuthChallenge(ne_debug_stream, &chall);
+        }
+#endif
 
-        ne__strzero(password, sizeof password);
+        /* Build type 3 message: */
+        buildSmbNtlmAuthResponse(&chall, &resp, sess->username,
+                                 sess->ntlm_password);
+        sess->ntlm_token = ne_base64((void *)&resp, SmbLength(&resp));
+        sess->ntlm_state = NTLM_DONE;
     }
-
-    status = ne__ntlm_authenticate(sess->ntlm_context, parms->opaque);
-    if (status) {
-        return status;
+    else {
+        challenge_error(errmsg, _("could not handle NTLM challenge"));
+        return -1;
     }
 
     return 0;
@@ -1061,6 +1032,8 @@ static int digest_challenge(auth_session *sess, int attempt,
     ne_free(p);
 
     if (!parms->stale) {
+        unsigned char nonce[32];
+
         /* Non-stale challenge: clear session and request credentials. */
         clean_session(sess);
 
@@ -1072,12 +1045,13 @@ static int digest_challenge(auth_session *sess, int attempt,
             return -1;
         }
 
-        /* The hash alg from parameters already tested to work above,
-           so re-use it. */
-        if ((sess->cnonce = get_cnonce(parms->alg, errmsg)) == NULL) {
-            /* challenge_error() called by get_cnonce(). */
+        /* Create the client nonce. */
+        if ((ne_mknonce(nonce, sizeof nonce, 0))) {
+            challenge_error(errmsg,
+                            _("cannot create client nonce for Digest challenge"));
             return -1;
         }
+        sess->cnonce = ne_base64(nonce, sizeof nonce);
 
         sess->realm = ne_strdup(parms->realm);
         sess->alg = parms->alg;
@@ -1807,7 +1781,7 @@ static const struct auth_protocol protocols[] = {
       sspi_challenge, request_sspi, verify_sspi,
       AUTH_FLAG_OPAQUE_PARAM|AUTH_FLAG_VERIFY_NON40x|AUTH_FLAG_CONN_AUTH },
 #endif
-#ifdef HAVE_NTLM
+#ifdef NE_HAVE_NTLM
     { NE_AUTH_NTLM, 30, "NTLM",
       ntlm_challenge, request_ntlm, NULL,
       AUTH_FLAG_OPAQUE_PARAM|AUTH_FLAG_VERIFY_NON40x|AUTH_FLAG_CONN_AUTH },
@@ -2101,7 +2075,9 @@ static int ah_post_send(ne_request *req, void *cookie, const ne_status *status)
     if (!areq) return NE_OK;
 
     auth_hdr = ne_get_response_header(req, sess->spec->resp_hdr);
-    auth_info_hdr = ne_get_response_header(req, sess->spec->resp_info_hdr);
+    auth_info_hdr = ne_get_response_trailer(req, sess->spec->resp_info_hdr);
+    if (!auth_info_hdr)
+        auth_info_hdr = ne_get_response_header(req, sess->spec->resp_info_hdr);
 
     if (sess->context == AUTH_CONNECT && status->code == 401 && !auth_hdr) {
         /* Some broken proxies issue a 401 as a proxy auth challenge

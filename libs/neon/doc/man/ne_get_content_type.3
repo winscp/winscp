@@ -1,0 +1,91 @@
+'\" t
+.\"     Title: ne_get_content_type
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date:  1 March 2026
+.\"    Manual: neon API reference
+.\"    Source: neon 0.37.0
+.\"  Language: English
+.\"
+.TH "NE_GET_CONTENT_TYPE" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_get_content_type \- retrieve content type of response
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_basic\&.h>
+
+typedef struct {
+    const char *type, *subtype;
+    const char *charset;
+    char *value;
+} ne_content_type;
+.fi
+.ft
+.HP \w'int\ ne_get_content_type('u
+.BI "int ne_get_content_type(ne_request\ *" "req" ", ne_content_type\ *" "ctype" ");"
+.SH "DESCRIPTION"
+.PP
+The
+\fBne_get_content_type\fR
+function retrieves and parses the
+Content\-Type
+header from the response to request
+\fIreq\fR\&. If successful, all fields of the
+\fIctype\fR
+structure are set (and are never
+NULL)\&. The
+\fIvalue\fR
+field must be freed by the caller using
+\fBfree\fR
+after use\&.
+.SH "RETURN VALUE"
+.PP
+\fBne_get_content_type\fR
+returns zero if the response had a valid
+Content\-Type
+header, or non\-zero on error\&. On error, the
+\fIctype\fR
+structure is not altered\&.
+.SH "HISTORY"
+.PP
+A default
+\fIcharset\fR
+value was returned for
+text/xml
+content\-types in neon 0\&.36\&.0 and earlier; later versions use no default (per
+\m[blue]\fBRFC 7303\fR\m[]\&\s-2\u[1]\d\s+2)\&.
+.SH "SEE ALSO"
+.PP
+\fBne_xml_dispatch_request\fR(3),
+\fBne_request_dispatch\fR(3)
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2026 Joe Orton
+.br
+.SH "REFERENCES"
+.IP " 1." 4
+RFC 7303
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc7303
+.RE

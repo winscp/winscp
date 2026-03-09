@@ -14,7 +14,7 @@
 <!-- date/version stamp files created as release tarball is rolled -->
 <!ENTITY date SYSTEM "date.xml">
 <!ENTITY version SYSTEM "version.xml">
-<!ENTITY copyright "<copyright><year>2001-2025</year><holder>Joe Orton</holder></copyright>">
+<!ENTITY copyright "<copyright><year>2001-2026</year><holder>Joe Orton</holder></copyright>">
 
 <!ENTITY neon "neon">
 
@@ -54,13 +54,16 @@
 <!ENTITY refsslcertio SYSTEM "ref/sslcertio.xml">
 <!ENTITY refssldname SYSTEM "ref/ssldname.xml">
 <!ENTITY refssltrust SYSTEM "ref/ssltrust.xml">
+<!ENTITY refsslctx SYSTEM "ref/sslctx.xml">
 <!ENTITY refreq SYSTEM "ref/req.xml">
 <!ENTITY refreqhdr SYSTEM "ref/reqhdr.xml">
 <!ENTITY refresphdr SYSTEM "ref/resphdr.xml">
 <!ENTITY refrespbody SYSTEM "ref/respbody.xml">
 <!ENTITY refreqflags SYSTEM "ref/reqflags.xml">
 <!ENTITY refreqtarget SYSTEM "ref/reqtgt.xml">
+<!ENTITY refctype SYSTEM "ref/ctype.xml">
 <!ENTITY refred SYSTEM "ref/redir.xml">
+<!ENTITY refsockssl SYSTEM "ref/sockssl.xml">
 <!ENTITY refstatus SYSTEM "ref/status.xml">
 <!ENTITY refgetst SYSTEM "ref/getst.xml">
 <!ENTITY refreqbody SYSTEM "ref/reqbody.xml">
@@ -72,7 +75,9 @@
 <!ENTITY refbufdest SYSTEM "ref/bufdest.xml">
 <!ENTITY refbufutil SYSTEM "ref/bufutil.xml">
 <!ENTITY refhash SYSTEM "ref/hash.xml">
+<!ENTITY refnonce SYSTEM "ref/nonce.xml">
 <!ENTITY refparam SYSTEM "ref/param.xml">
+<!ENTITY reflower SYSTEM "ref/lower.xml">
 <!ENTITY reftok SYSTEM "ref/tok.xml">
 <!ENTITY refshave SYSTEM "ref/shave.xml">
 <!ENTITY refvers SYSTEM "ref/vers.xml">
@@ -179,7 +184,9 @@ ignoring the WebDAV support if desired.</para>
     &refbufcr; <!-- ne_buffer_create -->
     &refbufdest; <!-- ne_buffer_destroy -->
     &refhash; <!-- ne_strhash -->
+    &refnonce; <!-- ne_mknonce -->
     &refparam; <!-- ne_strparam -->
+    &reflower; <!-- ne_strlower -->
     &referr; <!-- ne_get_error -->
     &refgetst; <!-- ne_get_status -->
     &reffeat; <!-- ne_has_support -->
@@ -197,6 +204,7 @@ ignoring the WebDAV support if desired.</para>
     &refreqflags; <!-- ne_set_request_flag -->
     &refreqbody; <!-- ne_set_request_body_buffer -->
     &refreqtarget; <!-- ne_get_request_target -->
+    &refctype; <!-- ne_get_content_type -->
     &refred; <!-- ne_redirect_register -->
     &refauth; <!-- ne_set_server_auth -->
     &refshave; <!-- ne_shave -->
@@ -209,6 +217,8 @@ ignoring the WebDAV support if desired.</para>
     &refsslproto; <!-- ne_ssl_proto_name -->
     &refsslvers; <!-- ne_ssl_set_protovers -->
     &refsslvfy; <!-- ne_ssl_set_verify -->
+    &refsslctx; <!-- ne_ssl_context_* -->
+    &refsockssl; <!-- ne_sock_ssl*_* -->
     &refclicert; <!-- ne_ssl_client_cert -->
     &refstatus; <!-- ne_status -->
     &reftok; <!-- ne_token -->

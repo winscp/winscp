@@ -2,12 +2,12 @@
 .\"     Title: ne_sock_init
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 23 November 2025
+.\"      Date:  1 March 2026
 .\"    Manual: neon API reference
-.\"    Source: neon 0.36.0
+.\"    Source: neon 0.37.0
 .\"  Language: English
 .\"
-.TH "NE_SOCK_INIT" "3" "23 November 2025" "neon 0.36.0" "neon API reference"
+.TH "NE_SOCK_INIT" "3" "1 March 2026" "neon 0.37.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -72,7 +72,7 @@ Both the SSL libraries supported by neon \(em OpenSSL and GnuTLS \(em require ca
 If neon is configured using the
 \-\-enable\-threadsafe\-ssl
 flag, thread\-safe SSL support will be enabled automatically, as covered in the following section\&. Otherwise, it is not safe to use neon with SSL in a multi\-threaded process\&. The
-ne_has_support
+\fBne_has_support\fR(3)
 function can be used to determine whether neon is built to enable thread\-safety support in the SSL library\&.
 .SS "Thread\-safe SSL with OpenSSL"
 .PP
@@ -121,5 +121,5 @@ neon(3),
 ne_has_support(3)
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2025 Joe Orton
+Copyright \(co 2001-2026 Joe Orton
 .br

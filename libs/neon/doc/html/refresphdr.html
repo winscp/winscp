@@ -1,6 +1,15 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>ne_get_response_header</title><link rel="stylesheet" type="text/css" href="manual.css"><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot"><link rel="home" href="index.html" title="neon HTTP/WebDAV client library"><link rel="up" href="ref.html" title="neon API reference"><link rel="prev" href="refreqhdr.html" title="ne_add_request_header"><link rel="next" href="refrespbody.html" title="ne_read_response_to_fd"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">ne_get_response_header</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="refreqhdr.html">Prev</a> </td><th width="60%" align="center">neon API reference</th><td width="20%" align="right"> <a accesskey="n" href="refrespbody.html">Next</a></td></tr></table><hr></div><div class="refentry"><a name="refresphdr"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ne_get_response_header, ne_response_header_iterate — functions to access response headers</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="funcsynopsis"><pre class="funcsynopsisinfo">#include &lt;ne_request.h&gt;</pre><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">const char *<b class="fsfunc">ne_get_response_header</b>(</code>ne_request *<var xmlns="" class="pdparam">request</var>, const char *<var xmlns="" class="pdparam">name</var><code xmlns="">)</code>;</code></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">void *<b class="fsfunc">ne_response_header_iterate</b>(</code>ne_request *<var xmlns="" class="pdparam">request</var>, void *<var xmlns="" class="pdparam">cursor</var>, const char **<var xmlns="" class="pdparam">name</var>, const char **<var xmlns="" class="pdparam">value</var><code xmlns="">)</code>;</code></div></div></div><div class="refsect1"><a name="id3365"></a><h2>Description</h2><p>To retrieve the value of a response header field, the
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>ne_get_response_header</title><link rel="stylesheet" type="text/css" href="manual.css"><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot"><link rel="home" href="index.html" title="neon HTTP/WebDAV client library"><link rel="up" href="ref.html" title="neon API reference"><link rel="prev" href="refreqhdr.html" title="ne_add_request_header"><link rel="next" href="refrespbody.html" title="ne_read_response_to_fd"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">ne_get_response_header</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="refreqhdr.html">Prev</a> </td><th width="60%" align="center">neon API reference</th><td width="20%" align="right"> <a accesskey="n" href="refrespbody.html">Next</a></td></tr></table><hr></div><div class="refentry"><a name="refresphdr"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ne_get_response_header, ne_get_response_trailer, ne_response_header_iterate, ne_response_trailer_iterate — functions to access response headers and trailers</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="funcsynopsis"><pre class="funcsynopsisinfo">#include &lt;ne_request.h&gt;</pre><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">const char *<b class="fsfunc">ne_get_response_header</b>(</code>ne_request *<var xmlns="" class="pdparam">request</var>, const char *<var xmlns="" class="pdparam">name</var><code xmlns="">)</code>;</code></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">const char *<b class="fsfunc">ne_get_response_trailer</b>(</code>ne_request *<var xmlns="" class="pdparam">req</var>, const char *<var xmlns="" class="pdparam">name</var><code xmlns="">)</code>;</code></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">void *<b class="fsfunc">ne_response_header_iterate</b>(</code>ne_request *<var xmlns="" class="pdparam">request</var>, void *<var xmlns="" class="pdparam">cursor</var>, const char **<var xmlns="" class="pdparam">name</var>, const char **<var xmlns="" class="pdparam">value</var><code xmlns="">)</code>;</code></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="funcprototype"><code><code xmlns="" class="funcdef">void *<b class="fsfunc">ne_response_trailer_iterate</b>(</code>ne_request *<var xmlns="" class="pdparam">request</var>, void *<var xmlns="" class="pdparam">cursor</var>, const char **<var xmlns="" class="pdparam">name</var>, const char **<var xmlns="" class="pdparam">value</var><code xmlns="">)</code>;</code></div></div></div><div class="refsect1"><a name="id3521"></a><h2>Description</h2><p>To retrieve the value of a response header field, the
     <code class="function">ne_get_response_header</code> function can be used,
-    and is given the name of the header to return.</p><p>To iterate over all the response headers returned, the
+    and is given the name of the header to return. If multiple HTTP
+    response headers are received with the same name, their values are
+    combined together in a comma-separated list.</p><p>To retrieve the value of a header from a chunked response
+    trailer section (sent after, rather than before, the response
+    body), <code class="function">ne_get_response_trailer</code> can be
+    used. This function otherwise has the same semantics as
+    <code class="function">ne_get_response_header</code>. Note that trailer
+    fields are used rarely and should be interpreted with care, see
+    <a class="ulink" href="https://www.rfc-editor.org/rfc/rfc9110.html#name-trailer-fields" target="_top">RFC
+    9110 §6.5</a>.</p><p>To iterate over all the response headers returned, the
     <code class="function">ne_response_header_iterate</code> function can be
     used.  This function takes a <code class="parameter">cursor</code>
     parameter which should be <code class="literal">NULL</code> to retrieve the first header. The
@@ -8,14 +17,20 @@
     the <code class="parameter">name</code> and <code class="parameter">value</code>
     parameters, and returns a new cursor pointer which can be passed
     to <code class="function">ne_response_header_iterate</code> to retrieve the
-    next header.</p></div><div class="refsect1"><a name="id3376"></a><h2>Return value</h2><p><code class="function">ne_get_response_header</code> returns a
-    string, or <code class="literal">NULL</code> if no header with that name was given.  If used
-    during request processing, the return value pointer is valid only
-    until the next call to <code class="function">ne_begin_request</code>, or
-    else, until the request object is destroyed.</p><p>Likewise, the cursor, names, and values returned by
-    <code class="function">ne_response_header_iterate</code> are only valid
+    next header.</p><p>The <code class="function">ne_response_trailer_iterate</code>
+    function has the same semantics as
+    <code class="function">ne_response_header_iterate</code> except it operates
+    on the response trailer fields rather than the header
+    section.</p></div><div class="refsect1"><a name="id3539"></a><h2>Return value</h2><p><code class="function">ne_get_response_header</code> and
+    <code class="function">ne_get_response_trailer</code> each return a string,
+    or <code class="literal">NULL</code> if no header or trailer field with that name was found.
+    The return value pointer is valid only until the next call to
+    <code class="function">ne_begin_request</code> or
+    <code class="function">ne_request_destroy</code> for the same request.</p><p>Likewise, the cursor, names, and values returned by
+    <code class="function">ne_response_header_iterate</code> or
+    <code class="function">ne_response_trailer_iterate</code> are only valid
     until the next call to <code class="function">ne_begin_request</code> or
-    until the request object is destroyed.</p></div><div class="refsect1"><a name="id3385"></a><h2>Examples</h2><p>The following code will output the value of the
+    until the request object is destroyed.</p></div><div class="refsect1"><a name="id3551"></a><h2>Examples</h2><p>The following code will output the value of the
     <code class="literal">Last-Modified</code> header for a resource:</p><pre class="programlisting">ne_request *req = ne_request_create(sess, "GET", "/foo.txt");
 if (ne_request_dispatch(req) == NE_OK) {
     const char *mtime = ne_get_response_header(req, "Last-Modified");
@@ -23,4 +38,9 @@ if (ne_request_dispatch(req) == NE_OK) {
         printf("/foo.txt has last-modified value %s\n", mtime);
     }
 }
-ne_request_destroy(req);</pre></div><div class="refsect1"><a name="id3390"></a><h2>See also</h2><p><a class="xref" href="refreq.html#ne_request_create">ne_request_create</a>, <a class="xref" href="refreq.html#ne_request_destroy">ne_request_destroy</a>.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="refreqhdr.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ref.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="refrespbody.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ne_add_request_header </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> ne_read_response_to_fd</td></tr></table></div></body></html>
+ne_request_destroy(req);</pre></div><div class="refsect1"><a name="id3556"></a><h2>History</h2><p><code class="function">ne_get_response_trailer</code> and
+    <code class="function">ne_response_trailer_iterate</code> are available in
+    neon 0.37.0 and later. In older releases, trailer fields were
+    merged with normal response headers and could be accessed using
+    <code class="function">ne_get_response_header</code> or
+    <code class="function">ne_response_header_iterate</code>.</p></div><div class="refsect1"><a name="id3563"></a><h2>See also</h2><p><a class="xref" href="refreq.html#ne_request_create">ne_request_create</a>, <a class="xref" href="refreq.html#ne_request_destroy">ne_request_destroy</a>.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="refreqhdr.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ref.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="refrespbody.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ne_add_request_header </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> ne_read_response_to_fd</td></tr></table></div></body></html>
