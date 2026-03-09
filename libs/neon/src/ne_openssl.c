@@ -1527,7 +1527,7 @@ char * ne_ssl_get_cipher(ne_session *sess)
     const SSL_CIPHER * ciph  = SSL_get_current_cipher(ssl);
     char * buffer = ne_malloc(4096);
     char enc[4096] = {0};
-	
+
     if (cert != NULL)
     {
         EVP_PKEY * pkey = X509_get_pubkey(cert);
@@ -1549,10 +1549,10 @@ char * ne_ssl_get_cipher(ne_session *sess)
     ne_snprintf(buffer, 4096,
         "%s: %s, %s",
         SSL_CIPHER_get_version(ciph),
-	SSL_CIPHER_get_name(ciph),
-	enc);
+        SSL_CIPHER_get_name(ciph),
+        enc);
 
-    return buffer;	
+    return buffer;
 }
 
 #endif
