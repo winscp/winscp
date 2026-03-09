@@ -1994,11 +1994,11 @@ int ne_sock_accept_ssl(ne_socket *sock, ne_ssl_context *ctx)
 
 int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx, void *userdata)
 {
-    return ne_sock_handshake(sock, ctx, NULL, 0);
+    return ne_sock_handshake(sock, ctx, NULL, 0, userdata);
 }
 
 int ne_sock_handshake(ne_socket *sock, ne_ssl_context *ctx,
-                      const char *hostname, unsigned int flags)
+                      const char *hostname, unsigned int flags, void *userdata) // WINSCP
 {
     int ret;
 

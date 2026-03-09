@@ -515,6 +515,10 @@ void ne_set_realhost(ne_session *sess, const char *realhost)
 {
     if (sess->realhost) ne_free(sess->realhost);
     sess->realhost = ne_strdup(realhost);
+    if (sess->ssl_context != NULL)
+    {
+        ne_ssl_context_set_realhost(sess->ssl_context, sess->realhost);
+    }
 }
 #endif
 
@@ -722,7 +726,7 @@ int ne__negotiate_ssl(ne_session *sess)
     /* Pass through the hostname if SNI is enabled. */
     snihost = sess->flags[NE_SESSFLAG_TLS_SNI] ? sess->server.hostname : NULL;
 
-    if (ne_sock_handshake(sess->socket, ctx, snihost, 0)) {
+    if (ne_sock_handshake(sess->socket, ctx, snihost, 0, sess)) { // WINSCP
         ne_set_error(sess, _("SSL handshake failed: %s"),
                      ne_sock_error(sess->socket));
         return NE_ERROR;

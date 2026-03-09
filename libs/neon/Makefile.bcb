@@ -59,7 +59,8 @@ OBJFILES=\
     $(OBJ_D)\ne_acl3744.obj \
     $(OBJ_D)\ne_props.obj \
     $(OBJ_D)\ne_locks.obj \
-    $(OBJ_D)\ne_openssl.obj
+    $(OBJ_D)\ne_openssl.obj \
+    $(OBJ_D)\ne_ssl.obj
 
 .path.c = $(SRC_D)/src
 .c.obj:

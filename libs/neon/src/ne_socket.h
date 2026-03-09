@@ -300,7 +300,7 @@ int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx,
 /* Initiate an SSL handshake with SSL context 'ctx', using SNI hint
  * 'hostname' (which may be NULL). 'flags' must be 0. */
 int ne_sock_handshake(ne_socket *sock, ne_ssl_context *ctx,
-                      const char *hostname, unsigned int flags);
+                      const char *hostname, unsigned int flags, void *userdata);
 
 /* Retrieve the session ID of the current SSL session.  If 'buf' is
  * non-NULL, on success, copies at most *buflen bytes to 'buf' and

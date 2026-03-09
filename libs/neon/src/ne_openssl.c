@@ -55,6 +55,9 @@
 #include "ne_internal.h"
 #include "ne_utils.h"
 #include "ne_privssl.h"
+#ifdef WINSCP
+#include "ne_private.h"
+#endif
 
 #include <windows.h>
 
@@ -271,13 +274,15 @@ void ne_ssl_cert_validity_time(const ne_ssl_certificate *cert,
 
 /* Check certificate identity per RFC 2818 and RFC 3280. */
 static int check_identity(const ne_ssl_certificate *server_cert,
-                          const char *hostname, const ne_inet_addr *address,
+                          const char *hostname, /*WINSCP*/ const char * realhost, const ne_inet_addr *address,
                           char **identity)
 {
     STACK_OF(GENERAL_NAME) *names;
     int match = 0, found = 0;
     X509 *cert = server_cert->subject;
 
+    if (realhost) hostname = realhost; // WINSCP
+      else
     if (!hostname) hostname = "";
 
     names = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
@@ -373,7 +378,7 @@ static ne_ssl_certificate *populate_cert(ne_ssl_certificate *cert, X509 *x5)
     cert->subject = x5;
     /* Retrieve the cert identity; pass a dummy hostname to match. */
     cert->identity = NULL;
-    check_identity(cert, NULL, NULL, &cert->identity);
+    check_identity(cert, NULL, NULL, NULL, &cert->identity);
     return cert;
 }
 
@@ -391,7 +396,6 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
     int depth = X509_STORE_CTX_get_error_depth(ctx);
     int err = X509_STORE_CTX_get_error(ctx);
     int failures = 0;
-    NE_DEBUG_WINSCP_CONTEXT(sess);
 
     /* If there's no error, nothing to do here. */
     if (ok) return ok;
@@ -486,7 +490,7 @@ int ne_ssl_check_certificate(ne_ssl_context *ctx, ne_socket *sock,
 
     /* Check certificate was issued to this server; pass URI of
      * server. */
-    ret = check_identity(cert, hostname, address, NULL);
+    ret = check_identity(cert, hostname, /*WINSCP*/ctx->realhost, address, NULL);
     if (ret < 0) {
         ne_sock_set_error(sock, _("Server certificate was missing commonName "
                                   "attribute in subject name"));
@@ -526,7 +530,6 @@ static int provide_client_cert(SSL *ssl, X509 **cert, EVP_PKEY **pkey)
     ne_ssl_socket *sslsock = SSL_get_app_data(ssl);
     SSL_CTX *const sslctx = SSL_get_SSL_CTX(ssl);
     ne_ssl_context *const ctx = SSL_CTX_get_app_data(sslctx);
-    NE_DEBUG_WINSCP_CONTEXT(sess);
 
     if (!ctx->client_cert && ctx->provider) {
 	ne_ssl_dname **dnames = NULL, *dnarray = NULL;
@@ -726,7 +729,6 @@ void ne_ssl_context_destroy(ne_ssl_context *ctx)
     ne_free(ctx);
 }
 
-    NE_DEBUG_WINSCP_CONTEXT(sess);
 const ne_ssl_dname *ne_ssl_cert_issuer(const ne_ssl_certificate *cert)
 {
     return &cert->issuer_dn;
@@ -775,6 +777,11 @@ void ne_ssl_context_trustdefca(ne_ssl_context *ctx)
 void ne_ssl_set_certificates_storage(ne_session *sess, const char * filename)
 {
     SSL_CTX_load_verify_locations(sess->ssl_context->ctx, filename, 0);
+}
+
+void ne_ssl_context_set_realhost(ne_ssl_context *ctx, const char* realhost)
+{
+    ctx->realhost = realhost;
 }
 #endif
 
@@ -1502,10 +1509,10 @@ void ne__ssl_exit(void)
 // see also CAsyncSslSocketLayer::PrintSessionInfo()
 const char * ne_ssl_get_version(ne_session *sess)
 {
-    ne_ssl_socket ssl_socket = ne__sock_sslsock(sess->socket);
+    ne_ssl_socket * ssl_socket = ne__sock_sslsock(sess->socket);
     if (ssl_socket != NULL)
     {
-        return SSL_get_version(ssl_socket);
+        return SSL_get_version(ssl_socket->ssl);
     }
     else
     {
@@ -1515,7 +1522,7 @@ const char * ne_ssl_get_version(ne_session *sess)
 
 char * ne_ssl_get_cipher(ne_session *sess)
 {
-    SSL * ssl = ne__sock_sslsock(sess->socket);
+    SSL * ssl = ne__sock_sslsock(sess->socket)->ssl;
     X509 * cert = SSL_get_peer_certificate(ssl);
     const SSL_CIPHER * ciph  = SSL_get_current_cipher(ssl);
     char * buffer = ne_malloc(4096);

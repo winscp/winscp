@@ -134,10 +134,7 @@ void __fastcall RequireNeon(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall NeonVersion()
 {
-  UnicodeString Str = StrFromNeon(ne_version_string());
-  CutToChar(Str, L' ', true); // "neon"
-  UnicodeString Result = CutToChar(Str, L':', true);
-  return Result;
+  return StrFromNeon(ne_version_library());
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ExpatVersion()

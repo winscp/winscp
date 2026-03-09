@@ -878,10 +878,12 @@ static int ntlm_challenge(auth_session *sess, int attempt,
         }
 
 #ifdef NE_DEBUGGING
+#ifndef WINSCP
         if (ne_debug_mask & NE_DBG_HTTPAUTH) {
             NE_DEBUG(NE_DBG_HTTPAUTH, "auth: NTLM type 2 message - ");
             dumpSmbNtlmAuthChallenge(ne_debug_stream, &chall);
         }
+#endif
 #endif
 
         /* Build type 3 message: */

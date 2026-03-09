@@ -308,6 +308,8 @@ int ne_ssl_context_get_flag(ne_ssl_context *ctx, int flag);
 /* Destroy an SSL context. */
 void ne_ssl_context_destroy(ne_ssl_context *ctx);
 
+void ne_ssl_context_set_realhost(ne_ssl_context *ctx, const char* realhost);
+
 NE_END_DECLS
 
 #endif
