@@ -2367,7 +2367,9 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
               TCopyParamType CopyParam = TemporaryFileCopyParam();
               for (int Index2 = 0; Index2 < FileList->Count; Index2++)
               {
-                UnicodeString RemotePath = FileList->Strings[Index2];
+                // Particularly with SCP the FileList contains relative paths,
+                // and we may end up with empty RemoteDir below.
+                UnicodeString RemotePath = Terminal->AbsolutePath(FileList->Strings[Index2], true);
                 UnicodeString TempName = GetTempLocalName(RemotePath, CopyParam);
                 TempNameMap.insert(std::make_pair(TempName.UpperCase(), RemotePath));
               }
