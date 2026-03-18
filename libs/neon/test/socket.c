@@ -111,21 +111,13 @@ static int close_and_wait(ne_socket *sock)
 
 static int init_ssl(void)
 {
-    char *server_key;
     ne_ssl_certificate *cert;
- 
-    /* take srcdir as argv[1]. */
-    if (test_argc > 1) {
-	server_key = ne_concat(test_argv[1], "/server.key", NULL);
-    } else {
-	server_key = ne_strdup("server.key");
-    }
 
     ONN("sock_init failed", ne_sock_init());
     server_ctx = ne_ssl_context_create(1);
     ONN("SSL_CTX_new failed", server_ctx == NULL);
 
-    ne_ssl_context_keypair(server_ctx, "server.cert", server_key);
+    ne_ssl_context_keypair(server_ctx, "server.cert", "server.key");
 
     client_ctx = ne_ssl_context_create(NE_SSL_CTX_CLIENT);
     ONN("SSL_CTX_new failed for client", client_ctx == NULL);
@@ -140,7 +132,6 @@ static int init_ssl(void)
 
     ne_ssl_context_trustcert(client_ctx, cert);
     ne_ssl_context_trustcert(client_ctx_tls12, cert);
-    ne_free(server_key);
 
     return OK;
 }

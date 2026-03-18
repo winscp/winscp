@@ -1,3 +1,9 @@
+Changes in release 0.37.1:
+* Bug fixes:
+ - fix compile warnings with OpenSSL 4.0.0-alpha1
+ - fix NTLM test case failures on big-endian systems
+ - fix test suite with SSL enabled in VPATH builds
+
 Changes in release 0.37.0:
 * Interface changes:
  - API and ABI backwards-compatible with 0.27.x and later

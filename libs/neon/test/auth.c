@@ -1788,10 +1788,10 @@ static int build_type2_challenge(tSmbNtlmAuthChallenge *challenge,
             challenge->buffer[i*2] = domain[i];
             challenge->buffer[i*2+1] = 0;
         }
-        challenge->uDomain.len = i * 2;
-        challenge->uDomain.maxlen = i * 2;
-        challenge->uDomain.offset = (unsigned char *)challenge->buffer - (unsigned char *)challenge;
-        challenge->bufIndex = i * 2;
+        challenge->uDomain.len = htole16(i * 2);
+        challenge->uDomain.maxlen = htole16(i * 2);
+        challenge->uDomain.offset = htole32((unsigned char *)challenge->buffer - (unsigned char *)challenge);
+        challenge->bufIndex = htole32(i * 2);
     }
 
     return OK;
@@ -1846,8 +1846,8 @@ static int serve_ntlm(ne_socket *sock, void *userdata)
 
         ONV(memcmp(request.ident, "NTLMSSP\0", 8) != 0,
             ("Type 1 message has invalid NTLMSSP signature"));
-        ONV(request.msgType != 1,
-            ("Type 1 message has wrong type: %u (expected 1)", request.msgType));
+        ONV(le32toh(request.msgType) != 1,
+            ("Type 1 message has wrong type: %u (expected 1)", le32toh(request.msgType)));
 
         NE_DEBUG(NE_DBG_HTTP, "auth: Valid Type 1 message received.\n");
 #ifdef NE_DEBUGGING
@@ -1893,8 +1893,8 @@ static int serve_ntlm(ne_socket *sock, void *userdata)
 
     ONV(memcmp(response.ident, "NTLMSSP\0", 8) != 0,
         ("Type 3 message has invalid NTLMSSP signature"));
-    ONV(response.msgType != 3,
-        ("Type 3 message has wrong type: %u (expected 3)", response.msgType));
+    ONV(le32toh(response.msgType) != 3,
+        ("Type 3 message has wrong type: %u (expected 3)", le32toh(response.msgType)));
     
     /* Validate security buffers have reasonable values */
     ONV(response.lmResponse.len > 24 && response.lmResponse.len != 24,

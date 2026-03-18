@@ -83,6 +83,9 @@ typedef const unsigned char ne_d2i_uchar;
 #define EVP_MD_CTX_free(ctx) ne_free(ctx)
 #define EVP_MD_CTX_reset EVP_MD_CTX_cleanup
 #define EVP_PKEY_get0_RSA(evp) (evp->pkey.rsa)
+#define ASN1_STRING_get0_data(as_) ((as_)->data)
+#define ASN1_STRING_length(as_) ((as_)->length)
+#define ASN1_STRING_type(as_) ((as_)->type)
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000
@@ -97,7 +100,7 @@ typedef const unsigned char ne_d2i_uchar;
 #endif
 
 struct ne_ssl_dname_s {
-    X509_NAME *dn;
+    const X509_NAME *dn;
 };
 
 struct ne_ssl_certificate_s {
@@ -124,23 +127,25 @@ static void free_cert(ne_ssl_certificate *cert);
 
 /* Append an ASN.1 DirectoryString STR to buffer BUF as UTF-8.
  * Returns zero on success or non-zero on error. */
-static int append_dirstring(ne_buffer *buf, ASN1_STRING *str)
+static int append_dirstring(ne_buffer *buf, const ASN1_STRING *str)
 {
     unsigned char *tmp = (unsigned char *)""; /* initialize to workaround 0.9.6 bug */
-    int len;
+    const unsigned char *data = ASN1_STRING_get0_data(str);
+    int len = ASN1_STRING_length(str);
+    int type = ASN1_STRING_type(str);
 
-    switch (str->type) {
+    switch (type) {
     case V_ASN1_IA5STRING: /* definitely ASCII */
     case V_ASN1_VISIBLESTRING: /* probably ASCII */
     case V_ASN1_PRINTABLESTRING: /* subset of ASCII */
-        ne_buffer_qappend(buf, str->data, str->length);
+        ne_buffer_qappend(buf, data, len);
         break;
     case V_ASN1_UTF8STRING:
         /* Fail for embedded NUL bytes. */
-        if (strlen((char *)str->data) != (size_t)str->length) {
+        if (strlen((const char *)data) != (size_t)len) {
             return -1;
         }
-        ne_buffer_append(buf, (char *)str->data, str->length);
+        ne_buffer_append(buf, (char *)data, len);
         break;
     case V_ASN1_UNIVERSALSTRING:
     case V_ASN1_T61STRING: /* let OpenSSL convert it as ISO-8859-1 */
@@ -164,7 +169,7 @@ static int append_dirstring(ne_buffer *buf, ASN1_STRING *str)
         break;
     default:
         NE_DEBUG(NE_DBG_SSL, "Could not convert DirectoryString type %d\n",
-                 str->type);
+                 type);
         return -1;
     }
     return 0;
@@ -174,7 +179,10 @@ static int append_dirstring(ne_buffer *buf, ASN1_STRING *str)
  * safety. */
 static char *dup_ia5string(const ASN1_IA5STRING *as)
 {
-    return ne_strnqdup(as->data, as->length);
+    const unsigned char *data = ASN1_STRING_get0_data(as);
+    int length = ASN1_STRING_length(as);
+
+    return ne_strnqdup(data, length);
 }
 
 char *ne_ssl_readable_dname(const ne_ssl_dname *name)
@@ -185,8 +193,8 @@ char *ne_ssl_readable_dname(const ne_ssl_dname *name)
 	* const email = OBJ_nid2obj(NID_pkcs9_emailAddress);
 
     for (n = X509_NAME_entry_count(name->dn); n > 0; n--) {
-	X509_NAME_ENTRY *ent = X509_NAME_get_entry(name->dn, n-1);
-	ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(ent);
+	const X509_NAME_ENTRY *ent = X509_NAME_get_entry(name->dn, n-1);
+	const ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(ent);
 	
         /* Skip commonName or emailAddress except if there is no other
          * attribute in dname. */
@@ -299,12 +307,15 @@ static int check_identity(const ne_ssl_certificate *server_cert,
 		found = 1;
             } 
             else if (nm->type == GEN_IPADD && address) {
-                /* compare IP addfress with server literal IP address. */
+                /* compare IP address with server literal IP address. */
+                const unsigned char *data = ASN1_STRING_get0_data(nm->d.ip);
+                int len = ASN1_STRING_length(nm->d.ip);
                 ne_inet_addr *ia;
-                if (nm->d.ip->length == 4)
-                    ia = ne_iaddr_make(ne_iaddr_ipv4, nm->d.ip->data);
-                else if (nm->d.ip->length == 16)
-                    ia = ne_iaddr_make(ne_iaddr_ipv6, nm->d.ip->data);
+
+                if (len == 4)
+                    ia = ne_iaddr_make(ne_iaddr_ipv4, data);
+                else if (len == 16)
+                    ia = ne_iaddr_make(ne_iaddr_ipv6, data);
                 else
                     ia = NULL;
                 /* ne_iaddr_make returns NULL if address type is unsupported */
@@ -315,8 +326,7 @@ static int check_identity(const ne_ssl_certificate *server_cert,
                 }
                 else {
                     NE_DEBUG(NE_DBG_SSL, "ssl: iPAddress name with unsupported "
-                             "address type (length %d), skipped.\n",
-                             nm->d.ip->length);
+                             "address type (length %d), skipped.\n", len);
                 }
             }
         }
@@ -327,8 +337,8 @@ static int check_identity(const ne_ssl_certificate *server_cert,
     /* Check against the commonName if no DNS alt. names were found,
      * as per RFC3280. */
     if (!found) {
-	X509_NAME *subj = X509_get_subject_name(cert);
-	X509_NAME_ENTRY *entry;
+	const X509_NAME *subj = X509_get_subject_name(cert);
+	const X509_NAME_ENTRY *entry;
 	ne_buffer *cname = ne_buffer_ncreate(30);
 	int idx = -1, lastidx;
 
@@ -815,7 +825,7 @@ static ne_ssl_client_cert *parse_client_cert(PKCS12 *p12)
     if (PKCS12_parse(p12, NULL, &pkey, &cert, NULL) == 1) {
         /* Success - no password needed for decryption. */
         int len = 0;
-        unsigned char *name;
+        const unsigned char *name;
 
         if (!cert || !pkey) {
             PKCS12_free(p12);
