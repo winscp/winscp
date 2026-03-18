@@ -28,6 +28,7 @@ dnl   Copyright (c) 2025      Matthew Fernandez <matthew.fernandez@gmail.com>
 dnl   Copyright (c) 2025      Alfonso Gregory <gfunni234@gmail.com>
 dnl   Copyright (c) 2026      Rosen Penev <rosenp@gmail.com>
 dnl   Copyright (c) 2026      Gordon Messmer <gordon.messmer@gmail.com>
+dnl   Copyright (c) 2026      Fabio Scaccabarozzi <fsvm88@gmail.com>
 dnl   Licensed under the MIT license:
 dnl
 dnl   Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -89,7 +90,7 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=12  # sync
-LIBREVISION=2  # with
+LIBREVISION=3  # with
 LIBAGE=11      # CMakeLists.txt!
 
 AC_CONFIG_HEADERS([expat_config.h])
@@ -152,7 +153,7 @@ AS_IF([test "x$enable_symbol_versioning" != xno],
    AC_SUBST([VSCRIPT_LDFLAGS])
   ])
 AM_CONDITIONAL([HAVE_VSCRIPT],
-  [test "$enable_symbol_versioning" != xno])
+  [test "x$enable_symbol_versioning" != xno])
 
 dnl patching ${archive_cmds} to affect generation of file "libtool" to fix linking with clang (issue #312)
 AS_CASE(["$LD"],[*clang*],

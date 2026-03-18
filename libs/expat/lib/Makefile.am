@@ -6,7 +6,7 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2017-2024 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2017-2026 Sebastian Pipping <sebastian@pipping.org>
 # Copyright (c) 2017      Tomasz Kłoczko <kloczek@fedoraproject.org>
 # Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
 # Copyright (c) 2026      Gordon Messmer <gordon.messmer@gmail.com>
