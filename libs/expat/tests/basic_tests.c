@@ -3112,12 +3112,16 @@ START_TEST(test_buffer_can_grow_to_max) {
 #if defined(__MINGW32__) && ! defined(__MINGW64__)
   // workaround for mingw/wine32 on GitHub CI not being able to reach 1GiB
   // Can we make a big allocation?
-  void *big = malloc(maxbuf);
-  if (! big) {
+  for (int i = 1; i <= 2; i++) {
+    void *const big = malloc(maxbuf);
+    if (big != NULL) {
+      free(big);
+      break;
+    }
     // The big allocation failed. Let's be a little lenient.
     maxbuf = maxbuf / 2;
+    fprintf(stderr, "Reducing maxbuf to %d...\n", maxbuf);
   }
-  free(big);
 #endif
 
   for (int i = 0; i < num_prefixes; ++i) {
@@ -6041,6 +6045,7 @@ START_TEST(test_bypass_heuristic_when_close_to_bufsize) {
 
   const int document_length = 65536;
   char *const document = (char *)malloc(document_length);
+  assert_true(document != NULL);
 
   const XML_Memory_Handling_Suite memfuncs = {
       counting_malloc,
@@ -6250,6 +6255,24 @@ START_TEST(test_varying_buffer_fills) {
     XML_ParserFree(parser);
   }
   free(document);
+}
+END_TEST
+
+START_TEST(test_empty_ext_param_entity_in_value) {
+  const char *text = "<!DOCTYPE r SYSTEM \"ext.dtd\"><r/>";
+  ExtOption options[] = {
+      {XCS("ext.dtd"), "<!ENTITY % pe SYSTEM \"empty\">"
+                       "<!ENTITY ge \"%pe;\">"},
+      {XCS("empty"), ""},
+      {NULL, NULL},
+  };
+
+  XML_SetParamEntityParsing(g_parser, XML_PARAM_ENTITY_PARSING_ALWAYS);
+  XML_SetExternalEntityRefHandler(g_parser, external_entity_optioner);
+  XML_SetUserData(g_parser, options);
+  if (_XML_Parse_SINGLE_BYTES(g_parser, text, (int)strlen(text), XML_TRUE)
+      == XML_STATUS_ERROR)
+    xml_failure(g_parser);
 }
 END_TEST
 
@@ -6500,6 +6523,7 @@ make_basic_test_case(Suite *s) {
   tcase_add_test(tc_basic, test_empty_element_abort);
   tcase_add_test__ifdef_xml_dtd(tc_basic,
                                 test_pool_integrity_with_unfinished_attr);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_empty_ext_param_entity_in_value);
   tcase_add_test__if_xml_ge(tc_basic, test_entity_ref_no_elements);
   tcase_add_test__if_xml_ge(tc_basic, test_deep_nested_entity);
   tcase_add_test__if_xml_ge(tc_basic, test_deep_nested_attribute_entity);
