@@ -3549,6 +3549,7 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
           }
           if (SIZE_MAX / 2 < (size_t)(tag->bufEnd - tag->buf.raw))
             return XML_ERROR_NO_MEMORY;
+          { // WINSCP
           const size_t bufSize = (size_t)(tag->bufEnd - tag->buf.raw) * 2;
           {
             char *temp = REALLOC(parser, tag->buf.raw, bufSize);
@@ -3558,6 +3559,7 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
             tag->bufEnd = temp + bufSize;
             toPtr = (XML_Char *)temp + convLen;
           }
+          } // WINSCP
         }
       }
       tag->name.str = tag->buf.str;
@@ -7518,6 +7520,7 @@ setContext(XML_Parser parser, const XML_Char *context) {
       else {
         if (! poolAppendChar(&parser->m_tempPool, XML_T('\0')))
           return XML_FALSE;
+        { // WINSCP
         const XML_Char *const prefixName = poolCopyStringNoFinish(
             &dtd->pool, poolStart(&parser->m_tempPool));
         if (! prefixName) {
@@ -7527,6 +7530,7 @@ setContext(XML_Parser parser, const XML_Char *context) {
         prefix = (PREFIX *)lookup(parser, &dtd->prefixes, prefixName,
                                   sizeof(PREFIX));
 
+        { // WINSCP
         const bool prefixNameUsed = prefix && prefix->name == prefixName;
         if (prefixNameUsed)
           poolFinish(&dtd->pool);
@@ -7537,6 +7541,8 @@ setContext(XML_Parser parser, const XML_Char *context) {
           return XML_FALSE;
 
         poolDiscard(&parser->m_tempPool);
+        } // WINSCP
+        } // WINSCP
       }
       for (context = s + 1; *context != CONTEXT_SEP && *context != XML_T('\0');
            context++)
