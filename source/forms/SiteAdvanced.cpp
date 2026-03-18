@@ -913,10 +913,11 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
 
     // ssh/kex sheet
-    KexSheet->Enabled = SshProtocol && (BugRekey2Combo->ItemIndex != 2);
+    KexSheet->Enabled = SshProtocol;
     EnableControl(KexUpButton, KexListBox->ItemIndex > 0);
     EnableControl(KexDownButton, KexListBox->ItemIndex >= 0 &&
       KexListBox->ItemIndex < KexListBox->Items->Count-1);
+    EnableControl(KexReexchangeGroup, (BugRekey2Combo->ItemIndex != 2));
 
     // ssh/bugs sheet
     BugsSheet->Enabled = SshProtocol;
@@ -1090,6 +1091,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     // environment/webdav
     WebDavSheet->Enabled = WebDavProtocol;
 
+    // Currently no page is dynamically hidden/shown anymore,
+    // so there is in general no need to update the tree here anymore.
     UpdateNavigationTree();
 
     // color
