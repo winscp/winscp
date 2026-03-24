@@ -415,7 +415,6 @@ object LoginDialog: TLoginDialog
         Action = LoginAction
         Anchors = [akRight, akBottom]
         Default = True
-        Images = ActionImageList
         ModalResult = 1
         Style = bsSplitButton
         TabOrder = 0
