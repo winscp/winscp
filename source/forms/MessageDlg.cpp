@@ -1081,6 +1081,8 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int IconTextHeight = 0;
   int ALeft = IconWidth + HorzMargin;
 
+  HFONT MainInstructionFontOwner = MainInstructionFont;
+
   for (int MessageIndex = 0; MessageIndex <= 1; MessageIndex++)
   {
     UnicodeString LabelMsg;
@@ -1092,15 +1094,22 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     {
       case 0:
         LabelMsg = MainMsg;
-        LabelName = MainMessageLabelName;
-        LabelColor = MainInstructionColor;
-        LabelFont = MainInstructionFont;
+        if (!LabelMsg.IsEmpty())
+        {
+          LabelName = MainMessageLabelName;
+          LabelColor = MainInstructionColor;
+          LabelFont = MainInstructionFont;
+          MainInstructionFontOwner = 0;
+        }
         LabelStore = &Result->MainMessageLabel;
         break;
 
       case 1:
         LabelMsg = BodyMsg;
-        LabelName = MessageLabelName;
+        if (!LabelMsg.IsEmpty())
+        {
+          LabelName = MessageLabelName;
+        }
         LabelStore = &Result->MessageLabel;
         break;
 
@@ -1161,6 +1170,11 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       Message->SetBounds(ALeft, VertMargin + IconTextHeight, TextRect.Right, TextRect.Bottom);
       IconTextHeight += TextRect.Bottom;
     }
+  }
+
+  if (MainInstructionFontOwner != 0)
+  {
+    DeleteObject(MainInstructionFontOwner);
   }
 
   if (LinkControl != NULL)
