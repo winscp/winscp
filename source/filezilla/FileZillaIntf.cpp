@@ -226,7 +226,7 @@ bool __fastcall TFileZillaIntf::FileTransfer(
   Transfer.server = *FServer;
   // 1 = ascii, 2 = binary
   Transfer.nType = Type;
-  Transfer.nUserData = reinterpret_cast<int>(UserData);
+  Transfer.nUserData = reinterpret_cast<NativeInt>(UserData);
   Transfer.OnTransferOut = OnTransferOut;
   Transfer.OnTransferIn = OnTransferIn;
 

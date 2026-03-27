@@ -1924,8 +1924,8 @@ void __fastcall TCustomScpExplorerForm::UpdateHistoryMenu(TOperationSide Side,
       Data.Index = static_cast<short int>(i * (Back ? -1 : 1));
       Item->Caption = MinimizeName(DView->HistoryPath[Data.Index], 50, !IsSideLocalBrowser(Side));
       Item->Hint = DView->HistoryPath[Data.Index];
-      DebugAssert(sizeof(int) == sizeof(THistoryItemData));
-      Item->Tag = *reinterpret_cast<int*>(&Data);
+      DebugAssert(sizeof(Item->Tag) >= sizeof(Data));
+      Item->Tag = *reinterpret_cast<NativeInt*>(&Data);
       Item->OnClick = HistoryItemClick;
       Menu->Items->Add(Item);
     }
@@ -7565,7 +7565,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
       if (IsSessionTab)
       {
         TTerminal * Terminal = Manager->Sessions[Index];
-        TabSheet->Tag = reinterpret_cast<int>(Terminal);
+        TabSheet->Tag = reinterpret_cast<NativeInt>(Terminal);
         TabSheet->CaptionTruncation = WinConfiguration->SessionTabCaptionTruncation ? tttEllipsis : tttNone;
 
         UpdateSessionTab(TabSheet);
@@ -11391,7 +11391,7 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenuList(
           Item->Caption = EscapeHotkey(Directory);
           Item->ShortCut = Bookmark->ShortCut;
           Item->OnClick = OnBookmarkClick;
-          Item->Tag = reinterpret_cast<int>(Bookmark);
+          Item->Tag = reinterpret_cast<NativeInt>(Bookmark);
           Directories->Add(Directory);
           Menu->Add(Item.release());
         }
@@ -11435,7 +11435,7 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenuList(
         Item->Caption = Bookmark->Name;
         Item->ShortCut = Bookmark->ShortCut;
         Item->OnClick = OnBookmarkClick;
-        Item->Tag = reinterpret_cast<int>(Bookmark);
+        Item->Tag = reinterpret_cast<NativeInt>(Bookmark);
 
         if (((Bookmark->Name == Bookmark->Local) || (Bookmark->Name == Bookmark->Remote)) &&
             (Bookmark->Local.IsEmpty() || Bookmark->Remote.IsEmpty()))

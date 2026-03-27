@@ -806,7 +806,7 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
         }
 
         Node->Text = Label;
-        Node->SelectedIndex = reinterpret_cast<int>(Tab);
+        Node->Data = Tab;
         PrevNode = Node;
         if (PageControl->ActivePage == Tab)
         {
@@ -1155,7 +1155,7 @@ void __fastcall TSiteAdvancedDialog::NavigationTreeChange(TObject * /*Sender*/,
   {
     TAutoNestingCounter Guard(NoUpdate);
 
-    TTabSheet * Tab = reinterpret_cast<TTabSheet *>(Node->SelectedIndex);
+    TTabSheet * Tab = static_cast<TTabSheet *>(Node->Data);
     // should happen only while loading language
     // (UpdateNavigationTree may not be called yet)
     if (Tab != NULL)
@@ -1186,8 +1186,7 @@ void __fastcall TSiteAdvancedDialog::PageChanged()
   {
     for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
     {
-      if (NavigationTree->Items->Item[Index]->SelectedIndex ==
-            reinterpret_cast<int>(PageControl->ActivePage))
+      if (NavigationTree->Items->Item[Index]->Data == PageControl->ActivePage)
       {
         NavigationTree->Items->Item[Index]->Selected = true;
         Found = true;

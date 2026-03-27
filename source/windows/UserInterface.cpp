@@ -1035,7 +1035,7 @@ void __fastcall CreateColorPalette(TTBCustomItem * Owner, TColor Color, int Rows
     ColorSet->ColCount = ColorCols;
     ColorSet->RowCount = Rows;
     ColorSet->OnGetColorInfo = OnGetColorInfo;
-    ColorSet->Tag = static_cast<int>(SessionColors);
+    ColorSet->Tag = static_cast<NativeInt>(SessionColors);
   }
 
   // clNone = no selection, see also ColorChange

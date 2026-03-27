@@ -38,7 +38,7 @@ typedef struct
     __int64 size;
     t_server server;
     int nType;
-    int nUserData;
+    NativeInt nUserData;
     TTransferOutEvent OnTransferOut;
     TTransferInEvent OnTransferIn;
 } t_transferfile;

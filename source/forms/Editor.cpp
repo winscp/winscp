@@ -309,7 +309,7 @@ void __fastcall TEditorRichEdit::WMPaste()
     {
       // replacement for EM_PASTESPECIAL,
       // which ignores trailing line end for some reason
-      Perform(EM_REPLACESEL, true, reinterpret_cast<int>(Text));
+      Perform(EM_REPLACESEL, true, reinterpret_cast<NativeInt>(Text));
     }
     __finally
     {
@@ -1537,7 +1537,7 @@ bool __fastcall TEditorForm::CursorInUpperPart()
   {
     GetTextMetrics(DC, &TM);
 
-    EditorMemo->Perform(EM_GETRECT, 0, reinterpret_cast<int>(&Rect));
+    EditorMemo->Perform(EM_GETRECT, 0, reinterpret_cast<NativeInt>(&Rect));
   }
   __finally
   {

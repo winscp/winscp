@@ -1759,14 +1759,14 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam));
 end;
 
-procedure DockNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
+procedure DockNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: NativeUInt);
 begin
   TTBDock(AppData).DrawNCArea(True, DC, 0);
 end;
 
 procedure TTBDock.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Self, Handle, Message, DockNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, DockNCPaintProc, NativeUInt(Self));
 end;
 
 procedure TTBDock.WMPrintClient(var Message: TMessage);
@@ -2051,7 +2051,7 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam), twrdAll);
 end;
 
-procedure FloatingWindowParentNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
+procedure FloatingWindowParentNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: NativeUInt);
 begin
   with TTBFloatingWindowParent(AppData) do
     DrawNCArea(True, DC, 0, twrdAll);
@@ -2059,7 +2059,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Self, Handle, Message, FloatingWindowParentNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, FloatingWindowParentNCPaintProc, NativeUInt(Self));
 end;
 
 procedure TTBFloatingWindowParent.WMPrintClient(var Message: TMessage);
@@ -3489,7 +3489,7 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam));
 end;
 
-procedure DockableWindowNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
+procedure DockableWindowNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: NativeUInt);
 begin
   with TTBCustomDockableWindow(AppData) do
     DrawNCArea(True, DC, 0)
@@ -3497,7 +3497,7 @@ end;
 
 procedure TTBCustomDockableWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Self, Handle, Message, DockableWindowNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, DockableWindowNCPaintProc, NativeUInt(Self));
 end;
 
 procedure TTBCustomDockableWindow.WMPrintClient(var Message: TMessage);

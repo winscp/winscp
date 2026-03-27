@@ -414,7 +414,7 @@ begin
       SetRect(Loc, GetButtonWidth + 1, 0, ClientWidth - 1, ClientHeight + 1)
     else
       SetRect(Loc, 0, 0, ClientWidth - GetButtonWidth - 2, ClientHeight + 1);
-  SendMessage(Handle, EM_SETRECTNP, 0, Longint(@Loc));
+  SendMessage(Handle, EM_SETRECTNP, 0, LPARAM(@Loc));
 end;
 
 procedure TUpDownEdit.SetAlignment(Value: TAlignment);

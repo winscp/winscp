@@ -81,7 +81,7 @@ begin
   end;
 end;
 
-function ThreadWndProc(Window: HWND; Message, wParam, lParam: Longint): Longint; stdcall;
+function ThreadWndProc(Window: HWND; Message: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT; stdcall;
 begin
   case Message of
     CM_EXECPROC:
@@ -305,7 +305,7 @@ procedure TCompThread.Synchronize(Method: TThreadMethod);
 begin
   FSynchronizeException := nil;
   FMethod := Method;
-  SendMessage(ThreadWindow, CM_EXECPROC, 0, Longint(Self));
+  SendMessage(ThreadWindow, CM_EXECPROC, 0, LPARAM(Self));
   if Assigned(FSynchronizeException) then raise FSynchronizeException;
 end;
 

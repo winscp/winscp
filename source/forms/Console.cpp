@@ -276,7 +276,7 @@ void __fastcall TConsoleDialog::DoAdjustWindow()
   {
     GetTextMetrics(DC, &TM);
 
-    OutputMemo->Perform(EM_GETRECT, 0, reinterpret_cast<int>(&Rect));
+    OutputMemo->Perform(EM_GETRECT, 0, reinterpret_cast<NativeInt>(&Rect));
   }
   __finally
   {

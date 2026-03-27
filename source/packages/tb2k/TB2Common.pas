@@ -33,7 +33,7 @@ uses
 
 type
   TListSortExCompare = function(const Item1, Item2, ExtraData: Pointer): Integer;
-  THandleWMPrintNCPaintProc = procedure(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
+  THandleWMPrintNCPaintProc = procedure(Control: TControl; Wnd: HWND; DC: HDC; AppData: NativeUInt);
 
 function AddToFrontOfList(var List: TList; Item: Pointer): Boolean;
 function AddToList(var List: TList; Item: Pointer): Boolean;
@@ -61,7 +61,7 @@ function GetRectOfPrimaryMonitor(const WorkArea: Boolean): TRect;
 function GetTextHeight(const DC: HDC): Integer;
 function GetTextWidth(const DC: HDC; S: String; const Prefix: Boolean): Integer;
 procedure HandleWMPrint(Control: TControl; const Wnd: HWND; var Message: TMessage;
-  const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
+  const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: NativeUInt);
 procedure HandleWMPrintClient(const Control: TWinControl;
   var Message: TMessage);
 procedure ListSortEx(const List: TList; const Compare: TListSortExCompare;
@@ -168,7 +168,7 @@ begin
 end;
 
 procedure HandleWMPrint(Control: TControl; const Wnd: HWND; var Message: TMessage;
-  const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
+  const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: NativeUInt);
 { note: AppData is an application-defined value which is passed to NCPaintFunc }
 var
   DC: HDC;

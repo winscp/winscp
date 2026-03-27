@@ -1567,7 +1567,7 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Acti
     DebugAssert(Session != NULL);
     TTBCustomItem * Item = new TTBXItem(OpenedSessionsMenu);
     Item->Caption = SessionList->Strings[Index];
-    Item->Tag = int(Session);
+    Item->Tag = reinterpret_cast<NativeInt>(Session);
     Item->Hint = FMTLOAD(OPENED_TAB_HINT, (Item->Caption));
     Item->Checked = (Manager->ActiveSession == Session);
     Item->ShortCut = OpenSessionShortCut(Index);
@@ -2004,7 +2004,7 @@ void __fastcall TNonVisualDataModule::CreateToolbarButtonsList()
         Item = new TTBXItem(CustomizeItem);
         Item->Caption = StripEllipsis(ButtonItem->Caption);
         Item->ImageIndex = ButtonItem->ImageIndex;
-        Item->Tag = reinterpret_cast<int>(ButtonItem);
+        Item->Tag = reinterpret_cast<NativeInt>(ButtonItem);
         Item->OnClick = ToolbarButtonItemClick;
         Item->Checked = ButtonItem->Visible;
       }

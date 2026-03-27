@@ -2162,7 +2162,7 @@ begin
     try
       Screen.Cursor := crHourglass;
       FNotifyEnabled := False;
-      CustomSort(SortProc, Integer(Pointer(Self)));
+      CustomSort(SortProc, NativeInt(Self));
     finally
       Screen.Cursor := SavedCursor;
       FNotifyEnabled := SavedNotifyEnabled;

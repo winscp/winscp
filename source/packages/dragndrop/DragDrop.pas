@@ -1858,16 +1858,16 @@ begin
      (not FMessageHooked) and ((FSourceEffects <> 0) or (FTargetEffects <> 0)) then
   begin
     WndProcPtr := MakeObjectInstance(WndMethod);
-    OldWndProc := Pointer(SetWindowLong(FDragDropControl.Handle, GWL_WNDPROC, LongInt(WndProcPtr)));
+    OldWndProc := Pointer(SetWindowLongPtr(FDragDropControl.Handle, GWLP_WNDPROC, NativeInt(WndProcPtr)));
     FMessageHooked := True;
   end;
 end;
 
 procedure TDragDrop.UnhookMessageHandler(ForceUnhook: Boolean);
 begin
-  if FMessageHooked and (ForceUnhook or ((FSourceEffects=0) and (FTargetEffects=0))) then
+  if FMessageHooked and (ForceUnhook or ((FSourceEffects = 0) and (FTargetEffects = 0))) then
   begin
-    SetWindowLong(FDragDropControl.Handle, GWL_WNDPROC, LongInt(OldWndProc));
+    SetWindowLongPtr(FDragDropControl.Handle, GWLP_WNDPROC, NativeInt(OldWndProc));
     FreeObjectInstance(WndProcPtr);
     WndProcPtr := nil;
     OldWndProc := nil;

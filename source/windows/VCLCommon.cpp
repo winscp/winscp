@@ -753,7 +753,7 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
       {
         Form->Caption = FormatFormCaption(Form, Form->Caption);
       }
-      SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<long>(Application->Icon->Handle));
+      SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(Application->Icon->Handle));
     }
     else
     {
@@ -2100,7 +2100,7 @@ void __fastcall InvokeHelp(TWinControl * Control)
   HelpInfo.dwContextId = 0;
   HelpInfo.MousePos.x = 0;
   HelpInfo.MousePos.y = 0;
-  SendMessage(Control->Handle, WM_HELP, NULL, reinterpret_cast<long>(&HelpInfo));
+  SendMessage(Control->Handle, WM_HELP, NULL, reinterpret_cast<LPARAM>(&HelpInfo));
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
