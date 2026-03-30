@@ -961,6 +961,7 @@ void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
     if (!FDirLoadedAfterChangeDir)
     {
       FSelectFile = LastFile;
+      FPreserveShownItemOffset = true;
       Reload(false);
     };
   }
@@ -989,6 +990,7 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMW & HItem)
   if (ITEMFILE->FileName != HItem.pszText)
   {
     FSelectFile = HItem.pszText;
+    FPreserveShownItemOffset = true;
     Terminal->RenameFile(ITEMFILE, HItem.pszText);
   }
 #else
@@ -1019,6 +1021,7 @@ void __fastcall TUnixDirView::CreateDirEx(UnicodeString DirName, const TRemotePr
   if (UnixExtractFileName(DirName) == DirName)
   {
     FSelectFile = DirName;
+    FPreserveShownItemOffset = false;
   }
   Terminal->CreateDirectory(DirName, Properties);
 #else

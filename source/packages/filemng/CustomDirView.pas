@@ -232,6 +232,7 @@ type
     FLoadEnabled: Boolean;
     FLoading: Boolean;
     FSelectFile: string;
+    FPreserveShownItemOffset: Boolean;
     FWatchForChanges: Boolean;
     FInvalidNameChars: string;
     FDragDrive: string;
@@ -1954,16 +1955,20 @@ begin
           IconCache.AddObject(FileName, TObject(ItemImageIndex(Item, True)));
       end;
 
+      SaveItemsState(OldItemFocused, OldFocusedShown, OldShownItemOffset);
       if FSelectFile <> '' then
       begin
         OldItemFocused := FSelectFile;
-        OldFocusedShown := False;
-        OldShownItemOffset := -1;
+        if FPreserveShownItemOffset then
+        begin
+          OldFocusedShown := True;
+        end
+          else
+        begin
+          OldFocusedShown := False;
+          OldShownItemOffset := -1;
+        end;
         FSelectFile := '';
-      end
-        else
-      begin
-        SaveItemsState(OldItemFocused, OldFocusedShown, OldShownItemOffset);
       end;
 
       Load(False);
