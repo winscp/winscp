@@ -40,6 +40,7 @@
         <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+        <ILINK_LargeAddressAware>true</ILINK_LargeAddressAware>
         <ILINK_LibraryPath>dragext\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>dragext\;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
         <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>

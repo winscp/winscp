@@ -35,6 +35,7 @@
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+        <ILINK_LargeAddressAware>true</ILINK_LargeAddressAware>
         <ILINK_LibraryPath>console\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>console\;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
         <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
