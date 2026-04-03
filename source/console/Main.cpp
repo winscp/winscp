@@ -303,16 +303,29 @@ static void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceN
     }
 
     const wchar_t* ExtensionStart = wcsrchr(AppFileName, L'.');
+
+    size_t BaseNameLen;
     if (ExtensionStart != nullptr)
     {
-      wchar_t* End = ChildPath + wcslen(ChildPath);
-      wcsncpy(End, AppFileName, static_cast<size_t>(ExtensionStart - AppFileName));
-      *(End + (ExtensionStart - AppFileName)) = L'\0';
+      BaseNameLen = static_cast<size_t>(ExtensionStart - AppFileName);
     }
     else
     {
-      wcscat(ChildPath, AppFileName);
+      BaseNameLen = wcslen(AppFileName);
     }
+
+    const wchar_t* ComSuffix = L"-com";
+    size_t ComSuffixLen = wcslen(ComSuffix);
+    if ((BaseNameLen >= ComSuffixLen) &&
+        (_wcsnicmp(AppFileName + BaseNameLen - ComSuffixLen, ComSuffix, ComSuffixLen) == 0))
+    {
+      BaseNameLen -= ComSuffixLen;
+    }
+
+    wchar_t* End = ChildPath + wcslen(ChildPath);
+    wcsncpy(End, AppFileName, BaseNameLen);
+    *(End + BaseNameLen) = L'\0';
+
     wcscat(ChildPath, L".exe");
   }
 
