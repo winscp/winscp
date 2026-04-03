@@ -5,6 +5,7 @@
 #include <Common.h>
 #include "DriveView.h"
 #include "IEDriveInfo.h"
+#include "DirView.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -55,4 +56,16 @@ bool __fastcall TDriveView::GetNextDriveStatus(int & Iterator, UnicodeString * D
     ++Iterator;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TDriveView::CreateWnd()
+{
+  #ifndef DESIGN_ONLY
+  UnicodeString StartupSequenceTag = Name.SubString(1, 1);
+  AddStartupSequence(L"Q" + StartupSequenceTag);
+  #endif
+  TDriveViewInt::CreateWnd();
+  #ifndef DESIGN_ONLY
+  AddStartupSequence(L"V" + StartupSequenceTag);
+  #endif
 }

@@ -474,26 +474,12 @@ void __fastcall TStartupThread::Execute()
 //---------------------------------------------------------------------------
 static TStartupThread * StartupThread(new TStartupThread());
 static TDateTime Started(Now());
-static TDateTime LastStartupStartupSequence(Now());
-static UnicodeString StartupSequence;
 static int LifetimeRuns = -1;
 //---------------------------------------------------------------------------
 void InterfaceStartDontMeasure()
 {
   Started = TDateTime();
   StartupThread->Terminate();
-}
-//---------------------------------------------------------------------------
-int TensOfSecondBetween(TDateTime ANow, TDateTime AThen)
-{
-  return static_cast<int>(MilliSecondsBetween(ANow, AThen) / 100);
-}
-//---------------------------------------------------------------------------
-void AddStartupSequence(const UnicodeString & Tag)
-{
-  int SequenceTensOfSecond = TensOfSecondBetween(Now(), LastStartupStartupSequence);
-  LastStartupStartupSequence = Now();
-  AddToList(StartupSequence, FORMAT(L"%s:%d", (Tag, SequenceTensOfSecond)), L",");
 }
 //---------------------------------------------------------------------------
 void InterfaceStarted()

@@ -10732,6 +10732,7 @@ void __fastcall TCustomScpExplorerForm::CreateWnd()
     FQueueDragDropFilesEx->OnDragEnter = QueueDDDragEnter;
     FQueueDragDropFilesEx->OnDragLeave = QueueDDDragLeave;
   }
+  AddStartupSequence(L"Y");
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DestroyWnd()

@@ -118,3 +118,15 @@ bool __fastcall TDirView::TryGetLastPath(UnicodeString Drive, UnicodeString & Pa
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+void __fastcall TDirView::CreateWnd()
+{
+  #ifndef DESIGN_ONLY
+  UnicodeString StartupSequenceTag = Name.SubString(1, 1);
+  AddStartupSequence(L"Z" + StartupSequenceTag);
+  #endif
+  TDirViewInt::CreateWnd();
+  #ifndef DESIGN_ONLY
+  AddStartupSequence(L"a" + StartupSequenceTag);
+  #endif
+}

@@ -17,6 +17,7 @@ protected:
   std::unique_ptr<TStringList> FDriveStatus;
 
   virtual bool __fastcall GetNextDriveStatus(int & Iterator, UnicodeString * Drive, TDriveStatus *& Status);
+  virtual void __fastcall CreateWnd();
 
 private:
   TDriveStatus * GetDriveStatus(int Index);

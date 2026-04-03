@@ -4533,4 +4533,19 @@ TStrings * ProcessFeatures(TStrings * Features, const UnicodeString & AFeaturesO
   }
   return Result.release();
 }
+//---------------------------------------------------------------------------
+static TDateTime LastStartupStartupSequence(Now());
+UnicodeString StartupSequence;
+//---------------------------------------------------------------------------
+int TensOfSecondBetween(TDateTime ANow, TDateTime AThen)
+{
+  return static_cast<int>(MilliSecondsBetween(ANow, AThen) / 100);
+}
+//---------------------------------------------------------------------------
+void AddStartupSequence(const UnicodeString & Tag)
+{
+  int SequenceTensOfSecond = TensOfSecondBetween(Now(), LastStartupStartupSequence);
+  LastStartupStartupSequence = Now();
+  AddToList(StartupSequence, FORMAT(L"%s:%d", (Tag, SequenceTensOfSecond)), L",");
+}
 //---------------------------------------------------------------------

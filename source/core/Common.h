@@ -225,6 +225,9 @@ NORETURN void NotSupported();
 NORETURN void NotImplemented();
 UnicodeString GetDividerLine();
 TStrings * ProcessFeatures(TStrings * Features, const UnicodeString & FeaturesOverride);
+int TensOfSecondBetween(TDateTime ANow, TDateTime AThen);
+extern UnicodeString StartupSequence;
+void AddStartupSequence(const UnicodeString & Tag);
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {
