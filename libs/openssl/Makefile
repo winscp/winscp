@@ -281,7 +281,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\sm4.obj \
     $(OBJ_D)\poly1305.obj \
     $(OBJ_D)\siphash.obj \
-    $(OBJ_D)\sm2_crypt.obj $(OBJ_D)\sm2_sign.obj $(OBJ_D)\sm2_key.obj \
+    $(OBJ_D)\sm2_crypt.obj $(OBJ_D)\sm2_err.obj $(OBJ_D)\sm2_sign.obj $(OBJ_D)\sm2_key.obj \
     $(OBJ_D)\chacha_enc.obj \
     $(OBJ_D)\http_err.obj $(OBJ_D)\http_client.obj $(OBJ_D)\http_lib.obj \
     $(OBJ_D)\crmf_err.obj \
@@ -2317,6 +2317,9 @@ $(OBJ_D)\siphash.obj: $(SRC_D)\crypto\siphash\siphash.c
 
 $(OBJ_D)\sm2_crypt.obj: $(SRC_D)\crypto\sm2\sm2_crypt.c
     $(CC) -o$(OBJ_D)\sm2_crypt.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\sm2\sm2_crypt.c
+
+$(OBJ_D)\sm2_err.obj: $(SRC_D)\crypto\sm2\sm2_err.c
+    $(CC) -o$(OBJ_D)\sm2_err.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\sm2\sm2_err.c
 
 $(OBJ_D)\sm2_sign.obj: $(SRC_D)\crypto\sm2\sm2_sign.c
     $(CC) -o$(OBJ_D)\sm2_sign.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\sm2\sm2_sign.c
