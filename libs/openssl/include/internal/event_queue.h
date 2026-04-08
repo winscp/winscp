@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -57,23 +57,20 @@ int ossl_event_queue_add(OSSL_EVENT_QUEUE *queue, OSSL_EVENT *event,
 /*
  * Utility functions to extract event fields
  */
-static ossl_unused ossl_inline
-    uint32_t
-    ossl_event_get_type(const OSSL_EVENT *event)
+static ossl_unused ossl_inline uint32_t
+ossl_event_get_type(const OSSL_EVENT *event)
 {
     return event->type;
 }
 
-static ossl_unused ossl_inline
-    uint32_t
-    ossl_event_get_priority(const OSSL_EVENT *event)
+static ossl_unused ossl_inline uint32_t
+ossl_event_get_priority(const OSSL_EVENT *event)
 {
     return event->priority;
 }
 
-static ossl_unused ossl_inline
-    OSSL_TIME
-    ossl_event_get_when(const OSSL_EVENT *event)
+static ossl_unused ossl_inline OSSL_TIME
+ossl_event_get_when(const OSSL_EVENT *event)
 {
     return event->when;
 }
