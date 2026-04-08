@@ -293,7 +293,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\sm4.obj \
     $(OBJ_D)\poly1305.obj \
     $(OBJ_D)\siphash.obj \
-    $(OBJ_D)\sm2_crypt.obj $(OBJ_D)\sm2_sign.obj $(OBJ_D)\sm2_key.obj \
+    $(OBJ_D)\sm2_crypt.obj $(OBJ_D)\sm2_err.obj $(OBJ_D)\sm2_sign.obj $(OBJ_D)\sm2_key.obj \
     $(OBJ_D)\http_err.obj $(OBJ_D)\http_client.obj $(OBJ_D)\http_lib.obj \
     $(OBJ_D)\crmf_err.obj \
     $(OBJ_D)\cmp_err.obj $(OBJ_D)\cmp_util.obj \
@@ -1064,6 +1064,7 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\poly1305\poly1305.c \
     $(SRC_D)\crypto\siphash\siphash.c \
     $(SRC_D)\crypto\sm2\sm2_crypt.c \
+    $(SRC_D)\crypto\sm2\sm2_err.c \
     $(SRC_D)\crypto\sm2\sm2_sign.c \
     $(SRC_D)\crypto\sm2\sm2_key.c \
     $(SRC_D)\crypto\http\http_err.c \
