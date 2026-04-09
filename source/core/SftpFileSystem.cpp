@@ -5205,7 +5205,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         if (ConfirmOverwriting)
         {
           OperationProgress->Progress();
-          // confirmation duplicated in SFTPSource for resumable file transfers.
+          // confirmation duplicated in Source for resumable file transfers.
           UnicodeString RemoteFileNameOnly = UnixExtractFileName(OpenParams->RemoteFileName);
           SFTPConfirmOverwrite(OpenParams->FileName, RemoteFileNameOnly,
             OpenParams->CopyParam, OpenParams->Params, OperationProgress, OpenParams->OverwriteMode, OpenParams->FileParams);
@@ -5330,7 +5330,7 @@ void __fastcall TSFTPFileSystem::SFTPCloseRemote(const RawByteString Handle,
   const UnicodeString FileName, TFileOperationProgressType * OperationProgress,
   bool TransferFinished, bool Request, TSFTPPacket * Packet)
 {
-  // Moving this out of SFTPSource() fixed external exception 0xC0000029 error
+  // Moving this out of Source() fixed external exception 0xC0000029 error
   FILE_OPERATION_LOOP_BEGIN
   {
     try

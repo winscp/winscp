@@ -166,10 +166,6 @@ protected:
   void __fastcall RegisterChecksumAlg(const UnicodeString & Alg, const UnicodeString & SftpAlg);
   void __fastcall DoDeleteFile(const UnicodeString FileName, unsigned char Type);
 
-  void __fastcall SFTPSource(const UnicodeString FileName,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TUploadSessionAction & Action, bool & ChildError);
   RawByteString __fastcall SFTPOpenRemoteFile(const UnicodeString & FileName,
     unsigned int OpenType, bool EncryptNewFiles = false, __int64 Size = -1);
   int __fastcall SFTPOpenRemote(void * AOpenParams, void * Param2);
