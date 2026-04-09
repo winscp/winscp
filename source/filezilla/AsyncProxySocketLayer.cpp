@@ -627,50 +627,36 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
     }
     else if (m_ProxyData.nProxyType==PROXYTYPE_HTTP11)
     {
-      char str[4096]; //This should be large enough
-
-      char * pHost = NULL;
+      UnicodeString PeerHost;
       if (m_pProxyPeerHost && *m_pProxyPeerHost)
-      {
-        pHost = new char[strlen(m_pProxyPeerHost)+1];
-        strcpy(pHost, m_pProxyPeerHost);
-      }
+        PeerHost = UnicodeString(AnsiString(m_pProxyPeerHost));
       else
+        PeerHost = FORMAT(L"%lu.%lu.%lu.%lu", (m_nProxyPeerIp%256, (m_nProxyPeerIp>>8)%256, (m_nProxyPeerIp>>16)%256, m_nProxyPeerIp>>24));
+      int PeerPort = ntohs(m_nProxyPeerPort);
+      UnicodeString PeerHostPort = FORMAT(L"%s:%d", (PeerHost, PeerPort));
+      UnicodeString Headers = FORMAT(L"CONNECT %s HTTP/1.1\r\nHost: %s\r\n", (PeerHostPort, PeerHostPort));
+
+      if (m_ProxyData.bUseLogon)
       {
-        pHost = new char[16];
-        sprintf(pHost, "%lu.%lu.%lu.%lu", m_nProxyPeerIp%256, (m_nProxyPeerIp>>8) % 256, (m_nProxyPeerIp>>16) %256, m_nProxyPeerIp>>24);
+        UnicodeString UserPass =
+          FORMAT(L"%s:%s", ((m_ProxyData.pProxyUser ? m_ProxyData.pProxyUser : ""), (m_ProxyData.pProxyPass ? m_ProxyData.pProxyPass : "")));
+        RawByteString UserPassBuf = RawByteString(AnsiString(UserPass));
+        AnsiString UserPassBase64 = EncodeStrToBase64(UserPassBuf);
+        Headers += FORMAT(L"Authorization: Basic %s\r\nProxy-Authorization: Basic %s\r\n", (UserPassBase64, UserPassBase64));
       }
-      if (!m_ProxyData.bUseLogon)
-        sprintf(str, "CONNECT %s:%d HTTP/1.1\r\nHost: %s:%d\r\n\r\n", pHost, ntohs(m_nProxyPeerPort),
-          pHost, ntohs(m_nProxyPeerPort));
-      else
-      {
-        sprintf(str, "CONNECT %s:%d HTTP/1.1\r\nHost: %s:%d\r\n", pHost, ntohs(m_nProxyPeerPort),
-          pHost, ntohs(m_nProxyPeerPort));
+      Headers += L"\r\n";
 
-        char userpass[4096];
-        sprintf(userpass, "%s:%s", m_ProxyData.pProxyUser?m_ProxyData.pProxyUser:"", m_ProxyData.pProxyPass?m_ProxyData.pProxyPass:"");
-
-        AnsiString base64str = EncodeBase64(userpass, SizeToIntChecked(strlen(userpass)));
-        strcat(str, "Authorization: Basic ");
-        strcat(str, base64str.c_str());
-        strcat(str, "\r\nProxy-Authorization: Basic ");
-        strcat(str, base64str.c_str());
-        strcat(str, "\r\n\r\n");
-      }
-      delete [] pHost;
-
-      CString status;
-      status.Format(L"HTTP proxy command: %s", UnicodeString(str).c_str());
-      LogSocketMessageRaw(FZ_LOG_PROGRESS, status);
-      int numsent=SendNext(str, SizeToIntChecked(strlen(str)));
+      LogSocketMessageRaw(FZ_LOG_PROGRESS, FORMAT(L"HTTP proxy command: %s", (Headers)).c_str());
+      AnsiString HeadersBuf = AnsiString(Headers);
+      int HeadersLen = HeadersBuf.Length();
+      int numsent = SendNext(HeadersBuf.c_str(), HeadersLen);
       int nErrorCode=WSAGetLastError();
       if (numsent==SOCKET_ERROR)//nErrorCode!=WSAEWOULDBLOCK)
       {
         ConnectionFailed((m_nProxyOpID == PROXYOP_CONNECT) && (nErrorCode == WSAEWOULDBLOCK) ? WSAECONNABORTED : nErrorCode);
         return;
       }
-      else if (  numsent < static_cast<int>( strlen(str) )  )
+      else if (numsent < HeadersLen)
       {
         ConnectionFailed(WSAECONNABORTED);
         return;
