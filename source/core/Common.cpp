@@ -479,6 +479,7 @@ bool IsNumber(const UnicodeString Str)
 //---------------------------------------------------------------------------
 UnicodeString EncodeStrToBase64(const RawByteString & Str)
 {
+  // Can use TCustomBase64Encoding instead
   UnicodeString Result = EncodeBase64(Str.c_str(), Str.Length());
   Result = ReplaceStr(Result, sLineBreak, EmptyStr);
   return Result;

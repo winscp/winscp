@@ -1038,9 +1038,7 @@ UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & C
 {
   UnicodeString Algorithm;
   RawByteString PublicKey = LoadPublicKey(FileName, Algorithm, Comment, HasCertificate);
-  UnicodeString PublicKeyBase64 = EncodeBase64(PublicKey.c_str(), PublicKey.Length());
-  PublicKeyBase64 = ReplaceStr(PublicKeyBase64, L"\r", L"");
-  PublicKeyBase64 = ReplaceStr(PublicKeyBase64, L"\n", L"");
+  UnicodeString PublicKeyBase64 = EncodeStrToBase64(PublicKey);
   UnicodeString Result = FORMAT(L"%s %s %s", (Algorithm, PublicKeyBase64, Comment));
   return Result;
 }
