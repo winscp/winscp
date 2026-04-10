@@ -641,7 +641,7 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
         UnicodeString UserPass =
           FORMAT(L"%s:%s", ((m_ProxyData.pProxyUser ? m_ProxyData.pProxyUser : ""), (m_ProxyData.pProxyPass ? m_ProxyData.pProxyPass : "")));
         RawByteString UserPassBuf = RawByteString(AnsiString(UserPass));
-        AnsiString UserPassBase64 = EncodeStrToBase64(UserPassBuf);
+        UnicodeString UserPassBase64 = EncodeStrToBase64(UserPassBuf);
         Headers += FORMAT(L"Authorization: Basic %s\r\nProxy-Authorization: Basic %s\r\n", (UserPassBase64, UserPassBase64));
       }
       Headers += L"\r\n";
