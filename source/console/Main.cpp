@@ -262,7 +262,7 @@ static void GetProductVersion(wchar_t* ProductVersion)
 static void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HANDLE& AChild)
 {
   unsigned int SkipParam = 0;
-  wchar_t ChildPath[MAX_PATH] = L"";
+  wchar_t ChildPath[MAX_PATH + 50] = L"";
 
   size_t CommandLineLen = wcslen(CommandLine);
   wchar_t* Buffer = new wchar_t[(CommandLineLen > MAX_PATH ? CommandLineLen : MAX_PATH) + 1];
@@ -271,12 +271,15 @@ static void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceN
   const wchar_t* P = CommandLine;
   while (CutToken(P, Buffer))
   {
+    size_t ChildParamLen = wcslen(CONSOLE_CHILD_PARAM);
     if ((wcschr(L"-/", Buffer[0]) != nullptr) &&
-        (wcsncmpi(Buffer + 1, CONSOLE_CHILD_PARAM, wcslen(CONSOLE_CHILD_PARAM)) == 0) &&
-        (Buffer[wcslen(CONSOLE_CHILD_PARAM) + 1] == L'='))
+        (wcsncmpi(Buffer + 1, CONSOLE_CHILD_PARAM, ChildParamLen) == 0) &&
+        (Buffer[ChildParamLen + 1] == L'='))
     {
       SkipParam = Count;
-      wcscpy(ChildPath, Buffer + 1 + wcslen(CONSOLE_CHILD_PARAM) + 1);
+      size_t BufSize = std::size(ChildPath) - 1;
+      wcsncpy(ChildPath, Buffer + 1 + ChildParamLen + 1, BufSize);
+      ChildPath[BufSize] = L'\0';
     }
     ++Count;
   }
