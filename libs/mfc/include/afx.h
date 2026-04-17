@@ -196,57 +196,6 @@ bool operator<(const CString& s1, const wchar_t * s2);
 bool operator<(const wchar_t * s1, const CString& s2);
 
 /////////////////////////////////////////////////////////////////////////////
-// Standard Exception classes
-
-class CFileException
-{
-public:
-	enum {
-		none,
-		generic,
-		fileNotFound,
-		badPath,
-		tooManyOpenFiles,
-		accessDenied,
-		invalidFile,
-		removeCurrentDir,
-		directoryFull,
-		badSeek,
-		hardIO,
-		sharingViolation,
-		lockViolation,
-		diskFull,
-		endOfFile
-	};
-
-// Constructor
-	CFileException(int cause = CFileException::none, LONG lOsError = -1,
-		const wchar_t * lpszArchiveName = NULL);
-
-// Attributes
-	int     m_cause;
-	LONG    m_lOsError;
-	UnicodeString m_strFileName;
-
-// Operations
-	// convert a OS dependent error code to a Cause
-	static int OsErrorToException(LONG lOsError);
-
-	// helper functions to throw exception after converting to a Cause
-	static void ThrowOsError(LONG lOsError, const wchar_t * lpszFileName = NULL);
-
-// Implementation
-public:
-	UnicodeString GetErrorMessage();
-};
-
-/////////////////////////////////////////////////////////////////////////////
-// Standard exception throws
-
-void AfxThrowFileException(int cause, LONG lOsError = -1,
-	const wchar_t * lpszFileName = NULL);
-
-/////////////////////////////////////////////////////////////////////////////
 // File - raw unbuffered disk file I/O
 
 class CFile
@@ -289,7 +238,7 @@ public:
 	~CFile();
 
 protected:
-	UnicodeString m_strFileName;
+	UnicodeString m_AdditionalInfo;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -327,7 +276,6 @@ private:
 	time_t m_time;
 	int operator-(CTime time) const; // make sure it's never used
 	CTime(const SYSTEMTIME& sysTime);
-	struct tm* GetLocalTm(struct tm* ptm = NULL) const;
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -23,7 +23,7 @@ CL_OPT=$(WARNINGS)
 #############################################################################
 # Library Components
 
-FILES = filecore.obj filex.obj
+FILES = filecore.obj
 
 MISC = strcore.obj strex.obj timecore.obj
 

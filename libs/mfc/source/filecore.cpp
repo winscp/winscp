@@ -28,7 +28,7 @@ CFile::~CFile()
 BOOL CFile::Open(const wchar_t * lpszFileName, UINT nOpenFlags)
 {
 	m_hFile = (HANDLE)hFileNull;
-	m_strFileName = ExpandFileName(lpszFileName);
+	m_AdditionalInfo = L"\r\n" + ExpandFileName(lpszFileName);
 
 	ASSERT(sizeof(HANDLE) == sizeof(UINT));
 	ASSERT(shareCompat == 0);
@@ -113,7 +113,7 @@ UINT CFile::Read(void* lpBuf, UINT nCount)
 
 	DWORD dwRead;
 	if (!::ReadFile(m_hFile, lpBuf, nCount, &dwRead, NULL))
-		CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName.c_str());
+		RaiseLastOSError(GetLastError(), m_AdditionalInfo);
 
 	return (UINT)dwRead;
 }
@@ -129,11 +129,11 @@ void CFile::Write(const void* lpBuf, UINT nCount)
 
 	DWORD nWritten;
 	if (!::WriteFile(m_hFile, lpBuf, nCount, &nWritten, NULL))
-		CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName.c_str());
+		RaiseLastOSError(GetLastError(), m_AdditionalInfo);
 
 	// Win32s will not return an error all the time (usually DISK_FULL)
 	if (nWritten != nCount)
-		AfxThrowFileException(CFileException::diskFull, -1, m_strFileName.c_str());
+		RaiseLastOSError(ERROR_DISK_FULL, m_AdditionalInfo);
 }
 
 void CFile::Close()
@@ -145,10 +145,11 @@ void CFile::Close()
 		bError = !::CloseHandle(m_hFile);
 
 	m_hFile = (HANDLE) hFileNull;
-	m_strFileName = EmptyStr;
+	UnicodeString AdditionalInfo = m_AdditionalInfo;
+	m_AdditionalInfo = EmptyStr;
 
 	if (bError)
-		CFileException::ThrowOsError((LONG)::GetLastError());
+		RaiseLastOSError(GetLastError(), AdditionalInfo);
 }
 
 /////////////////////////////////////////////////////////////////////////////

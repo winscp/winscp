@@ -10,10 +10,6 @@
 
 // Inlines for AFX.H
 
-inline CFileException::CFileException(int cause, LONG lOsError,
-	const wchar_t * pstrFileName /* = NULL */)
-	{ m_cause = cause; m_lOsError = lOsError; m_strFileName = pstrFileName; }
-
 // CString
 inline CString::CString()
 	{ }
@@ -88,15 +84,15 @@ inline const CTime& CTime::operator=(time_t t)
 inline time_t CTime::GetTime() const
 	{ return m_time; }
 inline int CTime::GetYear() const
-	{ return (GetLocalTm(NULL)->tm_year) + 1900; }
+	{ return (localtime(&m_time)->tm_year) + 1900; }
 inline int CTime::GetMonth() const
-	{ return GetLocalTm(NULL)->tm_mon + 1; }
+	{ return localtime(&m_time)->tm_mon + 1; }
 inline int CTime::GetDay() const
-	{ return GetLocalTm(NULL)->tm_mday; }
+	{ return localtime(&m_time)->tm_mday; }
 inline int CTime::GetHour() const
-	{ return GetLocalTm(NULL)->tm_hour; }
+	{ return localtime(&m_time)->tm_hour; }
 inline int CTime::GetMinute() const
-	{ return GetLocalTm(NULL)->tm_min; }
+	{ return localtime(&m_time)->tm_min; }
 inline BOOL CTime::operator==(CTime time) const
 	{ return m_time == time.m_time; }
 inline BOOL CTime::operator!=(CTime time) const

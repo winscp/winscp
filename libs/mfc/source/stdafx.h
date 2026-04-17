@@ -14,9 +14,6 @@
 // core headers
 #include "afx.h"
 
-// public headers
-#include "afxres.h"
-
 #include <stddef.h>
 #include <malloc.h>
 

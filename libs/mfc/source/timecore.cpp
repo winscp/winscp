@@ -70,19 +70,4 @@ CTime CTime::CreateForCurrentTime()
 	return CTime(::time(NULL));
 }
 
-struct tm* CTime::GetLocalTm(struct tm* ptm) const
-{
-	if (ptm != NULL)
-	{
-		struct tm* ptmTemp = localtime(&m_time);
-		if (ptmTemp == NULL)
-			return NULL;    // indicates the m_time was not initialized!
-
-		*ptm = *ptmTemp;
-		return ptm;
-	}
-	else
-		return localtime(&m_time);
-}
-
 /////////////////////////////////////////////////////////////////////////////

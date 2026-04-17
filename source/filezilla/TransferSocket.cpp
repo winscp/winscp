@@ -203,10 +203,9 @@ void CTransferSocket::OnReceive(int nErrorCode)
       WriteData(m_pBuffer, numread);
       written = numread;
     }
-    catch (CFileException * e)
+    catch (EOSError & E)
     {
-      UnicodeString Error = e->GetErrorMessage();
-      m_pOwner->ShowStatus(CString(Error), FZ_LOG_ERROR);
+      m_pOwner->ShowStatus(CString(E.Message), FZ_LOG_ERROR);
       CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
       return;
     }
@@ -897,10 +896,9 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
     }
     return read;
   }
-  catch (CFileException* e)
+  catch (EOSError & E)
   {
-    UnicodeString Error = e->GetErrorMessage();
-    m_pOwner->ShowStatus(CString(Error), FZ_LOG_ERROR);
+    m_pOwner->ShowStatus(CString(E.Message), FZ_LOG_ERROR);
     CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
     return -1;
   }
