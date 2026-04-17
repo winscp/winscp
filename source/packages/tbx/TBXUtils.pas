@@ -16,7 +16,6 @@ function  ColorIntensity(C: TColor): Integer;
 function  IsDarkColor(C: TColor; Threshold: Integer = 100): Boolean;
 function  Blend(C1, C2: TColor; W1: Integer): TColor;
 procedure SetContrast(var Color: TColor; BkgndColor: TColor; Threshold: Integer);
-function  GetBGR(C: TColorRef): Cardinal;
 
 function TBXScaleByTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
 
@@ -320,16 +319,6 @@ begin
 end;
 
 { Drawing routines }
-
-function GetBGR(C: TColorRef): Cardinal;
-asm
-        MOV     ECX,EAX         // this function swaps R and B bytes in ABGR
-        SHR     EAX,16
-        XCHG    AL,CL
-        MOV     AH,$00          // and writes $FF into A component
-        SHL     EAX,16
-        MOV     AX,CX
-end;
 
 function CreatePenEx(Color: TColor): HPen;
 begin
