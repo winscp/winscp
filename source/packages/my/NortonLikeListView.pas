@@ -33,6 +33,7 @@ type
     FLButtonDownPos: TPoint;
     FLastSelectMethod: TSelectMethod;
     FDarkMode: Boolean;
+    FAllowingDarkMode: Boolean;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
@@ -143,6 +144,7 @@ begin
   FIgnoreSetFocusFrom := INVALID_HANDLE_VALUE;
   FNextCharToIgnore := 0;
   FDarkMode := False;
+  FAllowingDarkMode := False;
 end;
 
 destructor TCustomNortonLikeListView.Destroy;
@@ -399,8 +401,11 @@ procedure TCustomNortonLikeListView.WMThemeChanged(var Msg: TMessage);
 begin
   if SupportsDarkMode then // To reduce impact
   begin
-    UpdateDarkMode;
-    RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE);
+    if HandleAllocated then
+    begin
+      UpdateDarkMode;
+      RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE);
+    end;
   end;
 
   inherited;
@@ -410,9 +415,19 @@ procedure TCustomNortonLikeListView.UpdateDarkMode;
 begin
   if SupportsDarkMode then // To reduce impact
   begin
-    AllowDarkModeForWindow(Self, DarkMode);
-    // To update scrollbar theme
-    SendMessage(Handle, WM_THEMECHANGED, 0, 0);
+    if not FAllowingDarkMode then
+    begin
+      FAllowingDarkMode := True;
+      try
+        AllowDarkModeForWindow(Self, DarkMode);
+        // To update scrollbar theme
+        // (though AllowDarkModeForWindow itself sends WM_THEMECHANGED at least on Windows 11,
+        // maybe there was a change in Windows, and this explicit call is not longer needed)
+        SendMessage(Handle, WM_THEMECHANGED, 0, 0);
+      finally
+        FAllowingDarkMode := False;
+      end;
+    end;
 
     if FHeaderHandle <> 0 then
     begin
