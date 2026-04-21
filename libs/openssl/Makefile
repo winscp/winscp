@@ -144,8 +144,6 @@ CRYPTOOBJ= \
     $(OBJ_D)\i_skey.obj \
     $(OBJ_D)\bf_skey.obj $(OBJ_D)\bf_ecb.obj $(OBJ_D)\bf_cfb64.obj $(OBJ_D)\bf_ofb64.obj \
     $(OBJ_D)\c_skey.obj $(OBJ_D)\c_ecb.obj $(OBJ_D)\c_cfb64.obj $(OBJ_D)\c_ofb64.obj \
-    $(OBJ_D)\aes_misc.obj $(OBJ_D)\aes_ecb.obj $(OBJ_D)\aes_cfb.obj $(OBJ_D)\aes_ofb.obj \
-    $(OBJ_D)\aes_ige.obj $(OBJ_D)\aes_wrap.obj \
     $(OBJ_D)\bn_add.obj $(OBJ_D)\bn_div.obj $(OBJ_D)\bn_exp.obj $(OBJ_D)\bn_lib.obj \
     $(OBJ_D)\bn_ctx.obj $(OBJ_D)\bn_mul.obj $(OBJ_D)\bn_mod.obj $(OBJ_D)\bn_print.obj \
     $(OBJ_D)\bn_rand.obj $(OBJ_D)\bn_shift.obj $(OBJ_D)\bn_word.obj $(OBJ_D)\bn_blind.obj \
@@ -555,12 +553,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\cast\c_ecb.c \
     $(SRC_D)\crypto\cast\c_cfb64.c \
     $(SRC_D)\crypto\cast\c_ofb64.c \
-    $(SRC_D)\crypto\aes\aes_misc.c \
-    $(SRC_D)\crypto\aes\aes_ecb.c \
-    $(SRC_D)\crypto\aes\aes_cfb.c \
-    $(SRC_D)\crypto\aes\aes_ofb.c \
-    $(SRC_D)\crypto\aes\aes_ige.c \
-    $(SRC_D)\crypto\aes\aes_wrap.c \
     $(SRC_D)\crypto\bn\bn_add.c \
     $(SRC_D)\crypto\bn\bn_div.c \
     $(SRC_D)\crypto\bn\bn_exp.c \
