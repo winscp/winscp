@@ -36,7 +36,7 @@ UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetPuTTYVersion();
 //---------------------------------------------------------------------------
-UnicodeString __fastcall Sha256(const char * Data, size_t Size);
+UnicodeString __fastcall Sha256(const void * Data, size_t Size);
 UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm);

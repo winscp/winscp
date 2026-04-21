@@ -1151,36 +1151,43 @@ UnicodeString __fastcall GetPuTTYVersion()
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall Sha256(const char * Data, size_t Size)
+static const ssh_hashalg * GetHashAlg(const UnicodeString & Alg)
 {
-  unsigned char Digest[32];
-  hash_simple(&ssh_sha256, make_ptrlen(Data, Size), Digest);
-  UnicodeString Result(BytesToHex(Digest, std::size(Digest)));
-  return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
-{
-  const ssh_hashalg * HashAlg;
   if (SameIdent(Alg, Sha256ChecksumAlg))
   {
-    HashAlg = &ssh_sha256;
+    return &ssh_sha256;
   }
   else if (SameIdent(Alg, Sha1ChecksumAlg))
   {
-    HashAlg = &ssh_sha1;
+    return &ssh_sha1;
   }
   else if (SameIdent(Alg, Md5ChecksumAlg))
   {
-    HashAlg = &ssh_md5;
+    return &ssh_md5;
   }
   else
   {
     throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
   }
-
+}
+//---------------------------------------------------------------------------
+UnicodeString DoCalculateChecksum(const void * Data, size_t Size, const ssh_hashalg * Hash)
+{
+  size_t Len = Hash->hlen;
+  unsigned char Digest[Len];
+  hash_simple(Hash, make_ptrlen(Data, Size), Digest);
+  return BytesToHex(Digest, Len);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall Sha256(const void * Data, size_t Size)
+{
+  return DoCalculateChecksum(Data, Size, &ssh_sha256);
+}
+//---------------------------------------------------------------------------
+UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
+{
   RawByteString Buf;
-  ssh_hash * Hash = ssh_hash_new(HashAlg);
+  ssh_hash * Hash = ssh_hash_new(GetHashAlg(Alg));
   try
   {
     const int BlockSize = 32 * 1024;
