@@ -2678,24 +2678,23 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall TWinConfiguration::GetResourceModuleCompleteness(HINSTANCE Module)
+int TWinConfiguration::GetResourceModuleCompleteness(HINSTANCE Module)
 {
   UnicodeString CompletenessStr = LoadStrFrom(Module, TRANSLATION_COMPLETENESS);
   return StrToIntDef(CompletenessStr, -1);
 }
 //---------------------------------------------------------------------------
-int __fastcall TWinConfiguration::GetLocaleCompletenessTreshold()
+int TWinConfiguration::GetLocaleCompletenessTreshold()
 {
   return 80;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::IsTranslationComplete(HINSTANCE Module)
+bool TWinConfiguration::IsTranslationComplete(HINSTANCE Module)
 {
   return (GetResourceModuleCompleteness(Module) >= LocaleCompletenessTreshold);
 }
 //---------------------------------------------------------------------------
-HINSTANCE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
-  UnicodeString & FileName)
+HINSTANCE TWinConfiguration::LoadNewResourceModule(LCID ALocale, UnicodeString & FileName)
 {
   HINSTANCE Instance = TCustomWinConfiguration::LoadNewResourceModule(ALocale, FileName);
   if (Instance != NULL)

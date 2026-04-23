@@ -53,7 +53,7 @@ bool TGlyphsModule::IsLargerToolbarPossible(int Larger)
 //---------------------------------------------------------------------------
 void TGlyphsModule::UpdatePixelsPerInch()
 {
-  HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
+  HMODULE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
   try
   {
     int PixelsPerInch = LargerPixelsPerInch(FBasePixelsPerInch, FLargerToolbar);

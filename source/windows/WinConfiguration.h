@@ -649,8 +649,7 @@ protected:
   void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   virtual bool __fastcall GetUseMasterPassword();
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
-  virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
-    UnicodeString & FileName);
+  virtual HINSTANCE LoadNewResourceModule(LCID Locale, UnicodeString & FileName);
   void __fastcall CheckTranslationVersion(const UnicodeString FileName,
     bool InternalLocaleOnError);
   virtual void __fastcall DefaultLocalized();
@@ -660,8 +659,8 @@ protected:
   void __fastcall AskForMasterPassword();
   void __fastcall DoLoadExtensionList(const UnicodeString & Path, const UnicodeString & PathId, TStringList * DeletedExtensions);
   TStrings * __fastcall GetExtensionsPaths();
-  virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
-  virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
+  virtual int GetResourceModuleCompleteness(HINSTANCE Module);
+  virtual bool IsTranslationComplete(HINSTANCE Module);
   void __fastcall LoadExtensionList();
   void __fastcall ReleaseExtensionTranslations();
   void __fastcall LoadExtensionTranslations();

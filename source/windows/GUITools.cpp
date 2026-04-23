@@ -1932,7 +1932,7 @@ static int __fastcall NeedImagesModule(TControl * Control)
   if (AnimationsImages.find(PixelsPerInch) == AnimationsImages.end())
   {
     TDataModule * ImagesModule;
-    HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
+    HMODULE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
     try
     {
       if (PixelsPerInch == 192)

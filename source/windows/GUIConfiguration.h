@@ -203,12 +203,11 @@ protected:
   void __fastcall SetLocale(LCID value);
   void __fastcall SetLocaleSafe(LCID value);
   UnicodeString __fastcall GetAppliedLocaleHex();
-  virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
-    UnicodeString & FileName);
-  void __fastcall SetResourceModule(HINSTANCE Instance);
+  virtual HMODULE LoadNewResourceModule(LCID Locale, UnicodeString & FileName);
+  void SetResourceModule(HMODULE Instance);
   TObjectList * __fastcall GetLocales();
   void __fastcall AddLocale(LCID Locale, const UnicodeString & Name);
-  void __fastcall FreeResourceModule(HANDLE Instance);
+  void FreeResourceModule(HINSTANCE Instance);
   void __fastcall SetDefaultCopyParam(const TGUICopyParamType & value);
   virtual bool __fastcall GetRememberPassword();
   const TCopyParamList * __fastcall GetCopyParamList();
@@ -230,8 +229,8 @@ protected:
   bool __fastcall GetCanApplyLocaleImmediately();
   UnicodeString __fastcall GetTranslationModule(const UnicodeString & Path);
   void __fastcall FindLocales(const UnicodeString & Path, TStrings * Exts, UnicodeString & LocalesExts);
-  virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
-  virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
+  virtual int GetResourceModuleCompleteness(HMODULE Module);
+  virtual bool IsTranslationComplete(HMODULE Module);
   static int __fastcall LocalesCompare(void * Item1, void * Item2);
   LCID __fastcall InternalLocale();
   bool __fastcall DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults);
@@ -244,8 +243,8 @@ public:
   bool __fastcall LoadCopyParam(THierarchicalStorage * Storage, TCopyParamType * CopyParam);
   void __fastcall LoadDefaultCopyParam(THierarchicalStorage * Storage);
 
-  HANDLE __fastcall ChangeToDefaultResourceModule();
-  HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
+  HINSTANCE ChangeToDefaultResourceModule();
+  HINSTANCE ChangeResourceModule(HINSTANCE Instance);
   bool __fastcall UsingInternalTranslation();
   UnicodeString __fastcall AppliedLocaleCopyright();
   UnicodeString __fastcall AppliedLocaleVersion();

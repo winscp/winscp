@@ -813,11 +813,10 @@ UnicodeString __fastcall TGUIConfiguration::GetTranslationModule(const UnicodeSt
   return Result;
 }
 //---------------------------------------------------------------------------
-HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
-  UnicodeString & FileName)
+HMODULE TGUIConfiguration::LoadNewResourceModule(LCID ALocale, UnicodeString & FileName)
 {
   UnicodeString LibraryFileName;
-  HINSTANCE NewInstance = 0;
+  HMODULE NewInstance = 0;
   LCID AInternalLocale = InternalLocale();
   bool Internal = (ALocale == AInternalLocale);
   DWORD PrimaryLang = PRIMARYLANGID(ALocale);
@@ -936,12 +935,12 @@ UnicodeString __fastcall TGUIConfiguration::GetAppliedLocaleHex()
   return IntToHex(__int64(AppliedLocale), 4);
 }
 //---------------------------------------------------------------------------
-int __fastcall TGUIConfiguration::GetResourceModuleCompleteness(HINSTANCE /*Module*/)
+int TGUIConfiguration::GetResourceModuleCompleteness(HMODULE /*Module*/)
 {
   return 100;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TGUIConfiguration::IsTranslationComplete(HINSTANCE /*Module*/)
+bool TGUIConfiguration::IsTranslationComplete(HMODULE /*Module*/)
 {
   return true;
 }
@@ -954,7 +953,7 @@ void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe, bool
     L = GetUserDefaultUILanguage();
   }
 
-  HINSTANCE Module = NULL;
+  HMODULE Module = NULL;
   UnicodeString FileName;
 
   try
@@ -1043,35 +1042,36 @@ void __fastcall TGUIConfiguration::SetAppliedLocale(LCID AppliedLocale, const Un
   FLocaleModuleName = LocaleModuleName;
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
+void TGUIConfiguration::FreeResourceModule(HMODULE Instance)
 {
   TLibModule * MainModule = FindModule(HInstance);
-  if (reinterpret_cast<unsigned>(Instance) != MainModule->Instance)
+  DebugAssert(sizeof(Instance) == sizeof(MainModule->Instance));
+  if (Instance != reinterpret_cast<HMODULE>(MainModule->Instance))
   {
-    FreeLibrary(static_cast<HMODULE>(Instance));
+    FreeLibrary(Instance);
   }
 }
 //---------------------------------------------------------------------------
-HANDLE __fastcall TGUIConfiguration::ChangeToDefaultResourceModule()
+HMODULE TGUIConfiguration::ChangeToDefaultResourceModule()
 {
   return ChangeResourceModule(NULL);
 }
 //---------------------------------------------------------------------------
-HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
+HINSTANCE TGUIConfiguration::ChangeResourceModule(HMODULE Instance)
 {
   if (Instance == NULL)
   {
     Instance = HInstance;
   }
   TLibModule * MainModule = FindModule(HInstance);
-  HANDLE Result = reinterpret_cast<HANDLE>(MainModule->ResInstance);
-  MainModule->ResInstance = reinterpret_cast<unsigned>(Instance);
+  HMODULE Result = reinterpret_cast<HMODULE>(MainModule->ResInstance);
+  MainModule->ResInstance = reinterpret_cast<HINST>(Instance);
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
+void TGUIConfiguration::SetResourceModule(HMODULE Instance)
 {
-  HANDLE PrevHandle = ChangeResourceModule(Instance);
+  HMODULE PrevHandle = ChangeResourceModule(Instance);
   FreeResourceModule(PrevHandle);
 
   DefaultLocalized();
