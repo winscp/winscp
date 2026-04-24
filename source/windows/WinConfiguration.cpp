@@ -826,19 +826,11 @@ void __fastcall TWinConfiguration::DefaultLocalized()
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::DetectRegistryStorage(HKEY RootKey)
 {
-  bool Result = false;
-  TRegistryStorage * Storage = new TRegistryStorage(RegistryStorageKey, RootKey);
-  try
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(RegistryStorageKey, RootKey, KEY_READ | KEY_WOW64_32KEY));
+  bool Result = Storage->OpenRootKey(false);
+  if (Result)
   {
-    if (Storage->OpenRootKey(false))
-    {
-      Result = true;
-      Storage->CloseSubKey();
-    }
-  }
-  __finally
-  {
-    delete Storage;
+    Storage->CloseSubKey();
   }
   return Result;
 }

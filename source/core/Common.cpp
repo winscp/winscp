@@ -2307,6 +2307,7 @@ bool __fastcall AdjustClockForDSTEnabled()
   // Windows XP deletes the DisableAutoDaylightTimeSet value when it is off
   // (the later versions set it to DynamicDaylightTimeDisabled to 0)
   bool DynamicDaylightTimeDisabled = false;
+  // SYSTEM is shared, so no need for WOW flags
   TRegistry * Registry = new TRegistry(KEY_READ);
   try
   {
@@ -3064,7 +3065,7 @@ UnicodeString __fastcall WindowsProductName()
     try
     {
       // JCL GetWindowsProductName claims that reading 64-bit key gets correct values, but on Windows 11, neither works
-      unsigned int Access = KEY_READ | FLAGMASK(IsWin64(), KEY_WOW64_64KEY);
+      unsigned int Access = KEY_READ | KEY_WOW64_64KEY;
       std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
       Registry->RootKey = HKEY_LOCAL_MACHINE;
       if (Registry->OpenKey(L"SOFTWARE", false) &&

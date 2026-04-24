@@ -196,7 +196,7 @@ void __fastcall TConfiguration::Default()
   FDisableAcceptingHostKeys = false;
 
   TRegistryStorage * AdminStorage;
-  AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE);
+  AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE, KEY_WOW64_32KEY);
   try
   {
     if (AdminStorage->OpenRootKey(false))

@@ -149,6 +149,7 @@ BOOL add_path_reg(const wchar_t * path){
     wchar_t * reg_str;
     BOOL func_ret = TRUE;
 
+    // HKLM\SYSTEM is shared (there's no WOW redirection)
     ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, KEY, 0,
                        KEY_WRITE | KEY_READ, &key);
     if (ret != ERROR_SUCCESS){
@@ -383,7 +384,10 @@ static TRegistry * __fastcall CreateRegistry(HKEY RootKey)
 {
   std::unique_ptr<TRegistry> Registry(new TRegistry());
 
-  Registry->Access = KEY_WRITE | KEY_READ;
+  // Most locations we write to (Software\Classes, Software\RegisteredApplications),
+  // are shared between 32-bit and 64-bit, so the WOW flag has no effect.
+  // For WinSCPCapabilities we want the 32-bit key for backward compatibility.
+  Registry->Access = KEY_WRITE | KEY_READ | KEY_WOW64_32KEY;
   Registry->RootKey = RootKey;
 
   return Registry.release();
@@ -1258,7 +1262,8 @@ static int __fastcall DownloadSizeToProgress(__int64 Size)
 //---------------------------------------------------------------------------
 static UnicodeString GetInstallationPath(HKEY RootKey)
 {
-  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ));
+  // As long as we use 32-bit Inno Setup
+  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ | KEY_WOW64_32KEY));
   Registry->RootKey = RootKey;
   UnicodeString Result;
   if (Registry->OpenKey(L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\winscp3_is1", false))
@@ -2236,7 +2241,8 @@ UnicodeString GetNetVersionStr()
   {
     NetVersionStr = L"0"; // not to retry on failure
 
-    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP", HKEY_LOCAL_MACHINE));
+    UnicodeString NDPKey = L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP";
+    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(NDPKey, HKEY_LOCAL_MACHINE, KEY_WOW64_64KEY));
     if (Registry->OpenRootKey(false))
     {
       std::unique_ptr<TStringList> Keys(new TStringList());
@@ -2333,7 +2339,8 @@ UnicodeString GetPowerShellVersionStr()
   {
     PowerShellVersionStr = L"0"; // not to retry on failure
 
-    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\PowerShell", HKEY_LOCAL_MACHINE));
+    std::unique_ptr<TRegistryStorage> Registry(
+      new TRegistryStorage(L"SOFTWARE\\Microsoft\\PowerShell", HKEY_LOCAL_MACHINE, KEY_WOW64_64KEY));
     if (Registry->OpenRootKey(false))
     {
       std::unique_ptr<TStringList> Keys(new TStringList());
@@ -2364,8 +2371,7 @@ UnicodeString GetPowerShellCoreVersionStr()
   {
     PowerShellCoreVersionStr = L"0"; // not to retry on failure
 
-    // TRegistryStorage does not support KEY_WOW64_64KEY
-    unsigned int Access = KEY_READ | FLAGMASK(IsWin64(), KEY_WOW64_64KEY);
+    unsigned int Access = KEY_READ | KEY_WOW64_64KEY;
     std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
     Registry->RootKey = HKEY_LOCAL_MACHINE;
     UnicodeString RootKey(L"SOFTWARE\\Microsoft\\PowerShellCore\\InstalledVersions");
@@ -2478,7 +2484,9 @@ static UnicodeString PlatformStr(int PlatformSet)
 static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
 {
   UnicodeString TypeLib = L"{A0B93468-D98A-4845-A234-8076229AD93F}"; // Duplicated in AssemblyInfo.cs
-  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT));
+  // CLSID is separate for 32-bit and 64-bit, so scan both.
+  // The TypeLib is shared.
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT, KEY_WOW64_32KEY));
   Storage->MungeStringValues = false;
   Storage->AccessMode = smRead;
   std::unique_ptr<TRegistryStorage> Storage64;

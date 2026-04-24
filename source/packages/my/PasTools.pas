@@ -1147,6 +1147,7 @@ begin
   Registry := TRegistry.Create;
   try
     Registry.RootKey := RootKey;
+    Registry.Access := KEY_READ or KEY_WOW64_64KEY;
     Result := -1;
     if Registry.OpenKeyReadOnly(ThemesPersonalizeKey) and
        Registry.ValueExists(AppsUseLightThemeValue) then
