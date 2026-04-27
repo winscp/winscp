@@ -7,6 +7,7 @@ OBJFILES = \
     $(OBJD)\xmlparse.obj \
     $(OBJD)\xmlrole.obj \
     $(OBJD)\xmltok.obj \
+    $(OBJD)\random_rand_s.obj \
     $(OBJD)\loadlibrary.obj
 # ---------------------------------------------------------------------------
 DEFINES = _WINDOWS;NDEBUG;_LIB;XML_STATIC;WINSCP;_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL
