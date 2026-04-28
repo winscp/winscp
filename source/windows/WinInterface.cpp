@@ -1405,7 +1405,7 @@ void __fastcall TCallstackThread::ProcessEvent()
   {
     UnicodeString Path = DumpCallstackFileName(GetCurrentProcessId());
     std::unique_ptr<TStrings> StackStrings;
-    HANDLE MainThreadHandle = OpenThread(THREAD_SUSPEND_RESUME | THREAD_QUERY_INFORMATION, false, MainThreadID);
+    HANDLE MainThreadHandle = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, false, MainThreadID);
     if (MainThreadHandle == NULL)
     {
       RaiseLastOSError();
@@ -1417,7 +1417,7 @@ void __fastcall TCallstackThread::ProcessEvent()
     }
     try
     {
-      TJclStackInfoList * StackInfoList = JclCreateThreadStackTraceFromID(true, MainThreadID);
+      TJclStackInfoList * StackInfoList = JclCreateThreadStackTrace(true, reinterpret_cast<NativeUInt>(MainThreadHandle));
       if (StackInfoList == NULL)
       {
         RaiseLastOSError();
@@ -1472,19 +1472,13 @@ void __fastcall SaveHistory(void *, THistoryComboBox * Sender)
 //---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
-  // Not sure if we need to call JclHookExceptions at all, stack trace tracking seems to work without it.
-  // Note though that with Clang, this does not work for exceptions explicitly raised from C++ code.
-  // Not a big deal for us, as we are primarily looking for system exceptions and internal exceptions raised from Pascal VCL code.
-  if (JclHookExceptions())
-  {
-    JclStackTrackingOptions << stAllModules;
-    // Neeeded with Clang
-    JclStackTrackingOptions << stRawMode;
-    // See also StackInfoListToStrings
-    JclExceptionStacktraceOptions >> estoIncludeAdressOffset;
-    CallstackThread.reset(new TCallstackThread());
-    CallstackThread->Start();
-  }
+  JclStackTrackingOptions << stAllModules;
+  // Neeeded with Clang
+  JclStackTrackingOptions << stRawMode;
+  // See also StackInfoListToStrings
+  JclExceptionStacktraceOptions >> estoIncludeAdressOffset;
+  CallstackThread.reset(new TCallstackThread());
+  CallstackThread->Start();
 
   // SEM_NOOPENFILEERRORBOX should affect OpenFile only, which we probably never use
   SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
