@@ -20,7 +20,7 @@
 CFLAG_WARNINGS=-Wno-incompatible-function-pointer-types -Wno-deprecated-declarations
 CFLAG=$(CFLAG_COMMON) $(CFLAG_WARNINGS)
 
-DEFINES=AES_ASM;MD5_ASM;OPENSSL_BN_ASM_GF2m;OPENSSL_BN_ASM_MONT;SHA1_ASM;SHA256_ASM;SHA512_ASM
+DEFINES=MD5_ASM;OPENSSL_BN_ASM_GF2m;OPENSSL_BN_ASM_MONT;SHA1_ASM;SHA256_ASM;SHA512_ASM
 DEFINES=$(DEFINES);DES_ASM;RMD160_ASM;OPENSSL_BN_ASM_PART_WORDS
 DEFINES=$(DEFINES);OPENSSL_SYS_WIN32
 
@@ -144,6 +144,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\i_skey.obj \
     $(OBJ_D)\bf_skey.obj $(OBJ_D)\bf_ecb.obj $(OBJ_D)\bf_cfb64.obj $(OBJ_D)\bf_ofb64.obj \
     $(OBJ_D)\c_skey.obj $(OBJ_D)\c_ecb.obj $(OBJ_D)\c_cfb64.obj $(OBJ_D)\c_ofb64.obj \
+    $(OBJ_D)\aes_core.obj $(OBJ_D)\aes_cbc.obj \
     $(OBJ_D)\bn_add.obj $(OBJ_D)\bn_div.obj $(OBJ_D)\bn_exp.obj $(OBJ_D)\bn_lib.obj \
     $(OBJ_D)\bn_ctx.obj $(OBJ_D)\bn_mul.obj $(OBJ_D)\bn_mod.obj $(OBJ_D)\bn_print.obj \
     $(OBJ_D)\bn_rand.obj $(OBJ_D)\bn_shift.obj $(OBJ_D)\bn_word.obj $(OBJ_D)\bn_blind.obj \
@@ -380,8 +381,7 @@ CRYPTOOBJASM32= \
     $(OBJ_D)\co-586.obj \
     $(OBJ_D)\rmd-586.obj \
     $(OBJ_D)\sha256-586.obj \
-    $(OBJ_D)\sha512-586.obj \
-    $(OBJ_D)\aes-586.obj
+    $(OBJ_D)\sha512-586.obj
 
 CRYPTOOBJASM=$(CRYPTOOBJASM32)
 CRYPTOOBJ=$(CRYPTOOBJ) $(CRYPTOOBJ32)
@@ -553,6 +553,8 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\cast\c_ecb.c \
     $(SRC_D)\crypto\cast\c_cfb64.c \
     $(SRC_D)\crypto\cast\c_ofb64.c \
+    $(SRC_D)\crypto\aes\aes_core.c \
+    $(SRC_D)\crypto\aes\aes_cbc.c \
     $(SRC_D)\crypto\bn\bn_add.c \
     $(SRC_D)\crypto\bn\bn_div.c \
     $(SRC_D)\crypto\bn\bn_exp.c \
@@ -1330,9 +1332,6 @@ $(OBJ_D)\sha256-586.obj: $(SRC_D)\crypto\sha\asm\sha256-586.asm
 
 $(OBJ_D)\sha512-586.obj: $(SRC_D)\crypto\sha\asm\sha512-586.asm
     $(ASM) -o$(OBJ_D)\sha512-586.obj $(SRC_D)\crypto\sha\asm\sha512-586.asm
-
-$(OBJ_D)\aes-586.obj: $(SRC_D)\crypto\aes\asm\aes-586.asm
-    $(ASM) -o$(OBJ_D)\aes-586.obj $(SRC_D)\crypto\aes\asm\aes-586.asm
 
 $(O_SSL):
     -if exist $(O_SSL) $(RM) $(O_SSL)
