@@ -2591,7 +2591,8 @@ namespace WinSCP
         {
             CheckNotOpened();
             const string XmlExtension = ".xml";
-            if (Path.GetExtension(value).Equals(XmlExtension, StringComparison.OrdinalIgnoreCase))
+            if ((value != null) &&
+                Path.GetExtension(value).Equals(XmlExtension, StringComparison.OrdinalIgnoreCase))
             {
                 throw Logger.WriteException(new ArgumentException($"Session log cannot have {XmlExtension} extension"));
             }
