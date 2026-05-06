@@ -144,7 +144,6 @@ CRYPTOOBJ= \
     $(OBJ_D)\i_skey.obj \
     $(OBJ_D)\bf_skey.obj $(OBJ_D)\bf_ecb.obj $(OBJ_D)\bf_cfb64.obj $(OBJ_D)\bf_ofb64.obj \
     $(OBJ_D)\c_skey.obj $(OBJ_D)\c_ecb.obj $(OBJ_D)\c_cfb64.obj $(OBJ_D)\c_ofb64.obj \
-    $(OBJ_D)\aes_core.obj $(OBJ_D)\aes_cbc.obj \
     $(OBJ_D)\bn_add.obj $(OBJ_D)\bn_div.obj $(OBJ_D)\bn_exp.obj $(OBJ_D)\bn_lib.obj \
     $(OBJ_D)\bn_ctx.obj $(OBJ_D)\bn_mul.obj $(OBJ_D)\bn_mod.obj $(OBJ_D)\bn_print.obj \
     $(OBJ_D)\bn_rand.obj $(OBJ_D)\bn_shift.obj $(OBJ_D)\bn_word.obj $(OBJ_D)\bn_blind.obj \
@@ -365,6 +364,7 @@ CRYPTOOBJ= \
 
 CRYPTOOBJ32= \
     $(OBJ_D)\mem_clr.obj \
+    $(OBJ_D)\aes_core.obj $(OBJ_D)\aes_cbc.obj \
     $(OBJ_D)\chacha_enc.obj \
     $(OBJ_D)\rc4_enc.obj $(OBJ_D)\rc4_skey.obj \
     $(OBJ_D)\keccak1600.obj
@@ -553,8 +553,6 @@ CRYPTOSRC= \
     $(SRC_D)\crypto\cast\c_ecb.c \
     $(SRC_D)\crypto\cast\c_cfb64.c \
     $(SRC_D)\crypto\cast\c_ofb64.c \
-    $(SRC_D)\crypto\aes\aes_core.c \
-    $(SRC_D)\crypto\aes\aes_cbc.c \
     $(SRC_D)\crypto\bn\bn_add.c \
     $(SRC_D)\crypto\bn\bn_div.c \
     $(SRC_D)\crypto\bn\bn_exp.c \
@@ -1290,6 +1288,8 @@ CRYPTOSRC= \
 
 CRYPTOSRC32= \
     $(SRC_D)\crypto\mem_clr.c \
+    $(SRC_D)\crypto\aes\aes_core.c \
+    $(SRC_D)\crypto\aes\aes_cbc.c \
     $(SRC_D)\crypto\chacha\chacha_enc.c \
     $(SRC_D)\crypto\rc4\rc4_enc.c \
     $(SRC_D)\crypto\rc4\rc4_skey.c \
