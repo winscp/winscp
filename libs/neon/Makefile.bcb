@@ -35,35 +35,35 @@ LIBS_DEP=$(O_NEON)
 HEADER=$(INCL_D)\ne_uri.h
 
 OBJFILES=\
-    $(OBJ_D)\ne_alloc.obj \
-    $(OBJ_D)\ne_auth.obj \
-    $(OBJ_D)\ne_basic.obj \
-    $(OBJ_D)\ne_compress.obj \
-    $(OBJ_D)\ne_dates.obj \
-    $(OBJ_D)\ne_i18n.obj \
-    $(OBJ_D)\ne_md5.obj \
-    $(OBJ_D)\ne_pkcs11.obj \
-    $(OBJ_D)\ne_redirect.obj \
-    $(OBJ_D)\ne_request.obj \
-    $(OBJ_D)\ne_session.obj \
-    $(OBJ_D)\ne_socket.obj \
-    $(OBJ_D)\ne_socks.obj \
-    $(OBJ_D)\ne_sspi.obj \
-    $(OBJ_D)\ne_string.obj \
-    $(OBJ_D)\ne_uri.obj \
-    $(OBJ_D)\ne_utils.obj \
-    $(OBJ_D)\ne_207.obj \
-    $(OBJ_D)\ne_xml.obj \
-    $(OBJ_D)\ne_xmlreq.obj \
-    $(OBJ_D)\ne_oldacl.obj \
-    $(OBJ_D)\ne_acl3744.obj \
-    $(OBJ_D)\ne_props.obj \
-    $(OBJ_D)\ne_locks.obj \
-    $(OBJ_D)\ne_openssl.obj \
-    $(OBJ_D)\ne_ssl.obj
+    $(OBJ_D)\ne_alloc.$(O) \
+    $(OBJ_D)\ne_auth.$(O) \
+    $(OBJ_D)\ne_basic.$(O) \
+    $(OBJ_D)\ne_compress.$(O) \
+    $(OBJ_D)\ne_dates.$(O) \
+    $(OBJ_D)\ne_i18n.$(O) \
+    $(OBJ_D)\ne_md5.$(O) \
+    $(OBJ_D)\ne_pkcs11.$(O) \
+    $(OBJ_D)\ne_redirect.$(O) \
+    $(OBJ_D)\ne_request.$(O) \
+    $(OBJ_D)\ne_session.$(O) \
+    $(OBJ_D)\ne_socket.$(O) \
+    $(OBJ_D)\ne_socks.$(O) \
+    $(OBJ_D)\ne_sspi.$(O) \
+    $(OBJ_D)\ne_string.$(O) \
+    $(OBJ_D)\ne_uri.$(O) \
+    $(OBJ_D)\ne_utils.$(O) \
+    $(OBJ_D)\ne_207.$(O) \
+    $(OBJ_D)\ne_xml.$(O) \
+    $(OBJ_D)\ne_xmlreq.$(O) \
+    $(OBJ_D)\ne_oldacl.$(O) \
+    $(OBJ_D)\ne_acl3744.$(O) \
+    $(OBJ_D)\ne_props.$(O) \
+    $(OBJ_D)\ne_locks.$(O) \
+    $(OBJ_D)\ne_openssl.$(O) \
+    $(OBJ_D)\ne_ssl.$(O)
 
 .path.c = $(SRC_D)/src
-.c.obj:
+.c.$(O):
     $(CC) $(LIB_CFLAGS) -output-dir $(@D) {$< }
 
 $(O_NEON): $(OBJFILES)

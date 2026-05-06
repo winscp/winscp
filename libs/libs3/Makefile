@@ -24,22 +24,22 @@ LIB_CFLAGS=$(CFLAG) $(INC)
 
 #############################################
 LIBS3_OBJS=\
-    $(OBJ_D)\bucket.obj \
-    $(OBJ_D)\bucket_metadata.obj \
-    $(OBJ_D)\error_parser.obj \
-    $(OBJ_D)\general.obj \
-    $(OBJ_D)\mingw_functions.obj \
-    $(OBJ_D)\multipart.obj \
-    $(OBJ_D)\object.obj \
-    $(OBJ_D)\request.obj \
-    $(OBJ_D)\request_context.obj \
-    $(OBJ_D)\response_headers_handler.obj \
-    $(OBJ_D)\service.obj \
-    $(OBJ_D)\service_access_logging.obj \
-    $(OBJ_D)\simplexml.obj \
-    $(OBJ_D)\util.obj
+    $(OBJ_D)\bucket.$(O) \
+    $(OBJ_D)\bucket_metadata.$(O) \
+    $(OBJ_D)\error_parser.$(O) \
+    $(OBJ_D)\general.$(O) \
+    $(OBJ_D)\mingw_functions.$(O) \
+    $(OBJ_D)\multipart.$(O) \
+    $(OBJ_D)\object.$(O) \
+    $(OBJ_D)\request.$(O) \
+    $(OBJ_D)\request_context.$(O) \
+    $(OBJ_D)\response_headers_handler.$(O) \
+    $(OBJ_D)\service.$(O) \
+    $(OBJ_D)\service_access_logging.$(O) \
+    $(OBJ_D)\simplexml.$(O) \
+    $(OBJ_D)\util.$(O)
 
-.c.obj:
+.c.$(O):
     $(CC) $(LIB_CFLAGS) -output-dir $(@D) {$< }
 
 $(O_LIBS3): $(LIBS3_OBJS)

@@ -5,7 +5,7 @@ MKLIB_ARG = /a /C
 CC = "$(BDS_BIN)\bcc32c"
 CC_ARG = -triple i686-pc-windows-omf -ffunction-sections
 MKLIB = "$(BDS_BIN)\tlib" $(MKLIB_ARG)
-OBJ_EXT = obj
+O = obj
 
 CFLAG_BASE = -O2
 

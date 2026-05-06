@@ -4,11 +4,11 @@ PROJECT = $(LIB_PATH)\libexpats_mtd.lib
 OBJD = Release\obj\libexpat_static
 # ---------------------------------------------------------------------------
 OBJFILES = \
-    $(OBJD)\xmlparse.obj \
-    $(OBJD)\xmlrole.obj \
-    $(OBJD)\xmltok.obj \
-    $(OBJD)\random_rand_s.obj \
-    $(OBJD)\loadlibrary.obj
+    $(OBJD)\xmlparse.$(O) \
+    $(OBJD)\xmlrole.$(O) \
+    $(OBJD)\xmltok.$(O) \
+    $(OBJD)\random_rand_s.$(O) \
+    $(OBJD)\loadlibrary.$(O)
 # ---------------------------------------------------------------------------
 DEFINES = _WINDOWS;NDEBUG;_LIB;XML_STATIC;WINSCP;_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL
 INCLUDEPATH = ..;..\lib
@@ -29,6 +29,6 @@ setup:
     if not exist .\release\obj\libexpat_static\nul mkdir release\obj\libexpat_static
 # ---------------------------------------------------------------------------
 .path.c = ..\lib
-.c.obj:
+.c.$(O):
     $(CC) $(CFLAG1) -I$(INCLUDEPATH:;= -I) $(DEFINESARGS) -output-dir $(@D) {$< }
 # ---------------------------------------------------------------------------

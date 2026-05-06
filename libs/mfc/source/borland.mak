@@ -23,9 +23,9 @@ CL_OPT=$(WARNINGS)
 #############################################################################
 # Library Components
 
-FILES = filecore.obj
+FILES = filecore.$(O)
 
-MISC = strcore.obj strex.obj timecore.obj
+MISC = strcore.$(O) strex.$(O) timecore.$(O)
 
 CPP_OBJS=$(FILES) $(MISC)
 
@@ -45,9 +45,9 @@ BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I) -isystem "$(BDS_INCLUDE)/windows/rtl"
 
 .SUFFIXES: .cpp
 
-.path.obj = $(D)
+.path.$(O) = $(D)
 
-.cpp.obj:
+.cpp.$(O):
 	$(CC) $(BORFLAGS) -output-dir $(@D) {$< }
 
 #############################################################################
