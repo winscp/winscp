@@ -431,12 +431,12 @@ int BIO_accept_ex(int accept_sock, BIO_ADDR *addr_, int options)
                 "calling accept()");
             ERR_raise(ERR_LIB_BIO, BIO_R_ACCEPT_ERROR);
         }
-        return (int)INVALID_SOCKET;
+        return (int)INVALID_SOCKET; // WINSCP
     }
 
     if (!BIO_socket_nbio(accepted_sock, (options & BIO_SOCK_NONBLOCK) != 0)) {
         closesocket(accepted_sock);
-        return (int)INVALID_SOCKET;
+        return (int)INVALID_SOCKET; // WINSCP
     }
 
     return accepted_sock;
