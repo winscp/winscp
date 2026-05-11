@@ -68,6 +68,8 @@ TComponent * __fastcall GetFormOwner();
 TForm * __fastcall GetMainForm();
 void __fastcall SetCorrectFormParent(TForm * Form);
 void __fastcall InvokeHelp(TWinControl * Control);
+int OffsetToVerticallyCenterWith(TControl * Control, TControl * CenterWithControl);
+void VerticallyCenterWith(TControl * Control, TControl * CenterWithControl);
 void __fastcall FixFormIcons(TForm * Form);
 Forms::TMonitor *  __fastcall FormMonitor(TCustomForm * Form);
 int __fastcall GetLastMonitor();

@@ -50,7 +50,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Caption = '&Calculate total size'
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 2
+      TabOrder = 3
       OnClick = ControlChange
     end
     object SpeedCombo: THistoryComboBox
@@ -58,7 +58,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 91
       Width = 101
       Height = 23
-      TabOrder = 3
+      TabOrder = 4
       Text = 'SpeedCombo'
       OnExit = SpeedComboExit
       Items.Strings = (
@@ -75,7 +75,7 @@ object CopyParamsFrame: TCopyParamsFrame
     object PreserveTimeDirsCheck: TCheckBox
       Left = 27
       Top = 45
-      Width = 185
+      Width = 165
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'Including directories'
@@ -83,6 +83,21 @@ object CopyParamsFrame: TCopyParamsFrame
       ShowHint = True
       TabOrder = 1
       OnClick = ControlChange
+    end
+    object PreserveTimeDirsHintText: TStaticText
+      Left = 198
+      Top = 44
+      Width = 14
+      Height = 19
+      Hint = 
+        'When preserving directory timestamps is enabled, using multiple ' +
+        'connections for transfer is not possible.'
+      Alignment = taRightJustify
+      Anchors = [akTop, akRight]
+      AutoSize = False
+      Caption = #55357#57032
+      TabOrder = 2
+      TabStop = True
     end
   end
   object LocalPropertiesGroup: TGroupBox

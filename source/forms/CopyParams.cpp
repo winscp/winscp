@@ -27,6 +27,14 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   TCopyParamType DefParams;
   Params = DefParams;
 
+  HintLabel(PreserveTimeDirsHintText);
+  int Right = PreserveTimeDirsHintText->Left + PreserveTimeDirsHintText->Width;
+  PreserveTimeDirsHintText->Font->Size = MulDiv(PreserveTimeDirsHintText->Font->Size, 13, 10);
+  PreserveTimeDirsHintText->AutoSize = true;
+  PreserveTimeDirsHintText->Left = Right - PreserveTimeDirsHintText->Width;
+  PreserveTimeDirsHintText->AutoSize = false;
+  VerticallyCenterWith(PreserveTimeDirsHintText, PreserveTimeDirsCheck);
+
   HintLabel(IncludeFileMaskHintText,
     FORMAT(L"%s\n \n%s\n \n%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2),
       LoadStr(FILE_MASK_EX_HINT), LoadStr(COMBINING_MASKS_HINT),

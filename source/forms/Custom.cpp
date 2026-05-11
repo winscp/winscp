@@ -184,7 +184,7 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
     if (OneLine)
     {
       DebugAssert(Edit->Height > Label->Height);
-      Label->Top = FPos + ((Edit->Height - Label->Height) / 2);
+      Label->Top = FPos + OffsetToVerticallyCenterWith(Label, Edit);
     }
     else
     {
@@ -1635,15 +1635,14 @@ TSshHostCADialog::TSshHostCADialog(bool Add) :
   AddText(Label);
 
   PermitRsaSha1Check = AddValidityCheckBox(1);
-  int PermitCheckBoxTop = Label->Top - (PermitRsaSha1Check->Height - Label->Height) / 2;
   PermitRsaSha1Check->Left = OKButton->Left + 1;
-  PermitRsaSha1Check->Top = PermitCheckBoxTop;
+  VerticallyCenterWith(PermitRsaSha1Check, Label);
   PermitRsaSha256Check = AddValidityCheckBox(2);
   PermitRsaSha256Check->Left = CancelButton->Left + 1;
-  PermitRsaSha256Check->Top = PermitCheckBoxTop;
+  PermitRsaSha256Check->Top = PermitRsaSha1Check->Top;
   PermitRsaSha512Check = AddValidityCheckBox(3);
   PermitRsaSha512Check->Left = HelpButton->Left + 1;
-  PermitRsaSha512Check->Top = PermitCheckBoxTop;
+  PermitRsaSha512Check->Top = PermitRsaSha1Check->Top;
 }
 //---------------------------------------------------------------------------
 TCheckBox * TSshHostCADialog::AddValidityCheckBox(int CaptionStrPart)

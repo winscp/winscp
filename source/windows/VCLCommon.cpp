@@ -20,6 +20,7 @@
 //---------------------------------------------------------------------------
 const UnicodeString ContextSeparator(TraceInitStr(L"\x00BB"));
 const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextSeparator));
+const UnicodeString InfoLabelMark(TraceInitStr(L"\xD83D\xDEC8"));
 //---------------------------------------------------------------------------
 class TFormCustomizationComponent : public TComponent
 {
@@ -2103,6 +2104,16 @@ void __fastcall InvokeHelp(TWinControl * Control)
   SendMessage(Control->Handle, WM_HELP, NULL, reinterpret_cast<LPARAM>(&HelpInfo));
 }
 //---------------------------------------------------------------------------
+int OffsetToVerticallyCenterWith(TControl * Control, TControl * CenterWithControl)
+{
+  return ((CenterWithControl->Height - Control->Height) / 2);
+}
+//---------------------------------------------------------------------------
+void VerticallyCenterWith(TControl * Control, TControl * CenterWithControl)
+{
+  Control->Top = CenterWithControl->Top + OffsetToVerticallyCenterWith(Control, CenterWithControl);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
   TCanvas ** ACanvas, TRect & R)
@@ -2243,7 +2254,8 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
         Canvas->DrawFocusRect(R);
       }
       else if ((StaticText->Font->Color != GetLinkColor(StaticText)) && // LinkActionLabel and LinkLabel
-               !EndsStr(LinkAppLabelMark, StaticText->Caption)) // LinkAppLabel
+               !EndsStr(LinkAppLabelMark, StaticText->Caption) && // LinkAppLabel
+               (StaticText->Caption != InfoLabelMark))
       {
         Canvas->Pen->Style = psDot;
         Canvas->Brush->Style = bsClear;
