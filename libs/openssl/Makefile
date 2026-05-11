@@ -21,8 +21,13 @@ CFLAG_WARNINGS=-Wno-incompatible-function-pointer-types -Wno-deprecated-declarat
 CFLAG=$(CFLAG_COMMON) $(CFLAG_WARNINGS)
 
 DEFINES=MD5_ASM;OPENSSL_BN_ASM_GF2m;OPENSSL_BN_ASM_MONT;SHA1_ASM;SHA256_ASM;SHA512_ASM
+!ifdef WIN64
+DEFINES=$(DEFINES);AES_ASM;BSAES_ASM;KECCAK1600_ASM;OPENSSL_BN_ASM_MONT5;X25519_ASM
+DEFINES=$(DEFINES);OPENSSL_SYS_WIN64A;OPENSSL_CPUID_OBJ;OPENSSL_IA32_SSE2
+!else
 DEFINES=$(DEFINES);DES_ASM;RMD160_ASM;OPENSSL_BN_ASM_PART_WORDS
 DEFINES=$(DEFINES);OPENSSL_SYS_WIN32
+!endif
 
 DEFINES=$(DEFINES);OPENSSL_NO_CAMELLIA;OPENSSL_NO_RC5;OPENSSL_NO_MDC2;OPENSSL_NO_WHIRLPOOL
 DEFINES=$(DEFINES);OPENSSL_NO_SEED;OPENSSL_NO_CAPIENG;OPENSSL_NO_ENGINE
@@ -53,7 +58,12 @@ CP=copy
 RM=del
 MKDIR=-mkdir
 
+!ifdef WIN64
+# Taken from configdata.pm for VC-WIN64A target
+ASM_ARG=-Ox -f elf64 -DNEAR
+!else
 ASM_ARG=-d__omf__ -f obj
+!endif
 
 ASM=$(BUILDTOOLS)\tools\nasm $(ASM_ARG) -DWINSCP
 
@@ -369,6 +379,13 @@ CRYPTOOBJ32= \
     $(OBJ_D)\rc4_enc.$(O) $(OBJ_D)\rc4_skey.$(O) \
     $(OBJ_D)\keccak1600.$(O)
 
+CRYPTOOBJ64= \
+    $(OBJ_D)\bf_enc.$(O) \
+    $(OBJ_D)\bn_asm.$(O) $(OBJ_D)\rsaz_exp.$(O) $(OBJ_D)\rsaz_exp_x2.$(O) \
+    $(OBJ_D)\c_enc.$(O) \
+    $(OBJ_D)\des_enc.$(O) \
+    $(OBJ_D)\f_impl64.$(O)
+
 CRYPTOOBJASM32= \
     $(OBJ_D)\des-586.$(O) \
     $(OBJ_D)\bf-586.$(O) \
@@ -383,8 +400,48 @@ CRYPTOOBJASM32= \
     $(OBJ_D)\sha256-586.$(O) \
     $(OBJ_D)\sha512-586.$(O)
 
+CRYPTOOBJASM64= \
+    $(OBJ_D)\x86_64cpuid.$(O) \
+    $(OBJ_D)\aes-x86_64.$(O) \
+    $(OBJ_D)\aesni-x86_64.$(O) \
+    $(OBJ_D)\aesni-mb-x86_64.$(O) \
+    $(OBJ_D)\aesni-sha1-x86_64.$(O) \
+    $(OBJ_D)\aesni-sha256-x86_64.$(O) \
+    $(OBJ_D)\aesni-xts-avx512.$(O) \
+    $(OBJ_D)\bsaes-x86_64.$(O) \
+    $(OBJ_D)\x86_64-gf2m.$(O) \
+    $(OBJ_D)\x86_64-mont.$(O) \
+    $(OBJ_D)\x86_64-mont5.$(O) \
+    $(OBJ_D)\rsaz-x86_64.$(O) \
+    $(OBJ_D)\rsaz-avx2.$(O) \
+    $(OBJ_D)\rsaz-2k-avx512.$(O) \
+    $(OBJ_D)\rsaz-2k-avxifma.$(O) \
+    $(OBJ_D)\rsaz-3k-avx512.$(O) \
+    $(OBJ_D)\rsaz-3k-avxifma.$(O) \
+    $(OBJ_D)\rsaz-4k-avx512.$(O) \
+    $(OBJ_D)\rsaz-4k-avxifma.$(O) \
+    $(OBJ_D)\chacha-x86_64.$(O) \
+    $(OBJ_D)\x25519-x86_64.$(O) \
+    $(OBJ_D)\md5-x86_64.$(O) \
+    $(OBJ_D)\aes-gcm-avx512.$(O) \
+    $(OBJ_D)\aesni-gcm-x86_64.$(O) \
+    $(OBJ_D)\ghash-x86_64.$(O) \
+    $(OBJ_D)\rc4-x86_64.$(O) \
+    $(OBJ_D)\rc4-md5-x86_64.$(O) \
+    $(OBJ_D)\keccak1600-x86_64.$(O) \
+    $(OBJ_D)\sha1-x86_64.$(O) \
+    $(OBJ_D)\sha1-mb-x86_64.$(O) \
+    $(OBJ_D)\sha256-x86_64.$(O) \
+    $(OBJ_D)\sha256-mb-x86_64.$(O) \
+    $(OBJ_D)\sha512-x86_64.$(O)
+
+!ifdef WIN64
+CRYPTOOBJASM=$(CRYPTOOBJASM64)
+CRYPTOOBJ=$(CRYPTOOBJ) $(CRYPTOOBJ64)
+!else
 CRYPTOOBJASM=$(CRYPTOOBJASM32)
 CRYPTOOBJ=$(CRYPTOOBJ) $(CRYPTOOBJ32)
+!endif
 
 ###################################################################
 all: banner $(TMP_D) lib
@@ -1295,7 +1352,20 @@ CRYPTOSRC32= \
     $(SRC_D)\crypto\rc4\rc4_skey.c \
     $(SRC_D)\crypto\sha\keccak1600.c
 
+CRYPTOSRC64= \
+    $(SRC_D)\crypto\bf\bf_enc.c \
+    $(SRC_D)\crypto\bn\bn_asm.c \
+    $(SRC_D)\crypto\bn\rsaz_exp.c \
+    $(SRC_D)\crypto\bn\rsaz_exp_x2.c \
+    $(SRC_D)\crypto\cast\c_enc.c \
+    $(SRC_D)\crypto\des\des_enc.c \
+    $(SRC_D)\crypto\ec\curve448\arch_64\f_impl64.c
+
+!ifdef WIN64
+CRYPTOSRC=$(CRYPTOSRC) $(CRYPTOSRC64)
+!else
 CRYPTOSRC=$(CRYPTOSRC) $(CRYPTOSRC32)
+!endif
 
 $(OBJ_D)\des-586.$(O): $(SRC_D)\crypto\des\asm\des-586.asm
     $(ASM) -o$(OBJ_D)\des-586.$(O) $(SRC_D)\crypto\des\asm\des-586.asm
@@ -1332,6 +1402,105 @@ $(OBJ_D)\sha256-586.$(O): $(SRC_D)\crypto\sha\asm\sha256-586.asm
 
 $(OBJ_D)\sha512-586.$(O): $(SRC_D)\crypto\sha\asm\sha512-586.asm
     $(ASM) -o$(OBJ_D)\sha512-586.$(O) $(SRC_D)\crypto\sha\asm\sha512-586.asm
+
+$(OBJ_D)\x86_64cpuid.$(O): $(SRC_D)\crypto\x86_64cpuid.asm
+    $(ASM) -o$(OBJ_D)\x86_64cpuid.$(O) $(SRC_D)\crypto\x86_64cpuid.asm
+
+$(OBJ_D)\aes-x86_64.$(O): $(SRC_D)\crypto\aes\asm\aes-x86_64.asm
+    $(ASM) -o$(OBJ_D)\aes-x86_64.$(O) $(SRC_D)\crypto\aes\asm\aes-x86_64.asm
+
+$(OBJ_D)\aesni-x86_64.$(O): $(SRC_D)\crypto\aes\asm\aesni-x86_64.asm
+    $(ASM) -o$(OBJ_D)\aesni-x86_64.$(O) $(SRC_D)\crypto\aes\asm\aesni-x86_64.asm
+
+$(OBJ_D)\aesni-mb-x86_64.$(O): $(SRC_D)\crypto\aes\asm\aesni-mb-x86_64.asm
+    $(ASM) -o$(OBJ_D)\aesni-mb-x86_64.$(O) $(SRC_D)\crypto\aes\asm\aesni-mb-x86_64.asm
+
+$(OBJ_D)\aesni-sha1-x86_64.$(O): $(SRC_D)\crypto\aes\asm\aesni-sha1-x86_64.asm
+    $(ASM) -o$(OBJ_D)\aesni-sha1-x86_64.$(O) $(SRC_D)\crypto\aes\asm\aesni-sha1-x86_64.asm
+
+$(OBJ_D)\aesni-sha256-x86_64.$(O): $(SRC_D)\crypto\aes\asm\aesni-sha256-x86_64.asm
+    $(ASM) -o$(OBJ_D)\aesni-sha256-x86_64.$(O) $(SRC_D)\crypto\aes\asm\aesni-sha256-x86_64.asm
+
+$(OBJ_D)\aesni-xts-avx512.$(O): $(SRC_D)\crypto\aes\asm\aesni-xts-avx512.asm
+    $(ASM) -o$(OBJ_D)\aesni-xts-avx512.$(O) $(SRC_D)\crypto\aes\asm\aesni-xts-avx512.asm
+
+$(OBJ_D)\bsaes-x86_64.$(O): $(SRC_D)\crypto\aes\asm\bsaes-x86_64.asm
+    $(ASM) -o$(OBJ_D)\bsaes-x86_64.$(O) $(SRC_D)\crypto\aes\asm\bsaes-x86_64.asm
+
+$(OBJ_D)\x86_64-gf2m.$(O): $(SRC_D)\crypto\bn\asm\x86_64-gf2m.asm
+    $(ASM) -o$(OBJ_D)\x86_64-gf2m.$(O) $(SRC_D)\crypto\bn\asm\x86_64-gf2m.asm
+
+$(OBJ_D)\x86_64-mont.$(O): $(SRC_D)\crypto\bn\asm\x86_64-mont.asm
+    $(ASM) -o$(OBJ_D)\x86_64-mont.$(O) $(SRC_D)\crypto\bn\asm\x86_64-mont.asm
+
+$(OBJ_D)\x86_64-mont5.$(O): $(SRC_D)\crypto\bn\asm\x86_64-mont5.asm
+    $(ASM) -o$(OBJ_D)\x86_64-mont5.$(O) $(SRC_D)\crypto\bn\asm\x86_64-mont5.asm
+
+$(OBJ_D)\rsaz-x86_64.$(O): $(SRC_D)\crypto\bn\asm\rsaz-x86_64.asm
+    $(ASM) -o$(OBJ_D)\rsaz-x86_64.$(O) $(SRC_D)\crypto\bn\asm\rsaz-x86_64.asm
+
+$(OBJ_D)\rsaz-avx2.$(O): $(SRC_D)\crypto\bn\asm\rsaz-avx2.asm
+    $(ASM) -o$(OBJ_D)\rsaz-avx2.$(O) $(SRC_D)\crypto\bn\asm\rsaz-avx2.asm
+
+$(OBJ_D)\rsaz-2k-avx512.$(O): $(SRC_D)\crypto\bn\asm\rsaz-2k-avx512.asm
+    $(ASM) -o$(OBJ_D)\rsaz-2k-avx512.$(O) $(SRC_D)\crypto\bn\asm\rsaz-2k-avx512.asm
+
+$(OBJ_D)\rsaz-2k-avxifma.$(O): $(SRC_D)\crypto\bn\asm\rsaz-2k-avxifma.asm
+    $(ASM) -o$(OBJ_D)\rsaz-2k-avxifma.$(O) $(SRC_D)\crypto\bn\asm\rsaz-2k-avxifma.asm
+
+$(OBJ_D)\rsaz-3k-avx512.$(O): $(SRC_D)\crypto\bn\asm\rsaz-3k-avx512.asm
+    $(ASM) -o$(OBJ_D)\rsaz-3k-avx512.$(O) $(SRC_D)\crypto\bn\asm\rsaz-3k-avx512.asm
+
+$(OBJ_D)\rsaz-3k-avxifma.$(O): $(SRC_D)\crypto\bn\asm\rsaz-3k-avxifma.asm
+    $(ASM) -o$(OBJ_D)\rsaz-3k-avxifma.$(O) $(SRC_D)\crypto\bn\asm\rsaz-3k-avxifma.asm
+
+$(OBJ_D)\rsaz-4k-avx512.$(O): $(SRC_D)\crypto\bn\asm\rsaz-4k-avx512.asm
+    $(ASM) -o$(OBJ_D)\rsaz-4k-avx512.$(O) $(SRC_D)\crypto\bn\asm\rsaz-4k-avx512.asm
+
+$(OBJ_D)\rsaz-4k-avxifma.$(O): $(SRC_D)\crypto\bn\asm\rsaz-4k-avxifma.asm
+    $(ASM) -o$(OBJ_D)\rsaz-4k-avxifma.$(O) $(SRC_D)\crypto\bn\asm\rsaz-4k-avxifma.asm
+
+$(OBJ_D)\chacha-x86_64.$(O): $(SRC_D)\crypto\chacha\asm\chacha-x86_64.asm
+    $(ASM) -o$(OBJ_D)\chacha-x86_64.$(O) $(SRC_D)\crypto\chacha\asm\chacha-x86_64.asm
+
+$(OBJ_D)\x25519-x86_64.$(O): $(SRC_D)\crypto\ec\asm\x25519-x86_64.asm
+    $(ASM) -o$(OBJ_D)\x25519-x86_64.$(O) $(SRC_D)\crypto\ec\asm\x25519-x86_64.asm
+
+$(OBJ_D)\md5-x86_64.$(O): $(SRC_D)\crypto\md5\asm\md5-x86_64.asm
+    $(ASM) -o$(OBJ_D)\md5-x86_64.$(O) $(SRC_D)\crypto\md5\asm\md5-x86_64.asm
+
+$(OBJ_D)\aes-gcm-avx512.$(O): $(SRC_D)\crypto\modes\asm\aes-gcm-avx512.asm
+    $(ASM) -o$(OBJ_D)\aes-gcm-avx512.$(O) $(SRC_D)\crypto\modes\asm\aes-gcm-avx512.asm
+
+$(OBJ_D)\aesni-gcm-x86_64.$(O): $(SRC_D)\crypto\modes\asm\aesni-gcm-x86_64.asm
+    $(ASM) -o$(OBJ_D)\aesni-gcm-x86_64.$(O) $(SRC_D)\crypto\modes\asm\aesni-gcm-x86_64.asm
+
+$(OBJ_D)\ghash-x86_64.$(O): $(SRC_D)\crypto\modes\asm\ghash-x86_64.asm
+    $(ASM) -o$(OBJ_D)\ghash-x86_64.$(O) $(SRC_D)\crypto\modes\asm\ghash-x86_64.asm
+
+$(OBJ_D)\rc4-x86_64.$(O): $(SRC_D)\crypto\rc4\asm\rc4-x86_64.asm
+    $(ASM) -o$(OBJ_D)\rc4-x86_64.$(O) $(SRC_D)\crypto\rc4\asm\rc4-x86_64.asm
+
+$(OBJ_D)\rc4-md5-x86_64.$(O): $(SRC_D)\crypto\rc4\asm\rc4-md5-x86_64.asm
+    $(ASM) -o$(OBJ_D)\rc4-md5-x86_64.$(O) $(SRC_D)\crypto\rc4\asm\rc4-md5-x86_64.asm
+
+$(OBJ_D)\keccak1600-x86_64.$(O): $(SRC_D)\crypto\sha\asm\keccak1600-x86_64.asm
+    $(ASM) -o$(OBJ_D)\keccak1600-x86_64.$(O) $(SRC_D)\crypto\sha\asm\keccak1600-x86_64.asm
+
+$(OBJ_D)\sha1-x86_64.$(O): $(SRC_D)\crypto\sha\asm\sha1-x86_64.asm
+    $(ASM) -o$(OBJ_D)\sha1-x86_64.$(O) $(SRC_D)\crypto\sha\asm\sha1-x86_64.asm
+
+$(OBJ_D)\sha1-mb-x86_64.$(O): $(SRC_D)\crypto\sha\asm\sha1-mb-x86_64.asm
+    $(ASM) -o$(OBJ_D)\sha1-mb-x86_64.$(O) $(SRC_D)\crypto\sha\asm\sha1-mb-x86_64.asm
+
+$(OBJ_D)\sha256-x86_64.$(O): $(SRC_D)\crypto\sha\asm\sha256-x86_64.asm
+    $(ASM) -o$(OBJ_D)\sha256-x86_64.$(O) $(SRC_D)\crypto\sha\asm\sha256-x86_64.asm
+
+$(OBJ_D)\sha256-mb-x86_64.$(O): $(SRC_D)\crypto\sha\asm\sha256-mb-x86_64.asm
+    $(ASM) -o$(OBJ_D)\sha256-mb-x86_64.$(O) $(SRC_D)\crypto\sha\asm\sha256-mb-x86_64.asm
+
+$(OBJ_D)\sha512-x86_64.$(O): $(SRC_D)\crypto\sha\asm\sha512-x86_64.asm
+    $(ASM) -o$(OBJ_D)\sha512-x86_64.$(O) $(SRC_D)\crypto\sha\asm\sha512-x86_64.asm
 
 $(O_SSL):
     -if exist $(O_SSL) $(RM) $(O_SSL)

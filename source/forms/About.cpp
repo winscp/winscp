@@ -339,16 +339,62 @@ void __fastcall TAboutDialog::LookupAddress()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::AccessViolationTest()
+#ifdef _WIN64
+static thread_local EXCEPTION_RECORD ExceptionRecord;
+static thread_local bool ExceptionCaptured = false;
+//---------------------------------------------------------------------------
+LONG WINAPI CaptureException(EXCEPTION_POINTERS * ExceptionInfo)
 {
+  if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
+  {
+    ExceptionRecord = *(ExceptionInfo->ExceptionRecord);
+    ExceptionCaptured = true;
+  }
+  return EXCEPTION_CONTINUE_SEARCH; // Let the local __except block catch it
+}
+#endif
+//---------------------------------------------------------------------------
+[[noreturn]] static void RaiseInternalError(Exception * E)
+{
+  throw ExtException(E, MainInstructions(L"Internal error test."));
+}
+//---------------------------------------------------------------------------
+#ifdef _WIN64
+[[noreturn]]
+#endif
+void TAboutDialog::AccessViolationTest()
+{
+  #ifdef _WIN64
+  PVOID ExceptionHandler = AddVectoredExceptionHandler(1, CaptureException);
+  ExceptionCaptured = false;
+  __try
+  {
+    ACCESS_VIOLATION_TEST;
+  }
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wunreachable-code"
+  __except (EXCEPTION_EXECUTE_HANDLER)
+  #pragma clang diagnostic pop
+  {
+    RemoveVectoredExceptionHandler(ExceptionHandler);
+    if (ExceptionCaptured)
+    {
+      auto VclExceptionRecord = reinterpret_cast<System::PExceptionRecord>(&ExceptionRecord);
+      Exception * E = static_cast<Exception *>(reinterpret_cast<TExceptObjProc>(ExceptObjProc)(VclExceptionRecord));
+      RaiseInternalError(E);
+    }
+    throw Exception(L"Unknown hardware exception occurred.");
+  }
+  #else
   try
   {
     ACCESS_VIOLATION_TEST;
   }
   catch (Exception & E)
   {
-    throw ExtException(&E, MainInstructions(L"Internal error test."));
+    RaiseInternalError(&E);
   }
+  #endif
 }
 //---------------------------------------------------------------------------
 void TAboutDialog::InternalExceptionTest()

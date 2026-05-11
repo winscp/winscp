@@ -53,7 +53,10 @@ private:
   void __fastcall AddPara(UnicodeString & Text, const UnicodeString & S);
   UnicodeString __fastcall CreateLink(const UnicodeString & URL, const UnicodeString & Title = L"");
   void __fastcall ExpatLicenceHandler(TObject * Sender);
-  void __fastcall AccessViolationTest();
+  #ifdef _WIN64
+  [[noreturn]]
+  #endif
+  void AccessViolationTest();
   void __fastcall LookupAddress();
   void InternalExceptionTest();
   void __fastcall DoLoadThirdParty();

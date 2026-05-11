@@ -1,4 +1,8 @@
-#ifdef WINSCP_VS
+#if defined(WINSCP_VS) || defined(_WIN64)
+
+#ifdef __clang__
+#pragma clang attribute push(__attribute__((target("sse2,aes,mmx,ssse3,sse4.1"))), apply_to=function)
+#endif
 
 /*
  * Hardware-accelerated implementation of AES using x86 AES-NI.
@@ -122,9 +126,14 @@ static void aes_ni_key_expand(
 // And consequently the code crashes.
 // This macro is based on:
 // https://stackoverflow.com/q/35268036/850848
-#define _MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
+#ifdef _WIN64
+#define MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
+    _mm_setr_epi8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af)
+#else
+#define MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
     { (char)a0, (char)a1, (char)a2, (char)a3, (char)a4, (char)a5, (char)a6, (char)a7, \
       (char)a8, (char)a9, (char)aa, (char)ab, (char)ac, (char)ad, (char)ae, (char)af }
+#endif
 
 /*
  * Auxiliary routine to increment the 128-bit counter used in SDCTR
@@ -132,7 +141,7 @@ static void aes_ni_key_expand(
  */
 static inline __m128i aes_ni_sdctr_increment(__m128i v)
 {
-    const __m128i ONE = _MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
+    const __m128i ONE = MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
     const __m128i ZERO = _mm_setzero_si128();
 
     /* Increment the low-order 64 bits of v */
@@ -155,7 +164,7 @@ static inline __m128i aes_ni_sdctr_increment(__m128i v)
  */
 static inline __m128i aes_ni_gcm_increment(__m128i v)
 {
-    const __m128i ONE  = _MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
+    const __m128i ONE  = MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
     return _mm_add_epi32(v, ONE);
 }
 
@@ -165,7 +174,7 @@ static inline __m128i aes_ni_gcm_increment(__m128i v)
  */
 static inline __m128i aes_ni_sdctr_reverse(__m128i v)
 {
-    const __m128i R = _MM_SETR_EPI8(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0); // WINSCP
+    const __m128i R = MM_SETR_EPI8(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0); // WINSCP
     v = _mm_shuffle_epi8(
         v, R); // WINSCP
     return v;
@@ -313,8 +322,10 @@ static inline void aes_encrypt_ecb_block_ni(
     _mm_storeu_si128(blk, ciphertext);
 }
 
+#ifdef WINSCP_VS
 // WINSCP (fixes linker alignment issues for the following function)
-const __m128i DUMMY; // WINSCP VS
+const __m128i DUMMY;
+#endif
 
 static inline void aes_gcm_ni(
     ssh_cipher *ciph, void *vblk, int blklen, aes_ni_fn encrypt)
@@ -356,8 +367,12 @@ NI_ENC_DEC(256)
 AES_EXTRA(_ni);
 AES_ALL_VTABLES(_ni, "AES-NI accelerated");
 
+#ifdef _WIN64
+#pragma clang attribute pop
+#endif
+
 #else
 
 extern int aes_ni_dummy_winscp; // unit cannot be empty
 
-#endif // WINSCP_VS
+#endif // WINSCP_VS || _WIN64

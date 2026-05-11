@@ -1769,6 +1769,7 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
 {
   if (FDDExtInstalled < 0)
   {
+    #ifndef _WIN64
     if (IsWin64())
     {
       // WORKAROUND
@@ -1792,6 +1793,7 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
       }
     }
     else
+    #endif
     {
       TComPtr<IUnknown> DragExtRef;
       bool Result = DragExtRef.TryCreate(CLSID_ShellExtension, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER);

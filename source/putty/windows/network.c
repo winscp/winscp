@@ -18,7 +18,30 @@
 #include "tree234.h"
 #include "ssh.h"
 
+#if defined(WINSCP) && defined(_WIN64) && defined(_DEBUG)
+#define IN6_IS_ADDR_LOOPBACK IN6_IS_ADDR_LOOPBACK_ORIGINAL
 #include <ws2tcpip.h>
+// WORKAROUND: The definition in ws2ipdef.h is inline, but bcc64c seems to ignore the inline and
+// there's no implementation in any of the libs, so linker fails to find the symbol
+#undef IN6_IS_ADDR_LOOPBACK
+static BOOLEAN IN6_IS_ADDR_LOOPBACK(CONST IN6_ADDR *a)
+{
+    //
+    // We can't use the in6addr_loopback variable, since that would
+    // require existing callers to link with a specific library.
+    //
+    return (BOOLEAN)((a->s6_words[0] == 0) &&
+                     (a->s6_words[1] == 0) &&
+                     (a->s6_words[2] == 0) &&
+                     (a->s6_words[3] == 0) &&
+                     (a->s6_words[4] == 0) &&
+                     (a->s6_words[5] == 0) &&
+                     (a->s6_words[6] == 0) &&
+                     (a->s6_words[7] == 0x0100));
+}
+#else
+#include <ws2tcpip.h>
+#endif
 
 #if HAVE_AFUNIX_H
 #include <afunix.h>

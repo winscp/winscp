@@ -166,7 +166,11 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, U
     // The CertGetCertificateChain fails with E_INVALIDARG when we include them to ChainConfig.cbSize.
     // The dwExclusiveFlags was added in Windows 8
     const size_t ChainConfigSize = RTL_SIZEOF_THROUGH_FIELD(CERT_CHAIN_ENGINE_CONFIG, CycleDetectionModulus);
+    #ifdef _WIN64
+    DebugAssert(ChainConfigSize == 64);
+    #else
     DebugAssert(ChainConfigSize == 40);
+    #endif
     ChainConfig.cbSize = ChainConfigSize;
     ChainConfig.hRestrictedRoot = NULL;
     ChainConfig.hRestrictedTrust = NULL;

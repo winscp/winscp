@@ -1,7 +1,17 @@
 @echo off
 if "%BUILDTOOLS%" == "" echo BUILDTOOLS not set & exit /B 1
 
-set LIB_PATH=%INTERM_PATH%\Win32
+setlocal
+
+set PLATFORM_ARG=%1
+if "%PLATFORM_ARG%" == "Win64" (
+    set LIB_MAKE_ARGS=-DWIN64
+    set LIB_PLATFORM=Win64
+) else (
+    set LIB_MAKE_ARGS=
+    set LIB_PLATFORM=Win32
+)
+set LIB_PATH=%INTERM_PATH%\%LIB_PLATFORM%
 
 if not exist %LIB_PATH% mkdir %LIB_PATH%
 
@@ -14,7 +24,7 @@ goto SKIP_OPENSSL
 
 echo Building OpenSSL ...
 cd openssl
-make
+make %LIB_MAKE_ARGS%
 cd ..
 
 if not exist %LIB_PATH%\libeay32.lib (
@@ -33,7 +43,7 @@ goto SKIP_EXPAT
 
 echo Building Expat ...
 cd expat\bcb5
-make -f expat_static.mak
+make %LIB_MAKE_ARGS% -f expat_static.mak
 cd ..\..
 
 if not exist %LIB_PATH%\libexpats_mtd.lib (
@@ -52,7 +62,7 @@ goto SKIP_NEON
 
 echo Building neon ...
 cd neon
-make -f Makefile.bcb all
+make %LIB_MAKE_ARGS% -f Makefile.bcb all
 cd ..
 
 if not exist %LIB_PATH%\neon.lib (
@@ -64,6 +74,8 @@ exit /B 1
 
 rem ==== PuTTY VS ====
 
+if "%PLATFORM_ARG%" == "Win64" goto SKIP_PUTTYVS
+
 if exist %LIB_PATH%\PuTTYVS.lib (
 echo PuTTYVS already built
 goto SKIP_PUTTYVS
@@ -71,7 +83,7 @@ goto SKIP_PUTTYVS
 
 echo Building PuTTYVS ...
 cd puttyvs
-call build.bat
+call build.bat %PLATFORM_ARG%
 cd ..
 
 if not exist %LIB_PATH%\PuTTYVS.lib (
@@ -90,7 +102,7 @@ goto SKIP_LIBS3
 
 echo Building libs3 ...
 cd libs3
-make all
+make %LIB_MAKE_ARGS% all
 cd ..
 
 if not exist %LIB_PATH%\libs3.lib (
@@ -109,7 +121,7 @@ goto SKIP_MFC
 
 echo Building MFC ...
 cd mfc\source
-make -fborland.mak
+make %LIB_MAKE_ARGS% -fborland.mak
 cd ..\..
 
 if not exist %LIB_PATH%\UafxcW.lib (

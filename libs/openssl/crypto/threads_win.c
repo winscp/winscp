@@ -34,6 +34,20 @@
 #include "internal/rcu.h"
 #include "rcu_internal.h"
 
+// WINSCP
+#if defined(_WIN64) && defined(__clang__)
+extern LONGLONG WINAPI InterlockedExchange64(volatile LONGLONG *Target, LONGLONG Value);
+extern LONGLONG WINAPI InterlockedExchangeAdd64(volatile LONGLONG *Addend, LONGLONG Value);
+#undef InterlockedAdd64
+LONGLONG InterlockedAdd64(volatile LONGLONG* Addend, LONGLONG Value)
+{
+    return InterlockedExchangeAdd64(Addend, Value) + Value;
+}
+extern LONGLONG WINAPI InterlockedAnd64(volatile LONGLONG *Destination, LONGLONG Value);
+extern LONGLONG WINAPI InterlockedOr64(volatile LONGLONG *Destination, LONGLONG Value);
+extern LONGLONG WINAPI InterlockedXor64(volatile LONGLONG *Destination, LONGLONG Value);
+#endif
+
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
 #ifdef USE_RWLOCK

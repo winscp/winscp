@@ -1929,7 +1929,7 @@ begin
       if (not Loading) then
         StartIconUpdateThread;
     end;
-  end
+  end;
 end;
 
 procedure TDirViewInt.ValidateFile(Item : TListItem);
