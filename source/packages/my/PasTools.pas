@@ -445,8 +445,9 @@ begin
     end
       else
     begin
-      // that's our design text-size, we do not expect any other value
-      Assert(TextHeight = OurDesignTimeTextHeight);
+      // That's our design text-size, we do not expect any other value.
+      // Except for some reason, when designing a frame, the TextHeight is (temporarily?) not what expected.
+      Assert((TextHeight = OurDesignTimeTextHeight) or ((csDesigning in Control.ComponentState) and ((Control.Parent is TFrame) or (Assigned(Control.Parent) and (Control.Parent.Parent is TFrame)))));
       Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
     end;
   end;
