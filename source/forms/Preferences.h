@@ -355,6 +355,9 @@ __published:
   TCheckBox *SessionTabCaptionTruncationCheck;
   TGroupBox *InternalEditorBehaviourGroup;
   TCheckBox *EditorDisableSmoothScrollCheck;
+  TCheckBox *EditorWarnLargeFileCheck;
+  TUpDownEdit *EditorLargeFileSizeEdit;
+  TLabel *EditorLargeFileSizeUnitLabel;
   TComboEdit *SearchEdit;
   TTabSheet *SearchSheet;
   TGroupBox *SearchGroup;

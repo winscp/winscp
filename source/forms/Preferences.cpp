@@ -399,6 +399,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     FEditorFont->Color = WinConfiguration->Editor.FontColor;
     FEditorBackgroundColor = WinConfiguration->Editor.BackgroundColor;
     EditorDisableSmoothScrollCheck->Checked = WinConfiguration->Editor.DisableSmoothScroll;
+    EditorWarnLargeFileCheck->Checked = WinConfiguration->Editor.WarnOrLargeFileSize;
+    EditorLargeFileSizeEdit->AsInteger = WinConfiguration->Editor.LargeFileSize;
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
     BOOLPROP(EditorCheckNotModified);
@@ -807,6 +809,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->Editor.FontColor = FEditorFont->Color;
     WinConfiguration->Editor.BackgroundColor = FEditorBackgroundColor;
     WinConfiguration->Editor.DisableSmoothScroll = EditorDisableSmoothScrollCheck->Checked;
+    WinConfiguration->Editor.WarnOrLargeFileSize = EditorWarnLargeFileCheck->Checked;
+    WinConfiguration->Editor.LargeFileSize = EditorLargeFileSizeEdit->AsInteger;
     WinConfiguration->EditorList = FEditorList;
     BOOLPROP(EditorCheckNotModified);
 
@@ -1319,6 +1323,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     EnableControl(RefreshRemotePanelIntervalEdit, RefreshRemotePanelCheck->Checked);
     EnableControl(RefreshRemoteDirectoryUnitLabel, RefreshRemotePanelCheck->Checked);
+    EnableControl(EditorLargeFileSizeEdit, EditorWarnLargeFileCheck->Checked);
+    EnableControl(EditorLargeFileSizeUnitLabel, EditorWarnLargeFileCheck->Checked);
 
     UnicodeString EditorFontLabelText;
     EditorFontLabelText = FMTLOAD(EDITOR_FONT_FMT,

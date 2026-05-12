@@ -657,6 +657,7 @@ void __fastcall TWinConfiguration::Default()
   FEditor.Encoding = CP_UTF8;
   FEditor.WarnOnEncodingFallback = true;
   FEditor.WarnOrLargeFileSize = true;
+  FEditor.LargeFileSize = 10*1024;
   FEditor.AutoFont = true;
   FEditor.DisableSmoothScroll = false;
 
@@ -1148,6 +1149,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  Editor.Encoding); \
     KEY(Bool,     Editor.WarnOnEncodingFallback); \
     KEY(Bool,     Editor.WarnOrLargeFileSize); \
+    KEY(Integer,  Editor.LargeFileSize); \
     KEY(Bool,     Editor.AutoFont); \
     KEY(Bool,     Editor.DisableSmoothScroll); \
   ); \

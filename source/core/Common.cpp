@@ -1521,6 +1521,7 @@ int __fastcall FindNextChecked(TSearchRecChecked & F)
   return FindCheck(FindNextUnchecked(F), F.Path);
 }
 //---------------------------------------------------------------------------
+// Might be optimized with use of GetFileAttributesEx or replaced with one of TFile methods
 bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec)
 {
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;

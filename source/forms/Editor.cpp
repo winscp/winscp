@@ -1467,47 +1467,41 @@ void __fastcall TEditorForm::CheckFileSize()
 {
   TEditorConfiguration EditorConfiguration = WinConfiguration->Editor;
 
-  TWin32FileAttributeData FileAttributeData;
-  if (GetFileAttributesEx(ApiPath(FFileName).c_str(), GetFileExInfoStandard, &FileAttributeData))
+  __int64 Size = TFile::GetSize(FFileName);
+  const __int64 MaxSize = static_cast<__int64>(EditorConfiguration.LargeFileSize) * 1024;
+  if ((Size >= 0) && (Size > MaxSize))
   {
-    const __int64 MaxSize = 100 * 1024 * 1024;
-    __int64 Size =
-      (static_cast<__int64>(FileAttributeData.nFileSizeHigh) << 32) +
-      FileAttributeData.nFileSizeLow;
-    if (Size > MaxSize)
+    if (EditorConfiguration.WarnOrLargeFileSize)
     {
-      if (EditorConfiguration.WarnOrLargeFileSize)
+      TMessageParams Params(mpNeverAskAgainCheck);
+      unsigned int Answer =
+        MoreMessageDialog(
+          FMTLOAD(INTERNAL_EDITOR_LARGE_FILE2, (FormatBytes(Size))), NULL,
+          qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
+      switch (Answer)
       {
-        TMessageParams Params(mpNeverAskAgainCheck);
-        unsigned int Answer =
-          MoreMessageDialog(
-            FMTLOAD(INTERNAL_EDITOR_LARGE_FILE2, (FormatBytes(Size))), NULL,
-            qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
-        switch (Answer)
-        {
-          case qaOK:
-            // noop;
-            break;
+        case qaOK:
+          // noop;
+          break;
 
-          case qaCancel:
-            Abort();
-            break;
+        case qaCancel:
+          Abort();
+          break;
 
-          case qaNeverAskAgain:
-            EditorConfiguration.WarnOrLargeFileSize = false;
-            WinConfiguration->Editor = EditorConfiguration;
-            break;
+        case qaNeverAskAgain:
+          EditorConfiguration.WarnOrLargeFileSize = false;
+          WinConfiguration->Editor = EditorConfiguration;
+          break;
 
-          default:
-            DebugFail();
-        }
+        default:
+          DebugFail();
       }
-
-      // Those are actually nearly all internal exceptions we ever practically get
-      IgnoreException(typeid(EOutOfMemory));
-      IgnoreException(typeid(EAccessViolation));
-      IgnoreException(typeid(EExternalException));
     }
+
+    // Those are actually nearly all internal exceptions we ever practically get
+    IgnoreException(typeid(EOutOfMemory));
+    IgnoreException(typeid(EAccessViolation));
+    IgnoreException(typeid(EExternalException));
   }
 }
 //---------------------------------------------------------------------------

@@ -3439,13 +3439,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 278
           Width = 445
-          Height = 49
+          Height = 75
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Behaviour'
           TabOrder = 2
           DesignSize = (
             445
-            49)
+            75)
           object EditorDisableSmoothScrollCheck: TCheckBox
             Left = 11
             Top = 22
@@ -3455,6 +3455,38 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Disable s&mooth scrolling'
             TabOrder = 0
             OnClick = ControlChange
+          end
+          object EditorWarnLargeFileCheck: TCheckBox
+            Left = 11
+            Top = 45
+            Width = 303
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Warn when &editing files larger than:'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object EditorLargeFileSizeEdit: TUpDownEdit
+            Left = 320
+            Top = 42
+            Width = 89
+            Height = 23
+            Alignment = taRightJustify
+            Increment = 1024.000000000000000000
+            MaxValue = 1048576.000000000000000000
+            MinValue = 1.000000000000000000
+            Anchors = [akTop, akRight]
+            TabOrder = 2
+            OnChange = ControlChange
+          end
+          object EditorLargeFileSizeUnitLabel: TLabel
+            Left = 415
+            Top = 45
+            Width = 14
+            Height = 15
+            Anchors = [akTop, akRight]
+            Caption = 'KB'
+            ShowAccelChar = False
           end
         end
       end
