@@ -520,6 +520,12 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"WindowsProductName", (WindowsProductName()));
   Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(GetWindowsProductType())));
   Configuration->Usage->Set(L"Windows64", IsWin64());
+  #ifdef _WIN64
+  int Platform = 64;
+  #else
+  int Platform = 32;
+  #endif
+  Configuration->Usage->Set(L"Platform", Platform);
   Configuration->Usage->Set(L"UWP", IsUWP());
   Configuration->Usage->Set(L"PackageName", GetPackageName());
   Configuration->Usage->Set(L"DefaultLocale",
