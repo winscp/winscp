@@ -46,6 +46,7 @@ extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
 extern const UnicodeString Ellipsis;
 extern const UnicodeString TitleSeparator;
+extern const wchar_t HostKeyDelimiter;
 //---------------------------------------------------------------------------
 extern const UnicodeString HttpProtocol;
 extern const UnicodeString HttpsProtocol;

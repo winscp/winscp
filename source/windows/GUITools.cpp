@@ -470,7 +470,8 @@ void OpenSessionInPutty(TSessionData * SessionData)
         std::unique_ptr<TStoredSessionList> HostKeySessionList(new TStoredSessionList());
         HostKeySessionList->OwnsObjects = false;
         HostKeySessionList->Add(SessionData);
-        int Imported = TStoredSessionList::ImportHostKeys(SourceHostKeyStorage.get(), TargetHostKeyStorage.get(), HostKeySessionList.get(), false);
+        int Imported =
+          TStoredSessionList::ImportHostKeys(SourceHostKeyStorage.get(), TargetHostKeyStorage.get(), HostKeySessionList.get(), false, true);
         AppLogFmt(L"Imported host keys: %d", (Imported));
       }
 

@@ -5495,7 +5495,8 @@ THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWr
 }
 //---------------------------------------------------------------------------
 int TStoredSessionList::ImportHostKeys(
-  THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected)
+  THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions,
+  bool OnlySelected, bool Putty)
 {
   int Result = 0;
   if (OpenHostKeysSubKey(SourceStorage, false) &&
@@ -5516,7 +5517,28 @@ int TStoredSessionList::ImportHostKeys(
           UnicodeString KeyName = KeyList->Strings[KeyIndex];
           if (EndsText(HostKeyName, KeyName))
           {
-            TargetStorage->WriteStringRaw(KeyName, SourceStorage->ReadStringRaw(KeyName, L""));
+            UnicodeString HostKey = SourceStorage->ReadStringRaw(KeyName, EmptyStr);
+            if (Putty && ContainsStr(HostKey, HostKeyDelimiter))
+            {
+              UnicodeString PuttyHostKey = TargetStorage->ReadStringRaw(KeyName, EmptyStr);
+              UnicodeString Buf = HostKey;
+              while (true)
+              {
+                HostKey = CutToChar(Buf, HostKeyDelimiter, false);
+                if (!PuttyHostKey.IsEmpty() && (HostKey == PuttyHostKey))
+                {
+                  AppLogFmt(L"Found one of our cached %s hostkeys in PuTTY cache, keeping it", (KeyName));
+                  break;
+                }
+                if (Buf.IsEmpty())
+                {
+                  AppLogFmt(L"Have more cached %s hostkeys, using the last one", (KeyName));
+                  break;
+                }
+              }
+              TargetStorage->ReadStringRaw(KeyName, HostKey);
+            }
+            TargetStorage->WriteStringRaw(KeyName, HostKey);
             Result++;
           }
         }
@@ -5531,7 +5553,7 @@ void TStoredSessionList::ImportHostKeys(
 {
   std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWriting());
 
-  ImportHostKeys(SourceStorage, TargetStorage.get(), Sessions, OnlySelected);
+  ImportHostKeys(SourceStorage, TargetStorage.get(), Sessions, OnlySelected, false);
 }
 //---------------------------------------------------------------------------
 void TStoredSessionList::ImportHostKeys(

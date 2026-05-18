@@ -37,6 +37,7 @@ const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
 const UnicodeString TitleSeparator(TraceInitStr(L" \u2013 ")); // En-Dash
 const UnicodeString OfficialPackage(TraceInitStr(L"MartinPikryl.WinSCP_tvv458r3h9r5m"));
+const wchar_t HostKeyDelimiter = L';';
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
