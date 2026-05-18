@@ -268,7 +268,8 @@ Source: "{#AssemblyFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "license.txt"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
-; If the Check is ever removed, remove the ExtraDiskSpaceRequired parameter of the component too
+; If the Check is ever removed, remove the ExtraDiskSpaceRequired parameter of the component too.
+; When ShouldInstallShellExt returns false, registration for the existing copy is done in CurStepChanged.
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
@@ -511,12 +512,12 @@ begin
       begin
         if InstalledMajor <> ExistingMajor then
         begin
-          Log('Existing extension has different major version, allowing installation, and will require restart, if it is locked.')
+          Log('Existing shell extension has different major version, allowing installation, and will require restart, if it is locked.')
         end
           else
         begin
           // 1.1 uses Ansi encoding, and is incompatible with 1.2 and newer which uses Unicode
-          Log('Existing extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
+          Log('Existing shell extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
         end;
 
         Result := True;
@@ -526,13 +527,13 @@ begin
       if (InstalledMinor > ExistingMinor) or
          ((InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
       begin
-        Log('Installed extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
+        Log('Installed shell extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
         Result := True;
         ShellExtNoRestart := True;
       end
         else
       begin
-        Log('Installed extension is same or older than existing extension (but the same major version), skipping installation');
+        Log('Installed shell extension is same or older than existing extension (but the same major version), skipping installation');
         ShellExtNoRestart := False;
         Result := False;
       end;
@@ -1535,6 +1536,20 @@ begin
   if CurStep = ssPostInstall then
   begin
     Log('Post install');
+
+    if (ShellExtNewerCacheFileName <> '') and
+       (not ShellExtNewerCacheResult) then
+    begin
+      Log('The shell extension was not updated, re-registering the existing version');
+      // IsWin64 = False - Consistently with absence of 64bit flag in [Files]
+      try
+        RegisterServer(False, ShellExtNewerCacheFileName, False);
+        Log('Registration successful.');
+      except
+        Log('Registration failed:' + NewLine + GetExceptionMessage);
+      end;
+    end;
+
     InstallationDone := True;
   end
     else
