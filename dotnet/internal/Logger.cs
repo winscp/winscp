@@ -414,13 +414,21 @@ namespace WinSCP
             {
                 WriteLine("Entry assembly path: {0}", GetEntryAssemblyFilePath());
             }
-            WriteLine($"Process path: {GetProcessPath()}");
+            WriteLine($"Process path: {GetProcessPath() ?? "unknown"}");
         }
 
         public static string GetProcessPath()
         {
-            // Can be replaced with Environment.ProcessPath in .NET 6 and newer
-            return Process.GetCurrentProcess().MainModule?.FileName;
+            try
+            {
+                // Can be replaced with Environment.ProcessPath in .NET 6 and newer
+                return Process.GetCurrentProcess().MainModule?.FileName;
+            }
+            catch
+            {
+                // Seen MainModule returing "Access denied" when running under IIS
+                return null;
+            }
         }
 
         public static string LastWin32ErrorMessage()
