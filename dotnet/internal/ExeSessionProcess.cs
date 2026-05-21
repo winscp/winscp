@@ -940,7 +940,7 @@ namespace WinSCP
             string executablePath;
             List<string> paths = [];
             string assemblyPath = GetAssemblyPath(logger);
-            // If the assembly is not loaded from a file, look to the path of the process execuable
+            // If the assembly is not loaded from a file, look to the path of the process executable
             // (particularly useful for single-file bundles)
             // (also limited this way not to for example look into powershell.exe folder)
             string processPath = !string.IsNullOrEmpty(assemblyPath) ? null : Path.GetDirectoryName(Logger.GetProcessPath());
