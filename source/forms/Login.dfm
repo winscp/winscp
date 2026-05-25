@@ -654,7 +654,7 @@ object LoginDialog: TLoginDialog
     end
     object RunPageantAction: TAction
       Category = 'Other'
-      Caption = 'Run &Pageant'
+      Caption = 'Run Pagea&nt'
       OnExecute = RunPageantActionExecute
     end
     object RunPuttygenAction: TAction
@@ -664,7 +664,7 @@ object LoginDialog: TLoginDialog
     end
     object ImportAction: TAction
       Category = 'Other'
-      Caption = 'Import/Restore &Configuration...'
+      Caption = 'Import/&Restore Configuration...'
       OnExecute = ImportActionExecute
     end
     object ExportAction: TAction
