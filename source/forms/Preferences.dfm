@@ -2776,15 +2776,6 @@ object PreferencesDialog: TPreferencesDialog
           DesignSize = (
             445
             78)
-          object SessionRememberPasswordCheck: TCheckBox
-            Left = 11
-            Top = 22
-            Width = 425
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Remember &password for duration of session'
-            TabOrder = 0
-          end
           object Label13: TLabel
             Left = 9
             Top = 48
@@ -2793,6 +2784,15 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Aut&hentication agent:'
             FocusControl = AuthAgentCombo
             OnClick = ControlChange
+          end
+          object SessionRememberPasswordCheck: TCheckBox
+            Left = 11
+            Top = 22
+            Width = 425
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Remember &password for duration of session'
+            TabOrder = 0
           end
           object AuthAgentCombo: TComboBox
             Left = 241
@@ -3446,6 +3446,15 @@ object PreferencesDialog: TPreferencesDialog
           DesignSize = (
             445
             75)
+          object EditorLargeFileSizeUnitLabel: TLabel
+            Left = 415
+            Top = 45
+            Width = 14
+            Height = 15
+            Anchors = [akTop, akRight]
+            Caption = 'KB'
+            ShowAccelChar = False
+          end
           object EditorDisableSmoothScrollCheck: TCheckBox
             Left = 11
             Top = 22
@@ -3478,15 +3487,6 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akTop, akRight]
             TabOrder = 2
             OnChange = ControlChange
-          end
-          object EditorLargeFileSizeUnitLabel: TLabel
-            Left = 415
-            Top = 45
-            Width = 14
-            Height = 15
-            Anchors = [akTop, akRight]
-            Caption = 'KB'
-            ShowAccelChar = False
           end
         end
       end
