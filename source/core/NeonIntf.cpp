@@ -346,7 +346,7 @@ UnicodeString NeonCertificateFailuresErrorStr(int Failures, const UnicodeString 
     AddToList(Result, LoadStr(CERT_ERR_CERT_HAS_EXPIRED), L" ");
     FailuresToList &= ~NE_SSL_EXPIRED;
   }
-  // NEON checks certificate host name on its own
+  // NEON checks certificate hostname on its own
   if (FLAGSET(FailuresToList, NE_SSL_IDMISMATCH))
   {
     AddToList(Result, FMTLOAD(CERT_NAME_MISMATCH, (HostName)), L" ");

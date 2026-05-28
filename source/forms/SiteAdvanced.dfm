@@ -1489,9 +1489,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object ProxyHostLabel: TLabel
             Left = 9
             Top = 48
-            Width = 91
+            Width = 88
             Height = 15
-            Caption = 'Pro&xy host name:'
+            Caption = 'Pro&xy hostname:'
             FocusControl = ProxyHostEdit
           end
           object ProxyPortLabel: TLabel
@@ -1506,9 +1506,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object ProxyUsernameLabel: TLabel
             Left = 9
             Top = 95
-            Width = 59
+            Width = 56
             Height = 15
-            Caption = '&User name:'
+            Caption = '&Username:'
             FocusControl = ProxyUsernameEdit
           end
           object ProxyPasswordLabel: TLabel
@@ -1766,9 +1766,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object Label6: TLabel
             Left = 9
             Top = 22
-            Width = 61
+            Width = 58
             Height = 15
-            Caption = '&Host name:'
+            Caption = '&Hostname:'
             FocusControl = TunnelHostNameEdit
           end
           object Label14: TLabel
@@ -1783,9 +1783,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object Label15: TLabel
             Left = 9
             Top = 69
-            Width = 59
+            Width = 56
             Height = 15
-            Caption = '&User name:'
+            Caption = '&Username:'
             FocusControl = TunnelUserNameEdit
           end
           object Label16: TLabel

@@ -2284,9 +2284,9 @@ object PreferencesDialog: TPreferencesDialog
           object UpdatesProxyHostLabel: TLabel
             Left = 27
             Top = 91
-            Width = 91
+            Width = 88
             Height = 15
-            Caption = 'Proxy &host name:'
+            Caption = 'Proxy &hostname:'
             FocusControl = UpdatesProxyHostEdit
           end
           object UpdatesProxyPortLabel: TLabel

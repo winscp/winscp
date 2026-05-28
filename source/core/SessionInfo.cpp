@@ -1223,13 +1223,13 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       HostName = FORMAT(L"%s [%s]", (HostName, Data->HostNameSource));
     }
-    ADF(L"Host name: %s (%sPort: %d)", (HostName, AddressFamily, Data->PortNumber));
+    ADF(L"Hostname: %s (%sPort: %d)", (HostName, AddressFamily, Data->PortNumber));
     UnicodeString UserName = Data->UserNameExpanded;
     if (!Data->UserNameSource.IsEmpty())
     {
       UserName = FORMAT(L"%s [%s]", (UserName, Data->UserNameSource));
     }
-    ADF(L"User name: %s (Password: %s, Key file: %s, Passphrase: %s)",
+    ADF(L"Username: %s (Password: %s, Key file: %s, Passphrase: %s)",
       (UserName, LogSensitive(Data->Password),
        LogSensitive(Data->ResolvePublicKeyFile()), LogSensitive(Data->Passphrase)));
     if (Data->UsesSsh)
@@ -1237,8 +1237,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF(L"Tunnel: %s", (BooleanToEngStr(Data->Tunnel)));
       if (Data->Tunnel)
       {
-        ADF(L"Tunnel: Host name: %s (Port: %d)", (Data->TunnelHostName, Data->TunnelPortNumber));
-        ADF(L"Tunnel: User name: %s (Password: %s, Key file: %s)",
+        ADF(L"Tunnel: Hostname: %s (Port: %d)", (Data->TunnelHostName, Data->TunnelPortNumber));
+        ADF(L"Tunnel: Username: %s (Password: %s, Key file: %s)",
           (Data->TunnelUserName,
            LogSensitive(Data->TunnelPassword),
            LogSensitive(Data->TunnelPublicKeyFile)));

@@ -5741,7 +5741,7 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
         // do not know what to do, if there's FTP proxy
         if (!logontype)
         {
-          // this is a host name, not an IP, but it should not be a problem
+          // this is a hostname, not an IP, but it should not be a problem
           ahost = m_CurrentServer.host;
         }
       }

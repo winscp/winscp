@@ -4691,7 +4691,7 @@ void __fastcall TSFTPFileSystem::Source(
         // Also never do resumable transfer for file owned by other user
         // as deleting and recreating the file would change ownership.
         // This won't for work for SFTP-3 (OpenSSH) as it does not provide
-        // owner name (only UID) and we know only logged in user name (not UID)
+        // owner name (only UID) and we know only logged in username (not UID)
         else if (!File->Owner.Name.IsEmpty() && !SameUserName(File->Owner.Name, FTerminal->UserName))
         {
           ResumeAllowed = false;

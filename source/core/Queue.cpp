@@ -2978,7 +2978,7 @@ void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
     // otherwise cancelling authentication won't work,
     // if it is tried only after the last user action
     // (what is common, when cancelling while waiting for
-    // resolving of unresolvable host name, where the last user action is
+    // resolving of unresolvable hostname, where the last user action is
     // "resolving hostname" information action)
     CheckCancel();
   }

@@ -190,7 +190,7 @@ namespace WinSCP
 
             if (string.IsNullOrEmpty(HostName))
             {
-                throw new ArgumentException("No host name", nameof(url));
+                throw new ArgumentException("No hostname", nameof(url));
             }
 
             if (string.IsNullOrEmpty(portNumber))

@@ -106,9 +106,9 @@ object LoginDialog: TLoginDialog
         object Label1: TLabel
           Left = 8
           Top = 69
-          Width = 61
+          Width = 58
           Height = 15
-          Caption = '&Host name:'
+          Caption = '&Hostname:'
           FocusControl = HostNameEdit
         end
         object Label2: TLabel
@@ -123,9 +123,9 @@ object LoginDialog: TLoginDialog
         object UserNameLabel: TLabel
           Left = 8
           Top = 116
-          Width = 59
+          Width = 56
           Height = 15
-          Caption = '&User name:'
+          Caption = '&Username:'
           FocusControl = UserNameEdit
         end
         object PasswordLabel: TLabel
