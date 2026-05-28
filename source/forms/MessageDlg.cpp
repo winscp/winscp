@@ -251,12 +251,6 @@ UnicodeString __fastcall TMessageForm::GetReportText()
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::CMDialogKey(TWMKeyDown & Message)
 {
-  // this gets used in WinInterface.cpp SetTimeoutEvents
-  if (OnKeyDown != NULL)
-  {
-    OnKeyDown(this, Message.CharCode, KeyDataToShiftState(Message.KeyData));
-  }
-
   if (Message.CharCode == VK_MENU)
   {
     bool AnyButtonWithGrouppedCommandsWithShiftState = false;
