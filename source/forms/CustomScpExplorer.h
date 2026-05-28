@@ -109,10 +109,12 @@ __published:
   TTBXItem *TBXItem173;
   TApplicationEvents *ApplicationEvents;
   TTBXToolbar *ReconnectToolbar;
-  TTBXItem *TBXItem254;
+  TTBXItem *ReconnectItem;
   TSplitter *QueueFileListSplitter;
   TListView *QueueFileList;
   TTBXDock *MessageDock;
+  TPanel *ReconnectPanel;
+  TLabel *ReconnectLabel;
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
@@ -230,6 +232,7 @@ __published:
   void __fastcall RemoteDirViewStartLoading(TObject *Sender);
   void __fastcall RemoteDirViewStartReading(TObject *Sender);
   void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
+  void __fastcall ReconnectToolbarResize(TObject *Sender);
 
 private:
   TManagedTerminal * FManagedSession;
@@ -382,6 +385,7 @@ private:
   void __fastcall StoreTransitionCloseClick(TObject * Sender);
   void __fastcall StoreTransitionLinkClick(TObject * Sender);
   void InitializeRemoteThumbnailMask();
+  void CheckInitiateReconnectTimeout();
 
 protected:
   TOperationSide FCurrentSide;
@@ -742,7 +746,7 @@ protected:
   TListItem * __fastcall SearchFile(const UnicodeString & Text, bool SkipCurrent, bool Reverse);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   DYNAMIC void __fastcall Deactivate();
-  void __fastcall CenterReconnectToolbar();
+  void PlaceReconnectControls(bool PanelShowing = false);
   void DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal, bool CheckMaxSessions);
   void __fastcall ThemeChanged();
   int __fastcall GetStaticQueuePanelComponentsHeight();

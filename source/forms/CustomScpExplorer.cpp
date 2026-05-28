@@ -665,6 +665,10 @@ void __fastcall TCustomScpExplorerForm::SessionChanged(bool Replaced)
     RemoteDirView->Terminal = NULL;
   }
 
+  // By now, the timeout should already be canceled in general,
+  // as the session change must have been triggered by mouse click or key press, but let's be safe
+  RestartToolbarDialogTimeout(this, -1, ReconnectItem);
+
   InitStatusBar();
   UpdateTransferList();
   // Update panels Enable state before refreshing the labels
@@ -5171,6 +5175,17 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusPanelText(TTBXStatusPanel * 
   Panel->Caption = L"";
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::CheckInitiateReconnectTimeout()
+{
+  // When showing the disconnect message, we are typically "Busy" (as the code is triggered while "showing exception"),
+  // so we triggers the reconnect timeout only here
+  if (!NonVisualDataModule->Busy && (ManagedSession != NULL) && ManagedSession->InitiateReconnectTimeout)
+  {
+    ManagedSession->InitiateReconnectTimeout = false;
+    RestartToolbarDialogTimeout(this, GUIConfiguration->SessionReopenAutoIdle, ReconnectItem);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::Idle()
 {
 
@@ -5225,6 +5240,8 @@ void __fastcall TCustomScpExplorerForm::Idle()
     TTBCustomToolbar * MenuToolbar = DebugNotNull(dynamic_cast<TTBCustomToolbar *>(GetComponent(fcMenu)));
     MenuToolbar->Idle();
   }
+
+  CheckInitiateReconnectTimeout();
 
   if (FShowing || StandaloneOperation)
   {
@@ -8077,6 +8094,8 @@ void __fastcall TCustomScpExplorerForm::ShowExtendedException(
     NonVisualDataModule->EndBusy();
     FTrayIcon->CancelBalloon();
   }
+  // update the reconnect button as soon as we are not busy
+  CheckInitiateReconnectTimeout();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SessionReady()
@@ -9549,8 +9568,22 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
 
     NonVisualDataModule->ReconnectSessionAction->Update();
     ReconnectToolbar->Visible = NonVisualDataModule->ReconnectSessionAction->Visible;
-    // ReconnectSessionAction is hidden when disabled, so enabling it actualy resizes the toolbar
-    CenterReconnectToolbar();
+    bool HasDisconnectMessage = ReconnectToolbar->Visible && (ManagedSession != NULL) && !ManagedSession->DisconnectMessage.IsEmpty();
+    auto DisconnectMessage = HasDisconnectMessage ? UnformatMessage(ManagedSession->DisconnectMessage) : EmptyStr;
+    if (ReconnectLabel->Caption != DisconnectMessage)
+    {
+      ReconnectLabel->Caption = DisconnectMessage;
+      if (DisconnectMessage.IsEmpty())
+      {
+        ReconnectPanel->Hide();
+      }
+      else
+      {
+        // place before showing
+        PlaceReconnectControls(true);
+        ReconnectPanel->Show();
+      }
+    }
 
     // The only place, where we use IsOpenedTerminal and not IsAvailableTerminal
     // (i.e. not checking for reconnecting status)
@@ -9566,6 +9599,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     RemoteDriveView->Enabled = RemoteDirView->Enabled;
     RemoteDriveView->Color = RemoteDirView->Color;
     RemoteDriveView->Font->Color = RemoteDirView->Font->Color;
+    ReconnectPanel->Color = RemoteDirView->Color;
 
     QueueView3->Enabled = HasTerminal && Terminal->IsCapable[fcBackgroundTransfers];
     QueueView3->Color = QueueView3->Enabled ? GetWindowColor() : DisabledPanelColor();
@@ -10205,10 +10239,63 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::CenterReconnectToolbar()
+void TCustomScpExplorerForm::PlaceReconnectControls(bool PanelShowing)
 {
-  ReconnectToolbar->Left = (ReconnectToolbar->Parent->ClientWidth - ReconnectToolbar->Width) / 2;
-  ReconnectToolbar->Top = (ReconnectToolbar->Parent->ClientHeight - ReconnectToolbar->Height) / 2;
+  DebugAssert(RemoteDirView->Parent == ReconnectToolbar->Parent);
+
+  int Padding = ScaleByTextHeight(this, 8);
+  int AvailableHeight = ReconnectToolbar->Parent->ClientHeight;
+  int AvailableWidth = ReconnectToolbar->Parent->ClientWidth;
+  int ListTop = 0;
+
+  HWND HeaderHandle = ListView_GetHeader(RemoteDirView->Handle);
+  if (HeaderHandle != 0)
+  {
+    TRect R;
+    GetWindowRect(HeaderHandle, &R);
+    ListTop += R.Height();
+    AvailableHeight -= R.Height();
+  }
+
+  int WndStyle = GetWindowLong(RemoteDirView->Handle, GWL_STYLE);
+  if ((WndStyle & WS_VSCROLL) != 0)
+  {
+    AvailableWidth -= GetSystemMetricsForControl(RemoteDirView, SM_CXVSCROLL);
+  }
+  if ((WndStyle & WS_HSCROLL) != 0)
+  {
+    AvailableHeight -= GetSystemMetricsForControl(RemoteDirView, SM_CYHSCROLL);
+  }
+
+  int Top;
+  if (!ReconnectPanel->Visible && !PanelShowing)
+  {
+    Top = ListTop + (AvailableHeight - ReconnectToolbar->Height) / 2;
+  }
+  else
+  {
+    std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(ReconnectLabel));
+    int Flags = DT_EXPANDTABS | DT_NOPREFIX | ReconnectLabel->DrawTextBiDiModeFlagsReadingOnly();
+    int ReconnectPanelWidth = AvailableWidth - (2 * Padding);
+    int ReconnectPanelHeight = CalculateLabelSize(Canvas.get(), ReconnectPanelWidth, ReconnectLabel->Caption, Flags).Height;
+    ReconnectPanelHeight = std::min(ReconnectPanelHeight, ReconnectToolbar->Parent->ClientHeight - Padding);
+
+    int ControlsHeight = ReconnectToolbar->Height + ReconnectPanelHeight;
+    int IntraPadding = (2 * Padding);
+    int TotalHeight = ControlsHeight + IntraPadding;
+    if (TotalHeight > AvailableHeight - (2 * Padding))
+    {
+      IntraPadding = Padding;
+      TotalHeight = ControlsHeight + IntraPadding;
+    }
+    int PanelTop = std::max(ListTop + ((AvailableHeight - TotalHeight) / 2), Padding / 2);
+    ReconnectPanel->SetBounds(Padding, PanelTop, AvailableWidth - (2 * Padding), ReconnectPanelHeight);
+    Top = ReconnectPanel->Top + ReconnectPanel->Height + IntraPadding;
+    Top = std::min(Top, ReconnectToolbar->Parent->ClientHeight - ReconnectToolbar->Height - (Padding / 2));
+  }
+
+  ReconnectToolbar->SetBounds(
+    (AvailableWidth - ReconnectToolbar->Width) / 2, Top, ReconnectToolbar->Width, ReconnectToolbar->Height);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FormConstrainedResize(
@@ -11994,7 +12081,7 @@ void __fastcall TCustomScpExplorerForm::RemoteStatusBarMouseDown(TObject *, TMou
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewResize(TObject *)
 {
-  CenterReconnectToolbar();
+  PlaceReconnectControls();
 }
 //---------------------------------------------------------------------------
 void TCustomScpExplorerForm::DoExploreFile(TCustomDirView * DirView, const UnicodeString & FileName)
@@ -12506,3 +12593,9 @@ void TCustomScpExplorerForm::ChangeDirViewStyle(TOperationSide Side, TDirViewSty
     UpdateControls();
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ReconnectToolbarResize(TObject *)
+{
+  PlaceReconnectControls();
+}
+//---------------------------------------------------------------------------

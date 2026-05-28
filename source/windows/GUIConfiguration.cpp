@@ -574,6 +574,7 @@ void __fastcall TGUIConfiguration::Default()
   FSessionReopenAutoIdle = SessionReopenAutoIdleDefault;
   FSessionReopenAutoIdleOn = true;
   FSessionReopenAutoInactive = false;
+  FSessionSilentDisconnect = false;
 
   FNewDirectoryProperties.Default();
   FNewDirectoryProperties.Rights = TRights::rfDefault | TRights::rfExec;
@@ -652,6 +653,7 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEY(Integer,  SessionReopenAutoIdle); \
     KEY(Bool,     SessionReopenAutoIdleOn); \
     KEY(Bool,     SessionReopenAutoInactive); \
+    KEY(Bool,     SessionSilentDisconnect); \
   ); \
 //---------------------------------------------------------------------------
 bool __fastcall TGUIConfiguration::DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults)

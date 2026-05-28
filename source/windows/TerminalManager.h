@@ -58,6 +58,8 @@ public:
   // should not be reconnected when their tab is activated.
   bool Disconnected;
   bool DisconnectedTemporarily;
+  UnicodeString DisconnectMessage;
+  bool InitiateReconnectTimeout;
   // Sessions that should not close when they fail to connect
   // (i.e. those that were ever connected or were opened as a part of a workspace)
   bool Permanent;
@@ -92,8 +94,8 @@ public:
   TManagedTerminal * __fastcall NewSessions(TList * DataList);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall Move(TTerminal * Source, TTerminal * Target);
-  void __fastcall DisconnectActiveTerminalIfPermanentFreeOtherwise();
-  void __fastcall DisconnectActiveTerminal();
+  void __fastcall DisconnectActiveTerminalIfPermanentFreeOtherwise(const UnicodeString & Message);
+  void __fastcall DisconnectActiveTerminal(const UnicodeString & Message = UnicodeString());
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);

@@ -196,6 +196,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     // swallow
   }
 
+  UnicodeString DisconnectError;
   TTerminalManager * Manager = TTerminalManager::Instance(false);
   if (!DoNotDisplay)
   {
@@ -284,42 +285,66 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       {
         if (ForActiveTerminal)
         {
-          bool HookedDialog = false;
-          try
+          bool InactiveTerminationMessage = (FatalException != NULL) && FatalException->InactiveTerminationMessage;
+
+          if (!InactiveTerminationMessage && GUIConfiguration->SessionSilentDisconnect)
           {
-            TMessageParams Params;
-            if (DebugAlwaysTrue(Manager->ActiveTerminal != NULL) &&
-                ((Configuration->SessionReopenTimeout == 0) ||
-                 (Manager->ActiveTerminal->ReopenStart == TDateTime()) ||
-                 (int(double(Now() - Manager->ActiveTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
-            {
-              Params.Timeout = GUIConfiguration->SessionReopenAutoIdleOn ? GUIConfiguration->SessionReopenAutoIdle : 0;
-              Params.TimeoutAnswer = qaRetry;
-              Params.TimeoutResponse = Params.TimeoutAnswer;
-              HookedDialog = Manager->HookFatalExceptionMessageDialog(Params);
-            }
-
-            bool InactiveTerminationMessage = (FatalException != NULL) && FatalException->InactiveTerminationMessage;
-            if (InactiveTerminationMessage)
-            {
-              Params.Params |= mpNeverAskAgainCheck;
-              Params.NeverAskAgainTitle = LoadStr(ALWAYS_RECONNECT);
-              Params.NeverAskAgainAnswer = qaRetry;
-            }
-
-            Result = FatalExceptionMessageDialog(E, qtError, EmptyStr, qaOK, EmptyStr, &Params);
-
-            if ((Result == qaNeverAskAgain) && DebugAlwaysTrue(InactiveTerminationMessage))
-            {
-              GUIConfiguration->SessionReopenAutoInactive = true;
-              Result = qaRetry;
-            }
+            Result = qaOK;
+            DisconnectError = E->Message;
           }
-          __finally
+          else
           {
-            if (HookedDialog)
+            bool HookedDialog = false;
+            try
             {
-              Manager->UnhookFatalExceptionMessageDialog();
+              TMessageParams Params;
+              if (DebugAlwaysTrue(Manager->ActiveTerminal != NULL) &&
+                  ((Configuration->SessionReopenTimeout == 0) ||
+                   (Manager->ActiveTerminal->ReopenStart == TDateTime()) ||
+                   (int(double(Now() - Manager->ActiveTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
+              {
+                Params.Timeout = GUIConfiguration->SessionReopenAutoIdleOn ? GUIConfiguration->SessionReopenAutoIdle : 0;
+                Params.TimeoutAnswer = qaRetry;
+                Params.TimeoutResponse = Params.TimeoutAnswer;
+                HookedDialog = Manager->HookFatalExceptionMessageDialog(Params);
+              }
+
+              bool PermanentTerminal = DebugAlwaysTrue(Manager->ActiveTerminal != NULL) && Manager->ActiveTerminal->Permanent;
+              if (InactiveTerminationMessage)
+              {
+                Params.Params |= mpNeverAskAgainCheck;
+                Params.NeverAskAgainTitle = LoadStr(ALWAYS_RECONNECT);
+                Params.NeverAskAgainAnswer = qaRetry;
+              }
+              // For now - maybe it is worth doing even for non-permanent sessions
+              else if (PermanentTerminal)
+              {
+                Params.Params |= mpNeverAskAgainCheck;
+                Params.NeverAskAgainTitle = LoadStr(NEVER_POPUP_DISCONNECT);
+                Params.NeverAskAgainAnswer = qaOK;
+              }
+
+              Result = FatalExceptionMessageDialog(E, qtError, EmptyStr, qaOK, EmptyStr, &Params);
+
+              if (Result == qaNeverAskAgain)
+              {
+                Result = Params.NeverAskAgainAnswer;
+                if (InactiveTerminationMessage)
+                {
+                  GUIConfiguration->SessionReopenAutoInactive = true;
+                }
+                else if (DebugAlwaysTrue(PermanentTerminal))
+                {
+                  GUIConfiguration->SessionSilentDisconnect = true;
+                }
+              }
+            }
+            __finally
+            {
+              if (HookedDialog)
+              {
+                Manager->UnhookFatalExceptionMessageDialog();
+              }
             }
           }
         }
@@ -370,7 +395,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     {
       if (ForActiveTerminal)
       {
-        Manager->DisconnectActiveTerminalIfPermanentFreeOtherwise();
+        Manager->DisconnectActiveTerminalIfPermanentFreeOtherwise(DisconnectError);
       }
     }
   }

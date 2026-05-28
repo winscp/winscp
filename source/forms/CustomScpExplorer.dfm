@@ -126,6 +126,27 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         OnStartReading = RemoteDirViewStartReading
         OnThumbnailNeeded = RemoteDirViewThumbnailNeeded
       end
+      object ReconnectPanel: TPanel
+        Left = 48
+        Top = 54
+        Width = 321
+        Height = 52
+        BevelOuter = bvNone
+        Color = clWindow
+        ParentBackground = False
+        TabOrder = 2
+        object ReconnectLabel: TLabel
+          Left = 0
+          Top = 0
+          Width = 84
+          Height = 15
+          Align = alClient
+          Alignment = taCenter
+          Caption = 'ReconnectLabel'
+          ShowAccelChar = False
+          WordWrap = True
+        end
+      end
       object ReconnectToolbar: TTBXToolbar
         Left = 136
         Top = 112
@@ -137,7 +158,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-        object TBXItem254: TTBXItem
+        OnResize = ReconnectToolbarResize
+        object ReconnectItem: TTBXItem
           Action = NonVisualDataModule.ReconnectSessionAction
         end
       end

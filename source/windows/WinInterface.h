@@ -125,7 +125,8 @@ Tbx::TTBXSeparatorItem * __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Me
 void __fastcall AddMenuLabel(Tb2item::TTBCustomItem * Menu, const UnicodeString & Label);
 void __fastcall ClickToolbarItem(Tb2item::TTBCustomItem * Item, bool PositionCursor);
 
-void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button, unsigned int Answer = 0);
+void InitiateDialogTimeout(TForm * Dialog, int Timeout, TButton * Button, unsigned int Answer = 0);
+void RestartToolbarDialogTimeout(TForm * Dialog, int Timeout, TTBCustomItem * Item);
 
 // windows\WinHelp.cpp
 void __fastcall InitializeWinHelp();

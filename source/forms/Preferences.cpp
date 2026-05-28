@@ -518,6 +518,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ExternalSessionInExistingInstance);
     BOOLPROP(ShowLoginWhenNoSession);
     BOOLPROP(KeepOpenWhenNoSession);
+    BOOLPROP(SessionSilentDisconnect);
     BOOLPROP(SessionTabCaptionTruncation);
     BOOLPROP(ShowTips);
 
@@ -925,6 +926,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ExternalSessionInExistingInstance);
     BOOLPROP(ShowLoginWhenNoSession);
     BOOLPROP(KeepOpenWhenNoSession);
+    BOOLPROP(SessionSilentDisconnect);
     BOOLPROP(SessionTabCaptionTruncation);
     BOOLPROP(ShowTips);
 

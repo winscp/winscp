@@ -16,7 +16,8 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   TConfiguration * Configuration) :
   TTerminal(SessionData, Configuration),
   LocalBrowser(false), LocalExplorerState(NULL), RemoteExplorerState(NULL), OtherLocalExplorerState(NULL),
-  ReopenStart(), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false), DisconnectedTemporarily(false),
+  ReopenStart(), DirectoryLoaded(Now()), TerminalThread(NULL),
+  Disconnected(false), DisconnectedTemporarily(false), InitiateReconnectTimeout(false),
   ThumbnailsSection(new TCriticalSection()), ThumbnailsEnabled(false), ThumbnailDownloadQueueItem(NULL),
   ThumbnailVisibleResult(-1)
 {
@@ -430,6 +431,8 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
           ReconnectingTerminal(ManagedTerminal);
           ManagedTerminal->Disconnected = false;
           ManagedTerminal->DisconnectedTemporarily = false;
+          ManagedTerminal->DisconnectMessage = EmptyStr;
+          ManagedTerminal->InitiateReconnectTimeout = false;
           DebugAssert(ManagedTerminal->TerminalThread == NULL);
           ManagedTerminal->TerminalThread = TerminalThread;
         }
@@ -579,17 +582,17 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 
   if (Action == tpFree)
   {
-    DisconnectActiveTerminalIfPermanentFreeOtherwise();
+    DisconnectActiveTerminalIfPermanentFreeOtherwise(EmptyStr);
   }
 
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::DisconnectActiveTerminalIfPermanentFreeOtherwise()
+void __fastcall TTerminalManager::DisconnectActiveTerminalIfPermanentFreeOtherwise(const UnicodeString & Message)
 {
   if (ActiveTerminal->Permanent)
   {
-    DisconnectActiveTerminal();
+    DisconnectActiveTerminal(Message);
   }
   else
   {
@@ -649,7 +652,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::DisconnectActiveTerminal()
+void __fastcall TTerminalManager::DisconnectActiveTerminal(const UnicodeString & Message)
 {
   DebugAssert(ActiveTerminal);
   if (ActiveTerminal->Active)
@@ -671,6 +674,8 @@ void __fastcall TTerminalManager::DisconnectActiveTerminal()
   delete OldQueue;
 
   ActiveTerminal->Disconnected = true;
+  ActiveTerminal->DisconnectMessage = Message;
+  ActiveTerminal->InitiateReconnectTimeout = !Message.IsEmpty() && GUIConfiguration->SessionReopenAutoIdleOn;
   ActiveTerminal->DisableThumbnails();
   if (ScpExplorer != NULL)
   {
@@ -753,6 +758,8 @@ void TTerminalManager::FreeTerminalCleanup(TTerminal * ATerminal, bool IsActiveS
         {
           NewActiveTerminal->Disconnected = true;
           NewActiveTerminal->DisconnectedTemporarily = true;
+          NewActiveTerminal->DisconnectMessage = EmptyStr;
+          NewActiveTerminal->InitiateReconnectTimeout = false;
         }
       }
       else

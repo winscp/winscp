@@ -367,6 +367,7 @@ __published:
   TCheckBox *WorkspaceConnectAllCheck;
   TLabel *Label13;
   TComboBox *AuthAgentCombo;
+  TCheckBox *SessionSilentDisconnectCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

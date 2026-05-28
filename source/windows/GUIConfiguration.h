@@ -190,6 +190,7 @@ private:
   int FSessionReopenAutoIdle;
   bool FSessionReopenAutoIdleOn;
   bool FSessionReopenAutoInactive;
+  bool FSessionSilentDisconnect;
   LCID FAppliedLocale;
   // Corresponds to FAppliedLocale
   UnicodeString FLocaleModuleName;
@@ -291,6 +292,7 @@ public:
   __property int SessionReopenAutoIdle = { read = FSessionReopenAutoIdle, write = FSessionReopenAutoIdle };
   __property bool SessionReopenAutoIdleOn = { read = FSessionReopenAutoIdleOn, write = FSessionReopenAutoIdleOn };
   __property bool SessionReopenAutoInactive = { read = FSessionReopenAutoInactive, write = FSessionReopenAutoInactive };
+  __property bool SessionSilentDisconnect = { read = FSessionSilentDisconnect, write = FSessionSilentDisconnect };
   __property bool CanApplyLocaleImmediately = { read = GetCanApplyLocaleImmediately };
   __property LCID AppliedLocale = { read = FAppliedLocale };
 };

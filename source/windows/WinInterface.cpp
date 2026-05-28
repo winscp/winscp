@@ -306,35 +306,35 @@ void __fastcall TMessageTimer::DoTimer(TObject * /*Sender*/)
 class TMessageTimeout : public TTimer
 {
 public:
-  __fastcall TMessageTimeout(TComponent * AOwner, unsigned int Timeout, TButton * Button, unsigned int Answer);
+  __fastcall TMessageTimeout(TForm * AOwner, int Timeout);
+
+  void Restart(int Timeout);
 
 protected:
-  unsigned int FOrigTimeout;
-  unsigned int FTimeout;
-  TButton * FButton;
-  UnicodeString FOrigCaption;
+  TForm * FOwner;
+  int FOrigTimeout;
+  int FTimeout;
   TPoint FOrigCursorPos;
   std::unique_ptr<TApplicationEvents> FApplicationEvents;
-  unsigned int FAnswer;
 
   void __fastcall DoTimer(TObject * Sender);
-  void __fastcall UpdateButton();
+  virtual void UpdateButton() = 0;
+  virtual void Timeouted() = 0;
   void __fastcall ApplicationMessage(TMsg & Msg, bool & Handled);
   void __fastcall MouseMove();
   void __fastcall Cancel();
+  UnicodeString FormatTimeoutCaption(const UnicodeString & OrigCaption);
 };
 //---------------------------------------------------------------------------
-__fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
-  unsigned int Timeout, TButton * Button, unsigned int Answer) :
-  TTimer(AOwner), FOrigTimeout(Timeout), FTimeout(Timeout), FButton(Button), FAnswer(Answer)
+__fastcall TMessageTimeout::TMessageTimeout(TForm * AOwner, int Timeout) :
+  TTimer(AOwner), FOwner(AOwner), FOrigTimeout(Timeout), FTimeout(Timeout)
 {
+  Enabled = (FTimeout >= 0);
   OnTimer = DoTimer;
   Interval = MSecsPerSec;
-  FOrigCaption = FButton->Caption;
   FOrigCursorPos = Mouse->CursorPos;
   FApplicationEvents.reset(new TApplicationEvents(Application));
   FApplicationEvents->OnMessage = ApplicationMessage;
-  UpdateButton();
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageTimeout::ApplicationMessage(TMsg & Msg, bool & DebugUsedArg(Handled))
@@ -356,15 +356,15 @@ void __fastcall TMessageTimeout::MouseMove()
   int Delta = std::max(std::abs(FOrigCursorPos.X - CursorPos.X), std::abs(FOrigCursorPos.Y - CursorPos.Y));
 
   int Threshold = 8;
-  if (DebugAlwaysTrue(FButton != NULL))
+  if (DebugAlwaysTrue(FOwner != NULL))
   {
-    Threshold = ScaleByTextHeight(FButton, Threshold);
+    Threshold = ScaleByTextHeight(FOwner, Threshold);
   }
 
   if (Delta > Threshold)
   {
     FOrigCursorPos = CursorPos;
-    const unsigned int SuspendTime = 30 * MSecsPerSec;
+    const int SuspendTime = 30 * MSecsPerSec;
     FTimeout = std::max(FOrigTimeout, SuspendTime);
     UpdateButton();
   }
@@ -376,34 +376,18 @@ void __fastcall TMessageTimeout::Cancel()
   UpdateButton();
 }
 //---------------------------------------------------------------------------
-void __fastcall TMessageTimeout::UpdateButton()
+UnicodeString TMessageTimeout::FormatTimeoutCaption(const UnicodeString & OrigCaption)
 {
-  DebugAssert(FButton != NULL);
-  FButton->Caption =
-    !Enabled ? FOrigCaption : FMTLOAD(TIMEOUT_BUTTON, (FOrigCaption, int(FTimeout / MSecsPerSec)));
+  return FMTLOAD(TIMEOUT_BUTTON, (OrigCaption, int(FTimeout / MSecsPerSec)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
 {
-  if (FTimeout <= Interval)
+  if (FTimeout <= static_cast<int>(Interval))
   {
-    DebugAssert(FButton != NULL);
-
-    // Needed particularly for "keep up to date" dialog, which does not close on the button click
     Enabled = false;
-    TModalResult PrevModalResult = FButton->ModalResult;
-    if (FAnswer != 0)
-    {
-      FButton->ModalResult = FAnswer;
-    }
-    try
-    {
-      FButton->Click();
-    }
-    __finally
-    {
-      FButton->ModalResult = PrevModalResult;
-    }
+    UpdateButton();
+    Timeouted();
   }
   else
   {
@@ -412,11 +396,113 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button, unsigned int Answer)
+void TMessageTimeout::Restart(int Timeout)
 {
-  TMessageTimeout * MessageTimeout = new TMessageTimeout(Application, Timeout, Button, Answer);
-  MessageTimeout->Name = L"MessageTimeout";
-  Dialog->InsertComponent(MessageTimeout);
+  FTimeout = Timeout;
+  Enabled = (FTimeout >= 0);
+  UpdateButton();
+}
+//---------------------------------------------------------------------------
+class TButtonMessageTimeout : public TMessageTimeout
+{
+public:
+  __fastcall TButtonMessageTimeout(TForm * AOwner, int Timeout, TButton * Button, unsigned int Answer);
+
+protected:
+  virtual void UpdateButton();
+  virtual void Timeouted();
+
+private:
+  TButton * FButton;
+  UnicodeString FOrigCaption;
+  unsigned int FAnswer;
+};
+//---------------------------------------------------------------------------
+__fastcall TButtonMessageTimeout::TButtonMessageTimeout(
+    TForm * AOwner, int Timeout, TButton * Button, unsigned int Answer) :
+  TMessageTimeout(AOwner, Timeout),
+  FButton(Button), FAnswer(Answer)
+{
+  FOrigCaption = FButton->Caption;
+  UpdateButton();
+}
+//---------------------------------------------------------------------------
+void TButtonMessageTimeout::UpdateButton()
+{
+  DebugAssert(FButton != NULL);
+  FButton->Caption = !Enabled ? FOrigCaption : FormatTimeoutCaption(FOrigCaption);
+}
+//---------------------------------------------------------------------------
+void TButtonMessageTimeout::Timeouted()
+{
+  DebugAssert(FButton != NULL);
+
+  // Needed particularly for "keep up to date" dialog, which does not close on the button click
+  Enabled = false;
+  TModalResult PrevModalResult = FButton->ModalResult;
+  if (FAnswer != 0)
+  {
+    FButton->ModalResult = FAnswer;
+  }
+  try
+  {
+    FButton->Click();
+  }
+  __finally
+  {
+    FButton->ModalResult = PrevModalResult;
+  }
+}
+//---------------------------------------------------------------------------
+void InitiateDialogTimeout(TForm * Dialog, int Timeout, TButton * Button, unsigned int Answer)
+{
+  InsertComponentInstance(Dialog, new TButtonMessageTimeout(Dialog, Timeout, Button, Answer));
+}
+//---------------------------------------------------------------------------
+class TToolbarMessageTimeout : public TMessageTimeout
+{
+public:
+  __fastcall TToolbarMessageTimeout(TForm * AOwner, int Timeout, TTBCustomItem * Item);
+
+protected:
+  virtual void UpdateButton();
+  virtual void Timeouted();
+
+private:
+  TTBCustomItem * FItem;
+};
+//---------------------------------------------------------------------------
+__fastcall TToolbarMessageTimeout::TToolbarMessageTimeout(TForm * AOwner, int Timeout, TTBCustomItem * Item) :
+  TMessageTimeout(AOwner, Timeout),
+  FItem(Item)
+{
+  DebugAssert(Item->Action != nullptr);
+  UpdateButton();
+}
+//---------------------------------------------------------------------------
+void TToolbarMessageTimeout::UpdateButton()
+{
+  UnicodeString OrigCaption = DebugNotNull(dynamic_cast<TCustomAction *>(FItem->Action))->Caption;
+  FItem->Caption = !Enabled ? OrigCaption : FormatTimeoutCaption(OrigCaption);
+}
+//---------------------------------------------------------------------------
+void TToolbarMessageTimeout::Timeouted()
+{
+  FItem->Click();
+}
+//---------------------------------------------------------------------------
+void RestartToolbarDialogTimeout(TForm * Dialog, int Timeout, TTBCustomItem * Item)
+{
+  auto ToolbarMessageTimeout = FindComponentInstance<TToolbarMessageTimeout>(Dialog);
+  if (ToolbarMessageTimeout == nullptr)
+  {
+    ToolbarMessageTimeout = new TToolbarMessageTimeout(Dialog, Timeout, Item);
+    InsertComponentInstance(Dialog, ToolbarMessageTimeout);
+  }
+  else
+  {
+    ToolbarMessageTimeout->Restart(Timeout);
+  }
 }
 //---------------------------------------------------------------------
 class TPublicControl : public TControl

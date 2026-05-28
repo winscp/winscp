@@ -2145,12 +2145,8 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
     }
     else
     {
-      TRect TextRect;
-      SetRect(&TextRect, 0, 0, StaticText->Width, 0);
-      DrawText(Canvas->Handle, StaticText->Caption.c_str(), -1, &TextRect,
-        DT_CALCRECT | DT_WORDBREAK |
-        StaticText->DrawTextBiDiModeFlagsReadingOnly());
-      TextSize = TextRect.GetSize();
+      int Flags = StaticText->DrawTextBiDiModeFlagsReadingOnly();
+      TextSize = CalculateLabelSize(Canvas, StaticText->Width, StaticText->Caption, Flags);
     }
 
     R.Bottom = R.Top + TextSize.cy;
@@ -3132,18 +3128,23 @@ void AutoSizeButton(TButton * Button)
   }
 }
 //---------------------------------------------------------------------------
+TSize CalculateLabelSize(TCanvas * Canvas, int Width, const UnicodeString & Caption, int Flags)
+{
+  TRect TextRect(0, 0, Width, 0);
+  Flags |= DT_CALCRECT | DT_WORDBREAK;
+  DrawText(Canvas->Handle, Caption.c_str(), -1, &TextRect, Flags);
+  return TextRect.GetSize();
+}
+//---------------------------------------------------------------------------
 template<class T>
 bool DoAutoSizeLabel(T * Label, TCanvas * Canvas)
 {
-  TRect TextRect;
-  SetRect(&TextRect, 0, 0, Label->Width, 0);
-  DrawText(Canvas->Handle, Label->Caption.c_str(), Label->Caption.Length() + 1, &TextRect,
-    DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
-    Label->DrawTextBiDiModeFlagsReadingOnly());
-  bool Result = (TextRect.Height() > Label->Height);
+  int Flags = DT_EXPANDTABS | DT_NOPREFIX | Label->DrawTextBiDiModeFlagsReadingOnly();
+  int Height = CalculateLabelSize(Canvas, Label->Width, Label->Caption, Flags).Height;
+  bool Result = (Height > Label->Height);
   if (Result)
   {
-    Label->Height = TextRect.Height();
+    Label->Height = Height;
     Label->AutoSize = false;
   }
   return Result;

@@ -106,6 +106,7 @@ void AutoSizeButton(TButton * Button);
 namespace Tb2item { class TTBCustomItem; }
 void GiveTBItemPriority(Tb2item::TTBCustomItem * Item);
 void DeleteChildren(TWinControl * Control);
+TSize CalculateLabelSize(TCanvas * Canvas, int Width, const UnicodeString & Caption, int Flags);
 void AutoSizeLabel(TLabel * Label);
 void AutoSizeLabel(TStaticText * Label);
 void SetAccessibleName(TWinControl * Control, const UnicodeString & Name);

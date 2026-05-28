@@ -2593,13 +2593,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 251
           Width = 445
-          Height = 164
+          Height = 187
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Miscellaneous'
           TabOrder = 2
           DesignSize = (
             445
-            164)
+            187)
           object MinimizeToTrayCheck: TCheckBox
             Left = 11
             Top = 22
@@ -2632,12 +2632,12 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ShowTipsCheck: TCheckBox
             Left = 11
-            Top = 137
+            Top = 160
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Display tips on startup'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object ShowLoginWhenNoSessionCheck: TCheckBox
@@ -2654,11 +2654,21 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionTabCaptionTruncationCheck: TCheckBox
             Left = 11
-            Top = 114
+            Top = 137
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Truncate tab titles when they do not fit to window'
+            TabOrder = 5
+            OnClick = ControlChange
+          end
+          object SessionSilentDisconnectCheck: TCheckBox
+            Left = 11
+            Top = 114
+            Width = 425
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Do not popup error message when idle session is disconnected'
             TabOrder = 4
             OnClick = ControlChange
           end

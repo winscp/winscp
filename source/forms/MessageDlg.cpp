@@ -1143,26 +1143,23 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         Message->Font->Color = LabelColor;
       }
 
-      TRect TextRect;
-      SetRect(&TextRect, 0, 0, MaxTextWidth, 0);
-      DrawText(Message->Canvas->Handle, LabelMsg.c_str(), LabelMsg.Length() + 1, &TextRect,
-        DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
-        Result->DrawTextBiDiModeFlagsReadingOnly());
+      int TextFlags = DT_EXPANDTABS | DT_NOPREFIX | Message->DrawTextBiDiModeFlagsReadingOnly();
+      TSize TextSize = CalculateLabelSize(Message->Canvas, MaxTextWidth, LabelMsg, TextFlags);
       int MaxWidth = Monitor->Width - HorzMargin * 2 - IconWidth - 30;
       // 5% buffer for potential WM_DPICHANGED, as after re-scaling the text can otherwise narrowly not fit in.
       // Though note that the buffer is lost on the first re-scale due to the AutoSize
-      TextRect.right = MulDiv(TextRect.right, 105, 100);
+      TextSize.Width = MulDiv(TextSize.Width, 105, 100);
       // this will truncate the text, we should implement something smarter eventually
-      TextRect.right = Min(TextRect.right, MaxWidth);
+      TextSize.Width = Min(TextSize.Width, MaxWidth);
 
-      IconTextWidth = Max(IconTextWidth, IconWidth + TextRect.Right);
+      IconTextWidth = Max(IconTextWidth, IconWidth + TextSize.Width);
 
       if (IconTextHeight > 0)
       {
         IconTextHeight += VertMargin;
       }
-      Message->SetBounds(ALeft, VertMargin + IconTextHeight, TextRect.Right, TextRect.Bottom);
-      IconTextHeight += TextRect.Bottom;
+      Message->SetBounds(ALeft, VertMargin + IconTextHeight, TextSize.Width, TextSize.Height);
+      IconTextHeight += TextSize.Height;
     }
   }
 
