@@ -437,7 +437,7 @@ static const SeatVtable ScpSeatVtable =
     prompt_descriptions,
     nullseat_is_always_utf8,
     nullseat_echoedit_update,
-    nullseat_get_x_display,
+    nullseat_get_display,
     nullseat_get_windowid,
     nullseat_get_window_pixel_size,
     nullseat_stripctrl_new,
@@ -1625,6 +1625,11 @@ host_ca * host_ca_load(const char * NameStr)
     Result->opts.permit_rsa_sha512 = SshHostCA->PermitRsaSha512;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void done_with_socket(SOCKET)
+{
+  // noop (no callbacks queued by our code)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

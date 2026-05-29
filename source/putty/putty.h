@@ -2747,6 +2747,7 @@ bool is_idempotent_callback_pending(CALLBACK_SET struct IdempotentCallback *ic);
 struct callback_set * get_callback_set(Plug * plug);
 struct callback_set * get_seat_callback_set(Seat * seat);
 void delete_callbacks(
+    CALLBACK_SET
     bool (*delete_this_one)(void *predicate_ctx, toplevel_callback_fn_t fn,
                             void *callback_ctx), void *predicate_ctx);
 void delete_callbacks_for_context(CALLBACK_SET void *ctx);

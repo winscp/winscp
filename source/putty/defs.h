@@ -26,6 +26,7 @@
 #define HAVE_ADDDLLDIRECTORY 1
 #define HAVE_GETNAMEDPIPECLIENTPROCESSID 1
 #define HAVE_AFUNIX_H 0 // maybe have, but we are not using them in WINSCP anyway
+#define HAVE_COUNTOF 0 // have, but it's implementation does not support non-compile-time constant arrays
 #define SSH 1
 #define OTHERBACKENDS 0
 #define SERIAL 0

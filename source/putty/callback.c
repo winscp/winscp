@@ -61,6 +61,7 @@ void queue_idempotent_callback(struct IdempotentCallback *ic)
 #pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
 
 void delete_callbacks(
+    CALLBACK_SET
     bool (*delete_this_one)(void *predicate_ctx, toplevel_callback_fn_t fn,
                             void *callback_ctx), void *predicate_ctx)
 {
@@ -96,9 +97,9 @@ static bool callback_is_for_context(
          ((struct IdempotentCallback *)callback_ctx)->ctx == predicate_ctx);
 }
 
-void delete_callbacks_for_context(void *ctx)
+void delete_callbacks_for_context(CALLBACK_SET void *ctx)
 {
-    delete_callbacks(callback_is_for_context, ctx);
+    delete_callbacks(CALLBACK_SET_VAR, callback_is_for_context, ctx);
 }
 
 void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx)

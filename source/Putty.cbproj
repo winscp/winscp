@@ -226,6 +226,9 @@
         <CppCompile Include="putty\proxy\local.c">
             <BuildOrder>47</BuildOrder>
         </CppCompile>
+        <CppCompile Include="putty\proxy\newmain.c">
+            <BuildOrder>179</BuildOrder>
+        </CppCompile>
         <CppCompile Include="putty\proxy\nosshproxy.c">
             <BuildOrder>48</BuildOrder>
         </CppCompile>
@@ -417,6 +420,9 @@
         </CppCompile>
         <CppCompile Include="putty\utils\encode_wide_string_as_utf8.c">
             <BuildOrder>173</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\format_connection_setup_command.c">
+            <BuildOrder>177</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\host_ca_new_free.c">
             <BuildOrder>148</BuildOrder>

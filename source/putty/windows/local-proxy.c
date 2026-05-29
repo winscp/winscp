@@ -73,8 +73,14 @@ static char *start_subprocess_handle_socket(
     CloseHandle(pi.hThread);
 
     if (waiter)
+        #ifndef WINSCP
         *waiter = subproc_waiter_from_hprocess(pi.hProcess);
+        #else
+        assert(false);
+        #endif
+    #ifndef WINSCP
     else
+    #endif
         CloseHandle(pi.hProcess);
 
     CloseHandle(cmd_from_us);
