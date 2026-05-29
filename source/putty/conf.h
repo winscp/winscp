@@ -90,6 +90,11 @@ CONF_OPTION(loghost, /* logical host being contacted, for host key check */
     DEFAULT_STR(""),
     SAVE_KEYWORD("LogHost"),
 )
+CONF_OPTION(pre_connect_command,
+    VALUE_TYPE(STR),
+    DEFAULT_STR(""),
+    SAVE_KEYWORD("PreConnectCommand"),
+)
 
 /* Proxy options */
 CONF_OPTION(proxy_exclude_list,

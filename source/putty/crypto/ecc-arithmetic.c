@@ -116,6 +116,24 @@ WeierstrassPoint *ecc_weierstrass_point_new_identity(WeierstrassCurve *wc)
     return wp;
 }
 
+/* Used for testcrypt */
+WeierstrassPoint *ecc_weierstrass_point_change_denominator(
+    WeierstrassPoint *wp, mp_int *factor)
+{
+    WeierstrassCurve *wc = wp->wc;
+    WeierstrassPoint *out = ecc_weierstrass_point_new_empty(wc);
+    mp_int *z = monty_import(wc->mc, factor);
+    mp_int *z2 = monty_mul(wc->mc, z, z);
+    mp_int *z3 = monty_mul(wc->mc, z2, z);
+    out->X = monty_mul(wc->mc, wp->X, z2);
+    out->Y = monty_mul(wc->mc, wp->Y, z3);
+    out->Z = monty_mul(wc->mc, wp->Z, z);
+    mp_free(z);
+    mp_free(z2);
+    mp_free(z3);
+    return out;
+}
+
 void ecc_weierstrass_point_copy_into(
     WeierstrassPoint *dest, WeierstrassPoint *src)
 {
@@ -308,12 +326,6 @@ WeierstrassPoint *ecc_weierstrass_add(WeierstrassPoint *P, WeierstrassPoint *Q)
     ecc_weierstrass_add_prologue(
         P, Q, &Px, &Py, &Qx, &denom, &lambda_n, &lambda_d);
 
-    /* Never expect to have received two mutually inverse inputs, or
-     * two identical ones (which would make this a doubling). In other
-     * words, the two input x-coordinates (after putting over a common
-     * denominator) should never have been equal. */
-    assert(!mp_eq_integer(lambda_n, 0));
-
     /* Now go to the common epilogue code. */
     ecc_weierstrass_epilogue(Px, Qx, Py, denom, lambda_n, lambda_d, S);
 
@@ -394,9 +406,35 @@ WeierstrassPoint *ecc_weierstrass_add_general(
     ecc_weierstrass_add_prologue(
         P, Q, &Px, &Py, &Qx, &denom, &lambda_n, &lambda_d);
 
-    /* Slope if P == Q */
+    /*
+     * Calculate what the slope of the line will be if P == Q.
+     *
+     * For this, we can't pass the _original_ P or Q to the
+     * tangent_slope subroutine. We've put the two input points over a
+     * common denominator, and we're going to use _that_ denominator
+     * in the epilogue function, so we need the tangent to be
+     * expressed relative to the same denominator.
+     *
+     * So we make a temporary point structure using the re-denominated
+     * version of P, as returned from add_prologue: (Px, Py, denom)
+     * identify the same curve point as (P->X, P->Y, P->Z).
+     *
+     * That structure temporarily borrows those mp_ints, so we don't
+     * need to allocate or free anything. And we don't need to smemclr
+     * the temporary point, because it only holds pointers - all the
+     * secrets are in the mp_ints, and we haven't finished with those
+     * yet.
+     */
     mp_int *lambda_n_tangent, *lambda_d_tangent;
-    ecc_weierstrass_tangent_slope(P, &lambda_n_tangent, &lambda_d_tangent);
+    {
+        WeierstrassPoint P_redenominated;
+        P_redenominated.wc = wc;
+        P_redenominated.X = Px;
+        P_redenominated.Y = Py;
+        P_redenominated.Z = denom;
+        ecc_weierstrass_tangent_slope(
+            &P_redenominated, &lambda_n_tangent, &lambda_d_tangent);
+    }
 
     /* Select between those slopes depending on whether P == Q */
     unsigned same_x_coord = mp_eq_integer(lambda_d, 0);

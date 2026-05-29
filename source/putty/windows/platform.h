@@ -209,8 +209,10 @@ void centre_window(HWND hwnd);
 
 #define PUTTY_CHM_FILE "putty.chm"
 
+int get_caret_blink_time(void);
+
 #define GETTICKCOUNT GetTickCount
-#define CURSORBLINK GetCaretBlinkTime()
+#define CURSORBLINK get_caret_blink_time()
 #define TICKSPERSEC 1000               /* GetTickCount returns milliseconds */
 
 #define DEFAULT_CODEPAGE CP_ACP
@@ -277,7 +279,8 @@ const SeatDialogPromptDescriptions *win_seat_prompt_descriptions(Seat *seat);
  */
 void write_aclip(HWND hwnd, int clipboard, char *, int);
 
-#define WM_NETEVENT  (WM_APP + 5)
+#define WM_NETEVENT          (WM_APP + 5)
+#define WM_DONE_WITH_SOCKET  (WM_APP + 8)
 
 /*
  * On Windows, we send MA_2CLK as the only event marking the second
@@ -353,6 +356,7 @@ DECL_WINDOWS_FUNCTION(extern, int, select,
  * called by network.c to turn on or off WSA*Select for a given socket.
  */
 const char *do_select(Plug * plug, SOCKET skt, bool enable); // WINSCP
+void done_with_socket(SOCKET skt);
 
 /*
  * Exports from select-{gui,cli}.c, each of which provides an
@@ -360,7 +364,7 @@ const char *do_select(Plug * plug, SOCKET skt, bool enable); // WINSCP
  */
 void winselgui_set_hwnd(HWND hwnd);
 void winselgui_clear_hwnd(void);
-void winselgui_response(WPARAM wParam, LPARAM lParam);
+void winselgui_response(UINT message, WPARAM wParam, LPARAM lParam);
 
 void winselcli_setup(void);
 SOCKET winselcli_unique_socket(void);
@@ -875,5 +879,8 @@ const wchar_t *cmdline_arg_remainder_wide(CmdlineArg *);
 char *cmdline_arg_remainder_acp(CmdlineArg *);
 char *cmdline_arg_remainder_utf8(CmdlineArg *);
 CmdlineArg *cmdline_arg_from_utf8(CmdlineArgList *list, const char *string);
+
+/* Windows-specific API for making a SubprocessWaiter */
+SubprocessWaiter *subproc_waiter_from_hprocess(HANDLE hprocess);
 
 #endif /* PUTTY_WINDOWS_PLATFORM_H */

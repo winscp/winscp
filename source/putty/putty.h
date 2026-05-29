@@ -210,14 +210,11 @@ extern const int colour_indices_oscp_to_osc4[OSCP_NCOLOURS];
  * ATTR_INVALID is an illegal colour combination.
  */
 
-#define TATTR_ACTCURS       0x40000000UL      /* active cursor (block) */
-#define TATTR_PASCURS       0x20000000UL      /* passive cursor (box) */
-#define TATTR_RIGHTCURS     0x10000000UL      /* cursor-on-RHS */
 #define TATTR_COMBINING     0x80000000UL      /* combining characters */
 
 #define DATTR_STARTRUN      0x80000000UL   /* start of redraw run */
 
-#define TDATTR_MASK         0xF0000000UL
+#define TDATTR_MASK         0x80000000UL
 #define TATTR_MASK (TDATTR_MASK)
 #define DATTR_MASK (TDATTR_MASK)
 
@@ -258,17 +255,20 @@ extern const int colour_indices_oscp_to_osc4[OSCP_NCOLOURS];
  */
 #define UCSWIDE      0xDFFF
 
-#define ATTR_NARROW  0x0800000U
-#define ATTR_WIDE    0x0400000U
-#define ATTR_BOLD    0x0040000U
-#define ATTR_UNDER   0x0080000U
-#define ATTR_REVERSE 0x0100000U
-#define ATTR_BLINK   0x0200000U
-#define ATTR_FGMASK  0x00001FFU /* stores a colour in OSC 4 indexing */
-#define ATTR_BGMASK  0x003FE00U /* stores a colour in OSC 4 indexing */
-#define ATTR_COLOURS 0x003FFFFU
-#define ATTR_DIM     0x1000000U
-#define ATTR_STRIKE  0x2000000U
+#define ATTR_NARROW  0x00800000U
+#define ATTR_WIDE    0x00400000U
+#define ATTR_BOLD    0x00040000U
+#define ATTR_UNDER   0x00080000U
+#define ATTR_REVERSE 0x00100000U
+#define ATTR_BLINK   0x00200000U
+#define ATTR_FGMASK  0x000001FFU /* stores a colour in OSC 4 indexing */
+#define ATTR_BGMASK  0x0003FE00U /* stores a colour in OSC 4 indexing */
+#define ATTR_COLOURS 0x0003FFFFU
+#define ATTR_DIM     0x01000000U
+#define ATTR_STRIKE  0x02000000U
+#define ATTR_ACTCURS 0x40000000UL      /* active cursor (block) */
+#define ATTR_PASCURS 0x20000000UL      /* passive cursor (box) */
+#define ATTR_RIGHTCURS 0x10000000UL    /* cursor-on-RHS */
 #define ATTR_FGSHIFT 0
 #define ATTR_BGSHIFT 9
 
@@ -344,47 +344,6 @@ typedef enum {
 typedef enum {
     MA_NOTHING, MA_CLICK, MA_2CLK, MA_3CLK, MA_DRAG, MA_RELEASE, MA_MOVE
 } Mouse_Action;
-
-/* Keyboard modifiers -- keys the user is actually holding down */
-
-#define PKM_SHIFT       0x01
-#define PKM_CONTROL     0x02
-#define PKM_META        0x04
-#define PKM_ALT         0x08
-
-/* Keyboard flags that aren't really modifiers */
-#define PKF_CAPSLOCK    0x10
-#define PKF_NUMLOCK     0x20
-#define PKF_REPEAT      0x40
-
-/* Stand-alone keysyms for function keys */
-
-typedef enum {
-    PK_NULL,            /* No symbol for this key */
-    /* Main keypad keys */
-    PK_ESCAPE, PK_TAB, PK_BACKSPACE, PK_RETURN, PK_COMPOSE,
-    /* Editing keys */
-    PK_HOME, PK_INSERT, PK_DELETE, PK_END, PK_PAGEUP, PK_PAGEDOWN,
-    /* Cursor keys */
-    PK_UP, PK_DOWN, PK_RIGHT, PK_LEFT, PK_REST,
-    /* Numeric keypad */                        /* Real one looks like: */
-    PK_PF1, PK_PF2, PK_PF3, PK_PF4,             /* PF1 PF2 PF3 PF4 */
-    PK_KPCOMMA, PK_KPMINUS, PK_KPDECIMAL,       /*  7   8   9   -  */
-    PK_KP0, PK_KP1, PK_KP2, PK_KP3, PK_KP4,     /*  4   5   6   ,  */
-    PK_KP5, PK_KP6, PK_KP7, PK_KP8, PK_KP9,     /*  1   2   3  en- */
-    PK_KPBIGPLUS, PK_KPENTER,                   /*    0     .  ter */
-    /* Top row */
-    PK_F1,  PK_F2,  PK_F3,  PK_F4,  PK_F5,
-    PK_F6,  PK_F7,  PK_F8,  PK_F9,  PK_F10,
-    PK_F11, PK_F12, PK_F13, PK_F14, PK_F15,
-    PK_F16, PK_F17, PK_F18, PK_F19, PK_F20,
-    PK_PAUSE
-} Key_Sym;
-
-#define PK_ISEDITING(k) ((k) >= PK_HOME && (k) <= PK_PAGEDOWN)
-#define PK_ISCURSOR(k)  ((k) >= PK_UP && (k) <= PK_REST)
-#define PK_ISKEYPAD(k)  ((k) >= PK_PF1 && (k) <= PK_KPENTER)
-#define PK_ISFKEY(k)    ((k) >= PK_F1 && (k) <= PK_F20)
 
 enum {
     VT_XWINDOWS, VT_OEMANSI, VT_OEMONLY, VT_POORMAN, VT_UNICODE
@@ -1113,6 +1072,11 @@ void seat_dialog_text_free(SeatDialogText *sdt);
 PRINTF_LIKE(3, 4) void seat_dialog_text_append(
     SeatDialogText *sdt, SeatDialogTextType type, const char *fmt, ...);
 
+/* Parameter to seat_get_display */
+typedef enum SeatDisplayType {
+    SDISP_X11, SDISP_ANY
+} SeatDisplayType;
+
 /*
  * Data type 'Seat', which is an API intended to contain essentially
  * everything that a back end might need to talk to its client for:
@@ -1344,10 +1308,13 @@ struct SeatVtable {
     void (*echoedit_update)(Seat *seat, bool echoing, bool editing);
 
     /*
-     * Return the local X display string relevant to a seat, or NULL
-     * if there isn't one or if the concept is meaningless.
+     * Return a string describing the GUI display (e.g. X11 or
+     * Wayland) relevant to a seat, or NULL if there isn't one or if
+     * the concept is meaningless. If dtype is not SDISP_ANY then only
+     * a display string of the requested type will be returned, or
+     * NULL if the available display is of a different type.
      */
-    const char *(*get_x_display)(Seat *seat);
+    const char *(*get_display)(Seat *seat, SeatDisplayType dtype);
 
     /*
      * Return the X11 id of the X terminal window relevant to a seat,
@@ -1475,8 +1442,8 @@ static inline bool seat_is_utf8(Seat *seat)
 { return seat->vt->is_utf8(seat); }
 static inline void seat_echoedit_update(Seat *seat, bool ec, bool ed)
 { seat->vt->echoedit_update(seat, ec, ed); }
-static inline const char *seat_get_x_display(Seat *seat)
-{ return seat->vt->get_x_display(seat); }
+static inline const char *seat_get_display(Seat *seat, SeatDisplayType dtype)
+{ return seat->vt->get_display(seat, dtype); }
 static inline bool seat_get_windowid(Seat *seat, long *id_out)
 { return seat->vt->get_windowid(seat, id_out); }
 static inline bool seat_get_window_pixel_size(Seat *seat, int *w, int *h)
@@ -1566,7 +1533,7 @@ const SeatDialogPromptDescriptions *nullseat_prompt_descriptions(Seat *seat);
 bool nullseat_is_never_utf8(Seat *seat);
 bool nullseat_is_always_utf8(Seat *seat);
 void nullseat_echoedit_update(Seat *seat, bool echoing, bool editing);
-const char *nullseat_get_x_display(Seat *seat);
+const char *nullseat_get_display(Seat *seat, SeatDisplayType dtype);
 bool nullseat_get_windowid(Seat *seat, long *id_out);
 bool nullseat_get_window_pixel_size(Seat *seat, int *width, int *height);
 StripCtrlChars *nullseat_stripctrl_new(
@@ -2069,8 +2036,6 @@ void term_clrsb(Terminal *);
 void term_mouse(Terminal *, Mouse_Button, Mouse_Button, Mouse_Action,
                 int, int, bool, bool, bool);
 void term_cancel_selection_drag(Terminal *);
-void term_key(Terminal *, Key_Sym, wchar_t *, size_t, unsigned int,
-              unsigned int);
 void term_lost_clipboard_ownership(Terminal *, int clipboard);
 void term_update(Terminal *);
 void term_invalidate(Terminal *);
@@ -2099,6 +2064,7 @@ void term_notify_palette_changed(Terminal *term);
 void term_notify_window_pos(Terminal *term, int x, int y);
 void term_notify_window_size_pixels(Terminal *term, int x, int y);
 void term_palette_override(Terminal *term, unsigned osc4_index, rgb rgb);
+void term_set_preedit_text(Terminal *term, char *preedit_text);
 
 typedef enum SmallKeypadKey {
     SKK_HOME, SKK_END, SKK_INSERT, SKK_DELETE, SKK_PGUP, SKK_PGDN,
@@ -2780,6 +2746,9 @@ bool toplevel_callback_pending(CALLBACK_SET_ONLY);
 bool is_idempotent_callback_pending(CALLBACK_SET struct IdempotentCallback *ic); // WINSCP
 struct callback_set * get_callback_set(Plug * plug);
 struct callback_set * get_seat_callback_set(Seat * seat);
+void delete_callbacks(
+    bool (*delete_this_one)(void *predicate_ctx, toplevel_callback_fn_t fn,
+                            void *callback_ctx), void *predicate_ctx);
 void delete_callbacks_for_context(CALLBACK_SET void *ctx);
 LogPolicy *log_get_logpolicy(LogContext *ctx); // WINSCP
 Seat * get_log_seat(LogContext * lp); // WINSCP
@@ -2812,11 +2781,31 @@ void request_callback_notifications(toplevel_callback_notify_fn_t notify,
  * Facility provided by the platform to spawn a parallel subprocess
  * and present its stdio via a Socket.
  *
- * 'prefix' indicates the prefix that should appear on messages passed
- * to plug_log to provide stderr output from the process.
+ * 'pfx' indicates the prefix that should appear on messages passed to
+ * plug_log to provide stderr output from the process.
+ *
+ * SubprocessWaiter is an opaque type that can be made to notify you
+ * with the exit status of the subprocess, once it has one. If you set
+ * 'waiter' to be non-NULL, one for this subprocess will be returned
+ * to you.
  */
-Socket *platform_start_subprocess(const char *cmd, Plug *plug,
-                                  const char *prefix);
+Socket *platform_start_subprocess(
+    const char *cmd, Plug *plug, const char *pfx, SubprocessWaiter **waiter);
+
+/* API for SubprocessWaiter. On Windows, everything is
+ * EXITTYPE_NORMAL, because exits and signal terminations aren't
+ * distinguished in the API. So don't depend on this enumeration for
+ * anything semantic: only use it to write sensible (ish) user-facing
+ * messages.
+ *
+ * EXITTYPE_WEIRD is never returned from this callback, but is
+ * available for callers to use as an extra value of their own. */
+enum { EXITTYPE_NORMAL, EXITTYPE_SIGNAL, EXITTYPE_WEIRD };
+typedef void (*SubprocessWaiterCallback)(
+    void *ctx, int exittype, uint32_t exitdata);
+void subproc_waiter_set_callback(
+    SubprocessWaiter *waiter, SubprocessWaiterCallback cb, void *cbctx);
+void subproc_waiter_free(SubprocessWaiter *waiter);
 
 /*
  * Define no-op macros for the jump list functions, on platforms that

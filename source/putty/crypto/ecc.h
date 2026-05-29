@@ -69,6 +69,12 @@ void ecc_weierstrass_point_free(WeierstrassPoint *point);
 /* Check whether a point is actually on the curve. */
 unsigned ecc_weierstrass_point_valid(WeierstrassPoint *);
 
+/* For test purposes, used by testcrypt: multiply a factor into the
+ * internal Jacobian-coordinates denominator, changing only the
+ * representation of the point and not its affine coordinates */
+WeierstrassPoint *ecc_weierstrass_point_change_denominator(
+    WeierstrassPoint *, mp_int *);
+
 /*
  * Add two points and return their sum. This function is fully
  * general: it should do the right thing if the two inputs are the

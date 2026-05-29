@@ -190,6 +190,13 @@ SockAddr *name_lookup(const char *host, int port, char **canonicalname,
                       Conf *conf, int addressfamily, LogContext *logctx,
                       const char *lookup_reason_for_logging);
 
+/* A further indirection, which also takes care of running a
+ * pre-connection command. */
+Socket *new_main_connection(
+    SockAddr *addr, const char *hostname, int port, bool privport,
+    bool oobinline, bool nodelay, bool keepalive, Plug *plug, Conf *conf,
+    Interactor *itr, LogContext *logctx);
+
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */
 Socket *platform_new_connection(SockAddr *addr, const char *hostname,
