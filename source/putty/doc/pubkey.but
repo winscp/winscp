@@ -539,27 +539,27 @@ organisation containing your local standards.)
 
 The options supported on the command line are:
 
-\dt \cw{\-t} \e{keytype}
+\dt \I{-t-puttygen}\cw{\-t} \e{keytype}
 
 \dd Type of key to generate. You can select \c{rsa}, \c{dsa},
 \c{ecdsa}, \c{eddsa}, \c{ed25519}, \c{ed448}, or \c{rsa1}.
 See \k{puttygen-keytype}.
 
-\dt \cw{\-b} \e{bits}
+\dt \I{-b-puttygen}\cw{\-b} \e{bits}
 
 \dd Size of the key to generate, in bits. See \k{puttygen-strength}.
 
-\dt \cw{\-\-primes} \e{method}
+\dt \I{--primes-puttygen}\cw{\-\-primes} \e{method}
 
 \dd Method for generating prime numbers. You can select \c{probable},
 \c{proven}, and \c{proven-even}. See \k{puttygen-primes}.
 
-\dt \cw{\-\-strong-rsa}
+\dt \I{--strong-rsa-puttygen}\cw{\-\-strong-rsa}
 
 \dd When generating an RSA key, make sure the prime factors of the key
 modulus are \q{strong primes}. See \k{puttygen-primes}.
 
-\dt \cw{\-\-ppk-param} \e{key}\cw{=}\e{value}\cw{,}...
+\dt \I{--ppk-param-puttygen}\cw{\-\-ppk-param} \e{key}\cw{=}\e{value}\cw{,}...
 
 \dd Allows setting all the same details of the PPK save file format
 described in \k{puttygen-save-params}.
@@ -599,7 +599,7 @@ key.
 
 }
 
-\dt \cw{\-E} \e{fptype}
+\dt \I{-E-upper-puttygen}\cw{\-E} \e{fptype}
 
 \dd Algorithm to use when displaying key fingerprints. You can
 select \c{sha256} or \c{md5}. See \k{puttygen-fingerprint}.
@@ -655,7 +655,7 @@ three ways:
 \b Select the private key in PuTTY's configuration. See
 \k{config-ssh-privkey} for details.
 
-\b Specify the key file on the command line with the \c{-i} option.
+\b Specify the key file on the command line with the \c{\-i} option.
 See \k{using-cmdline-identity} for details.
 
 \b Load the private key into Pageant (see \k{pageant}). In this case

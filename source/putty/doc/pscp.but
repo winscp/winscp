@@ -33,13 +33,13 @@ to include a \c{set} command like the one above.
 \H{pscp-usage} PSCP Usage
 
 Once you've got a console window to type into, you can type
-\c{pscp -h} to bring up a usage message. This tells you the
+\c{pscp \-h} to bring up a usage message. This tells you the
 version of PSCP you're using, and gives you a brief summary of how to
 use PSCP:
 
 \c C:\>pscp -h
 \c PuTTY Secure Copy client
-\c Release 0.83
+\c Release 0.84
 \c Usage: pscp [options] [user@]host:source target
 \c        pscp [options] source [source...] [user@]host:target
 \c        pscp [options] -ls [user@]host:filespec
@@ -70,6 +70,8 @@ use PSCP:
 \c   -no-sanitise-stderr  don't strip control chars from standard error
 \c   -proxycmd command
 \c             use 'command' as local proxy
+\c   -preconnectcommand command
+\c             run 'command' before making network connection
 \c   -unsafe   allow server-side wildcards (DANGEROUS)
 \c   -sftp     force use of SFTP protocol
 \c   -scp      force use of SCP protocol
@@ -114,7 +116,7 @@ However, in the second case (using a wildcard for multiple remote
 files) you may see a warning saying something like \q{warning:
 remote host tried to write to a file called \cq{terminal.c} when we
 requested a file called \cq{*.c}. If this is a wildcard, consider
-upgrading to SSH-2 or using the \cq{-unsafe} option. Renaming of
+upgrading to SSH-2 or using the \cq{\-unsafe} option. Renaming of
 this file has been disallowed}.
 
 This is due to a \I{security risk}fundamental insecurity in the old-style
@@ -132,10 +134,10 @@ PSCP will attempt to use the newer \i{SFTP} protocol (part of SSH-2)
 where possible, which does not suffer from this security flaw. If
 you are talking to an SSH-2 server which supports SFTP, you will
 never see this warning. (You can force use of the SFTP protocol,
-if available, with \c{-sftp} - see \k{pscp-usage-options-backend}.)
+if available, with \c{\-sftp} - see \k{pscp-usage-options-backend}.)
 
 If you really need to use a server-side wildcard with an SSH-1
-server, you can use the \i\c{-unsafe} command line option with PSCP:
+server, you can use the \i\c{\-unsafe} command line option with PSCP:
 
 \c pscp -unsafe fred@example.com:source/*.c c:\source
 
@@ -203,9 +205,9 @@ options. (The ones not supported by PSCP are clearly marked.)
 PSCP also supports some of its own options. The following sections
 describe PSCP's specific command-line options.
 
-\S2{pscp-usage-options-ls}\I{-ls-PSCP}\c{-ls} \I{listing files}list remote files
+\S2{pscp-usage-options-ls}\I{-ls-PSCP}\c{\-ls} \I{listing files}list remote files
 
-If the \c{-ls} option is given, no files are transferred; instead,
+If the \c{\-ls} option is given, no files are transferred; instead,
 remote files are listed. Only a hostname specification and
 optional remote file specification need be given. For example:
 
@@ -213,18 +215,18 @@ optional remote file specification need be given. For example:
 
 The SCP protocol does not contain within itself a means of listing
 files. If SCP is in use, this option therefore assumes that the
-server responds appropriately to the command \c{ls\_-la};
+server responds appropriately to the command \c{ls\_\-la};
 this may not work with all servers.
 
 If SFTP is in use, this option should work with all servers.
 
-\S2{pscp-usage-options-p}\I{-p-PSCP}\c{-p} \i{preserve file attributes}
+\S2{pscp-usage-options-p}\I{-p-PSCP}\c{\-p} \i{preserve file attributes}
 
 By default, files copied with PSCP are \i{timestamp}ed with the date and
-time they were copied.  The \c{-p} option preserves the original
+time they were copied.  The \c{\-p} option preserves the original
 timestamp on copied files.
 
-\S2{pscp-usage-options-q}\I{-q-PSCP}\c{-q} quiet, don't show \i{statistics}
+\S2{pscp-usage-options-q}\I{-q-PSCP}\c{\-q} quiet, don't show \i{statistics}
 
 By default, PSCP displays a meter displaying the progress of the
 current transfer:
@@ -235,30 +237,30 @@ The fields in this display are (from left to right), filename, size
 (in kilobytes) of file transferred so far, estimate of how fast the
 file is being transferred (in kilobytes per second), estimated time
 that the transfer will be complete, and percentage of the file so far
-transferred.  The \c{-q} option to PSCP suppresses the printing of
+transferred.  The \c{\-q} option to PSCP suppresses the printing of
 these statistics.
 
-\S2{pscp-usage-options-r}\I{-r-PSCP}\c{-r} copies directories \i{recursive}ly
+\S2{pscp-usage-options-r}\I{-r-PSCP}\c{\-r} copies directories \i{recursive}ly
 
 By default, PSCP will only copy files.  Any directories you specify to
-copy will be skipped, as will their contents.  The \c{-r} option tells
+copy will be skipped, as will their contents.  The \c{\-r} option tells
 PSCP to descend into any directories you specify, and to copy them and
 their contents.  This allows you to use PSCP to transfer whole
 directory structures between machines.
 
-\S2{pscp-usage-options-batch}\I{-batch-PSCP}\c{-batch} avoid interactive prompts
+\S2{pscp-usage-options-batch}\I{-batch-PSCP}\c{\-batch} avoid interactive prompts
 
-If you use the \c{-batch} option, PSCP will never give an
+If you use the \c{\-batch} option, PSCP will never give an
 interactive prompt while establishing the connection. If the
 server's host key is invalid, for example (see \k{gs-hostkey}), then
 the connection will simply be abandoned instead of asking you what
 to do next.
 
 This may help PSCP's behaviour when it is used in automated
-scripts: using \c{-batch}, if something goes wrong at connection
+scripts: using \c{\-batch}, if something goes wrong at connection
 time, the batch job will fail rather than hang.
 
-\S2{pscp-usage-options-backend}\i\c{-sftp}, \i\c{-scp} force use of
+\S2{pscp-usage-options-backend}\i\c{\-sftp}, \i\c{\-scp} force use of
 particular file transfer protocol
 
 As mentioned in \k{pscp-usage-basics}, there are two different file
@@ -283,15 +285,15 @@ automation, and avoids security issues with wildcard matching.
 Normally PSCP will attempt to use the SFTP protocol, and only fall
 back to the SCP protocol if SFTP is not available on the server.
 
-The \c{-scp} option forces PSCP to use the SCP protocol or quit.
+The \c{\-scp} option forces PSCP to use the SCP protocol or quit.
 
-The \c{-sftp} option forces PSCP to use the SFTP protocol or quit.
+The \c{\-sftp} option forces PSCP to use the SFTP protocol or quit.
 When this option is specified, PSCP looks harder for an SFTP server,
 which may allow use of SFTP with SSH-1 depending on server setup.
 
-\S2{pscp-option-sanitise} \I{-sanitise-stderr}\I{-no-sanitise-stderr}\c{-no-sanitise-stderr}: control error message sanitisation
+\S2{pscp-option-sanitise} \I{\-sanitise\-stderr}\I{\-no\-sanitise\-stderr}\c{\-no\-sanitise\-stderr}: control error message sanitisation
 
-The \c{-no-sanitise-stderr} option will cause PSCP to pass through the
+The \c{\-no\-sanitise\-stderr} option will cause PSCP to pass through the
 server's standard-error stream literally, without stripping control
 characters from it first. This might be useful if the server were
 sending coloured error messages, but it also gives the server the
@@ -325,7 +327,7 @@ hostname: type \c{pscp sessionname:file localfile}, where
 \c{sessionname} is replaced by the name of your saved session.
 
 Secondly, you can supply the name of a private key file on the command
-line, with the \c{-i} option. See \k{using-cmdline-identity} for more
+line, with the \c{\-i} option. See \k{using-cmdline-identity} for more
 information.
 
 Thirdly, PSCP will attempt to authenticate using Pageant if Pageant

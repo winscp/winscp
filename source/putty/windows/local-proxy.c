@@ -12,7 +12,8 @@
 #include "network.h"
 #include "proxy/proxy.h"
 
-char *platform_setup_local_proxy(Socket *socket, const char *cmd)
+static char *start_subprocess_handle_socket(
+    Socket *socket, const char *cmd, SubprocessWaiter **waiter)
 {
     HANDLE us_to_cmd, cmd_from_us;
     HANDLE us_from_cmd, cmd_to_us;
@@ -69,8 +70,12 @@ char *platform_setup_local_proxy(Socket *socket, const char *cmd)
                   CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,
                   NULL, NULL, &si, &pi);
     sfree(cmd_mutable);
-    CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
+
+    if (waiter)
+        *waiter = subproc_waiter_from_hprocess(pi.hProcess);
+    else
+        CloseHandle(pi.hProcess);
 
     CloseHandle(cmd_from_us);
     CloseHandle(cmd_to_us);
@@ -82,6 +87,12 @@ char *platform_setup_local_proxy(Socket *socket, const char *cmd)
                         false);
 
     return NULL;
+}
+
+char *platform_setup_local_proxy(Socket *socket, const char *cmd)
+{
+    /* In this context, no SubprocessWaiter is needed */
+    return start_subprocess_handle_socket(socket, cmd, NULL);
 }
 
 Socket *platform_new_connection(SockAddr *addr, const char *hostname,
@@ -99,14 +110,14 @@ Socket *platform_new_connection(SockAddr *addr, const char *hostname,
     return socket;
 }
 
-Socket *platform_start_subprocess(const char *cmd, Plug *plug,
-                                  const char *prefix)
+Socket *platform_start_subprocess(
+    const char *cmd, Plug *plug, const char *pfx, SubprocessWaiter **waiter)
 {
     Socket *socket = make_deferred_handle_socket(
         null_deferred_socket_opener(),
         sk_nonamelookup("<local command>"), 0, plug);
-    char *err = platform_setup_local_proxy(socket, cmd);
-    handle_socket_set_psb_prefix(socket, prefix);
+    char *err = start_subprocess_handle_socket(socket, cmd, waiter);
+    handle_socket_set_psb_prefix(socket, pfx);
 
     if (err) {
         sk_close(socket);

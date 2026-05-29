@@ -353,7 +353,11 @@ const char *conf_id(int key);
 #endif
 
 #ifndef lenof
+#if HAVE_COUNTOF
+#define lenof(x) _Countof(x)
+#else
 #define lenof(x) ( (sizeof((x))) / (sizeof(*(x))))
+#endif
 #endif
 
 #ifndef min
@@ -559,5 +563,19 @@ CertExprBuilder *cert_expr_builder_new(void);
 void cert_expr_builder_free(CertExprBuilder *eb);
 void cert_expr_builder_add(CertExprBuilder *eb, const char *wildcard);
 char *cert_expr_expression(CertExprBuilder *eb);
+
+/*
+ * This may be reused by local-command proxies on individual
+ * platforms, and also pre-connection hooks.
+ */
+#define TELNET_CMD_MISSING_USERNAME 0x0001
+#define TELNET_CMD_MISSING_PASSWORD 0x0002
+char *format_connection_setup_command(
+    const char *fmt, SockAddr *addr, int port, Conf *conf,
+    unsigned *flags_out);
+
+/* Execute a command hook (synchronous execution with logging) */
+void execute_command_hook(LogContext *logctx, const char *command,
+                          SockAddr *addr, int port, Conf *conf);
 
 #endif

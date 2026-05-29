@@ -12,7 +12,7 @@ not described here; and the pterm and command-line puttygen and pageant
 utilities are not described at all. The only Unix-specific documentation
 that currently exists is the man pages.
 
-This manual is copyright 1997-2025 Simon Tatham. All rights reserved. You
+This manual is copyright 1997-2026 Simon Tatham. All rights reserved. You
 may distribute this documentation under the MIT licence. See appendix D for
 the licence text in full.
 
@@ -462,14 +462,14 @@ Chapter 3: Using PuTTY
            be used for future sessions, depending on your preferences (see
            section 4.19.1).
 
-           Normally, PuTTY will carry on using a host key it already knows,
-           even if the server offers key formats that PuTTY would otherwise
-           prefer, to avoid host key prompts. As a result, if you've been
-           using a server for some years, you may still be using an older
-           key than a new user would use, due to server upgrades in the
-           meantime. The SSH protocol unfortunately does not have organised
-           facilities for host key migration and rollover, but this allows
-           you to manually upgrade.
+           Normally, PuTTY will carry on using a host key it already knows
+           for new sessions, even if the server starts offering key formats
+           that PuTTY would otherwise prefer, to avoid host key prompts.
+           As a result, if you've been using a server for some years, you
+           may still be using an older type of key than a new user would
+           use, due to server upgrades in the meantime. The SSH protocol
+           unfortunately does not have organised facilities for host key
+           migration and rollover, but this allows you to manually upgrade.
 
         -  Break
 
@@ -764,10 +764,6 @@ Chapter 3: Using PuTTY
        for remote-to-local ports, while SSH-2 can support it in theory but
        servers will not necessarily cooperate.
 
-       (Note that if you're using Windows XP Service Pack 2, you may need
-       to obtain a fix from Microsoft in order to use addresses like
-       127.0.0.5 - see question A.7.17.)
-
        For more options relating to port forwarding, see section 4.26.
 
        If the connection you are forwarding over SSH is itself a second
@@ -830,11 +826,11 @@ Chapter 3: Using PuTTY
        guess whether the service it is talking to is a real Telnet service
        or not; PuTTY prefers to be told for certain.
 
-       In order to make a debugging connection to a service of this
-       type, you simply select the fourth protocol name, `Raw', from the
-       `Protocol' buttons in the `Session' configuration panel. (See
-       section 4.1.1.) You can then enter a host name and a port number,
-       and make the connection.
+       In order to make a debugging connection to a service of this type,
+       select the `Raw' option from the `Connection type' controls in the
+       `Session' configuration panel (it's in the drop-down). (See section
+       4.1.1.) You can then enter a host name and a port number, and make
+       the connection.
 
    3.8 Connecting using the Telnet protocol
 
@@ -968,8 +964,8 @@ Chapter 3: Using PuTTY
        the very first thing on the command line. This form of the option is
        deprecated.)
 
-3.11.3.2 Selecting a protocol: `-ssh', `-ssh-connection', `-telnet', `-
-       rlogin', `-supdup', `-raw', `-serial'
+3.11.3.2 Selecting a protocol: `-ssh', `-ssh-connection', `-telnet',
+       `-rlogin', `-supdup', `-raw', `-serial'
 
        To choose which protocol you want to connect with, you can use one
        of these options:
@@ -994,9 +990,9 @@ Chapter 3: Using PuTTY
        PSCP and PSFTP (which only work with the SSH protocol and the bare
        ssh-connection protocol).
 
-       These options are equivalent to the protocol selection buttons
-       in the Session panel of the PuTTY configuration box (see section
-       4.1.1).
+       These options are equivalent to the protocol selection controls
+       (`Connection type') in the Session panel of the PuTTY configuration
+       box (see section 4.1.1).
 
 3.11.3.3 `-v': increase verbosity
 
@@ -1007,9 +1003,9 @@ Chapter 3: Using PuTTY
 
 3.11.3.4 `-l': specify a login name
 
-       You can specify the user name to log in as on the remote server
-       using the `-l' option. For example, `plink login.example.com -
-       l fred'.
+       You can specify the user name to log in as on the
+       remote server using the `-l' option. For example,
+       `plink login.example.com -l fred'.
 
        These options are equivalent to the username selection box in
        the Connection panel of the PuTTY configuration box (see section
@@ -1333,8 +1329,8 @@ Chapter 3: Using PuTTY
 3.11.3.25 `-sessionlog', `-sshlog', `-sshrawlog': enable session logging
 
        These options cause the PuTTY network tools to write out a log
-       file. Each of them expects a file name as an argument, e.g. `-
-       sshlog putty.log' causes an SSH packet log to be written to a file
+       file. Each of them expects a file name as an argument, e.g.
+       `-sshlog putty.log' causes an SSH packet log to be written to a file
        called `putty.log'. The three different options select different
        logging modes, all available from the GUI too:
 
@@ -1366,7 +1362,32 @@ Chapter 3: Using PuTTY
        backslashes must be doubled (if you want `\' in your command, you
        must put `\\' on the command line).
 
-3.11.3.28 `-restrict-acl': restrict the Windows process ACL
+3.11.3.28 `-preconnectcommand': run a command before making a network
+       connection
+
+       This option specifies an external command to run just before opening
+       the main network connection. See section 4.14.6 for more details.
+
+3.11.3.29 `-share', `-noshare': enable/disable connection sharing
+
+       These options control whether SSH connection sharing is attempted.
+       See section 4.17.5 for more information about SSH connection
+       sharing. These options are equivalent to the `Share SSH connections
+       if possible' checkbox in the GUI configuration.
+
+       With `-share', a PuTTY tool will check to see if there's an existing
+       `upstream' for this host. If there is, then the new session will
+       connect via that upstream. If there isn't, the new session will
+       _become_ an upstream for future connections (unless `-share' has
+       been given as an option to the file transfer tools, PSCP and PSFTP,
+       which never act as upstreams).
+
+       With `-noshare', this connection will not participate in connection
+       sharing (either as an upstream or a downstream).
+
+       (This option is only meaningful with the SSH-2 protocol.)
+
+3.11.3.30 `-restrict-acl': restrict the Windows process ACL
 
        This option (on Windows only) causes PuTTY (or another PuTTY tool)
        to try to lock down the operating system's access control on its own
@@ -1389,9 +1410,9 @@ Chapter 3: Using PuTTY
 
        A PuTTY process started with `-restrict-acl' will pass that on to
        any processes started with Duplicate Session, New Session etc.
-       (However, if you're invoking PuTTY tools explicitly, for instance as
-       a proxy command, you'll need to arrange to pass them the `-restrict-
-       acl' option yourself, if that's what you want.)
+       (However, if you're invoking PuTTY tools explicitly, for instance
+       as a proxy command, you'll need to arrange to pass them the
+       `-restrict-acl' option yourself, if that's what you want.)
 
        If Pageant is started with the `-restrict-acl' option, and you use
        it to launch a PuTTY session from its System Tray submenu, then
@@ -1405,7 +1426,7 @@ Chapter 3: Using PuTTY
        Pageant to start subsidiary PuTTY processes with a restricted ACL if
        you also pass the `-restrict-putty-acl' option.
 
-3.11.3.29 `-host-ca': launch the host CA configuration
+3.11.3.31 `-host-ca': launch the host CA configuration
 
        If you start PuTTY with the `-host-ca' option, it will not launch
        a session at all. Instead, it will just display the configuration
@@ -1413,7 +1434,7 @@ Chapter 3: Using PuTTY
        section 4.19.4. When you dismiss that dialog box, PuTTY will
        terminate.
 
-3.11.3.30 `-legacy-stdio-prompts': handle Windows console prompts like
+3.11.3.32 `-legacy-stdio-prompts': handle Windows console prompts like
        older versions of PuTTY
 
        This option applies to all of PSCP, PSFTP and Plink on Windows: all
@@ -1462,7 +1483,7 @@ Chapter 3: Using PuTTY
        without that option, prompt handling with `-legacy-stdio-prompts'
        may not be fully Unicode-clean.)
 
-3.11.3.31 `-legacy-charset-handling': handle character set in prompts like
+3.11.3.33 `-legacy-charset-handling': handle character set in prompts like
        older versions of PuTTY
 
        This option applies to PuTTY (on all platforms), and also to all of
@@ -2015,7 +2036,7 @@ Chapter 4: Configuring PuTTY
        `termcap' or `terminfo' entry it uses, which in turn is likely to be
        controlled by the `Terminal-type string' setting in the Connection
        panel; see section 4.15.3 for details. If none of the settings here
-       seems to help, you may find question A.7.13 to be useful.
+       seems to help, you may find question A.7.8 to be useful.
 
  4.4.1 Changing the action of the Backspace key
 
@@ -2571,7 +2592,9 @@ Chapter 4: Configuring PuTTY
        line becomes dotted.
 
        The `Cursor blinks' option makes the cursor blink on and off. This
-       works in any of the cursor modes.
+       works in any of the cursor modes. (On Windows, the blink rate
+       matches that configured in Control Panel; so this setting will have
+       no effect if cursor blinking has been disabled system-wide.)
 
  4.8.2 Controlling the font used in the terminal window
 
@@ -3330,6 +3353,34 @@ Chapter 4: Configuring PuTTY
        using to contact that host. (This applies even if you're using a
        protocol other than SSH.)
 
+4.14.6 `Command to run before connection'
+
+       If you enter a command line in this box, then PuTTY will run that
+       command as a subprocess, just before making its main outgoing
+       network connection.
+
+       This could be useful if you are connecting to a server that is
+       usually switched off but can be turned on remotely on demand, e.g
+       via wake-on-LAN. If you have a script that will perform the wake-up
+       action, you can enter its command line in this box. (You should also
+       make sure the script waits to terminate until the target machine is
+       switched on and actually ready to receive an SSH connection.)
+
+       Another use might be a server which requires a preliminary signal
+       such as `port knocking' before it will accept a connection to its
+       SSH server port in the first place. If you have a program that knows
+       how to send the correct knock, you can enter its command line in
+       this box.
+
+       In the command string, the special strings `%host' and `%port' will
+       be replaced by the host name and port number you want to connect to,
+       similar to specifying a proxy command; see section 4.16.5 for the
+       full syntax.
+
+       The results of running the program will be logged in PuTTY's Event
+       Log. So if it terminates with an error message, the Event Log will
+       show the message.
+
   4.15 The Data panel
 
        The Data panel allows you to configure various pieces of data which
@@ -3806,7 +3857,7 @@ Chapter 4: Configuring PuTTY
        special case is that PSCP and PSFTP will _never_ act as upstreams.
 
        It is possible to test programmatically for the existence of a live
-       upstream using Plink. See section 7.2.3.4.
+       upstream using Plink. See section 7.2.3.3.
 
   4.18 The Kex panel
 
@@ -4649,9 +4700,9 @@ Chapter 4: Configuring PuTTY
 
        On Windows, such libraries are files with a .dll extension, and
        must have been built in the same way as the PuTTY executable you're
-       running; if you have a 32-bit DLL, you must run a 32-bit version
-       of PuTTY, and the same with 64-bit (see question A.6.10). On Unix,
-       shared libraries generally have a .so extension.
+       running; if you have a 32-bit DLL, you must run a 32-bit version of
+       PuTTY, and the same with 64-bit. On Unix, shared libraries generally
+       have a .so extension.
 
   4.24 The TTY panel
 
@@ -5643,13 +5694,13 @@ Chapter 5: Using PSCP to transfer files securely
 
    5.2 PSCP Usage
 
-       Once you've got a console window to type into, you can type `pscp -
-       h' to bring up a usage message. This tells you the version of PSCP
-       you're using, and gives you a brief summary of how to use PSCP:
+       Once you've got a console window to type into, you can type
+       `pscp -h' to bring up a usage message. This tells you the version of
+       PSCP you're using, and gives you a brief summary of how to use PSCP:
 
          C:\>pscp -h
          PuTTY Secure Copy client
-         Release 0.83
+         Release 0.84
          Usage: pscp [options] [user@]host:source target
                 pscp [options] source [source...] [user@]host:target
                 pscp [options] -ls [user@]host:filespec
@@ -5680,6 +5731,8 @@ Chapter 5: Using PSCP to transfer files securely
            -no-sanitise-stderr  don't strip control chars from standard error
            -proxycmd command
                      use 'command' as local proxy
+           -preconnectcommand command
+                     run 'command' before making network connection
            -unsafe   allow server-side wildcards (DANGEROUS)
            -sftp     force use of SFTP protocol
            -scp      force use of SCP protocol
@@ -5901,7 +5954,7 @@ Chapter 5: Using PSCP to transfer files securely
        characters from it first. This might be useful if the server were
        sending coloured error messages, but it also gives the server the
        ability to have unexpected effects on your terminal display. For
-       more discussion, see section 7.2.3.5.
+       more discussion, see section 7.2.3.4.
 
  5.2.3 Return value
 
@@ -6088,7 +6141,7 @@ Chapter 6: Using PSFTP to transfer files securely
        control characters from it first. This might be useful if the server
        were sending coloured error messages, but it also gives the server
        the ability to have unexpected effects on your terminal display. For
-       more discussion, see section 7.2.3.5.
+       more discussion, see section 7.2.3.4.
 
    6.2 Running PSFTP
 
@@ -6258,10 +6311,10 @@ Chapter 6: Using PSFTP to transfer files securely
          get -r mydir
          get -r mydir newname
 
-       (If you want to fetch a file whose name starts with a hyphen, you
-       may have to use the `--' special argument, which stops `get' from
-       interpreting anything as a switch after it. For example, `get -- -
-       silly-name-'.)
+       (If you want to fetch a file whose name starts with a hyphen,
+       you may have to use the `--' special argument, which stops `get'
+       from interpreting anything as a switch after it. For example,
+       `get -- -silly-name-'.)
 
 6.2.10 The `put' command: send a file to the server
 
@@ -6287,9 +6340,9 @@ Chapter 6: Using PSFTP to transfer files securely
          put -r mydir newname
 
        (If you want to send a file whose name starts with a hyphen, you
-       may have to use the `--' special argument, which stops `put' from
-       interpreting anything as a switch after it. For example, `put -- -
-       silly-name-'.)
+       may have to use the `--' special argument, which stops `put'
+       from interpreting anything as a switch after it. For example,
+       `put -- -silly-name-'.)
 
 6.2.11 The `mget' and `mput' commands: fetch or send multiple files
 
@@ -6564,14 +6617,14 @@ Chapter 7: Using the command-line connection tool Plink
        This section describes the basics of how to use Plink for
        interactive logins and for automated processes.
 
-       Once you've got a console window to type into, you can type `plink -
-       -help' to bring up a usage message. This tells you the version of
-       Plink you're using, and gives you a brief summary of how to use
-       Plink:
+       Once you've got a console window to type into, you can type
+       `plink --help' to bring up a usage message. This tells you the
+       version of Plink you're using, and gives you a brief summary of how
+       to use Plink:
 
          C:\>plink --help
          Plink: command-line connection utility
-         Release 0.83
+         Release 0.84
          Usage: plink [options] [user@]host [command]
                 ("host" can also be a PuTTY saved session name)
          Options:
@@ -6588,6 +6641,8 @@ Chapter 7: Using the command-line connection tool Plink
            -batch    disable all interactive prompts
            -proxycmd command
                      use 'command' as local proxy
+           -preconnectcommand command
+                     run 'command' before making network connection
            -sercfg configuration-string (e.g. 19200,8,n,1,X)
                      Specify the serial configuration (serial only)
          The following options only apply to SSH connections:
@@ -6650,9 +6705,9 @@ Chapter 7: Using the command-line connection tool Plink
        characters appearing in your window. Interactive connections like
        this are not the main point of Plink.
 
-       In order to connect with a different protocol, you can give the
-       command line options `-ssh', `-ssh-connection', `-telnet', `-
-       rlogin', or `-raw'. To make an SSH connection, for example:
+       In order to connect with a different protocol, you can give
+       the command line options `-ssh', `-ssh-connection', `-telnet',
+       `-rlogin', or `-raw'. To make an SSH connection, for example:
 
          C:\>plink -ssh login.example.com
          login as:
@@ -6781,27 +6836,7 @@ Chapter 7: Using the command-line connection tool Plink
 
        (This option is only meaningful with the SSH-2 protocol.)
 
-7.2.3.3 `-share': Test and try to share an existing connection.
-
-       This option tries to detect if an existing connection can be shared
-       (See section 4.17.5 for more information about SSH connection
-       sharing.) and reuses that connection.
-
-       A Plink invocation of the form:
-
-         plink -share <session>
-
-       will test whether there is currently a viable `upstream' for the
-       session in question, which can be specified using any syntax you'd
-       normally use with Plink to make an actual connection (a host/port
-       number, a bare saved session name, `-load', etc). If no `upstream'
-       viable session is found and `-share' is specified, this connection
-       will be become the `upstream' connection for subsequent connection
-       sharing tries.
-
-       (This option is only meaningful with the SSH-2 protocol.)
-
-7.2.3.4 `-shareexists': test for connection-sharing upstream
+7.2.3.3 `-shareexists': test for connection-sharing upstream
 
        This option does not make a new connection; instead it allows
        testing for the presence of an existing connection that can
@@ -6820,7 +6855,7 @@ Chapter 7: Using the command-line connection tool Plink
 
        (This option is only meaningful with the SSH-2 protocol.)
 
-7.2.3.5 `-sanitise-'_stream_: control output sanitisation
+7.2.3.4 `-sanitise-'_stream_: control output sanitisation
 
        In some situations, Plink applies a sanitisation pass to the output
        received from the server, to strip out control characters such as
@@ -6866,7 +6901,7 @@ Chapter 7: Using the command-line connection tool Plink
            Do not sanitise server data written to Plink's standard output
            channel.
 
-7.2.3.6 -no-antispoof: turn off authentication spoofing protection prompt
+7.2.3.5 `-no-antispoof': turn off authentication spoofing protection prompt
 
        In SSH, some possible server authentication methods require user
        input (for example, password authentication, or entering a private
@@ -7930,12 +7965,12 @@ Chapter 9: Using Pageant for authentication
 
        Pageant supports the same `-restrict-acl' option as the other PuTTY
        utilities to lock down the Pageant process's access control; see
-       section 3.11.3.28 for why you might want to do this.
+       section 3.11.3.30 for why you might want to do this.
 
        By default, if Pageant is started with `-restrict-acl', it won't
        pass this to any PuTTY sessions started from its System Tray
        submenu. Use `-restrict-putty-acl' to change this. (Again, see
-       section 3.11.3.28 for details.)
+       section 3.11.3.30 for details.)
 
    9.4 Using agent forwarding
 
@@ -8238,34 +8273,7 @@ Chapter 10: Common error messages
        authentication or (for Sun SSH only) by increasing `MaxAuthTries' in
        `sshd_config'.
 
-  10.7 `Out of memory'
-
-       This occurs when PuTTY tries to allocate more memory than the system
-       can give it. This _may_ happen for genuine reasons: if the computer
-       really has run out of memory, or if you have configured an extremely
-       large number of lines of scrollback in your terminal. PuTTY is
-       not able to recover from running out of memory; it will terminate
-       immediately after giving this error.
-
-       However, this error can also occur when memory is not running out at
-       all, because PuTTY receives data in the wrong format. In SSH-2 and
-       also in SFTP, the server sends the length of each message before the
-       message itself; so PuTTY will receive the length, try to allocate
-       space for the message, and then receive the rest of the message.
-       If the length PuTTY receives is garbage, it will try to allocate
-       a ridiculous amount of memory, and will terminate with an `Out of
-       memory' error.
-
-       This can happen in SSH-2, if PuTTY and the server have not enabled
-       encryption in the same way (see question A.7.3 in the FAQ).
-
-       This can also happen in PSCP or PSFTP, if your login scripts on the
-       server generate output: the client program will be expecting an
-       SFTP message starting with a length, and if it receives some text
-       from your login scripts instead it will try to interpret them as a
-       message length. See question A.7.4 for details of this.
-
-  10.8 `Internal error', `Internal fault', `Assertion failed'
+  10.7 `Internal error', `Internal fault', `Assertion failed'
 
        Any error beginning with the word `Internal' should _never_ occur.
        If it does, there is a bug in PuTTY by definition; please see
@@ -8275,7 +8283,7 @@ Chapter 10: Common error messages
        bug in PuTTY. Please report it to us, and include the exact text
        from the error message box.
 
-  10.9 `Unable to use key file', `Couldn't load private key', `Couldn't
+  10.8 `Unable to use key file', `Couldn't load private key', `Couldn't
        load this key'
 
        Various forms of this error are printed in the PuTTY window, or
@@ -8297,7 +8305,7 @@ Chapter 10: Common error messages
        require different private key formats, and a SSH-1 key can't be used
        for a SSH-2 connection (or vice versa).
 
- 10.10 `Server refused our key', `Server refused our public key', `Key
+  10.9 `Server refused our key', `Server refused our public key', `Key
        refused'
 
        Various forms of this error are printed in the PuTTY window, or
@@ -8320,7 +8328,7 @@ Chapter 10: Common error messages
 
        Section 8.3 has some hints on server-side public key setup.
 
- 10.11 `Access denied', `Authentication refused'
+ 10.10 `Access denied', `Authentication refused'
 
        Various forms of this error are printed in the PuTTY window,
        or written to the PuTTY Event Log (see section 3.1.3.1) during
@@ -8338,14 +8346,14 @@ Chapter 10: Common error messages
        transit. Upgrade your server, or use the workarounds described in
        section 4.27.14 and possibly section 4.27.15.
 
- 10.12 `No supported authentication methods available'
+ 10.11 `No supported authentication methods available'
 
        This error indicates that PuTTY has run out of ways to authenticate
        you to an SSH server. This may be because PuTTY has TIS or keyboard-
        interactive authentication disabled, in which case see section
        4.21.5 and section 4.21.6.
 
- 10.13 `Incorrect MAC received on packet' or `Incorrect CRC received on
+ 10.12 `Incorrect MAC received on packet' or `Incorrect CRC received on
        packet'
 
        This error occurs when PuTTY decrypts an SSH packet and its checksum
@@ -8370,7 +8378,7 @@ Chapter 10: Common error messages
        cryptographic term, and it has nothing at all to do with Ethernet
        MAC (Media Access Control) addresses, or with the Apple computer.
 
- 10.14 `Incoming packet was garbled on decryption'
+ 10.13 `Incoming packet was garbled on decryption'
 
        This error occurs when PuTTY decrypts an SSH packet and the
        decrypted data makes no sense. This probably means something has
@@ -8383,7 +8391,7 @@ Chapter 10: Common error messages
        4.27.13) or `Ignores SSH-2 maximum packet size' (see section 4.27.5)
        on the Bugs panel.
 
- 10.15 `PuTTY X11 proxy: _various errors_'
+ 10.14 `PuTTY X11 proxy: _various errors_'
 
        This family of errors are reported when PuTTY is doing X forwarding.
        They are sent back to the X application running on the SSH server,
@@ -8414,7 +8422,7 @@ Chapter 10: Common error messages
        this depends on your particular system; in fact many modern versions
        of `su' do it automatically.
 
- 10.16 `Network error: Software caused connection abort'
+ 10.15 `Network error: Software caused connection abort'
 
        This is a generic error produced by the Windows network code when
        it kills an established connection for some reason. For example, it
@@ -8440,7 +8448,7 @@ Chapter 10: Common error messages
        represent a bug in PuTTY. The problem is between you, your Windows
        system, your network and the remote system.
 
- 10.17 `Network error: Connection reset by peer'
+ 10.16 `Network error: Connection reset by peer'
 
        This error occurs when the machines at each end of a network
        connection lose track of the state of the connection between them.
@@ -8449,7 +8457,7 @@ Chapter 10: Common error messages
 
        However, the most common reason to see this message is if you are
        connecting through a firewall or a NAT router which has timed the
-       connection out. See question A.7.8 in the FAQ for more details.
+       connection out. See question A.7.3 in the FAQ for more details.
        You may be able to improve the situation by using keepalives; see
        section 4.14.1 for details on this.
 
@@ -8457,7 +8465,7 @@ Chapter 10: Common error messages
        without seeing a connection reset from the server, for instance if
        the connection to the network is lost.
 
- 10.18 `Network error: Connection refused'
+ 10.17 `Network error: Connection refused'
 
        This error means that the network connection PuTTY tried to make to
        your server was rejected by the server. Usually this happens because
@@ -8472,7 +8480,7 @@ Chapter 10: Common error messages
        server, which rejects the connection and sends back the same type of
        error packet as the real server would have sent.
 
- 10.19 `Network error: Connection timed out'
+ 10.18 `Network error: Connection timed out'
 
        This error means that the network connection PuTTY tried to make to
        your server received no response at all from the server. Usually
@@ -8492,7 +8500,7 @@ Chapter 10: Common error messages
        exchange in SSH-2 (see section 4.18.2) or due to keepalives (section
        4.14.1).
 
- 10.20 `Network error: Cannot assign requested address'
+ 10.19 `Network error: Cannot assign requested address'
 
        This means that the operating system rejected the parameters of the
        network connection PuTTY tried to make, usually without actually
@@ -8511,8 +8519,10 @@ Appendix A: PuTTY FAQ
 
  A.1.1 What is PuTTY?
 
-       PuTTY is a client program for the SSH, Telnet, Rlogin, and SUPDUP
-       network protocols.
+       PuTTY is a client program for the SSH network protocol, usually used
+       to run terminal sessions over a network. It also supports running
+       terminal sessions over a serial port, and a variety of older legacy
+       network protocols such as Telnet, Rlogin, and SUPDUP.
 
        These protocols are all used to run a remote session on a computer,
        over a network. PuTTY implements the client end of that session: the
@@ -8526,6 +8536,65 @@ Appendix A: PuTTY FAQ
        displayed in the window. So you can work on the Unix machine as if
        you were sitting at its console, while actually sitting somewhere
        else.
+
+ A.1.2 Why use PuTTY when I could use OpenSSH?
+
+       These days, Windows comes with a version of OpenSSH as an optional
+       component of the operating system, and its command prompt windows
+       are much more like Unix terminals than they used to be. So it's true
+       that if you want SSH on Windows, you can use OpenSSH in a Windows
+       terminal, and not have to install PuTTY at all.
+
+       We're not going to try to persuade you that you _shouldn't_ use
+       OpenSSH in preference to PuTTY. PuTTY is free software, in the `no
+       cost' sense as well as the `freedom' sense - we don't get more money
+       by having more users. PuTTY and OpenSSH have different feature sets,
+       and different ways of doing things, and it's entirely up to you
+       which you prefer.
+
+       A few examples of things you might like about PuTTY:
+
+        -  a range of built-in options to log your session to a file
+
+        -  a range of configurable tweaks to the terminal emulation
+
+        -  a unified saved-session system that lets you customise your
+           settings for a particular destination host, including the SSH-
+           specific settings (like authentication) _and_ terminal and
+           logging setup
+
+        -  access to mid-session configuration via the GUI, instead of
+           stealing a key sequence from your remote terminal session.
+           With the OpenSSH [Return][~][thing] system, you always have to
+           remember it's there even when you're not using it, to avoid
+           triggering it with input you meant to send to the server. In
+           PuTTY, the corresponding facilities (like reconfiguring port
+           forwardings) are done using the GUI menus, and _all_ keystrokes
+           typed into the window consistently go to the server.
+
+        -  simply, _different_ terminal emulation from Windows's one, which
+           you might find works better for some remote applications. Or you
+           might not, of course; it will depend on what kind of machine
+           you're connecting to, and maybe your personal preferences. And
+           many people will have no opinion either way.
+
+        -  and, of course, support for things that aren't SSH. In
+           particular, talking to serial ports instead of the network.
+
+       But if none of this impresses you, and you'd rather use Windows's
+       version of OpenSSH, that's up to you.
+
+       Unix, of course, has always had OpenSSH, even before the Unix
+       version of PuTTY existed. So this question has been relevant
+       for much longer! When we first wrote the Unix port of PuTTY,
+       people asked us why it was necessary. Partly the answer was that
+       having the PuTTY code run on Unix too made it easier to develop
+       in general (Unix had a wider range of better development and
+       debugging facilities, and in my opinion, still does). But the same
+       considerations as above also apply: on Unix too I use GUI PuTTY
+       for my SSH connections, so that I never have to deal with that ~
+       business, and I use the Unix pterm for my local terminal sessions
+       too.
 
    A.2 Features supported in PuTTY
 
@@ -8543,64 +8612,12 @@ Appendix A: PuTTY FAQ
            there. If it's on there, and not in the `Recently fixed'
            section, it probably _hasn't_ been implemented.
 
- A.2.1 Does PuTTY support SSH-2?
-
-       Yes. SSH-2 support has been available in PuTTY since version 0.50 in
-       2000.
-
-       Public key authentication (both RSA and DSA) in SSH-2 was new in
-       version 0.52 in 2002.
-
- A.2.2 Does PuTTY support reading OpenSSH or ssh.com SSH-2 private key
-       files?
-
-       PuTTY doesn't support this natively (see the wishlist entry for
-       reasons why not), but as of 0.53 PuTTYgen can convert both OpenSSH
-       and ssh.com private key files into PuTTY's format.
-
- A.2.3 Does PuTTY support SSH-1?
-
-       Yes. SSH-1 support has always been available in PuTTY.
-
-       However, the SSH-1 protocol has many weaknesses and is no longer
-       considered secure; you should use SSH-2 instead if at all possible.
-
-       As of 0.68, PuTTY will no longer fall back to SSH-1 if the server
-       doesn't appear to support SSH-2; you must explicitly ask for SSH-1.
-
- A.2.4 Does PuTTY support local echo?
-
-       Yes. Version 0.52 has proper support for local echo.
-
-       In version 0.51 and before, local echo could not be separated from
-       local line editing (where you type a line of text locally, and it
-       is not sent to the server until you press Return, so you have the
-       chance to edit it and correct mistakes _before_ the server sees it).
-       New in version 0.52, local echo and local line editing are separate
-       options, and by default PuTTY will try to determine automatically
-       whether to enable them or not, based on which protocol you have
-       selected and also based on hints from the server. If you have a
-       problem with PuTTY's default choice, you can force each option to be
-       enabled or disabled as you choose. The controls are in the Terminal
-       panel, in the section marked `Line discipline options'.
-
- A.2.5 Does PuTTY support storing settings, so I don't have to change them
-       every time?
-
-       Yes, all of PuTTY's settings can be saved in named session profiles.
-       You can also change the default settings that are used for new
-       sessions. See section 4.1.2 in the documentation for how to do this.
-
- A.2.6 Does PuTTY support storing its settings in a disk file?
+ A.2.1 Does PuTTY support storing its settings in a disk file?
 
        Not at present, although section 4.33 in the documentation gives a
        method of achieving the same effect.
 
- A.2.7 Does PuTTY support full-screen mode, like a DOS box?
-
-       Yes; this was added in version 0.52, in 2002.
-
- A.2.8 Does PuTTY have the ability to remember my password so I don't have
+ A.2.2 Does PuTTY have the ability to remember my password so I don't have
        to type it every time?
 
        No, it doesn't.
@@ -8624,7 +8641,7 @@ Appendix A: PuTTY FAQ
        chapter 8 in the documentation for a full discussion of public key
        authentication.
 
- A.2.9 Is there an option to turn off the annoying host key prompts?
+ A.2.3 Is there an option to turn off the annoying host key prompts?
 
        No, there isn't. And there won't be. Even if you write it yourself
        and send us the patch, we won't accept it.
@@ -8654,17 +8671,24 @@ Appendix A: PuTTY FAQ
        the interactive host key prompt is hanging the batch process -
        then the right way to fix it is to add the correct host key to the
        Registry in advance, or if the Registry is not available, to use the
-       -hostkey command-line option. That way, you retain the _important_
-       feature of host key checking: the right key will be accepted and the
-       wrong ones will not. Adding an option to turn host key checking off
-       completely is the wrong solution and we will not do it.
+       -hostkey command-line option (see section 3.11.3.22). That way, you
+       retain the _important_ feature of host key checking: the right key
+       will be accepted and the wrong ones will not. Adding an option to
+       turn host key checking off completely is the wrong solution and we
+       will not do it.
 
        If you have host keys available in the common `known_hosts' format,
        we have a script called `kh2reg.py' to convert them to a Windows
        .REG file, which can be installed ahead of time by double-clicking
        or using `REGEDIT'.
 
-A.2.10 Will you write an SSH server for the PuTTY suite, to go with the
+       If you just manage and connect to a lot of servers with different
+       host keys, you could consider using a `certification authority', so
+       that you only have to configure PuTTY once on each client machine
+       to accept host keys from any of your servers in future. See section
+       4.19.4.
+
+ A.2.4 Will you write an SSH server for the PuTTY suite, to go with the
        client?
 
        Not one that you'd want to use.
@@ -8675,59 +8699,35 @@ A.2.10 Will you write an SSH server for the PuTTY suite, to go with the
        OS authentication databases and the like.
 
        A special-purpose SSH server (called Uppity) can now be built from
-       the PuTTY source code, and indeed it is not usable as a general-
-       purpose server; it exists mainly as a test harness.
+       the PuTTY source code. But it's not usable as a general-purpose
+       server. Its purpose is to be a test harness.
 
        If someone else wants to use this as a basis for writing a general-
-       purpose SSH server, they'd be perfectly welcome to of course; but we
-       don't have time, and we don't have motivation. The code is available
-       if anyone else wants to try it.
-
-A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
-
-       Unfortunately not.
-
-       This was a limitation of the file transfer protocols as originally
-       specified: the SCP and SFTP protocols had no notion of transferring
-       a file in anything other than binary mode. (This is still true of
-       SCP.)
-
-       The current draft protocol spec of SFTP proposes a means of
-       implementing ASCII transfer. At some point PSCP/PSFTP may implement
-       this proposal.
+       purpose SSH server, they'd be perfectly welcome to, of course. But
+       they would have to take responsibility for all of the security
+       hardening that hasn't been done; we don't have time for that, and we
+       don't have motivation. The code is available if anyone else wants to
+       try it.
 
    A.3 Ports to other operating systems
 
-       The eventual goal is for PuTTY to be a multi-platform program, able
-       to run on at least Windows, Mac OS and Unix.
-
-       PuTTY has been gaining a generalised porting layer, drawing a clear
-       line between platform-dependent and platform-independent code. The
-       general intention was for this porting layer to evolve naturally as
-       part of the process of doing the first port; a Unix port has now
-       been released and the plan seems to be working so far.
+       PuTTY is best known as a Windows tool, but it has an internal
+       abstraction layer that permits it to run on other systems too. Here
+       we discuss current, past and future possible ports.
 
  A.3.1 What ports of PuTTY exist?
 
        Currently, release versions of PuTTY tools only run on Windows
-       systems and Unix.
+       systems and Unix. The Windows version is provided in the form of
+       executables, for both x86 and Arm based Windows systems. The Unix
+       version is provided as source code (although at least some Linux
+       distributions provide it pre-built).
 
-       As of 0.68, the supplied PuTTY executables run on versions of
-       Windows from XP onwards, up to and including Windows 11; and
-       we know of no reason why PuTTY should not continue to work on
-       future versions of Windows. We provide 32-bit and 64-bit Windows
-       executables for the common x86 processor family; see question A.6.10
-       for discussion of the compatibility issues around that. The 32-bit
-       executables require a Pentium 4 or newer processor. We also provide
-       executables for Windows on Arm processors.
-
-       (We used to also provide executables for Windows for the Alpha
-       processor, but stopped after 0.58 due to lack of interest.)
-
-       In the development code, a partial port to Mac OS exists (see
-       question A.3.6).
-
-       Currently PuTTY does _not_ run on Windows CE (see question A.3.4).
+       Our standard Windows executable builds aim to run on all versions
+       of Windows still in security support. Earlier versions might be
+       supported if it's easy, but we don't promise to test them reliably.
+       (For example, PuTTY 0.83 still runs on Windows XP - but the previous
+       release 0.82 didn't.)
 
        We do not have release-quality ports for any other systems at the
        present time. If anyone told you we had an Android port, or an iOS
@@ -8736,108 +8736,39 @@ A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
        There are some third-party ports to various platforms, mentioned on
        the Links page of our website.
 
- A.3.2 Is there a port to Unix?
+ A.3.2 Will there ever be a Mac version of PuTTY?
 
-       There are Unix ports of most of the traditional PuTTY tools, and
-       also one entirely new application.
+       As of 2026, I doubt that the core PuTTY team will ever finish one.
 
-       If you look at the source release, you should find a `unix'
-       subdirectory. You need `cmake' to build it; see the file `README' in
-       the source distribution. This should build you:
-
-        -  Unix ports of PuTTY, Plink, PSCP, and PSFTP, which work pretty
-           much the same as their Windows counterparts;
-
-        -  Command-line versions of PuTTYgen and Pageant, whose user
-           interface is quite different to the Windows GUI versions;
-
-        -  `pterm' - an xterm-type program which supports the same terminal
-           emulation as PuTTY.
-
-       If you don't have Gtk, you should still be able to build the
-       command-line tools.
-
- A.3.3 What's the point of the Unix port? Unix has OpenSSH.
-
-       All sorts of little things. `pterm' is directly useful to anyone who
-       prefers PuTTY's terminal emulation to `xterm''s, which at least some
-       people do. Unix Plink has apparently found a niche among people who
-       find the complexity of OpenSSL makes OpenSSH hard to install (and
-       who don't mind Plink not having as many features). Some users want
-       to generate a large number of SSH keys on Unix and then copy them
-       all into PuTTY, and the Unix PuTTYgen should allow them to automate
-       that conversion process.
-
-       There were development advantages as well; porting PuTTY to Unix
-       was a valuable path-finding effort for other future ports, and also
-       allowed us to use the excellent Linux tool Valgrind to help with
-       debugging, which has already improved PuTTY's stability on _all_
-       platforms.
-
-       However, if you're a Unix user and you can see no reason to switch
-       from OpenSSH to PuTTY/Plink, then you're probably right. We don't
-       expect our Unix port to be the right thing for everybody.
-
- A.3.4 Will there be a port to Windows CE or PocketPC?
-
-       We once did some work on such a port, but it only reached an early
-       stage, and certainly not a useful one. It's no longer being actively
-       worked on.
-
- A.3.5 Is there a port to Windows 3.1?
-
-       PuTTY is a 32-bit application from the ground up, so it won't run on
-       Windows 3.1 as a native 16-bit program; and it would be _very_ hard
-       to port it to do so, because of Windows 3.1's vile memory allocation
-       mechanisms.
-
-       However, it is possible in theory to compile the existing PuTTY
-       source in such a way that it will run under Win32s (an extension to
-       Windows 3.1 to let you run 32-bit programs). In order to do this
-       you'll need the right kind of C compiler - modern versions of Visual
-       C at least have stopped being backwards compatible to Win32s. Also,
-       the last time we tried this it didn't work very well.
-
- A.3.6 Will there be a port to the Mac?
-
-       We hope so!
-
-       We attempted one around 2005, written as a native Cocoa application,
-       but it turned out to be very slow to redraw its window for some
-       reason we never got to the bottom of.
+       We've tried more than once. Around 2005 we attempted one in the form
+       of a native Cocoa application, but it turned out to be very slow to
+       redraw its window for some reason we never got to the bottom of.
 
        In 2015, after porting the GTK front end to work with GTK 3, we
-       began another attempt based on making small changes to the GTK
-       code and building it against the OS X Quartz version of GTK 3.
-       This doesn't seem to have the window redrawing problem any more,
-       so it's already got further than the last effort, but it is still
-       substantially unfinished.
+       began another attempt, based on making small changes to the GTK
+       code and building it against the OS X Quartz version of GTK 3. This
+       didn't have the speed issue, and came much closer to being finished.
+       But unfortunately the Quartz GTK port seems to have bit-rotted: the
+       last time I tried to build the Mac port, I couldn't even figure out
+       how to install a GTK it would build with.
 
-       If any OS X and/or GTK programming experts are keen to have a
-       finished version of this, we urge them to help out with some of
-       the remaining problems! See the TODO list in `unix/main-gtk-
-       application.c' in the source code.
+       If anyone were interested in picking this up and finishing it,
+       the TODO list in `unix/main-gtk-application.c' in the source code
+       is a good place to start, and I'd be happy to provide advice and
+       discussion.
 
- A.3.7 Will there be a port to EPOC?
+ A.3.3 Is there a version of PuTTY for mobile operating systems?
 
-       I hope so, but given that ports aren't really progressing very fast
-       even on systems the developers _do_ already know how to program for,
-       it might be a long time before any of us get round to learning a new
-       system and doing the port for that.
+       We don't have one ourselves, for either Android or iOS.
 
-       However, some of the work has been done by other people; see the
-       Links page of our website for various third-party ports.
+       The last time we checked, there was a third-party SSH client for
+       the iPhone and iPod Touch called pTerm, which is apparently based
+       on PuTTY. (This is nothing to do with our similarly-named `pterm',
+       which is a standalone terminal emulator.)
 
- A.3.8 Will there be a port to the iPhone?
-
-       We have no plans to write such a port ourselves; none of us has an
-       iPhone, and developing and publishing applications for it looks
-       awkward and expensive.
-
-       However, there is a third-party SSH client for the iPhone and
-       iPod Touch called pTerm, which is apparently based on PuTTY. (This
-       is nothing to do with our similarly-named `pterm', which is a
-       standalone terminal emulator for Unix systems; see question A.3.2.)
+       We don't know of any Android SSH application based on the
+       PuTTY code. (There are Android SSH applications based on other
+       implementations.)
 
    A.4 Embedding PuTTY in other programs
 
@@ -8853,19 +8784,7 @@ A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
 
        See also the wishlist entry.
 
- A.4.2 Is the SSH or Telnet code available as a Visual Basic component?
-
-       No, it isn't. None of the PuTTY team uses Visual Basic, and none of
-       us has any particular need to make SSH connections from a Visual
-       Basic application. In addition, all the preliminary work to turn it
-       into a DLL would be necessary first; and furthermore, we don't even
-       know how to write VB components.
-
-       If someone offers to do some of this work for us, we might consider
-       it, but unless that happens I can't see VB integration being
-       anywhere other than the very bottom of our priority list.
-
- A.4.3 How can I use PuTTY to make an SSH connection from within another
+ A.4.2 How can I use PuTTY to make an SSH connection from within another
        program?
 
        Probably your best bet is to use Plink, the command-line connection
@@ -8874,13 +8793,13 @@ A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
        Plink process, and receive data from it, through pipes, then you
        should be able to make SSH connections from your program.
 
-       This is what CVS for Windows does, for example.
-
    A.5 Details of PuTTY's operation
 
  A.5.1 What terminal type does PuTTY use?
 
-       For most purposes, PuTTY can be considered to be an xterm terminal.
+       By default, PuTTY has always announced its terminal type to SSH (and
+       Telnet) servers as `xterm', and tried to behave close enough to
+       `xterm' itself that this works well enough.
 
        PuTTY also supports some terminal control sequences not supported by
        the real xterm: notably the Linux console sequences that reconfigure
@@ -8888,9 +8807,21 @@ A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
        DECterm (which are different from the xterm ones; PuTTY supports
        both).
 
-       By default, PuTTY announces its terminal type to the server as
-       `xterm'. If you have a problem with this, you can reconfigure it to
-       say something else; `vt220' might help if you have trouble.
+       Since PuTTY was new, the `xterm' terminal type has split into many
+       subtypes, so you may find that you benefit from upgrading to a
+       terminal type such as `xterm-256color' to enable more features.
+
+       In modern versions of Linux, the terminal type database also
+       includes a terminal type for PuTTY itself, so you could try setting
+       the terminal type to `putty'! We didn't write that database entry,
+       and don't know in detail what it includes or which version of PuTTY
+       it was based on.
+
+       (We are sometimes asked why PuTTY doesn't use the `putty' terminal
+       type as default. Part of the reason is inertia. Another is that
+       all the world's not Linux: I still worry that some servers will be
+       confused by that terminal type. But perhaps one day we should switch
+       over.)
 
  A.5.2 Where does PuTTY store its data?
 
@@ -8963,7 +8894,7 @@ A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
 
        If you trust your server not to be abusive, you can turn this
        off. It will also not appear in various other circumstances where
-       Plink can be confident it isn't necessary. See section 7.2.3.6 for
+       Plink can be confident it isn't necessary. See section 7.2.3.5 for
        details.
 
    A.6 HOWTO questions
@@ -9017,8 +8948,8 @@ A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
 
  A.6.3 How can I make PuTTY start up maximised?
 
-       Create a Windows shortcut to start PuTTY from, and set it as `Run
-       Maximized'.
+       There's no setting built in to PuTTY for this. But you can create a
+       Windows shortcut to start PuTTY from, and set it as `Run Maximized'.
 
  A.6.4 How can I create a Windows shortcut to start a particular saved
        session directly?
@@ -9040,14 +8971,25 @@ A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
  A.6.6 How do I copy and paste between PuTTY and other Windows
        applications?
 
-       Copy and paste works similarly to the X Window System. You use the
-       left mouse button to select text in the PuTTY window. The act of
-       selection _automatically_ copies the text to the clipboard: there
-       is no need to press Ctrl-Ins or Ctrl-C or anything else. In fact,
-       pressing Ctrl-C will send a Ctrl-C character to the other end of
-       your connection (just like it does the rest of the time), which may
-       have unpleasant effects. The _only_ thing you need to do, to copy
-       text to the clipboard, is to select it.
+       By default, copy and paste works similarly to the X Window System.
+       You use the left mouse button to select text in the PuTTY window.
+       The act of selection _automatically_ copies the text to the
+       clipboard: there is no need to press Ctrl-Ins or Ctrl-C or anything
+       else. In fact, pressing Ctrl-C will send a Ctrl-C character to the
+       other end of your connection (just like it does the rest of the
+       time), which may have unpleasant effects. The _only_ thing you need
+       to do, to copy text to the clipboard, is to select it.
+
+       This default dates from the days when PuTTY was new, and its main
+       target audience was `Unix expatriates' - people who mostly used Unix
+       desktop systems and were used to the X copy/paste mechanism, having
+       to use Windows instead. The aim was `closest thing you can get to an
+       xterm on Windows'.
+
+       If you prefer a more `Windows native' interface for copy and paste,
+       via keystrokes or menu actions, with nothing happening automatically
+       on select, then you can reconfigure the behaviour flexibly in
+       PuTTY's configuration. See section 4.11 for details.
 
        To paste the clipboard contents into a PuTTY window, by default you
        click the right mouse button. If you have a three-button mouse and
@@ -9115,46 +9057,9 @@ A.2.11 Can PSCP or PSFTP transfer files in ASCII mode?
 
          c:\>pscp user@host:"\"oo er\"" "oo er"
 
-A.6.10 Should I run the 32-bit or the 64-bit version?
-
-       If you're not sure, the 32-bit version is generally the safe option.
-       It will run perfectly well on all processors and on all versions of
-       Windows that PuTTY supports. PuTTY doesn't require to run as a 64-
-       bit application to work well, and having a 32-bit PuTTY on a 64-bit
-       system isn't likely to cause you any trouble.
-
-       The 64-bit version (first released in 0.68) will only run if you
-       have a 64-bit processor _and_ a 64-bit edition of Windows (both of
-       these things are likely to be true of any recent Windows PC). It
-       will run somewhat faster (in particular, the cryptography will be
-       faster, especially during link setup), but it will consume slightly
-       more memory.
-
-       If you need to use an external DLL for GSSAPI authentication, that
-       DLL may only be available in a 32-bit or 64-bit form, and that will
-       dictate the version of PuTTY you need to use. (You will probably
-       know if you're doing this; see section 4.23.2 in the documentation.)
-
    A.7 Troubleshooting
 
- A.7.1 Why do I see `Fatal: Protocol error: Expected control record' in
-       PSCP?
-
-       This happens because PSCP was expecting to see data from the server
-       that was part of the PSCP protocol exchange, and instead it saw data
-       that it couldn't make any sense of at all.
-
-       This almost always happens because the startup scripts in your
-       account on the server machine are generating output. This is
-       impossible for PSCP, or any other SCP client, to work around. You
-       should never use startup files (`.bashrc', `.cshrc' and so on) which
-       generate output in non-interactive sessions.
-
-       This is not actually a PuTTY problem. If PSCP fails in this way,
-       then all other SCP clients are likely to fail in exactly the same
-       way. The problem is at the server end.
-
- A.7.2 I clicked on a colour in the Colours panel, and the colour didn't
+ A.7.1 I clicked on a colour in the Colours panel, and the colour didn't
        change in my terminal.
 
        That isn't how you're supposed to use the Colours panel.
@@ -9172,59 +9077,7 @@ A.6.10 Should I run the 32-bit or the 64-bit version?
        you to adjust the _shade_ of green used when PuTTY is instructed by
        the server to display green text.
 
- A.7.3 After trying to establish an SSH-2 connection, PuTTY says `Out of
-       memory' and dies.
-
-       If this happens just while the connection is starting up, this often
-       indicates that for some reason the client and server have failed to
-       establish a session encryption key. Somehow, they have performed
-       calculations that should have given each of them the same key, but
-       have ended up with different keys; so data encrypted by one and
-       decrypted by the other looks like random garbage.
-
-       This causes an `out of memory' error because the first encrypted
-       data PuTTY expects to see is the length of an SSH message. Normally
-       this will be something well under 100 bytes. If the decryption has
-       failed, PuTTY will see a completely random length in the region of
-       two _gigabytes_, and will try to allocate enough memory to store
-       this non-existent message. This will immediately lead to it thinking
-       it doesn't have enough memory, and panicking.
-
-       If this happens to you, it is quite likely to still be a PuTTY bug
-       and you should report it (although it might be a bug in your SSH
-       server instead); but it doesn't necessarily mean you've actually run
-       out of memory.
-
- A.7.4 When attempting a file transfer, either PSCP or PSFTP says `Out of
-       memory' and dies.
-
-       This is almost always caused by your login scripts on the server
-       generating output. PSCP or PSFTP will receive that output when they
-       were expecting to see the start of a file transfer protocol, and
-       they will attempt to interpret the output as file-transfer protocol.
-       This will usually lead to an `out of memory' error for much the same
-       reasons as given in question A.7.3.
-
-       This is a setup problem in your account on your server, _not_ a
-       PSCP/PSFTP bug. Your login scripts should _never_ generate output
-       during non-interactive sessions; secure file transfer is not the
-       only form of remote access that will break if they do.
-
-       On Unix, a simple fix is to ensure that all the parts of your login
-       script that might generate output are in `.profile' (if you use a
-       Bourne shell derivative) or `.login' (if you use a C shell). Putting
-       them in more general files such as `.bashrc' or `.cshrc' is liable
-       to lead to problems.
-
- A.7.5 PSFTP transfers files much slower than PSCP.
-
-       The throughput of PSFTP 0.54 should be much better than 0.53b and
-       prior; we've added code to the SFTP backend to queue several blocks
-       of data rather than waiting for an acknowledgement for each. (The
-       SCP backend did not suffer from this performance issue because SCP
-       is a much simpler protocol.)
-
- A.7.6 When I run full-colour applications, I see areas of black space
+ A.7.2 When I run full-colour applications, I see areas of black space
        where colour ought to be, or vice versa.
 
        You almost certainly need to change the `Use background colour to
@@ -9233,29 +9086,7 @@ A.6.10 Should I run the 32-bit or the 64-bit version?
        if there is too much colour, you should disable it. (See section
        4.3.5.)
 
-       In old versions of PuTTY, this was disabled by default, and would
-       not take effect until you reset the terminal (see question A.7.7).
-       Since 0.54, it is enabled by default, and changes take effect
-       immediately.
-
- A.7.7 When I change some terminal settings, nothing happens.
-
-       Some of the terminal options (notably Auto Wrap and background-
-       colour screen erase) actually represent the _default_ setting,
-       rather than the currently active setting. The server can send
-       sequences that modify these options in mid-session, but when the
-       terminal is reset (by server action, or by you choosing `Reset
-       Terminal' from the System menu) the defaults are restored.
-
-       In versions 0.53b and prior, if you change one of these options in
-       the middle of a session, you will find that the change does not
-       immediately take effect. It will only take effect once you reset the
-       terminal.
-
-       In version 0.54, the behaviour has changed - changes to these
-       settings take effect immediately.
-
- A.7.8 My PuTTY sessions unexpectedly close after they are idle for a
+ A.7.3 My PuTTY sessions unexpectedly close after they are idle for a
        while.
 
        Some types of firewall, and almost any router doing Network Address
@@ -9274,7 +9105,7 @@ A.6.10 Should I run the 32-bit or the 64-bit version?
        cause a _loss_ of robustness against network dropouts. See section
        4.14.1 in the documentation for more discussion of this.
 
- A.7.9 PuTTY's network connections time out too quickly when network
+ A.7.4 PuTTY's network connections time out too quickly when network
        connectivity is temporarily lost.
 
        This is a Windows problem, not a PuTTY problem. The timeout value
@@ -9301,7 +9132,7 @@ A.6.10 Should I run the 32-bit or the 64-bit version?
        Set the key's value to something like 10. This will cause Windows to
        try harder to keep connections alive instead of abandoning them.
 
-A.7.10 When I cat a binary file, I get `PuTTYPuTTYPuTTY' on my command
+ A.7.5 When I cat a binary file, I get `PuTTYPuTTYPuTTY' on my command
        line.
 
        Don't do that, then.
@@ -9320,7 +9151,7 @@ A.7.10 When I cat a binary file, I get `PuTTYPuTTYPuTTY' on my command
        terminal is likely to cause various other unpleasant behaviour, so
        this is only a small remedy.
 
-A.7.11 When I cat a binary file, my window title changes to a nonsense
+ A.7.6 When I cat a binary file, my window title changes to a nonsense
        string.
 
        Don't do that, then.
@@ -9334,7 +9165,7 @@ A.7.11 When I cat a binary file, my window title changes to a nonsense
        accident, and cause unexpected changes in the window title. Don't do
        it.
 
-A.7.12 My keyboard stops working once PuTTY displays the password prompt.
+ A.7.7 My keyboard stops working once PuTTY displays the password prompt.
 
        No, it doesn't. PuTTY just doesn't display the password you type, so
        that someone looking at your screen can't see what it is.
@@ -9344,7 +9175,7 @@ A.7.12 My keyboard stops working once PuTTY displays the password prompt.
        your screen can't even tell how _long_ your password is, which might
        be valuable information.
 
-A.7.13 One or more function keys don't do what I expected in a server-side
+ A.7.8 One or more function keys don't do what I expected in a server-side
        application.
 
        If you've already tried all the relevant options in the PuTTY
@@ -9378,166 +9209,7 @@ A.7.13 One or more function keys don't do what I expected in a server-side
        provided as appendix B in the manual), and follow the guidelines
        contained in that.
 
-A.7.14 Why do I see `Couldn't load private key from ...'? Why can PuTTYgen
-       load my key but not PuTTY?
-
-       It's likely that you've generated an SSH protocol 2 key with
-       PuTTYgen, but you're trying to use it in an SSH-1 connection. SSH-
-       1 and SSH-2 keys have different formats, and (at least in 0.52)
-       PuTTY's reporting of a key in the wrong format isn't optimal.
-
-       To connect using SSH-2 to a server that supports both versions, you
-       need to change the configuration from the default (see question
-       A.2.1).
-
-A.7.15 When I'm connected to a Red Hat Linux 8.0 system, some characters
-       don't display properly.
-
-       A common complaint is that hyphens in man pages show up as a-acute.
-
-       With release 8.0, Red Hat appear to have made UTF-8 the default
-       character set. There appears to be no way for terminal emulators
-       such as PuTTY to know this (as far as we know, the appropriate
-       escape sequence to switch into UTF-8 mode isn't sent).
-
-       A fix is to configure sessions to RH8 systems to use UTF-8
-       translation - see section 4.10.1 in the documentation. (Note that if
-       you use `Change Settings', changes may not take place immediately -
-       see question A.7.7.)
-
-       If you really want to change the character set used by the server,
-       the right place is `/etc/sysconfig/i18n', but this shouldn't be
-       necessary.
-
-A.7.16 Since I upgraded to PuTTY 0.54, the scrollback has stopped working
-       when I run `screen'.
-
-       PuTTY's terminal emulator has always had the policy that when the
-       `alternate screen' is in use, nothing is added to the scrollback.
-       This is because the usual sorts of programs which use the alternate
-       screen are things like text editors, which tend to scroll back and
-       forth in the same document a lot; so (a) they would fill up the
-       scrollback with a large amount of unhelpfully disordered text, and
-       (b) they contain their _own_ method for the user to scroll back to
-       the bit they were interested in. We have generally found this policy
-       to do the Right Thing in almost all situations.
-
-       Unfortunately, `screen' is one exception: it uses the alternate
-       screen, but it's still usually helpful to have PuTTY's scrollback
-       continue working. The simplest solution is to go to the Features
-       control panel and tick `Disable switching to alternate terminal
-       screen'. (See section 4.6.4 for more details.) Alternatively, you
-       can tell `screen' itself not to use the alternate screen: the
-       `screen' FAQ suggests adding the line `termcapinfo xterm ti@:te@' to
-       your .screenrc file.
-
-       The reason why this only started to be a problem in 0.54 is because
-       `screen' typically uses an unusual control sequence to switch to the
-       alternate screen, and previous versions of PuTTY did not support
-       this sequence.
-
-A.7.17 Since I upgraded Windows XP to Service Pack 2, I can't use addresses
-       like 127.0.0.2.
-
-       Some people who ask PuTTY to listen on localhost addresses other
-       than 127.0.0.1 to forward services such as SMB and Windows Terminal
-       Services have found that doing so no longer works since they
-       upgraded to WinXP SP2.
-
-       This is apparently an issue with SP2 that is acknowledged by
-       Microsoft in MS Knowledge Base article 884020. The article links to
-       a fix you can download.
-
-       (_However_, we've been told that SP2 _also_ fixes the bug that means
-       you need to use non-127.0.0.1 addresses to forward Terminal Services
-       in the first place.)
-
-A.7.18 PSFTP commands seem to be missing a directory separator (slash).
-
-       Some people have reported the following incorrect behaviour with
-       PSFTP:
-
-         psftp> pwd
-         Remote directory is /dir1/dir2
-         psftp> get filename.ext
-         /dir1/dir2filename.ext: no such file or directory
-
-       This is not a bug in PSFTP. There is a known bug in some versions of
-       portable OpenSSH (bug 697) that causes these symptoms; it appears
-       to have been introduced around 3.7.x. It manifests only on certain
-       platforms (AIX is what has been reported to us).
-
-       There is a patch for OpenSSH attached to that bug; it's also fixed
-       in recent versions of portable OpenSSH (from around 3.8).
-
-A.7.19 Do you want to hear about `Software caused connection abort'?
-
-       In the documentation for PuTTY 0.53 and 0.53b, we mentioned that
-       we'd like to hear about any occurrences of this error. Since the
-       release of PuTTY 0.54, however, we've been convinced that this error
-       doesn't indicate that PuTTY's doing anything wrong, and we don't
-       need to hear about further occurrences. See section 10.16 for our
-       current documentation of this error.
-
-A.7.20 My SSH-2 session locks up for a few seconds every so often.
-
-       Recent versions of PuTTY automatically initiate repeat key exchange
-       once per hour, to improve session security. If your client or server
-       machine is slow, you may experience this as a delay of anything up
-       to thirty seconds or so.
-
-       These delays are inconvenient, but they are there for your
-       protection. If they really cause you a problem, you can choose to
-       turn off periodic rekeying using the `Kex' configuration panel (see
-       section 4.18), but be aware that you will be sacrificing security
-       for this. (Falling back to SSH-1 would also remove the delays, but
-       would lose a _lot_ more security still. We do not recommend it.)
-
-A.7.21 PuTTY fails to start up. Windows claims that `the application
-       configuration is incorrect'.
-
-       This is caused by a bug in certain versions of Windows XP which is
-       triggered by PuTTY 0.58. This was fixed in 0.59. The `xp-wont-run'
-       entry in PuTTY's wishlist has more details.
-
-A.7.22 When I put 32-bit PuTTY in C:\WINDOWS\SYSTEM32 on my 64-bit Windows
-       system, `Duplicate Session' doesn't work.
-
-       The short answer is not to put the PuTTY executables in that
-       location.
-
-       On 64-bit systems, C:\WINDOWS\SYSTEM32 is intended to contain
-       only 64-bit binaries; Windows' 32-bit binaries live in
-       C:\WINDOWS\SYSWOW64. When a 32-bit PuTTY executable runs on a 64-
-       bit system, it cannot by default see the `real' C:\WINDOWS\SYSTEM32
-       at all, because the File System Redirector arranges that the running
-       program sees the appropriate kind of binaries in SYSTEM32. Thus,
-       operations in the PuTTY suite that involve it accessing its own
-       executables, such as `New Session' and `Duplicate Session', will not
-       work.
-
-A.7.23 After I upgraded PuTTY to 0.68, I can no longer connect to my
-       embedded device or appliance.
-
-       If your SSH server has started unexpectedly closing SSH connections
-       after you enter your password, and it worked before 0.68, you may
-       have a buggy server that objects to certain SSH protocol extensions.
-
-       The SSH protocol recently gained a new `terminal mode', IUTF8, which
-       PuTTY sends by default; see section 4.24.2. This is the first new
-       terminal mode since the SSH-2 protocol was defined. While servers
-       are supposed to ignore modes they don't know about, some buggy
-       servers will unceremoniously close the connection if they see
-       anything they don't recognise. SSH servers in embedded devices,
-       network appliances, and the like seem to disproportionately have
-       this bug.
-
-       If you think you have such a server, from 0.69 onwards you can
-       disable sending of the IUTF8 mode: on the SSH / TTY panel, select
-       IUTF8 on the list, select `Nothing', and press `Set'. (It's not
-       possible to disable sending this mode in 0.68.)
-
-A.7.24 Since 0.78, I can't find where to configure my SSH private key.
+ A.7.9 Since 0.78, I can't find where to configure my SSH private key.
 
        In PuTTY 0.78, the `Private key file for authentication' control,
        where you specify a `.PPK' file for SSH public key authentication,
@@ -9589,28 +9261,7 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        do not offer to remove the above-mentioned items, so if you want
        them removed you should run `putty -cleanup' before uninstalling.
 
- A.8.3 How come PuTTY now supports DSA, when the website used to say how
-       insecure it was?
-
-       DSA has a major weakness _if badly implemented_: it relies on a
-       random number generator to far too great an extent. If the random
-       number generator produces a number an attacker can predict, the DSA
-       private key is exposed - meaning that the attacker can log in as you
-       on all systems that accept that key.
-
-       The PuTTY policy changed because the developers were informed of
-       ways to implement DSA which do not suffer nearly as badly from this
-       weakness, and indeed which don't need to rely on random numbers at
-       all. For this reason we now believe PuTTY's DSA implementation is
-       probably OK.
-
-       The recently added elliptic-curve signature methods are also DSA-
-       style algorithms, so they have this same weakness in principle. Our
-       ECDSA implementation uses the same defence as DSA, while our Ed25519
-       implementation uses the similar system (but different in details)
-       that the Ed25519 spec mandates.
-
- A.8.4 Couldn't Pageant use VirtualLock() to stop private keys being
+ A.8.3 Couldn't Pageant use VirtualLock() to stop private keys being
        written to disk?
 
        Unfortunately not. The VirtualLock() function in the Windows API
@@ -9620,7 +9271,7 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        completely out to disk when the process is long-term inactive. And
        Pageant spends most of its time inactive.
 
- A.8.5 Is the version of PuTTY in the Microsoft Store legit?
+ A.8.4 Is the version of PuTTY in the Microsoft Store legit?
 
        The free-of-charge `PuTTY' application at this link is published
        and maintained by us. The copy there is the latest release, usually
@@ -9637,15 +9288,63 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
 
  A.9.1 Is putty.org your website?
 
-       No, it isn't. putty.org is run by an opportunist who uses it to
-       advertise their own commercial SSH implementation to people looking
-       for our free one. We don't own that site, we can't control it, and
-       we don't advise anyone to use it in preference to our own site.
+       No, it isn't, and it never has been. We don't own it; we can't
+       control it; we have no responsibility for anything it does.
 
-       The real PuTTY web site, run by the PuTTY team, has always been at
+       putty.org was set up by an opportunist selling a competing SSH
+       client for money, who initially used it to interpose adverts for
+       their own commercial SSH implementation in the course of providing
+       a link to our free one. Then in July 2025 it changed its content to
+       host anti-vaccine propaganda. We have no idea what it might do next.
+
+       Since the start of PuTTY, the real PuTTY web
+       site, run by the PuTTY team, has always been at
        https://www.chiark.greenend.org.uk/~sgtatham/putty/.
 
- A.9.2 Why do the download links point to the.earth.li and not chiark? Has
+       We don't recommend that anyone use putty.org as a convenient
+       redirector, or indeed any _other_ convenient landing page that is
+       not ours. There are a few others, some set up in entirely good
+       faith, but you never know.
+
+       As of August 2025, we have registered putty.software and made that
+       into an _official_ landing page. If you'd like a short easy URL,
+       that's the one to use, especially if we move the main website there
+       in future.
+
+ A.9.2 When putty.org replaced its content with anti-vaccine propaganda in
+       July 2025, was that because you were hacked or vandalised or taken
+       over?
+
+       No, because putty.org was never ours in the first place (see
+       question A.9.1). It wasn't stolen from us, or bought from us. The
+       same person who owned it all along decided to change its content.
+
+ A.9.3 With all these landing pages and imitators, how can I be sure where
+       the _real_ PuTTY website is?
+
+       Every release of PuTTY embeds a URL to the web site, via the `Visit
+       web site' button in the About box.
+
+       The real website is where _PuTTY itself_ says it is.
+
+       If you download a cryptographically signed version of PuTTY - either
+       a Windows binary signed with Simon Tatham's Authenticode key, or
+       anything signed with the PuTTY team's GPG key - then you can confirm
+       that the URL embedded in that copy is the one that the developers
+       themselves endorse as the true web site.
+
+       As of August 2025, putty.software is a second web location owned by
+       us, the PuTTY developers. That too is endorsed by signed copies of
+       PuTTY, via being mentioned in this FAQ section of the help file.
+
+       If we move the web site later - as of August 2025, our plan is to
+       move it from the chiark domain name to once the latter is generally
+       recognised as legitimate - then we will keep a redirection of some
+       kind at the old location, so that it continues to work. Both URLs
+       will continue to be legitimate places to find PuTTY, whichever is
+       currently preferred.
+
+ A.9.4 Why do the download links point to the.earth.li and not chiark? Has
        your website been hacked?
 
        We haven't been hacked: links to the.earth.li are legit. The files
@@ -9655,55 +9354,37 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        The download site the.earth.li is hosted by Mythic Beasts, and we're
        very grateful to them!
 
- A.9.3 Would you like me to register you a nicer domain name?
+ A.9.5 Would you like me to register you a nicer domain name?
 
-       No, thank you. Even if you can find one (most of them seem to
-       have been registered already, by people who didn't ask whether we
-       actually wanted it before they applied), we're happy with the PuTTY
-       web site being exactly where it is. It's not hard to find (just type
-       `putty' into google.com and we're the first link returned), and we
-       don't believe the administrative hassle of moving the site would be
-       worth the benefit.
+       No, thank you. We've got one: putty.software.
 
-       In addition, if we _did_ want a custom domain name, we would want to
-       run it ourselves, so we knew for certain that it would continue to
-       point where we wanted it, and wouldn't suddenly change or do strange
-       things. Having it registered for us by a third party who we don't
-       even know is not the best way to achieve this.
+       For a long time, this FAQ entry said that we were happy with the
+       site where it is. However, in 2025, as a result of some media
+       attention to putty.org, it became clear that search engines
+       these days seem to prefer short whole domain names over user
+       subdirectories on a larger server.
 
- A.9.4 Would you like free web hosting for the PuTTY web site?
+       So we registered a domain name ourselves. As of August 2025,
+       putty.software is a small landing page, similar to third-party
+       redirectors except not run by a third party. After we've got the
+       word out and built some trust, the plan is to move the whole PuTTY
+       site there and turn the old chiark site into a redirection.
+
+ A.9.6 Would you like free web hosting for the PuTTY web site?
 
        We already have some, thanks.
 
- A.9.5 Would you link to my web site from the PuTTY web site?
+ A.9.7 Would you link to my web site from the PuTTY web site?
 
        Only if the content of your web page is of definite direct interest
        to PuTTY users. If your content is unrelated, or only tangentially
        related, to PuTTY, then the link would simply be advertising for
        you.
 
-       One very nice effect of the Google ranking mechanism is that by and
-       large, the most popular web sites get the highest rankings. This
-       means that when an ordinary person does a search, the top item in
-       the search is very likely to be a high-quality site or the site they
-       actually wanted, rather than the site which paid the most money for
-       its ranking.
-
-       The PuTTY web site is held in high esteem by Google, for precisely
-       this reason: lots of people have linked to it simply because they
-       like PuTTY, without us ever having to ask anyone to link to us. We
-       feel that it would be an abuse of this esteem to use it to boost the
-       ranking of random advertisers' web sites. If you want your web site
-       to have a high Google ranking, we'd prefer that you achieve this the
-       way we did - by being good enough at what you do that people will
-       link to you simply because they like you.
-
-       In particular, we aren't interested in trading links for money
-       (see above), and we _certainly_ aren't interested in trading links
-       for other links (since we have no advertising on our web site, our
-       Google ranking is not even directly worth anything to us). If we
-       don't want to link to you for free, then we probably won't want to
-       link to you at all.
+       This is still true even if you offer to pay us. We aren't interested
+       in trading links for money, and we _certainly_ aren't interested in
+       trading links for other links. If we don't want to link to you for
+       free, then we probably won't want to link to you at all.
 
        If you have software based on PuTTY, or specifically designed to
        interoperate with PuTTY, or in some other way of genuine interest to
@@ -9712,25 +9393,37 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        of the PuTTY web site, we might be interested in linking to you from
        our Mirrors page.
 
- A.9.6 Why don't you move PuTTY to SourceForge?
+ A.9.8 Why don't you move PuTTY to Github (or some other well known forge
+       site)?
 
-       Partly, because we don't want to move the web site location (see
-       question A.9.3).
-
-       Also, security reasons. PuTTY is a security product, and as such it
-       is particularly important to guard the code and the web site against
+       Primarily, trust. PuTTY is a security product, and as such it is
+       particularly important to guard the code and the web site against
        unauthorised modifications which might introduce subtle security
        flaws. Therefore, we prefer that the Git repository, web site and
        FTP site remain where they are, under the direct control of system
-       administrators we know and trust personally, rather than being run
-       by a large organisation full of people we've never met and which is
-       known to have had breakins in the past.
+       administrators we know and trust personally.
 
-       No offence to SourceForge; I think they do a wonderful job. But
-       they're not ideal for everyone, and in particular they're not ideal
-       for us.
+       Large organisations seem less trustworthy to us because they have
+       a lot of employees, any of whom could attempt an insider attack;
+       because management can change or companies can be bought out, and a
+       benign company today could become a malicious one tomorrow.
 
- A.9.7 Why can't I subscribe to the putty-bugs mailing list?
+       Github in particular already seems like a dangerously large single
+       point of failure. I'd rather contribute to the Internet being
+       distributed than contribute to it being centralised. In addition,
+       the Github software isn't itself free, so although you can export
+       the actual source repository itself at any time (every `git clone'
+       does that), you're locked in once all your other metadata (issues,
+       pull requests etc) is stored in Github's format on Github's systems.
+
+       I know that if you have a Github presence already, it would be most
+       convenient _for you_ if everyone else was on Github too so that you
+       could interact with them all in the same easy way. Sorry about that.
+       But that seductive ease of use is how large companies attract a
+       large user base to monetise or exploit later, and we don't want to
+       participate in that any more than we have to.
+
+ A.9.9 Why can't I subscribe to the putty-bugs mailing list?
 
        Because you're not a member of the PuTTY core development team. The
        putty-bugs mailing list is not a general newsgroup-like discussion
@@ -9741,7 +9434,7 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        overwhelmed by the volume of traffic. It's hard enough to keep up
        with the list as it is.
 
- A.9.8 If putty-bugs isn't a general-subscription mailing list, what is?
+A.9.10 If putty-bugs isn't a general-subscription mailing list, what is?
 
        There isn't one, that we know of.
 
@@ -9750,7 +9443,7 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        fine with us, though the PuTTY team would almost certainly not have
        the time to read it.
 
- A.9.9 How can I donate to PuTTY development?
+A.9.11 How can I donate to PuTTY development?
 
        Please, _please_ don't feel you have to. PuTTY is completely free
        software, and not shareware. We think it's very important that
@@ -9776,7 +9469,7 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        something worthwhile, ask us first. If you don't like these terms,
        feel perfectly free not to donate. We don't mind.
 
-A.9.10 Can I have permission to put PuTTY on a cover disk / distribute it
+A.9.12 Can I have permission to put PuTTY on a cover disk / distribute it
        with other software / etc?
 
        Yes. For most things, you need not bother asking us explicitly for
@@ -9784,7 +9477,7 @@ A.9.10 Can I have permission to put PuTTY on a cover disk / distribute it
 
        See section B.9 for more details.
 
-A.9.11 Can you sign an agreement indemnifying us against security problems
+A.9.13 Can you sign an agreement indemnifying us against security problems
        in PuTTY?
 
        No!
@@ -9845,13 +9538,13 @@ A.9.11 Can you sign an agreement indemnifying us against security problems
        then get our code reviewed by a security engineer they're happy
        with.
 
-A.9.12 Can you sign this form granting us permission to use/distribute
+A.9.14 Can you sign this form granting us permission to use/distribute
        PuTTY?
 
        If your form contains any clause along the lines of `the undersigned
        represents and warrants', we're not going to sign it. This is
        particularly true if it asks us to warrant that PuTTY is secure;
-       see question A.9.11 for more discussion of this. But it doesn't
+       see question A.9.13 for more discussion of this. But it doesn't
        really matter what we're supposed to be warranting: even if it's
        something we already believe is true, such as that we don't infringe
        any third-party copyright, we will not sign a document accepting
@@ -9866,10 +9559,10 @@ A.9.12 Can you sign this form granting us permission to use/distribute
        involve pretending you wrote it or suing us if it goes wrong. We
        think that really ought to be enough for anybody.
 
-       See also question A.9.14 for another reason why we don't want to do
+       See also question A.9.16 for another reason why we don't want to do
        this sort of thing.
 
-A.9.13 Can you write us a formal notice of permission to use PuTTY?
+A.9.15 Can you write us a formal notice of permission to use PuTTY?
 
        We could, in principle, but it isn't clear what use it would be. If
        you think there's a serious chance of one of the PuTTY copyright
@@ -9882,10 +9575,10 @@ A.9.13 Can you write us a formal notice of permission to use PuTTY?
        document, which wouldn't guarantee you that some other copyright
        holder might not sue.
 
-       See also question A.9.14 for another reason why we don't want to do
+       See also question A.9.16 for another reason why we don't want to do
        this sort of thing.
 
-A.9.14 Can you sign _anything_ for us?
+A.9.16 Can you sign _anything_ for us?
 
        Not unless there's an incredibly good reason.
 
@@ -9904,7 +9597,7 @@ A.9.14 Can you sign _anything_ for us?
        is simply not well suited to using popular free software, and we
        urge you to consider this as a flaw in your policy.
 
-A.9.15 If you won't sign anything, can you give us some sort of assurance
+A.9.17 If you won't sign anything, can you give us some sort of assurance
        that you won't make PuTTY closed-source in future?
 
        Yes and no.
@@ -9946,7 +9639,7 @@ A.9.15 If you won't sign anything, can you give us some sort of assurance
        would switch to the latter. Therefore, it would be pretty stupid of
        us to try it.)
 
-A.9.16 Can you provide us with export control information / FIPS
+A.9.18 Can you provide us with export control information / FIPS
        certification for PuTTY?
 
        Some people have asked us for an Export Control Classification
@@ -9963,7 +9656,7 @@ A.9.16 Can you provide us with export control information / FIPS
        PuTTY tools. Unless someone else is prepared to do the necessary
        work and pay any costs, we can't provide this.
 
-A.9.17 As one of our existing software vendors, can you just fill in this
+A.9.19 As one of our existing software vendors, can you just fill in this
        questionnaire for us?
 
        We periodically receive requests like this, from organisations
@@ -10014,7 +9707,7 @@ A.9.17 As one of our existing software vendors, can you just fill in this
        about you from free software developers who don't have any idea who
        you are. Then, only send out these mass mailings to the former.
 
-A.9.18 The `sha1sums' / `sha256sums' / etc files on your download page
+A.9.20 The `sha1sums' / `sha256sums' / etc files on your download page
        don't match the binaries.
 
        People report this every so often, and usually the reason turns out
@@ -10059,18 +9752,36 @@ A.9.18 The `sha1sums' / `sha256sums' / etc files on your download page
 A.10.1 Is PuTTY a port of OpenSSH, or based on OpenSSH or OpenSSL?
 
        No, it isn't. PuTTY is almost completely composed of code written
-       from scratch for PuTTY. The only code we share with OpenSSH is the
-       detector for SSH-1 CRC compensation attacks, written by CORE SDI
-       S.A; we share no code at all with OpenSSL.
+       from scratch for PuTTY. As of 2026, PuTTY and OpenSSH have no code
+       in common as far as I know.
 
-A.10.2 Where can I buy silly putty?
+       (In the past, there has been at least one case of both tools sharing
+       the same piece of third-party code, but not in up-to-date versions.)
 
-       You're looking at the wrong web site; the only PuTTY we know about
-       here is the name of a computer program.
+A.10.2 Does PuTTY contain or use any artificial intelligence (AI) or large
+       language model (LLM)?
 
-       If you want the kind of putty you can buy as an executive toy, the
-       PuTTY team can personally recommend Thinking Putty, which you can
-       buy from Crazy Aaron's Putty World, at www.puttyworld.com.
+       No, it does not. PuTTY does not use any AI or LLM during its
+       operation. No code implementing an AI or LLM system is included
+       in PuTTY itself, and also, no AI or LLM system elsewhere on the
+       Internet is consulted by PuTTY when it runs.
+
+       PuTTY aims to be reliable, predictable and efficient in its
+       operation. The 2020s style of AI is bad at all of these things,
+       _especially_ `efficient'.
+
+       PuTTY does not collect any data from its users to communicate to any
+       host run by the PuTTY developers, for LLM training or for any other
+       purpose. (See appendix I for more detailed information about what
+       information PuTTY _does_ store and transmit, but the short answer
+       is, it only stores information necessary to do its job, and only
+       talks over the network to the servers you told it to connect to.)
+
+       Of course, after you use PuTTY to connect to a server, _that server_
+       may choose to do AI-related operations, or to collect the data from
+       your session. PuTTY can do nothing about that (or even detect it
+       happening), and if you're concerned about it, you'll have to consult
+       whoever runs your server.
 
 A.10.3 What does `PuTTY' mean?
 
@@ -10933,7 +10644,7 @@ Appendix C: PPK file format
 Appendix D: PuTTY Licence
 -------------------------
 
-       PuTTY is copyright 1997-2025 Simon Tatham.
+       PuTTY is copyright 1997-2026 Simon Tatham.
 
        Portions copyright Robert de Bath, Joris van Rantwijk, Delian
        Delchev, Andreas Schultz, Jeroen Massar, Wez Furlong, Nicolas Barry,
@@ -11466,9 +11177,9 @@ Appendix E: PuTTY hacking guide
          { return vt->new(vt); }
          static inline void myabs_free(MyAbstraction *myabs)
          { myabs->vt->free(myabs); }
-         static inline void myimpl_modify(MyAbstraction *myabs, unsigned param)
+         static inline void myabs_modify(MyAbstraction *myabs, unsigned param)
          { myabs->vt->modify(myabs, param); }
-         static inline unsigned myimpl_query(MyAbstraction *myabs, unsigned param)
+         static inline unsigned myabs_query(MyAbstraction *myabs, unsigned param)
          { return myabs->vt->query(myabs, param); }
 
        And now call sites can use those reasonably clean-looking wrapper
@@ -11730,7 +11441,7 @@ Appendix F: PuTTY download keys and signatures
        Windows' own mechanism (`Authenticode'). The keys used for that are
        different, and are not covered here.
 
-       See question A.9.18 in the FAQ for some gotchas when verifying
+       See question A.9.20 in the FAQ for some gotchas when verifying
        checksums and signatures.
 
        (Note that none of the keys, signatures, etc mentioned here have
@@ -12878,4 +12589,4 @@ Appendix I: PuTTY privacy considerations
        cannot make any promises about the behaviour of modified versions
        distributed by other people.
 
-[PuTTY release 0.83]
+[PuTTY release 0.84]

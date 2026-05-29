@@ -333,7 +333,7 @@ WeierstrassPoint *ecdsa_public(mp_int *private_key, const ssh_keyalg *alg)
     struct ec_curve *curve = extra->curve();
     assert(curve->type == EC_WEIERSTRASS);
 
-    mp_int *priv_reduced = mp_mod(private_key, curve->p);
+    mp_int *priv_reduced = mp_mod(private_key, curve->w.G_order);
     WeierstrassPoint *toret = ecc_weierstrass_multiply(
         curve->w.G, priv_reduced);
     mp_free(priv_reduced);
@@ -1091,6 +1091,11 @@ static bool eddsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     if (!r)
         return false;
     mp_int *s = mp_from_bytes_le(sstr);
+    if (mp_cmp_hs(s, ek->curve->e.G_order)) {
+        ecc_edwards_point_free(r);
+        mp_free(s);
+        return false;
+    }
 
     mp_int *H = eddsa_signing_exponent_from_data(ek, extra, rstr, data);
 

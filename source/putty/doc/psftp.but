@@ -55,14 +55,14 @@ options. (The ones not supported by PSFTP are clearly marked.)
 PSFTP also supports some of its own options. The following sections
 describe PSFTP's specific command-line options.
 
-\S{psftp-option-b} \I{-b-PSFTP}\c{-b}: specify a file containing batch commands
+\S{psftp-option-b} \I{-b-PSFTP}\c{\-b}: specify a file containing batch commands
 
 In normal operation, PSFTP is an interactive program which displays
 a command line and accepts commands from the keyboard.
 
 If you need to do automated tasks with PSFTP, you would probably
 prefer to \I{batch scripts in PSFTP}specify a set of commands in
-advance and have them executed automatically. The \c{-b} option
+advance and have them executed automatically. The \c{\-b} option
 allows you to do this. You use it with a file name containing batch
 commands. For example, you might create a file called \c{myscript.scr}
 containing lines like this:
@@ -79,14 +79,14 @@ and then you could run the script by typing
 
 When you run a batch script in this way, PSFTP will abort the script
 if any command fails to complete successfully. To change this
-behaviour, you can add the \c{-be} option (\k{psftp-option-be}).
+behaviour, you can add the \c{\-be} option (\k{psftp-option-be}).
 
 PSFTP will terminate after it finishes executing the batch script.
 
-\S{psftp-option-bc} \I{-bc-PSFTP}\c{-bc}: display batch commands as they are run
+\S{psftp-option-bc} \I{-bc-PSFTP}\c{\-bc}: display batch commands as they are run
 
-The \c{-bc} option alters what PSFTP displays while processing a
-batch script specified with \c{-b}. With the \c{-bc} option, PSFTP
+The \c{\-bc} option alters what PSFTP displays while processing a
+batch script specified with \c{\-b}. With the \c{\-bc} option, PSFTP
 will display prompts and commands just as if the commands had been
 typed at the keyboard. So instead of seeing this:
 
@@ -114,7 +114,7 @@ you might see this:
 \c drwxrwsr-x    2 fred     fred         1024 Mar 13  2000 trn
 \c psftp> quit
 
-\S{psftp-option-be} \I{-be-PSFTP}\c{-be}: continue batch processing on errors
+\S{psftp-option-be} \I{-be-PSFTP}\c{\-be}: continue batch processing on errors
 
 When running a batch file, this additional option causes PSFTP to
 continue processing even if a command fails to complete successfully.
@@ -122,22 +122,22 @@ continue processing even if a command fails to complete successfully.
 You might want this to happen if you wanted to delete a file and
 didn't care if it was already not present, for example.
 
-\S{psftp-usage-options-batch} \I{-batch-PSFTP}\c{-batch}: avoid
+\S{psftp-usage-options-batch} \I{-batch-PSFTP}\c{\-batch}: avoid
 interactive prompts
 
-If you use the \c{-batch} option, PSFTP will never give an
+If you use the \c{\-batch} option, PSFTP will never give an
 interactive prompt while establishing the connection. If the
 server's host key is invalid, for example (see \k{gs-hostkey}), then
 the connection will simply be abandoned instead of asking you what
 to do next.
 
 This may help PSFTP's behaviour when it is used in automated
-scripts: using \c{-batch}, if something goes wrong at connection
+scripts: using \c{\-batch}, if something goes wrong at connection
 time, the batch job will fail rather than hang.
 
-\S2{psftp-option-sanitise} \I{-sanitise-stderr}\I{-no-sanitise-stderr}\c{-no-sanitise-stderr}: control error message sanitisation
+\S2{psftp-option-sanitise} \I{\-sanitise\-stderr}\I{\-no\-sanitise\-stderr}\c{\-no\-sanitise\-stderr}: control error message sanitisation
 
-The \c{-no-sanitise-stderr} option will cause PSFTP to pass through the
+The \c{\-no\-sanitise\-stderr} option will cause PSFTP to pass through the
 server's standard-error stream literally, without stripping control
 characters from it first. This might be useful if the server were
 sending coloured error messages, but it also gives the server the
@@ -317,16 +317,16 @@ specify the local file name after the remote one:
 This will fetch the file on the server called \c{myfile.dat}, but
 will save it to your local machine under the name \c{newname.dat}.
 
-To fetch an entire directory \i{recursive}ly, you can use the \c{-r}
+To fetch an entire directory \i{recursive}ly, you can use the \c{\-r}
 option:
 
 \c get -r mydir
 \c get -r mydir newname
 
 (If you want to fetch a file whose name starts with a hyphen, you
-may have to use the \c{--} special argument, which stops \c{get}
+may have to use the \c{\-\-} special argument, which stops \c{get}
 from interpreting anything as a switch after it. For example,
-\cq{get -- -silly-name-}.)
+\cq{get \-\- \-silly\-name\-}.)
 
 \S{psftp-cmd-put} The \c{put} command: send a file to the server
 
@@ -345,16 +345,16 @@ specify the remote file name after the local one:
 This will send the local file called \c{myfile.dat}, but will store
 it on the server under the name \c{newname.dat}.
 
-To send an entire directory \i{recursive}ly, you can use the \c{-r}
+To send an entire directory \i{recursive}ly, you can use the \c{\-r}
 option:
 
 \c put -r mydir
 \c put -r mydir newname
 
 (If you want to send a file whose name starts with a hyphen, you may
-have to use the \c{--} special argument, which stops \c{put} from
-interpreting anything as a switch after it. For example, \cq{put --
--silly-name-}.)
+have to use the \c{\-\-} special argument, which stops \c{put} from
+interpreting anything as a switch after it. For example, \cq{put \-\-
+\-silly\-name\-}.)
 
 \S{psftp-cmd-mgetput} The \c{mget} and \c{mput} commands: fetch or
 send multiple files
@@ -374,7 +374,7 @@ that, and a second argument will be treated as an alternative name
 under which to store the retrieved file), or a \i{wildcard} expression
 matching more than one file.
 
-The \c{-r} and \c{--} options from \c{get} are also available with
+The \c{\-r} and \c{\-\-} options from \c{get} are also available with
 \c{mget}.
 
 \c{mput} is similar to \c{put}, with the same differences.
@@ -399,7 +399,7 @@ syntax of \c{get} and \c{put}:
 These commands are intended mainly for resuming interrupted transfers.
 They assume that the remote file or directory structure has not
 changed in any way; if there have been changes, you may end up with
-corrupted files. In particular, the \c{-r} option will not pick up
+corrupted files. In particular, the \c{\-r} option will not pick up
 changes to files or directories already transferred in full.
 
 \S{psftp-cmd-dir} The \c{dir} command: \I{listing files}list remote files
@@ -447,7 +447,7 @@ owning user), \c{g} (members of the owning group), or \c{o}
 (everybody else - \q{others}), or some combination of those. It can
 also be \c{a} (\q{all}) to affect everybody at once.
 
-\b A \c{+} or \c{-} sign, indicating whether permissions are to be
+\b A \c{+} or \c{\-} sign, indicating whether permissions are to be
 added or removed.
 
 \b The actual permissions being added or removed. These can be
@@ -459,7 +459,7 @@ directory).
 
 So the above examples would do:
 
-\b The first example: \c{go-rwx} removes read, write and execute
+\b The first example: \c{go\-rwx} removes read, write and execute
 permissions for members of the owning group and everybody else (so
 the only permissions left are the ones for the file owner). \c{u+w}
 adds write permission for the file owner.
@@ -470,17 +470,17 @@ all files and directories starting with \q{public}.
 In addition to all this, there are a few extra special cases for
 \i{Unix} systems. On non-Unix systems these are unlikely to be useful:
 
-\b You can specify \c{u+s} and \c{u-s} to add or remove the Unix
+\b You can specify \c{u+s} and \c{u\-s} to add or remove the Unix
 \i{set-user-ID bit}. This is typically only useful for special purposes;
 refer to your Unix documentation if you're not sure about it.
 
-\b You can specify \c{g+s} and \c{g-s} to add or remove the Unix
+\b You can specify \c{g+s} and \c{g\-s} to add or remove the Unix
 \i{set-group-ID bit}. On a file, this works similarly to the set-user-ID
 bit (see your Unix documentation again); on a directory it ensures
 that files created in the directory are accessible by members of the
 group that owns the directory.
 
-\b You can specify \c{+t} and \c{-t} to add or remove the Unix
+\b You can specify \c{+t} and \c{\-t} to add or remove the Unix
 \q{\i{sticky bit}}. When applied to a directory, this means that the
 owner of a file in that directory can delete the file (whereas
 normally only the owner of the \e{directory} would be allowed to).
@@ -585,7 +585,7 @@ hostname: type \c{psftp sessionname}, where \c{sessionname} is
 replaced by the name of your saved session.
 
 Secondly, you can supply the name of a private key file on the command
-line, with the \c{-i} option. See \k{using-cmdline-identity} for more
+line, with the \c{\-i} option. See \k{using-cmdline-identity} for more
 information.
 
 Thirdly, PSFTP will attempt to authenticate using Pageant if Pageant
