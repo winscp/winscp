@@ -308,12 +308,6 @@ WeierstrassPoint *ecc_weierstrass_add(WeierstrassPoint *P, WeierstrassPoint *Q)
     ecc_weierstrass_add_prologue(
         P, Q, &Px, &Py, &Qx, &denom, &lambda_n, &lambda_d);
 
-    /* Never expect to have received two mutually inverse inputs, or
-     * two identical ones (which would make this a doubling). In other
-     * words, the two input x-coordinates (after putting over a common
-     * denominator) should never have been equal. */
-    assert(!mp_eq_integer(lambda_n, 0));
-
     /* Now go to the common epilogue code. */
     ecc_weierstrass_epilogue(Px, Qx, Py, denom, lambda_n, lambda_d, S);
 

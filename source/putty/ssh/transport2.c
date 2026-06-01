@@ -251,10 +251,8 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
     if (s->kex_shared_secret) strbuf_free(s->kex_shared_secret);
     if (s->dh_ctx)
         dh_cleanup(s->dh_ctx);
-    if (s->rsa_kex_key_needs_freeing) {
+    if (s->rsa_kex_key_needs_freeing)
         ssh_rsakex_freekey(s->rsa_kex_key);
-        sfree(s->rsa_kex_key);
-    }
     if (s->ecdh_key)
         ecdh_key_free(s->ecdh_key);
     if (s->exhash)
