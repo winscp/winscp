@@ -1190,6 +1190,11 @@ Seat * get_pfwd_seat(Plug * plug)
     struct PortForwarding *pf = container_of(plug, struct PortForwarding, plug);
     logctx = pf->cl->logctx;
   }
+  else
+  {
+    assert(false);
+    logctx = NULL;
+  }
   return get_log_seat(logctx);
 }
 
