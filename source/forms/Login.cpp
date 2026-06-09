@@ -3183,8 +3183,8 @@ void TLoginDialog::DoParseUrl(TSessionData * SessionData, const UnicodeString & 
 {
   // We do not want to pass in StoredSessions as we do not want the URL be
   // parsed as pointing to a stored site.
-  bool DefaultsOnly; // unused
-  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, pufPreferProtocol);
+  int ParsedInfo; // unused
+  SessionData->ParseUrl(Url, NULL, NULL, ParsedInfo, NULL, NULL, pufPreferProtocol);
   SessionData->RequireDirectories = false;
 }
 //---------------------------------------------------------------------------

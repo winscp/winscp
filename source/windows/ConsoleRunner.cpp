@@ -2722,9 +2722,9 @@ int __fastcall FingerprintScan(TConsole * Console, TProgramParams * Params)
     if (Params->ParamCount > 0)
     {
       UnicodeString SessionUrl = Params->Param[1];
-      bool DefaultsOnly;
-      SessionData.reset(StoredSessions->ParseUrl(SessionUrl, Params, DefaultsOnly));
-      if (DefaultsOnly || !SessionData->CanLogin ||
+      int ParsedInfo;
+      SessionData.reset(StoredSessions->ParseUrl(SessionUrl, Params, ParsedInfo));
+      if (FLAGSET(ParsedInfo, piDefaultsOnly) || !SessionData->CanLogin ||
           (!SessionData->UsesSsh && (SessionData->Ftps == ftpsNone)))
       {
         SessionData.reset(NULL);
@@ -3004,8 +3004,8 @@ int __fastcall Console(TConsoleMode Mode)
             // Check if the pending parameters will be consumed by ParseUrl (/rawsettings) in TManagementScript::Connect.
             // This way we parse the options twice, but we do not want to refactor the code just for nicer test for this minor warning.
             TOptions OptionsCopy(*Params);
-            bool DefaultsOnly = false;
-            StoredSessions->ParseUrl(Session, &OptionsCopy, DefaultsOnly);
+            int ParsedInfo;
+            StoredSessions->ParseUrl(Session, &OptionsCopy, ParsedInfo);
             if (OptionsCopy.ParamCount > 1)
             {
               Runner->PrintMessage(LoadStr(SCRIPT_CMDLINE_PARAMETERS));

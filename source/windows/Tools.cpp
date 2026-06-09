@@ -608,7 +608,6 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & AdditionalParams, int SpecialFolder, int IconIndex,
   bool Return)
 {
-  bool DefaultsOnly;
   UnicodeString InfoTip;
 
   bool IsFolder = StoredSessions->IsFolder(SessionName);
@@ -629,8 +628,9 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   else
   {
     // this should not be done for workspaces and folders
+    int ParsedInfo;
     TSessionData * SessionData =
-      StoredSessions->ParseUrl(EncodeUrlString(SessionName), NULL, DefaultsOnly);
+      StoredSessions->ParseUrl(EncodeUrlString(SessionName), NULL, ParsedInfo);
     InfoTip =
       FMTLOAD(SHORTCUT_INFO_TIP, (SessionName, SessionData->InfoTip));
     if (Name.IsEmpty())

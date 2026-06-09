@@ -397,8 +397,8 @@ void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Sessi
   std::unique_ptr<TSessionData> Data;
   if (!Session.IsEmpty())
   {
-    bool DefaultsOnly;
-    Data.reset(StoredSessions->ParseUrl(Session, NULL, DefaultsOnly));
+    int ParsedInfo;
+    Data.reset(StoredSessions->ParseUrl(Session, NULL, ParsedInfo));
   }
 
   TTerminalManager * Manager = TTerminalManager::Instance();

@@ -34,8 +34,10 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   }
   else
   {
+    int ParsedInfo;
     TSessionData * SessionData =
-      StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly, &DownloadFile, NULL, NULL, Flags);
+      StoredSessions->ParseUrl(SessionName, Options, ParsedInfo, &DownloadFile, NULL, Flags);
+    DefaultsOnly = FLAGSET(ParsedInfo, piDefaultsOnly);
     DataList->Add(SessionData);
 
     if (DataList->Count == 1)
@@ -1167,13 +1169,13 @@ int __fastcall Execute()
             (AutoStartSession.Pos(L"/") > 0) && // optimization
             GetFolderOrWorkspaceName(AutoStartSession).IsEmpty())
         {
-          bool DummyDefaultsOnly = false;
+          int DummyParsedInfo;
           UnicodeString DownloadFile2;
           int Flags = GetCommandLineParseUrlFlags(Params) | pufParseOnly;
           // Make copy, as ParseUrl consumes /rawsettings
           TOptions Options(*Params);
           std::unique_ptr<TSessionData> SessionData(
-            StoredSessions->ParseUrl(AutoStartSession, &Options, DummyDefaultsOnly, &DownloadFile2, NULL, NULL, Flags));
+            StoredSessions->ParseUrl(AutoStartSession, &Options, DummyParsedInfo, &DownloadFile2, NULL, Flags));
           if (!DownloadFile2.IsEmpty())
           {
             TrySendToAnotherInstance = false;

@@ -1779,8 +1779,8 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
             if (Jump.Pos(L",") == 0)
             {
               std::unique_ptr<TSessionData> JumpData(new TSessionData(EmptyStr));
-              bool DefaultsOnly;
-              if ((JumpData->ParseUrl(Jump, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, 0)) &&
+              int ParsedInfo;
+              if ((JumpData->ParseUrl(Jump, NULL, NULL, ParsedInfo, NULL, NULL, 0)) &&
                   !JumpData->HostName.IsEmpty())
               {
                 JumpData->Name = JumpData->HostName;
@@ -2157,10 +2157,12 @@ void __fastcall TSessionData::MaskPasswords()
   }
 }
 //---------------------------------------------------------------------
-bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
-  TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
-  bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags)
+bool TSessionData::ParseUrl(
+  const UnicodeString & AUrl, TOptions * Options, TStoredSessionList * StoredSessions, int & ParsedInfo,
+  UnicodeString * FileName, UnicodeString * MaskedUrl, int Flags)
 {
+  UnicodeString Url = AUrl;
+  ParsedInfo = 0;
   bool ProtocolDefined = true;
   bool PortNumberDefined = false;
   TFSProtocol AFSProtocol = TFSProtocol(); // shut up
@@ -2239,17 +2241,13 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 
   if (ProtocolDefined)
   {
+    ParsedInfo |= piProtocolDefined;
     MoveStr(Url, MaskedUrl, ProtocolLen);
   }
 
   if (ProtocolDefined && (Url.SubString(1, 2) == L"//"))
   {
     MoveStr(Url, MaskedUrl, 2);
-  }
-
-  if (AProtocolDefined != NULL)
-  {
-    *AProtocolDefined = ProtocolDefined;
   }
 
   bool Unsafe = FLAGSET(Flags, pufUnsafe);
@@ -2493,8 +2491,6 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       // Is already true for ad-hoc URL, but we want to error even for "storedsite/path/"-style URL.
       RequireDirectories = true;
     }
-
-    DefaultsOnly = false;
   }
   else
   {
@@ -2504,7 +2500,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       CopyData(StoredSessions->DefaultSettings);
     }
 
-    DefaultsOnly = true;
+    ParsedInfo |= piDefaultsOnly;
   }
 
   if (ProtocolDefined)
@@ -5782,30 +5778,20 @@ bool __fastcall TStoredSessionList::HasAnyWorkspace()
   return Result;
 }
 //---------------------------------------------------------------------------
-TSessionData * __fastcall TStoredSessionList::ParseUrl(UnicodeString Url,
-  TOptions * Options, bool & DefaultsOnly, UnicodeString * FileName,
-  bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags)
+TSessionData * TStoredSessionList::ParseUrl(
+  const UnicodeString & Url, TOptions * Options, int & ParsedInfo,
+  UnicodeString * FileName, UnicodeString * MaskedUrl, int Flags)
 {
-  TSessionData * Data = new TSessionData(L"");
-  try
-  {
-    Data->ParseUrl(Url, Options, this, DefaultsOnly, FileName, AProtocolDefined, MaskedUrl, Flags);
-  }
-  catch(...)
-  {
-    delete Data;
-    throw;
-  }
-
-  return Data;
+  std::unique_ptr<TSessionData> Data(new TSessionData(L""));
+  Data->ParseUrl(Url, Options, this, ParsedInfo, FileName, MaskedUrl, Flags);
+  return Data.release();
 }
 //---------------------------------------------------------------------
 bool __fastcall TStoredSessionList::IsUrl(UnicodeString Url)
 {
-  bool DefaultsOnly;
-  bool ProtocolDefined = false;
-  std::unique_ptr<TSessionData> ParsedData(ParseUrl(Url, NULL, DefaultsOnly, NULL, &ProtocolDefined));
-  bool Result = ProtocolDefined;
+  int ParsedInfo;
+  std::unique_ptr<TSessionData> ParsedData(ParseUrl(Url, NULL, ParsedInfo));
+  bool Result = FLAGSET(ParsedInfo, piProtocolDefined);
   return Result;
 }
 //---------------------------------------------------------------------

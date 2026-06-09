@@ -60,6 +60,11 @@ enum TParseUrlFlags
   pufPreferProtocol = 0x04,
   pufParseOnly = 0x08,
 };
+enum TParsedInfoFlags
+{
+  piDefaultsOnly = 0x01,
+  piProtocolDefined = 0x02,
+};
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
 extern const UnicodeString KexNames[KEX_COUNT];
@@ -533,9 +538,9 @@ public:
   void __fastcall CopyData(TSessionData * Source);
   void __fastcall CopyDataNoRecrypt(TSessionData * SourceData);
   void __fastcall CopyDirectoriesStateData(TSessionData * SourceData);
-  bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
-    TStoredSessionList * StoredSessions, bool & DefaultsOnly,
-    UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags);
+  bool ParseUrl(
+    const UnicodeString & Url, TOptions * Options, TStoredSessionList * StoredSessions, int & ParsedInfo,
+    UnicodeString * FileName, UnicodeString * MaskedUrl, int Flags);
   TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName, bool PuttyExport);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
@@ -781,8 +786,9 @@ public:
   bool __fastcall IsFolder(const UnicodeString & Name);
   bool __fastcall IsWorkspace(const UnicodeString & Name);
   bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name);
-  TSessionData * __fastcall ParseUrl(UnicodeString Url, TOptions * Options, bool & DefaultsOnly,
-    UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
+  TSessionData * ParseUrl(
+    const UnicodeString & Url, TOptions * Options, int & ParsedInfo,
+    UnicodeString * FileName = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
   bool __fastcall IsUrl(UnicodeString Url);
   bool __fastcall CanOpen(TSessionData * Data);
   void __fastcall GetFolderOrWorkspace(const UnicodeString & Name, TList * List);

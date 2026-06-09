@@ -2651,9 +2651,9 @@ void __fastcall TManagementScript::MaskPasswordInCommandLine(UnicodeString & Com
 
     if (!Url.IsEmpty())
     {
-      bool DefaultsOnly;
+      int ParsedInfo;
       std::unique_ptr<TSessionData> Data(
-        StoredSessions->ParseUrl(Url, &Options, DefaultsOnly, NULL, NULL, &MaskedUrl));
+        StoredSessions->ParseUrl(Url, &Options, ParsedInfo, NULL, &MaskedUrl));
     }
 
     if ((Url != MaskedUrl) || AnyMaskedParam)
@@ -2724,7 +2724,9 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         throw Exception(LoadStr(CANNOT_OPEN_SESSION_FOLDER));
       }
 
-      Data = FStoredSessions->ParseUrl(Session, Options, DefaultsOnly);
+      int ParsedInfo;
+      Data = FStoredSessions->ParseUrl(Session, Options, ParsedInfo);
+      DefaultsOnly = FLAGSET(ParsedInfo, piDefaultsOnly);
     }
 
     try
