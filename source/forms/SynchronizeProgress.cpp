@@ -55,7 +55,7 @@ __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
   ReleaseAsModal(this, FShowAsModalStorage);
   UnhookFormActivation(this);
 
-  if (IsApplicationMinimized() && FMinimizedByMe)
+  if (IsMainFormMinimized() && FMinimizedByMe)
   {
     ShowNotification(
       NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
@@ -71,7 +71,7 @@ void __fastcall TSynchronizeProgressForm::Start()
   StartTimeLabel->Caption = FStartTime.TimeString();
   OperationProgress->Position = OperationProgress->Min;
   UpdateControls();
-  if (!IsApplicationMinimized())
+  if (!IsMainFormMinimized())
   {
     // Do not show the progress when the application is minimized,
     // otherwise the form popups up unminimized.

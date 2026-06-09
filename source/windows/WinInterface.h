@@ -537,7 +537,8 @@ int __fastcall AdjustLocaleFlag(const UnicodeString & S, TLocaleFlagOverride Loc
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * Form, TNotifyEvent OnMinimize);
 void __fastcall ClearGlobalMinimizeHandler(TNotifyEvent OnMinimize);
 void __fastcall CallGlobalMinimizeHandler(TObject * Sender);
-bool __fastcall IsApplicationMinimized();
+bool IsMainFormMinimized();
+bool IsApplicationMinimized();
 void __fastcall ApplicationMinimize();
 void __fastcall ApplicationRestore();
 bool __fastcall HandleMinimizeSysCommand(TMessage & Message);

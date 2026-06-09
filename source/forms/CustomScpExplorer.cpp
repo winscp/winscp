@@ -7886,7 +7886,7 @@ void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
 void __fastcall TCustomScpExplorerForm::WMEndSession(TWMEndSession & Message)
 {
   AppLog(L"Windows session end");
-  if (Message.EndSession && IsApplicationMinimized())
+  if (Message.EndSession && IsMainFormMinimized())
   {
     // WORKAROUND
     // TApplication.WndProc() calls Application.Terminate() before Halt(),
@@ -8182,7 +8182,7 @@ void __fastcall TCustomScpExplorerForm::QueueEvent(TManagedTerminal * ATerminal,
   UnicodeString Message;
   TNotifyEvent OnClick = NULL;
   TObject * UserData = NULL;
-  bool QueueInvisible = !ComponentVisible[fcQueueView] || IsApplicationMinimized();
+  bool QueueInvisible = !ComponentVisible[fcQueueView] || IsMainFormMinimized();
   switch (Event)
   {
     case qeEmptyButMonitored:
@@ -10571,7 +10571,7 @@ void __fastcall TCustomScpExplorerForm::LockWindow(bool Force)
   // minimize is no longer possible
   // ("keep up to date" dialog - though does not seem to be the case with "find file" -
   // so it has probably something to do with the semi-modalness of the "keep up to date" dialog)
-  // Shouldn't we use IsApplicationMinimized() here?
+  // Shouldn't we use IsMainFormMinimized() here?
   if ((FLockSuspendLevel == 0) && !IsIconic(Application->Handle) && (Force || (Screen->ActiveForm == this)))
   {
     AppLog(L"Disabling window");

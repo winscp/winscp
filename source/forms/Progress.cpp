@@ -115,7 +115,7 @@ __fastcall TProgressForm::~TProgressForm()
 
   ClearGlobalMinimizeHandler(GlobalMinimize);
 
-  if (IsApplicationMinimized() && FMinimizedByMe)
+  if (IsMainFormMinimized() && FMinimizedByMe)
   {
     ShowNotification(
       NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
@@ -408,7 +408,7 @@ bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
       // Delay showing the progress until the application is restored,
       // otherwise the form popups up unminimized.
       // See solution in TMessageForm::CMShowingChanged.
-      if (!IsApplicationMinimized() &&
+      if (!IsMainFormMinimized() &&
           (Force || (MilliSecondsBetween(Now(), FStarted) > DelayStartInterval)))
       {
         FDataReceived = true;

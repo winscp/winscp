@@ -514,7 +514,7 @@ void __fastcall TSynchronizeDialog::Stop()
   OnlyStop();
   UpdateControls();
   Repaint();
-  if (IsApplicationMinimized() && FMinimizedByMe)
+  if (IsMainFormMinimized() && FMinimizedByMe)
   {
     FMinimizedByMe = false;
     ApplicationRestore();

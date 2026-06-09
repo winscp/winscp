@@ -1026,7 +1026,7 @@ void __fastcall TTerminalManager::QueueStatusUpdated()
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::ShouldDisplayQueueStatusOnAppTitle()
 {
-  bool Result = IsApplicationMinimized();
+  bool Result = IsMainFormMinimized();
   if (!Result && (ScpExplorer != NULL))
   {
     HWND Window = GetActiveWindow();

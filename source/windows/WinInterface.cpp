@@ -1391,14 +1391,20 @@ void __fastcall ApplicationRestore()
   DoApplicationMinimizeRestore(false);
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsApplicationMinimized()
+bool IsMainFormMinimized()
 {
   // VCL help recommends handling Application->OnMinimize/OnRestore
   // for tracking state, but OnRestore is actually not called
-  // (OnMinimize is), when app is minimized from e.g. Progress window
+  // (OnMinimize is), when app is minimized from e.g. Progress window.
+  // Checking Application->Handle might be obsolete.
   bool AppMinimized = IsIconic(Application->Handle);
   bool MainFormMinimized = IsIconic(Application->MainFormHandle);
   return AppMinimized || MainFormMinimized;
+}
+//---------------------------------------------------------------------------
+bool IsApplicationMinimized()
+{
+  return (Screen->ActiveForm != nullptr) && IsIconic(Screen->ActiveForm->Handle);
 }
 //---------------------------------------------------------------------------
 bool __fastcall HandleMinimizeSysCommand(TMessage & Message)
