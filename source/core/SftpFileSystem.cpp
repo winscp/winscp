@@ -5134,7 +5134,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
       {
         OpenType |= SSH_FXF_EXCL;
       }
-      if (!OpenParams->Resuming && (OpenParams->OverwriteMode == omOverwrite))
+      else if (!OpenParams->Resuming && (OpenParams->OverwriteMode == omOverwrite))
       {
         OpenType |= SSH_FXF_TRUNC;
       }
