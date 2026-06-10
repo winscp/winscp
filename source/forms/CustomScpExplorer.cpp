@@ -11817,10 +11817,10 @@ void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*
   // It can actually rarelly happen that some random file is created, while we are shutting down the monitor
   // (as it pumps a Windows message queue while being shutted down)
   if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
-      SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)) &&
-      // Is can happen that creation of our temporary directory is detected (even though we are creating it before starting the monitors).
-      // It tent do happen with later copy-pastes, probably because everything is cached already and monitors start quickly.
       // Keep the cheap name check before IsPathToSameFile, as that can touch a network-backed path.
+      SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)) &&
+      // It can happen that creation of our temporary directory is detected (even though we are creating it before starting the monitors).
+      // It tends do happen with later copy-pastes, probably because everything is cached already and monitors start quickly.
       !IsPathToSameFile(FClipboardFakeDirectory, FileName))
   {
     AppLogFmt(L"Fake clipboard directory pasted to \"%s\"", (FileName));
