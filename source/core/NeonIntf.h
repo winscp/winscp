@@ -28,9 +28,15 @@ struct TNeonCertificateData
   int Failures;
 };
 //---------------------------------------------------------------------------
-void NeonParseUrl(const UnicodeString & Url, ne_uri & uri);
-bool IsTlsUri(const ne_uri & uri);
-ne_session * CreateNeonSession(const ne_uri & uri);
+struct TNeonUri : public ne_uri
+{
+  TNeonUri();
+  TNeonUri(const UnicodeString & Url);
+  ~TNeonUri();
+  bool IsTls() const;
+};
+//---------------------------------------------------------------------------
+ne_session * CreateNeonSession(const TNeonUri & Uri);
 void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const UnicodeString & ProxyHost,
   int ProxyPort, const UnicodeString & ProxyUsername, const UnicodeString & ProxyPassword, TTerminal * Terminal);
 void DestroyNeonSession(ne_session * Session);

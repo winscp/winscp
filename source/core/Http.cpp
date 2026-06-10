@@ -42,10 +42,9 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
 
   do
   {
-    ne_uri uri;
-    NeonParseUrl(RequestUrl, uri);
+    TNeonUri Uri(RequestUrl);
 
-    bool IsTls = IsTlsUri(uri);
+    bool IsTls = Uri.IsTls();
     if (RequestUrl == URL)
     {
       WasTlsUri = IsTls;
@@ -58,19 +57,19 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
       }
     }
 
-    FHostName = StrFromNeon(uri.host);
+    FHostName = StrFromNeon(Uri.host);
 
-    UnicodeString Uri = StrFromNeon(uri.path);
-    if (uri.query != NULL)
+    UnicodeString UriPath = StrFromNeon(Uri.path);
+    if (Uri.query != NULL)
     {
-      Uri += L"?" + StrFromNeon(uri.query);
+      UriPath += L"?" + StrFromNeon(Uri.query);
     }
 
     FResponse.SetLength(0);
     FCertificateError.SetLength(0);
     FException.reset(NULL);
 
-    ne_session_s * NeonSession = CreateNeonSession(uri);
+    ne_session_s * NeonSession = CreateNeonSession(Uri);
     try
     {
       TProxyMethod ProxyMethod = ProxyHost.IsEmpty() ? ::pmNone : pmHTTP;
@@ -82,7 +81,7 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
         InitNeonTls(NeonSession, InitSslSession, NeonServerSSLCallback, this, NULL);
       }
 
-      ne_request_s * NeonRequest = ne_request_create(NeonSession, Method, StrToNeon(Uri));
+      ne_request_s * NeonRequest = ne_request_create(NeonSession, Method, StrToNeon(UriPath));
       try
       {
         if (FRequestHeaders != NULL)
@@ -152,7 +151,6 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
     __finally
     {
       DestroyNeonSession(NeonSession);
-      ne_uri_free(&uri);
     }
   }
   while (Retry);

@@ -323,22 +323,20 @@ void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext,
 //---------------------------------------------------------------------------
 TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeString & Url, UTF8String & Path, UTF8String & Query)
 {
-  ne_uri uri;
-  NeonParseUrl(Url, uri);
+  TNeonUri Uri(Url);
 
   std::unique_ptr<TSessionContext> Result(new TSessionContext());
   Result->FileSystem = this;
-  Result->HostName = StrFromNeon(uri.host);
-  Result->PortNumber = uri.port;
+  Result->HostName = StrFromNeon(Uri.host);
+  Result->PortNumber = Uri.port;
   Result->NtlmAuthenticationFailed = false;
 
-  Result->NeonSession = CreateNeonSession(uri);
+  Result->NeonSession = CreateNeonSession(Uri);
   InitSession(Result.get(), Result->NeonSession);
 
-  Path = uri.path;
-  Query = uri.query;
-  bool Ssl = IsTlsUri(uri);
-  ne_uri_free(&uri);
+  Path = Uri.path;
+  Query = Uri.query;
+  bool Ssl = Uri.IsTls();
   ne_set_aux_request_init(Result->NeonSession, NeonAuxRequestInit, Result.get());
 
   UpdateNeonDebugMask();
@@ -362,12 +360,9 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
 //---------------------------------------------------------------------------
 bool TWebDAVFileSystem::IsTlsSession(ne_session * Session)
 {
-  ne_uri uri = ne_uri();
-  ne_fill_server_uri(Session, &uri);
-  bool Result = IsTlsUri(uri);
-  ne_uri_free(&uri);
-
-  return Result;
+  TNeonUri Uri;
+  ne_fill_server_uri(Session, &Uri);
+  return Uri.IsTls();
 }
 //---------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonAuxRequestInit(ne_session * Session, ne_request * /*Request*/, void * UserData)

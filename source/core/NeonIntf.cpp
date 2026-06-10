@@ -21,24 +21,33 @@ extern "C"
 #define SESSION_TLS_INIT_DATA_KEY "tlsinitdata"
 #define SESSION_TERMINAL_KEY "terminal"
 //---------------------------------------------------------------------------
-void NeonParseUrl(const UnicodeString & Url, ne_uri & uri)
+TNeonUri::TNeonUri() : ne_uri{}
 {
-  if (ne_uri_parse(StrToNeon(Url), &uri) != 0)
+}
+//---------------------------------------------------------------------------
+TNeonUri::TNeonUri(const UnicodeString & Url)
+{
+  if (ne_uri_parse(StrToNeon(Url), this) != 0)
   {
     // should never happen
     throw Exception(FMTLOAD(INVALID_URL, (Url)));
   }
 
   // Will never happen for initial URL, but may happen for redirect URLs
-  if (uri.port == 0)
+  if (port == 0)
   {
-    uri.port = ne_uri_defaultport(uri.scheme);
+    port = ne_uri_defaultport(scheme);
   }
 }
 //---------------------------------------------------------------------------
-bool IsTlsUri(const ne_uri & uri)
+TNeonUri::~TNeonUri()
 {
-  return SameText(StrFromNeon(uri.scheme), HttpsProtocol);
+  ne_uri_free(this);
+}
+//---------------------------------------------------------------------------
+bool TNeonUri::IsTls() const
+{
+  return SameText(StrFromNeon(scheme), HttpsProtocol);
 }
 //---------------------------------------------------------------------------
 struct TProxyAuthData
@@ -69,13 +78,13 @@ static int NeonProxyAuth(
   return Result;
 }
 //---------------------------------------------------------------------------
-ne_session * CreateNeonSession(const ne_uri & uri)
+ne_session * CreateNeonSession(const TNeonUri & Uri)
 {
-  if (IsTlsUri(uri))
+  if (Uri.IsTls())
   {
     RequireTls();
   }
-  return ne_session_create(uri.scheme, uri.host, uri.port);
+  return ne_session_create(Uri.scheme, Uri.host, Uri.port);
 }
 //---------------------------------------------------------------------------
 void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const UnicodeString & ProxyHost,
