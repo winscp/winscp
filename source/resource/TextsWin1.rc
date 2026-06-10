@@ -102,6 +102,7 @@ BEGIN
         COPYID_IDETITY_MISSING, "Identity/key file was not specified."
         TAG_NOT_UNIQUE, "Keys must be unique."
         TAG_INVALID_CHAR, "Character \"%s\" is not allowed in tags."
+        UNSAFE_SESSION, "**Use potentially unsafe session settings?**\nThe provided session URL contains potentially unsafe settings. Proceed only if you trust its source."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"

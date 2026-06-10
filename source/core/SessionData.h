@@ -64,6 +64,7 @@ enum TParsedInfoFlags
 {
   piDefaultsOnly = 0x01,
   piProtocolDefined = 0x02,
+  piUnsafeSettings = 0x04,
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
@@ -265,6 +266,7 @@ private:
   TSessionSource FSource;
   bool FSaveOnly;
   UnicodeString FLogicalHostName;
+  bool * FUnsafeSettings;
 
   void __fastcall SetHostName(UnicodeString value);
   UnicodeString __fastcall GetHostNameExpanded();
@@ -462,7 +464,9 @@ private:
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
   UnicodeString __fastcall GetSourceName();
-  void __fastcall DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe, bool RespectDisablePasswordStoring);
+  void DoLoad(
+    THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword,
+    bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings);
   void __fastcall DoSave(THierarchicalStorage * Storage,
     bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords);
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
@@ -506,6 +510,7 @@ private:
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
   void DefaultProxy();
+  void ApplyRawSettings(TStrings * RawSettings, bool Unsafe, int & ParsedInfo);
   static void __fastcall Remove(THierarchicalStorage * Storage, const UnicodeString & Name);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };
@@ -518,8 +523,8 @@ public:
   void __fastcall DefaultSettings();
   void __fastcall NonPersistent();
   void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
-  void __fastcall ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
-  void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring);
+  void ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
+  void ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void ImportFromOpenssh(TStrings * Lines);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
@@ -789,7 +794,7 @@ public:
   TSessionData * ParseUrl(
     const UnicodeString & Url, TOptions * Options, int & ParsedInfo,
     UnicodeString * FileName = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
-  bool __fastcall IsUrl(UnicodeString Url);
+  int GetUrlInfo(const UnicodeString & Url);
   bool __fastcall CanOpen(TSessionData * Data);
   void __fastcall GetFolderOrWorkspace(const UnicodeString & Name, TList * List);
   TStrings * __fastcall GetFolderOrWorkspaceList(const UnicodeString & Name);

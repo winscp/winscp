@@ -134,6 +134,7 @@ __fastcall TSessionData::TSessionData(UnicodeString aName):
 {
   Default();
   FModified = true;
+  FUnsafeSettings = nullptr;
 }
 //---------------------------------------------------------------------
 _fastcall TSessionData::~TSessionData()
@@ -687,10 +688,14 @@ bool __fastcall TSessionData::IsInFolderOrWorkspace(const UnicodeString & AFolde
   return StartsText(UnixIncludeTrailingBackslash(AFolder), Name);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe, bool RespectDisablePasswordStoring)
+void TSessionData::DoLoad(
+  THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword,
+  bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings)
 {
   // Make sure we only ever use methods supported by TOptionsStorage
   // (implemented by TOptionsIniFile)
+
+  UnsafeSettings = false;
 
   PortNumber = Storage->ReadInteger(L"PortNumber", PortNumber);
   UserName = Storage->ReadString(L"UserName", UserName);
@@ -709,6 +714,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
       SET_SESSION_PROPERTY_FROM(PROP, A##PROP); \
     }
   #define LOAD_PASSWORD(PROP, PLAIN_NAME) LOAD_PASSWORD_EX(PROP, PLAIN_NAME, TEXT(#PROP), RewritePassword = true;)
+  #define LOADING_UNSAFE TValueRestorer<bool *> UnsafeSettingsRestorer(FUnsafeSettings, &UnsafeSettings);
   bool LoadPasswords = !Configuration->DisablePasswordStoring || !RespectDisablePasswordStoring;
   if (LoadPasswords)
   {
@@ -754,6 +760,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   HostKeyList = Storage->ReadString(L"HostKey", HostKeyList);
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     GssLibList = Storage->ReadString(L"GSSLibs", GssLibList);
   }
   GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
@@ -780,12 +787,14 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   Special = Storage->ReadBool(L"Special", Special);
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     Shell = Storage->ReadString(L"Shell", Shell);
   }
   ClearAliases = Storage->ReadBool(L"ClearAliases", ClearAliases);
   UnsetNationalVars = Storage->ReadBool(L"UnsetNationalVars", UnsetNationalVars);
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     ListingCommand = Storage->ReadString(L"ListingCommand",
       Storage->ReadBool(L"AliasGroupList", false) ? UnicodeString(L"ls -gla") : ListingCommand);
   }
@@ -796,6 +805,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   TimeDifferenceAuto = Storage->ReadBool(L"TimeDifferenceAuto", (TimeDifference == TDateTime()));
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     DeleteToRecycleBin = Storage->ReadBool(L"DeleteToRecycleBin", DeleteToRecycleBin);
     OverwrittenToRecycleBin = Storage->ReadBool(L"OverwrittenToRecycleBin", OverwrittenToRecycleBin);
     RecycleBinPath = Storage->ReadString(L"RecycleBinPath", RecycleBinPath);
@@ -839,6 +849,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   LOAD_PASSWORD_EX(ProxyPassword, L"ProxyPassword", L"ProxyPasswordEnc", );
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     if (ProxyMethod == pmCmd)
     {
       ProxyLocalCommand = Storage->ReadStringRaw(L"ProxyTelnetCommand", ProxyLocalCommand);
@@ -874,6 +885,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     SftpServer = Storage->ReadString(L"SftpServer", SftpServer);
   }
   #define READ_SFTP_BUG(BUG) \
@@ -962,6 +974,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   CustomParam1 = Storage->ReadString(L"CustomParam1", CustomParam1);
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
 
+  #undef LOADING_UNSAFE
   #undef LOAD_PASSWORD
 }
 //---------------------------------------------------------------------
@@ -978,7 +991,8 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
     ClearSessionPasswords();
     FProxyPassword = L"";
 
-    DoLoad(Storage, PuttyImport, RewritePassword, false, true);
+    bool UnsafeSettings; // unused
+    DoLoad(Storage, PuttyImport, RewritePassword, false, true, UnsafeSettings);
 
     Storage->CloseSubKey();
   }
@@ -1958,6 +1972,10 @@ void __fastcall TSessionData::Modify()
   {
     FSource = ssStoredModified;
   }
+  if (FUnsafeSettings != nullptr)
+  {
+    *FUnsafeSettings = true;
+  }
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetSourceName()
@@ -2434,7 +2452,7 @@ bool TSessionData::ParseUrl(
 
       if (RawSettings->Count > 0) // optimization
       {
-        ApplyRawSettings(RawSettings.get(), Unsafe);
+        ApplyRawSettings(RawSettings.get(), Unsafe, ParsedInfo);
       }
 
       bool HasPassword = (UserInfo.Pos(L':') > 0);
@@ -2591,7 +2609,7 @@ bool TSessionData::ParseUrl(
       std::unique_ptr<TStrings> RawSettings(new TStringList());
       if (Options->FindSwitch(RawSettingsOption, RawSettings.get()))
       {
-        ApplyRawSettings(RawSettings.get(), Unsafe);
+        ApplyRawSettings(RawSettings.get(), Unsafe, ParsedInfo);
       }
     }
     if (Options->FindSwitch(PASSWORDSFROMFILES_SWITCH) &&
@@ -2607,16 +2625,28 @@ bool TSessionData::ParseUrl(
   return true;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe)
+void TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe)
 {
-  std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings, false));
-  ApplyRawSettings(OptionsStorage.get(), Unsafe, false);
+  int ParsedInfo;
+  ApplyRawSettings(RawSettings, Unsafe, ParsedInfo);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring)
+void TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe, int & ParsedInfo)
+{
+  std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings, false));
+  bool UnsafeSettings;
+  ApplyRawSettings(OptionsStorage.get(), Unsafe, false, UnsafeSettings);
+  if (UnsafeSettings)
+  {
+    ParsedInfo |= piUnsafeSettings;
+  }
+}
+//---------------------------------------------------------------------
+void TSessionData::ApplyRawSettings(
+  THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings)
 {
   bool Dummy;
-  DoLoad(Storage, false, Dummy, Unsafe, RespectDisablePasswordStoring);
+  DoLoad(Storage, false, Dummy, Unsafe, RespectDisablePasswordStoring, UnsafeSettings);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ConfigureTunnel(int APortNumber)
@@ -5787,12 +5817,11 @@ TSessionData * TStoredSessionList::ParseUrl(
   return Data.release();
 }
 //---------------------------------------------------------------------
-bool __fastcall TStoredSessionList::IsUrl(UnicodeString Url)
+int TStoredSessionList::GetUrlInfo(const UnicodeString & Url)
 {
   int ParsedInfo;
   std::unique_ptr<TSessionData> ParsedData(ParseUrl(Url, NULL, ParsedInfo));
-  bool Result = FLAGSET(ParsedInfo, piProtocolDefined);
-  return Result;
+  return ParsedInfo;
 }
 //---------------------------------------------------------------------
 TSessionData * __fastcall TStoredSessionList::ResolveWorkspaceData(TSessionData * Data)

@@ -1285,7 +1285,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
     UnicodeString ClipboardUrl;
     Action->Enabled =
       NonEmptyTextFromClipboard(ClipboardUrl) &&
-      StoredSessions->IsUrl(ClipboardUrl);
+      FLAGSET(StoredSessions->GetUrlInfo(ClipboardUrl), piProtocolDefined);
   }
   else if (Action == GenerateUrlAction2)
   {
@@ -3179,11 +3179,10 @@ void __fastcall TLoginDialog::LoginButtonDropDownClick(TObject * /*Sender*/)
   MenuPopup(LoginDropDownMenu, LoginButton);
 }
 //---------------------------------------------------------------------------
-void TLoginDialog::DoParseUrl(TSessionData * SessionData, const UnicodeString & Url)
+void TLoginDialog::DoParseUrl(TSessionData * SessionData, const UnicodeString & Url, int & ParsedInfo)
 {
   // We do not want to pass in StoredSessions as we do not want the URL be
   // parsed as pointing to a stored site.
-  int ParsedInfo; // unused
   SessionData->ParseUrl(Url, NULL, NULL, ParsedInfo, NULL, NULL, pufPreferProtocol);
   SessionData->RequireDirectories = false;
 }
@@ -3206,7 +3205,13 @@ void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
   }
   else
   {
-    DoParseUrl(SessionData.get(), Url);
+    int ParsedInfo;
+    DoParseUrl(SessionData.get(), Url, ParsedInfo);
+    if (FLAGSET(ParsedInfo, piUnsafeSettings) &&
+        (MessageDialog(LoadStr(UNSAFE_SESSION), qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaOK))
+    {
+      Abort();
+    }
   }
 
   LoadSession(SessionData.get());
@@ -3242,7 +3247,8 @@ void __fastcall TLoginDialog::ParseHostName()
   {
     // All this check is probably unnecessary, keeping it just to be safe
     std::unique_ptr<TSessionData> SessionData(new TSessionData(EmptyStr));
-    DoParseUrl(SessionData.get(), HostName);
+    int ParsedInfo; // unused
+    DoParseUrl(SessionData.get(), HostName, ParsedInfo);
     std::unique_ptr<TSessionData> HostNameSessionData(new TSessionData(EmptyStr));
     HostNameSessionData->HostName = HostName;
     if ((HostNameSessionData->HostName != HostName) || // Has legacy HostName property parsing intervened?

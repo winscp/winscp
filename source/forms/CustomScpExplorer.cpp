@@ -9273,7 +9273,7 @@ bool __fastcall TCustomScpExplorerForm::CanPasteFromClipBoard()
     if (NonEmptyTextFromClipboard(ClipboardText) &&
         (ClipboardText.Pos(L"\n") == 0)) // it's already trimmed
     {
-      if (StoredSessions->IsUrl(ClipboardText))
+      if (FLAGSET(StoredSessions->GetUrlInfo(ClipboardText), piProtocolDefined))
       {
         Result = true;
       }
@@ -9311,8 +9311,14 @@ void __fastcall TCustomScpExplorerForm::PasteFromClipBoard()
     UnicodeString ClipboardText;
     if (NonEmptyTextFromClipboard(ClipboardText))
     {
-      if (StoredSessions->IsUrl(ClipboardText))
+      int ParsedInfo = StoredSessions->GetUrlInfo(ClipboardText);
+      if (FLAGSET(ParsedInfo, piProtocolDefined))
       {
+        if (FLAGSET(ParsedInfo, piUnsafeSettings) &&
+            (MessageDialog(LoadStr(UNSAFE_SESSION), qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaOK))
+        {
+          Abort();
+        }
         NewSession(ClipboardText);
       }
       else
