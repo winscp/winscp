@@ -907,7 +907,12 @@ UnicodeString TEncryption::DecryptFileName(const UnicodeString & FileName)
     Base64 += UnicodeString::StringOfChar(L'=', Padding);
   }
   RawByteString Buffer = DecodeBase64ToStr(Base64);
-  FSalt = Buffer.SubString(1, SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
+  int SaltLength = SALT_LENGTH(PASSWORD_MANAGER_AES_MODE);
+  if (Buffer.Length() <= SaltLength)
+  {
+    throw Exception(L"Empty encrypted filename");
+  }
+  FSalt = Buffer.SubString(1, SaltLength);
   SetSalt();
   Buffer.Delete(1, FSalt.Length());
   Aes(Buffer);
@@ -917,7 +922,10 @@ UnicodeString TEncryption::DecryptFileName(const UnicodeString & FileName)
 //---------------------------------------------------------------------------
 bool TEncryption::IsEncryptedFileName(const UnicodeString & FileName)
 {
-  return EndsStr(AesCtrExt, FileName);
+  const int SaltBase64Len = (4 * SALT_LENGTH(PASSWORD_MANAGER_AES_MODE) + 2) / 3;
+  return
+    EndsStr(AesCtrExt, FileName) &&
+    (FileName.Length() > AesCtrExt.Length() + SaltBase64Len);
 }
 //---------------------------------------------------------------------------
 int TEncryption::GetOverhead()
