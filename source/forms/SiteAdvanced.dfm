@@ -1190,13 +1190,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 8
           Top = 2
           Width = 438
-          Height = 49
+          Height = 72
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             438
-            49)
+            72)
           object WebDavLiberalEscapingCheck: TCheckBox
             Left = 11
             Top = 22
@@ -1205,6 +1205,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Tolerate non-encoded special characters in filenames'
             TabOrder = 0
+            OnClick = DataChange
+          end
+          object WebDavCrossDomainRedirectsCheck: TCheckBox
+            Left = 11
+            Top = 45
+            Width = 418
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Allow redirects to other hosts'
+            TabOrder = 1
             OnClick = DataChange
           end
         end

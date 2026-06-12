@@ -259,6 +259,8 @@ private:
   RawByteString FEncryptKey;
   bool FWebDavLiberalEscaping;
   bool FWebDavAuthLegacy;
+  bool FWebDavCrossDomainRedirects;
+  bool FWebDavUnencryptedRedirects;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -457,6 +459,8 @@ private:
   void __fastcall SetEncryptKey(UnicodeString value);
   void __fastcall SetWebDavLiberalEscaping(bool value);
   void __fastcall SetWebDavAuthLegacy(bool value);
+  void SetWebDavCrossDomainRedirects(bool value);
+  void SetWebDavUnencryptedRedirects(bool value);
 
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll);
@@ -750,6 +754,8 @@ public:
   __property UnicodeString EncryptKey = { read = GetEncryptKey, write = SetEncryptKey };
   __property bool WebDavLiberalEscaping = { read = FWebDavLiberalEscaping, write = SetWebDavLiberalEscaping };
   __property bool WebDavAuthLegacy = { read = FWebDavAuthLegacy, write = SetWebDavAuthLegacy };
+  __property bool WebDavCrossDomainRedirects = { read = FWebDavCrossDomainRedirects, write = SetWebDavCrossDomainRedirects };
+  __property bool WebDavUnencryptedRedirects = { read = FWebDavUnencryptedRedirects, write = SetWebDavUnencryptedRedirects };
 
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };

@@ -224,6 +224,8 @@ void __fastcall TSessionData::DefaultSettings()
 
   WebDavLiberalEscaping = false;
   WebDavAuthLegacy = false;
+  WebDavCrossDomainRedirects = false;
+  WebDavUnencryptedRedirects = false;
 
   DefaultProxy();
   ProxyTelnetCommand = L"connect %host %port\\n";
@@ -536,6 +538,8 @@ void __fastcall TSessionData::NonPersistent()
   \
   PROPERTY(WebDavLiberalEscaping); \
   PROPERTY(WebDavAuthLegacy); \
+  PROPERTY(WebDavCrossDomainRedirects); \
+  PROPERTY(WebDavUnencryptedRedirects); \
   \
   PROPERTY(PuttySettings); \
   \
@@ -964,6 +968,12 @@ void TSessionData::DoLoad(
 
   WebDavLiberalEscaping = Storage->ReadBool(L"WebDavLiberalEscaping", WebDavLiberalEscaping);
   WebDavAuthLegacy = Storage->ReadBool(L"WebDavAuthLegacy", WebDavAuthLegacy);
+  if (!Unsafe)
+  {
+    LOADING_UNSAFE;
+    WebDavCrossDomainRedirects = Storage->ReadBool(L"WebDavCrossDomainRedirects", WebDavCrossDomainRedirects);
+    WebDavUnencryptedRedirects = Storage->ReadBool(L"WebDavUnencryptedRedirects", WebDavUnencryptedRedirects);
+  }
 
   IsWorkspace = Storage->ReadBool(L"IsWorkspace", IsWorkspace);
   Link = Storage->ReadString(L"Link", Link);
@@ -1275,6 +1285,8 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
     WRITE_DATA(Bool, WebDavLiberalEscaping);
     WRITE_DATA(Bool, WebDavAuthLegacy);
+    WRITE_DATA(Bool, WebDavCrossDomainRedirects);
+    WRITE_DATA(Bool, WebDavUnencryptedRedirects);
 
     WRITE_DATA(Bool, IsWorkspace);
     WRITE_DATA(String, Link);
@@ -4697,6 +4709,16 @@ void __fastcall TSessionData::SetWebDavLiberalEscaping(bool value)
 void __fastcall TSessionData::SetWebDavAuthLegacy(bool value)
 {
   SET_SESSION_PROPERTY(WebDavAuthLegacy);
+}
+//---------------------------------------------------------------------
+void TSessionData::SetWebDavCrossDomainRedirects(bool value)
+{
+  SET_SESSION_PROPERTY(WebDavCrossDomainRedirects);
+}
+//---------------------------------------------------------------------
+void TSessionData::SetWebDavUnencryptedRedirects(bool value)
+{
+  SET_SESSION_PROPERTY(WebDavUnencryptedRedirects);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetInfoTip()

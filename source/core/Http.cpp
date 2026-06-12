@@ -57,7 +57,7 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
       }
     }
 
-    FHostName = StrFromNeon(Uri.host);
+    FHostName = Uri.GetHost();
 
     UnicodeString UriPath = StrFromNeon(Uri.path);
     if (Uri.query != NULL)

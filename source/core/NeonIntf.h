@@ -34,6 +34,7 @@ struct TNeonUri : public ne_uri
   TNeonUri(const UnicodeString & Url);
   ~TNeonUri();
   bool IsTls() const;
+  UnicodeString GetHost() const;
 };
 //---------------------------------------------------------------------------
 ne_session * CreateNeonSession(const TNeonUri & Uri);

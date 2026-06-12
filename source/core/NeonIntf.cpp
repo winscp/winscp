@@ -50,6 +50,11 @@ bool TNeonUri::IsTls() const
   return SameText(StrFromNeon(scheme), HttpsProtocol);
 }
 //---------------------------------------------------------------------------
+UnicodeString TNeonUri::GetHost() const
+{
+  return StrFromNeon(host);
+}
+//---------------------------------------------------------------------------
 struct TProxyAuthData
 {
   UnicodeString UserName;

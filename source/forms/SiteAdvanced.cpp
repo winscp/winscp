@@ -423,6 +423,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 
     // webdav page
     WebDavLiberalEscapingCheck->Checked = FSessionData->WebDavLiberalEscaping;
+    WebDavCrossDomainRedirectsCheck->Checked = FSessionData->WebDavCrossDomainRedirects;
 
     // color
     FColor = static_cast<TColor>(FSessionData->Color);
@@ -716,6 +717,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // webdav page
   SessionData->WebDavLiberalEscaping = WebDavLiberalEscapingCheck->Checked;
+  SessionData->WebDavCrossDomainRedirects = WebDavCrossDomainRedirectsCheck->Checked;
 
   // color
   SessionData->Color = FColor;

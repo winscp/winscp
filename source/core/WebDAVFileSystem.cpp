@@ -271,11 +271,6 @@ void TWebDAVFileSystem::NeonClientOpenSessionInternal(UnicodeString & CorrectedU
     bool Ssl = IsTlsSession(FSessionContext->NeonSession);
     FSessionInfo.SecurityProtocolName = Ssl ? LoadStr(FTPS_IMPLICIT) : EmptyStr;
 
-    if (Ssl != (FTerminal->SessionData->Ftps != ftpsNone))
-    {
-      FTerminal->LogEvent(FORMAT(L"Warning: %s", (LoadStr(UNENCRYPTED_REDIRECT))));
-    }
-
     {
       CorrectedUrl = EmptyStr;
       TAutoFlag Flag(FInitialHandshake);
@@ -327,7 +322,7 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
 
   std::unique_ptr<TSessionContext> Result(new TSessionContext());
   Result->FileSystem = this;
-  Result->HostName = StrFromNeon(Uri.host);
+  Result->HostName = Uri.GetHost();
   Result->PortNumber = Uri.port;
   Result->NtlmAuthenticationFailed = false;
 
@@ -395,6 +390,37 @@ UnicodeString __fastcall TWebDAVFileSystem::GetRedirectUrl()
 {
   UnicodeString Result = GetNeonRedirectUrl(FSessionContext->NeonSession);
   FTerminal->LogEvent(FORMAT(L"Redirected to \"%s\".", (Result)));
+
+  TNeonUri RedirectUri(Result);
+
+  if ((FTerminal->SessionData->Ftps != ftpsNone) && !RedirectUri.IsTls())
+  {
+    UnicodeString Message = LoadStr(UNENCRYPTED_REDIRECT);
+    if (FTerminal->SessionData->WebDavUnencryptedRedirects)
+    {
+      FTerminal->LogEvent(FORMAT(L"Warning: %s", (Message)));
+    }
+    else
+    {
+      throw Exception(Message);
+    }
+  }
+
+  int PortNumber = static_cast<int>(RedirectUri.port);
+  if (!SameText(RedirectUri.GetHost(), FSessionContext->HostName) ||
+      (PortNumber != FSessionContext->PortNumber))
+  {
+    UnicodeString OtherHost = RedirectUri.GetHost();
+    if (RedirectUri.port != ne_uri_defaultport(RedirectUri.scheme))
+    {
+      OtherHost = FORMAT(L"%s:%d", (OtherHost, PortNumber));
+    }
+    if (!FTerminal->SessionData->WebDavCrossDomainRedirects)
+    {
+      throw Exception(FMTLOAD(WEBDAV_CROSS_DOMAIN_REDIR, (OtherHost)));
+    }
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
