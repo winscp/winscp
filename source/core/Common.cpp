@@ -737,6 +737,13 @@ UnicodeString __fastcall ValidLocalFileName(
       FileName.Insert(L"%00", P);
     }
   }
+  else
+  {
+    if (wcspbrk(FileName.c_str(), L"\\/") != nullptr)
+    {
+      throw Exception(FMTLOAD(INVALID_FILENAME, (FileName)));
+    }
+  }
   return FileName;
 }
 //---------------------------------------------------------------------------

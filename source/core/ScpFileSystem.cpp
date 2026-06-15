@@ -2612,10 +2612,15 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
         FTerminal->LogFileDetails(FileName, FileData.Modification, MaskParams.Size);
 
-        UnicodeString DestFileNameOnly =
-          FTerminal->ChangeFileName(
-            CopyParam, OperationProgress->FileName, osRemote,
-            Level == 0);
+        UnicodeString DestFileNameOnly;
+        try
+        {
+          DestFileNameOnly = FTerminal->ChangeFileName(CopyParam, OperationProgress->FileName, osRemote, (Level == 0));
+        }
+        catch (Exception & E)
+        {
+          SCPError(E.Message, false);
+        }
         UnicodeString DestFileName =
           IncludeTrailingBackslash(TargetDir) + DestFileNameOnly;
 
