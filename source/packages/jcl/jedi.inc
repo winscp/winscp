@@ -64,6 +64,7 @@
   DELPHILANGUAGE      Defined if compiled with Delphi, Kylix or C++Builder
   BORLAND             Defined if compiled with Delphi, Kylix or C++Builder
   FPC                 Defined if compiled with FPC
+  OXYGENE             Defined if compiled with Oxygene
 
 - Platform Directives
 
@@ -86,7 +87,7 @@
   CPU386              Defined when target platform is native x86 (win32)
   CPUx86_64           Defined when target platform is native x86_64 (win64)
   CPU32               Defined when target is 32-bit
-  CPU64	              Defined when target is 64-bit
+  CPU64               Defined when target is 64-bit
   CPUASM              Defined when target assembler is available
 
 - Visual library Directives
@@ -336,7 +337,7 @@
   BCB27        Defined when compiling with C++Builder Personality of RAD Studio 10.4 Sydney (also known as C++Builder 10.4 Sydney) (Codename DENALI)
   BCB28        Defined when compiling with C++Builder Personality of RAD Studio 11 Alexandria (also known as C++Builder 11 Alexandria) (Codename OLYMPUS)
   BCB29        Defined when compiling with C++Builder Personality of RAD Studio 12 Athens (also known as C++Builder 12 Athens) (Codename YUKON)
-  BCB37        Defined when compiling with C++Builder Personality of RAD Studio 13 ??? (also known as C++Builder 13 Florence) (Codename GANYMEDE)
+  BCB37        Defined when compiling with C++Builder Personality of RAD Studio 13 Florence (also known as C++Builder 13 Florence) (Codename GANYMEDE)
   BCB1_UP      Defined when compiling with C++Builder 1 or higher
   BCB3_UP      Defined when compiling with C++Builder 3 or higher
   BCB4_UP      Defined when compiling with C++Builder 4 or higher
@@ -396,7 +397,7 @@
   BDS20        Defined when compiling with BDS 20.0 (Embarcadero RAD Studio 10.3) (Codename CARNIVAL)
   BDS21        Defined when compiling with BDS 21.0 (Embarcadero RAD Studio 10.4) (Codename DENALI)
   BDS22        Defined when compiling with BDS 22.0 (Embarcadero RAD Studio 11) (Codename OLYMPUS)
-  BDS23        Defined when compiling with BDS 22.0 (Embarcadero RAD Studio 12) (Codename YUKON)
+  BDS23        Defined when compiling with BDS 23.0 (Embarcadero RAD Studio 12) (Codename YUKON)
   BDS37        Defined when compiling with BDS 37.0 (Embarcadero RAD Studio 13) (Codename GANYMEDE)
   BDS2_UP      Defined when compiling with BDS 2.0 or higher
   BDS3_UP      Defined when compiling with BDS 3.0 or higher
@@ -665,6 +666,7 @@
   DEPRECATED_TCHARACTER          TCharacter is deprecated and replaced by a record helper on Char (D18+)
   HAS_PROPERTY_OLDCREATEORDER    The OldCreateOrder property is available (D5 - D27)
   SUPPORTS_SCOPEDENUMS           Compiler supports the SCOPEDENUMS directive and enumerations can be scoped (D12+)
+  SUPPORTS_NORETURN              Copmiler supports the NORETURN directive (D37+)
 
 
 - Compiler Settings
@@ -709,6 +711,15 @@
   {$UNDEF BORLAND}
   {$DEFINE CPUASM}
    // FPC defines CPU32, CPU64 and Unix automatically
+{$ENDIF}
+
+{$IFDEF ELEMENTS}
+  // Oxygene's assembly syntax is very different; Delphi/FPC asm blocks will not compile.
+  // PurePascal code sections should be used instead.
+  {$UNDEF CPUASM}
+  {$DEFINE PUREPASCAL}
+
+  {$UNDEF BORLAND}
 {$ENDIF}
 
 {$IFDEF BORLAND}
@@ -1213,6 +1224,67 @@
   {$ENDIF ~BCB}
 
 {$ENDIF BORLAND}
+
+{------------------------------------------------------------------------------}
+{ Oxygene support                                                              }
+{ Since largely a superset of Delphi, define macros expecting Delphi           }
+{------------------------------------------------------------------------------}
+{$IFDEF ELEMENTS}
+  // CLR and NETSTANDARD or NETCORE are auto-defined
+  // LINUX is defined for both Linux AND Android
+  // https://docs.elementscompiler.com/Compiler/ConditionalDefines/
+
+  {$IFDEF CLR}
+    // See https://docs.elementscompiler.com/Compiler/ConditionalDefines/ for
+    // macros defining various .Net related tech, eg Classic / Standard / Mono / .Net Core
+    {$DEFINE CLR20}
+  {$ENDIF}
+
+  // I386, X86_64, and ARM64 are auto-defined 
+  {$IFDEF I386}
+    {$DEFINE CPU386}
+    {$DEFINE CPU32}
+  {$ENDIF}
+  {$IFDEF X86_64}
+    {$DEFINE CPU64}
+    {$DEFINE CPU64BITS}
+    {$DEFINE CPUX64}
+  {$ENDIF}
+  {$IFDEF ARM64}
+    {$DEFINE CPU64}
+    {$DEFINE CPU64BITS}
+    {$DEFINE CPUARM64}
+  {$ENDIF}
+
+  // Platform compatibility mappings
+  // Elements auto-defines: WINDOWS, LINUX, DARWIN (Island); MACOS, IOS, etc (Cocoa)
+  {$IFDEF WINDOWS}
+    {$IFNDEF MSWINDOWS}
+      {$DEFINE MSWINDOWS}
+    {$ENDIF}
+    {$IFDEF CPU64}
+      {$DEFINE WIN64}
+    {$ELSE}
+      {$DEFINE WIN32}
+    {$ENDIF}
+  {$ENDIF}
+
+  // Add defines for current Delphi, since most code will wrap against specific Delphi version
+  // Regard Oxygene as a superset (minor differences for legacy language features)
+  // Note: OXYGENE is auto-defined by the compiler
+
+  {$DEFINE BDS}
+  {$DEFINE DELPHI}
+  {$DEFINE DELPHICOMPILER}
+
+  {$UNDEF UNKNOWN_COMPILER_VERSION}
+
+  {$DEFINE BDS37}
+  {$DEFINE COMPILER37}
+  {$DEFINE DELPHI37}
+  {$DEFINE DELPHI_FLORENCE} // synonym to DELPHI37
+  {$DEFINE DELPHICOMPILER37}
+{$ENDIF}
 
 {------------------------------------------------------------------------------}
 { DELPHIX_UP from DELPHIX mappings                                             }
@@ -2008,6 +2080,10 @@
 {$IFDEF COMPILER17_UP}
   {$DEFINE SUPPORTS_LEGACYIFEND}
 {$ENDIF COMPILER17_UP}
+
+{$IFDEF COMPILER37_UP}
+  {$DEFINE SUPPORTS_NORETURN}
+{$ENDIF COMPILER37_UP}
 
 {$IFDEF RTL130_UP}
   {$DEFINE HAS_UNIT_CONTNRS}

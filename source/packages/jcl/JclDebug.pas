@@ -5577,9 +5577,9 @@ var
   TBI: THREAD_BASIC_INFORMATION;
   ReturnedLength: ULONG;
 begin
-  {$IFNDEF COMPILER37_UP}
+  {$IFNDEF SUPPORTS_NORETURN}
   Result := 0;
-  {$ENDIF ~COMPILER37_UP}
+  {$ENDIF ~SUPPORTS_NORETURN}
   ReturnedLength := 0;
   if (NtQueryInformationThread(ThreadHandle, ThreadBasicInformation, @TBI, SizeOf(TBI), @ReturnedLength) < $80000000) and
      (ReturnedLength = SizeOf(TBI)) then
@@ -6615,10 +6615,12 @@ begin
           // 7 bytes, "CALL NEAR [EAX+EAX+$1234567]" (FF /2) where Reg = 010, Mod = 10 and RM = 100
           CallInstructionSize := 7
         else
+{$IFNDEF CPUX64} //The 9A cp call opcode is not valid in 64-bit mode
         if ((CodeDWORD8 and $0000FF00) = $00009A00) then
           // 7 bytes, "CALL FAR $1234:12345678" (9A ptr16:32)
           CallInstructionSize := 7
         else
+{$ENDIF}
           Result := False;
         // Because we're not doing a complete disassembly, we will potentially report
         // false positives. If there is odd code that uses the CALL 16:32 format, we

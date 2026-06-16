@@ -4368,6 +4368,9 @@ begin
     if WindowsDisplayVersion = '24H2' then
       Result := '2024 Update'
     else
+    if WindowsDisplayVersion = '25H2' then
+      Result := '2025 Update'
+    else
       Result := WindowsDisplayVersion + ' Update';
     Result := Trim(GetWindowsVersionString + ' ' + Result);
   end
