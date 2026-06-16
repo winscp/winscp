@@ -66,6 +66,7 @@ const
   JclVersionBuild   = 9331; // build number, days since march 1, 2000
   JclVersion = (JclVersionMajor shl 24) or (JclVersionMinor shl 16) or
     (JclVersionRelease shl 15) or (JclVersionBuild shl 0);
+  JclCommit = 'c669fd12'; // WINSCP
 
 // EJclError
 type
