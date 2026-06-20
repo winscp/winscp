@@ -707,6 +707,7 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
     const ssh_keyalg *alg;
     ssh2_userkey *ukey;
     strbuf *public_blob, *private_blob, *cipher_mac_keys_blob;
+    ptrlen passphrase_pl = ptrlen_from_asciz(passphrase ? passphrase : "");
     strbuf *passphrase_salt = strbuf_new();
     ptrlen cipherkey, cipheriv, mackey;
     const struct ppk_cipher *ciphertype;
@@ -855,6 +856,14 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
             }
         }
         sfree(b);
+
+        /* Check the Argon2 parameters make sense */
+        uint32_t taglen = ciphertype->keylen + ciphertype->ivlen + 32;
+        if (!argon2_params_valid(
+                params.argon2_mem, params.argon2_passes,
+                params.argon2_parallelism, taglen,
+                passphrase_pl.len, passphrase_salt->len, 0, 0))
+            goto error;
     }
 
     /* Read the Private-Lines header line and the Private blob. */
@@ -885,8 +894,7 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
         goto error;
 
     cipher_mac_keys_blob = strbuf_new();
-    ssh2_ppk_derive_keys(fmt_version, ciphertype,
-                         ptrlen_from_asciz(passphrase ? passphrase : ""),
+    ssh2_ppk_derive_keys(fmt_version, ciphertype, passphrase_pl,
                          cipher_mac_keys_blob, &cipherkey, &cipheriv, &mackey,
                          ptrlen_from_strbuf(passphrase_salt), &params);
 
