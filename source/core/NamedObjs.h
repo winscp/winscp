@@ -2,8 +2,8 @@
 #ifndef NamedObjsH
 #define NamedObjsH
 
-#include <system.hpp>
-#include <contnrs.hpp>
+#include <System.hpp>
+#include <Contnrs.hpp>
 //---------------------------------------------------------------------------
 class TNamedObjectList;
 class TNamedObject : public TPersistent
@@ -11,7 +11,7 @@ class TNamedObject : public TPersistent
 public:
   __property UnicodeString Name = { read = FName, write = SetName };
   __property bool Hidden = { read = FHidden };
-  __fastcall TNamedObject() {};
+  __fastcall TNamedObject() {}
   bool __fastcall IsSameName(const UnicodeString & Name);
   virtual int __fastcall Compare(TNamedObject * Other);
   __fastcall TNamedObject(UnicodeString aName);

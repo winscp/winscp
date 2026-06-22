@@ -6,53 +6,55 @@ object EditMaskDialog: TEditMaskDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Edit file mask'
-  ClientHeight = 500
-  ClientWidth = 425
+  ClientHeight = 537
+  ClientWidth = 474
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   KeyPreview = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
-    425
-    500)
-  PixelsPerInch = 96
-  TextHeight = 13
+    474
+    537)
+  TextHeight = 15
   object FilesGroup: TGroupBox
     Left = 8
-    Top = 6
-    Width = 409
-    Height = 179
+    Top = 8
+    Width = 458
+    Height = 192
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Files masks'
     TabOrder = 0
     DesignSize = (
-      409
-      179)
+      458
+      192)
     object Label3: TLabel
-      Left = 16
-      Top = 19
-      Width = 61
-      Height = 13
+      Left = 9
+      Top = 22
+      Width = 66
+      Height = 15
       Caption = '&Include files:'
       FocusControl = IncludeFileMasksMemo
     end
     object Label1: TLabel
-      Left = 212
-      Top = 19
-      Width = 63
-      Height = 13
+      Left = 232
+      Top = 22
+      Width = 67
+      Height = 15
       Caption = '&Exclude files:'
       FocusControl = ExcludeFileMasksMemo
     end
     object IncludeFileMasksMemo: TMemo
-      Left = 16
-      Top = 35
-      Width = 181
-      Height = 129
+      Left = 9
+      Top = 40
+      Width = 217
+      Height = 142
       Anchors = [akLeft, akTop, akBottom]
       Lines.Strings = (
         'IncludeFileMasksMemo')
@@ -62,10 +64,10 @@ object EditMaskDialog: TEditMaskDialog
       OnExit = FileMasksMemoExit
     end
     object ExcludeFileMasksMemo: TMemo
-      Left = 212
-      Top = 35
-      Width = 181
-      Height = 129
+      Left = 232
+      Top = 40
+      Width = 217
+      Height = 142
       Anchors = [akLeft, akTop, akBottom]
       Lines.Strings = (
         'ExcludeFileMasksMemo')
@@ -76,79 +78,79 @@ object EditMaskDialog: TEditMaskDialog
     end
   end
   object OKBtn: TButton
-    Left = 174
-    Top = 467
-    Width = 75
+    Left = 214
+    Top = 504
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 3
+    TabOrder = 4
   end
   object CancelBtn: TButton
-    Left = 259
-    Top = 467
-    Width = 75
+    Left = 300
+    Top = 504
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 4
+    TabOrder = 5
   end
   object HelpButton: TButton
-    Left = 342
-    Top = 467
-    Width = 75
+    Left = 386
+    Top = 504
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
-    TabOrder = 5
+    TabOrder = 6
     OnClick = HelpButtonClick
   end
   object ClearButton: TButton
-    Left = 89
-    Top = 467
-    Width = 75
+    Left = 128
+    Top = 504
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Clear'
-    TabOrder = 2
+    TabOrder = 3
     OnClick = ClearButtonClick
   end
   object DirectoriesGroup: TGroupBox
     Left = 8
-    Top = 191
-    Width = 409
-    Height = 172
+    Top = 206
+    Width = 458
+    Height = 186
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Directories masks'
     TabOrder = 1
     DesignSize = (
-      409
-      172)
+      458
+      186)
     object Label2: TLabel
-      Left = 16
-      Top = 19
-      Width = 92
-      Height = 13
+      Left = 9
+      Top = 22
+      Width = 100
+      Height = 15
       Caption = 'I&nclude directories:'
       FocusControl = IncludeDirectoryMasksMemo
     end
     object Label4: TLabel
-      Left = 212
-      Top = 19
-      Width = 94
-      Height = 13
+      Left = 232
+      Top = 22
+      Width = 101
+      Height = 15
       Caption = 'E&xclude directories:'
       FocusControl = ExcludeDirectoryMasksMemo
     end
     object IncludeDirectoryMasksMemo: TMemo
-      Left = 16
-      Top = 35
-      Width = 181
-      Height = 104
+      Left = 9
+      Top = 40
+      Width = 217
+      Height = 115
       Anchors = [akLeft, akTop, akBottom]
       Lines.Strings = (
         'IncludeDirectoryMasksMemo')
@@ -158,10 +160,10 @@ object EditMaskDialog: TEditMaskDialog
       OnExit = DirectoryMasksMemoExit
     end
     object ExcludeDirectoryMasksMemo: TMemo
-      Left = 212
-      Top = 35
-      Width = 181
-      Height = 104
+      Left = 232
+      Top = 40
+      Width = 217
+      Height = 115
       Anchors = [akLeft, akTop, akBottom]
       Lines.Strings = (
         'ExcludeDirectoryMasksMemo')
@@ -171,10 +173,11 @@ object EditMaskDialog: TEditMaskDialog
       OnExit = DirectoryMasksMemoExit
     end
     object ExcludeDirectoryAllCheck: TCheckBox
-      Left = 212
-      Top = 145
-      Width = 181
+      Left = 234
+      Top = 161
+      Width = 217
       Height = 17
+      Anchors = [akLeft, akBottom]
       Caption = '&All (do not recurse)'
       TabOrder = 2
       OnClick = ExcludeDirectoryAllCheckClick
@@ -182,20 +185,20 @@ object EditMaskDialog: TEditMaskDialog
   end
   object MaskGroup: TGroupBox
     Left = 8
-    Top = 385
-    Width = 409
-    Height = 76
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Top = 409
+    Width = 458
+    Height = 89
+    Anchors = [akLeft, akTop, akRight]
     Caption = 'Mask'
-    TabOrder = 6
+    TabOrder = 7
     DesignSize = (
-      409
-      76)
+      458
+      89)
     object MaskMemo: TMemo
-      Left = 7
-      Top = 15
-      Width = 395
-      Height = 52
+      Left = 9
+      Top = 21
+      Width = 440
+      Height = 58
       TabStop = False
       Anchors = [akLeft, akTop, akRight, akBottom]
       BevelInner = bvNone
@@ -208,14 +211,14 @@ object EditMaskDialog: TEditMaskDialog
     end
   end
   object MaskHintText: TStaticText
-    Left = 288
-    Top = 369
+    Left = 337
+    Top = 391
     Width = 129
     Height = 17
     Alignment = taRightJustify
     AutoSize = False
     Caption = 'mask hints'
-    TabOrder = 7
+    TabOrder = 2
     TabStop = True
   end
 end

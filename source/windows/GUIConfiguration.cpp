@@ -10,6 +10,8 @@
 #include <Terminal.h>
 #include <CoreMain.h>
 #include <shlobj.h>
+#include <System.IOUtils.hpp>
+#include <System.StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -20,8 +22,8 @@ const int ccRemoteFiles = ccUser << 3;
 const int ccShowResultsInMsgBox = ccUser << 4;
 const int ccSet = 0x80000000;
 //---------------------------------------------------------------------------
-static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
-static const UnicodeString AdditionaLanguagePrefix(L"XX");
+static const unsigned int AdditionalLanguageMask = 0xFFFFFF00;
+static const UnicodeString AdditionalLanguagePrefix(L"XX");
 static const UnicodeString TranslationsSubFolder(L"Translations");
 //---------------------------------------------------------------------------
 TGUIConfiguration * GUIConfiguration = NULL;
@@ -799,7 +801,8 @@ void __fastcall TGUIConfiguration::Saved()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TGUIConfiguration::GetTranslationModule(const UnicodeString & Path)
 {
-  UnicodeString SubPath = AddTranslationsSubFolder(Path);
+  UnicodeString SubPath =
+    TPath::Combine(TPath::Combine(ExtractFilePath(Path), TranslationsSubFolder), ExtractFileName(Path));
   UnicodeString Result;
   // Prefer the SubPath. Default to SubPath.
   if (FileExists(Path) && !FileExists(SubPath))
@@ -811,13 +814,6 @@ UnicodeString __fastcall TGUIConfiguration::GetTranslationModule(const UnicodeSt
     Result = SubPath;
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TGUIConfiguration::AddTranslationsSubFolder(const UnicodeString & Path)
-{
-  return
-    IncludeTrailingBackslash(IncludeTrailingBackslash(ExtractFilePath(Path)) + TranslationsSubFolder) +
-    ExtractFileName(Path);
 }
 //---------------------------------------------------------------------------
 HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
@@ -834,7 +830,7 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     UnicodeString LocaleName;
 
     Module = ModuleFileName();
-    if ((ALocale & AdditionaLanguageMask) != AdditionaLanguageMask)
+    if ((ALocale & AdditionalLanguageMask) != AdditionalLanguageMask)
     {
       wchar_t LocaleStr[4];
       GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, LENOF(LocaleStr));
@@ -843,8 +839,8 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     }
     else
     {
-      LocaleName = AdditionaLanguagePrefix +
-        char(ALocale & ~AdditionaLanguageMask);
+      LocaleName = AdditionalLanguagePrefix +
+        char(ALocale & ~AdditionalLanguageMask);
     }
 
     Module = ChangeFileExt(Module, UnicodeString(L".") + LocaleName);
@@ -998,6 +994,7 @@ void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe, bool
     {
       SetAppliedLocale(L, FileName);
       SetResourceModule(Module);
+      ResStringCleanupCache();
     }
   }
 }
@@ -1089,29 +1086,45 @@ void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
   DefaultLocalized();
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts)
+void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & Path, TStrings * Exts, UnicodeString & LocalesExts)
 {
   int FindAttrs = faReadOnly | faArchive;
 
   TSearchRecOwned SearchRec;
+  UnicodeString BaseName = ChangeFileExt(ExtractFileName(ModuleFileName()), L".");
+  UnicodeString LocalesMask = TPath::Combine(Path, BaseName + L"*");
   bool Found = (FindFirstUnchecked(LocalesMask, FindAttrs, SearchRec) == 0);
   while (Found)
   {
-    UnicodeString Ext = ExtractFileExt(SearchRec.Name).UpperCase();
-    // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll
-    if ((Ext.Length() >= 3) && (Ext != L".EXE") && (Ext != L".COM") &&
-        (Ext != L".DLL") && (Ext != L".INI") && (Ext != L".MAP"))
+    if (DebugAlwaysTrue(SameText(BaseName, LeftStr(SearchRec.Name, BaseName.Length()))))
     {
-      Ext = Ext.SubString(2, Ext.Length() - 1);
-      LocalesExts += Ext;
-      Exts->Add(Ext);
+      UnicodeString Ext = MidStr(SearchRec.Name, BaseName.Length() + 1).UpperCase();
+      // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll.
+      if ((Ext.Length() >= 2) && (Ext.Length() <= 3) &&
+          (Ext != L"EXE") && (Ext != L"COM") && (Ext != L"DLL") && (Ext != L"INI") && (Ext != L"MAP"))
+      {
+        LocalesExts += Ext + L",";
+        Exts->Add(Ext);
+      }
     }
     Found = (FindNextChecked(SearchRec) == 0);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::AddLocale(LCID Locale, const UnicodeString & Name)
+void __fastcall TGUIConfiguration::AddLocale(LCID Locale, const UnicodeString & AName)
 {
+  UnicodeString Name = AName;
+
+  if (Name.IsEmpty())
+  {
+    wchar_t LocaleStr[255];
+    GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE, LocaleStr, LENOF(LocaleStr));
+    Name = UnicodeString(LocaleStr) + TitleSeparator;
+    // LOCALE_SNATIVELANGNAME
+    GetLocaleInfo(Locale, LOCALE_SLANGUAGE, LocaleStr, LENOF(LocaleStr));
+    Name += LocaleStr;
+  }
+
   std::unique_ptr<TLocaleInfo> LocaleInfo(new TLocaleInfo());
   LocaleInfo->Locale = Locale;
   LocaleInfo->Name = Name;
@@ -1146,86 +1159,98 @@ int __fastcall TGUIConfiguration::LocalesCompare(void * Item1, void * Item2)
 //---------------------------------------------------------------------------
 TObjectList * __fastcall TGUIConfiguration::GetLocales()
 {
-  UnicodeString LocalesMask = ChangeFileExt(ModuleFileName(), L".*");
-  UnicodeString SubLocalesMask = AddTranslationsSubFolder(LocalesMask);
+  UnicodeString LocalesPath = ExtractFilePath(ModuleFileName());
+  UnicodeString SubLocalesPath = TPath::Combine(LocalesPath, TranslationsSubFolder);
 
   UnicodeString LocalesExts;
   std::unique_ptr<TStringList> Exts(CreateSortedStringList());
-  FindLocales(SubLocalesMask, Exts.get(), LocalesExts);
-  FindLocales(LocalesMask, Exts.get(), LocalesExts);
+  FindLocales(LocalesPath, Exts.get(), LocalesExts);
+  FindLocales(SubLocalesPath, Exts.get(), LocalesExts);
 
   if (FLastLocalesExts != LocalesExts)
   {
     FLastLocalesExts = LocalesExts;
     FLocales->Clear();
 
+    AddLocale(InternalLocale(), EmptyStr);
+
     TLanguages * Langs = Languages();
-
     int Count = Langs->Count;
-    int Index = -1;
-    while (Index < Count)
-    {
-      LCID Locale;
-      if (Index >= 0)
-      {
-        Locale = Langs->LocaleID[Index];
-        DWORD SubLang = SUBLANGID(Locale);
-        int Ext = Exts->IndexOf(Langs->Ext[Index]);
-        if ((Ext >= 0) && (Exts->Objects[Ext] == NULL))
-        {
-          // noop
-        }
-        else if (SubLang == SUBLANG_DEFAULT)
-        {
-          Ext = Exts->IndexOf(Langs->Ext[Index].SubString(1, 2));
-          if ((Ext >= 0) && (Exts->Objects[Ext] == NULL))
-          {
-            Locale = MAKELANGID(PRIMARYLANGID(Locale), SUBLANG_DEFAULT);
-          }
-        }
 
-        if (Ext >= 0)
+    typedef std::map<UnicodeString, std::pair<int, DWORD> > TConflicts;
+    TConflicts DefaultLangConflicts;
+    LCID InvalidLocale = static_cast<LCID>(-1);
+
+    // The two-leter Windows code is not actually unique among languages.
+    // So find any duplicities and resolve them to the language, where ISO code also match.
+    // Notably:
+    // Georgian KAT ka-GE - Kalaallisut KAL kl-GL
+    // Tamil TAI ta-IN - Tajik TAJ tj-TJ
+    for (int Index = 0; Index < Count; Index++)
+    {
+      LCID Locale = Langs->LocaleID[Index];
+      DWORD SubLang = SUBLANGID(Locale);
+      if (SubLang == SUBLANG_DEFAULT)
+      {
+        UnicodeString LangExt2 = LeftStr(Langs->Ext[Index].UpperCase(), 2);
+        TConflicts::iterator Conflict = DefaultLangConflicts.find(LangExt2);
+        if (Conflict == DefaultLangConflicts.end())
         {
-          Exts->Objects[Ext] = reinterpret_cast<TObject*>(Locale);
+          Conflict = DefaultLangConflicts.insert(std::make_pair(LangExt2, std::make_pair(1, InvalidLocale))).first;
         }
         else
         {
-          Locale = 0;
+          Conflict->second.first++;
+        }
+
+        UnicodeString LangName = CopyToChar(Langs->LocaleName[Index], L'-', false);
+        bool Matches = SameText(LangName, LangExt2);
+        if (Matches)
+        {
+          Conflict->second.second = Locale;
         }
       }
-      else
+    }
+
+    for (int Index = 0; Index < Count; Index++)
+    {
+      LCID Locale = Langs->LocaleID[Index];
+      DWORD SubLang = SUBLANGID(Locale);
+      UnicodeString LangExt3 = Langs->Ext[Index].UpperCase();
+      int Ext = Exts->IndexOf(LangExt3);
+      if ((Ext < 0) && (SubLang == SUBLANG_DEFAULT))
       {
-        Locale = InternalLocale();
+        UnicodeString LangExt2 = LeftStr(LangExt3, 2);
+        TConflicts::const_iterator DefaultLangConflict = DefaultLangConflicts.find(LangExt2);
+        // Unless it is a conflicting extension with no resolution or resolved to another locale
+        if ((DefaultLangConflict == DefaultLangConflicts.end()) ||
+            (DefaultLangConflict->second.first == 1) ||
+            ((DefaultLangConflict->second.second != InvalidLocale) &&
+             (DefaultLangConflict->second.second == Locale)))
+        {
+          Ext = Exts->IndexOf(LangExt2);
+        }
       }
 
-      if (Locale)
+      if ((Ext >= 0) && DebugAlwaysTrue(Exts->Objects[Ext] == NULL))
       {
-        wchar_t LocaleStr[255];
-        GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE,
-          LocaleStr, LENOF(LocaleStr));
-        UnicodeString Name = LocaleStr;
-        Name += TitleSeparator;
-        // LOCALE_SNATIVELANGNAME
-        GetLocaleInfo(Locale, LOCALE_SLANGUAGE,
-          LocaleStr, LENOF(LocaleStr));
-        Name += LocaleStr;
-        AddLocale(Locale, Name);
+        Exts->Objects[Ext] = reinterpret_cast<TObject*>(Locale);
+        AddLocale(Locale, EmptyStr);
       }
-      Index++;
     }
 
     for (int Index = 0; Index < Exts->Count; Index++)
     {
       if ((Exts->Objects[Index] == NULL) &&
           (Exts->Strings[Index].Length() == 3) &&
-          SameText(Exts->Strings[Index].SubString(1, 2), AdditionaLanguagePrefix))
+          SameText(Exts->Strings[Index].SubString(1, 2), AdditionalLanguagePrefix))
       {
         UnicodeString ModulePath = ChangeFileExt(ModuleFileName(), UnicodeString(L".") + Exts->Strings[Index]);
         ModulePath = GetTranslationModule(ModulePath);
         UnicodeString LangName = GetFileFileInfoString(L"LangName", ModulePath);
         if (!LangName.IsEmpty())
         {
-          AddLocale(AdditionaLanguageMask + Exts->Strings[Index][3], LangName);
+          AddLocale(AdditionalLanguageMask + Exts->Strings[Index][3], LangName);
         }
       }
     }
@@ -1385,14 +1410,8 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
   {
     ImportSessionList->Remove(PuttySessionData);
   }
-  if (ImportSessionList->Count > 0)
-  {
-    ImportSessionList->SelectSessionsToImport(Sessions, true);
-  }
-  else
-  {
-    Error = FMTLOAD(PUTTY_NO_SITES2, (Source, SessionsKey));
-  }
+  UnicodeString NoSessionsError = FMTLOAD(PUTTY_NO_SITES2, (Source, SessionsKey));
+  SelectSessionsToImportIfAny(ImportSessionList.get(), Sessions, Error, NoSessionsError);
 
   return ImportSessionList.release();
 }

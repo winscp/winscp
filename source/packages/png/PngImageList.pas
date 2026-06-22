@@ -11,9 +11,6 @@ uses
   {$IF CompilerVersion >= 34.0 Delphi 10.4 }
   System.UITypes,
   {$IFEND}
-  {$IFDEF WINSCP}
-  System.UITypes,
-  {$IFEND}
   PngImage, PngFunctions;
 
 {$IF CompilerVersion < 34.0 Delphi 10.4 }
@@ -106,6 +103,7 @@ type
     function GetIndexByName(const AName: TImageName): TImageIndex; {$IF CompilerVersion >= 34.0 Delphi 10.4 }override;{$IFEND}
     function GetNameByIndex(AIndex: TImageIndex): TImageName; {$IF CompilerVersion >= 34.0 Delphi 10.4 }override;{$IFEND}
     property ImageName[Index: Integer]: string read GetImageName;
+    property Scaled;
   published
     {$IF CompilerVersion >= 20.0 Delphi 2009 }
     property ColorDepth default cd32Bit;

@@ -2,12 +2,12 @@
 .\"     Title: ne_has_support
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 15 April 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_HAS_SUPPORT" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_HAS_SUPPORT" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -75,19 +75,33 @@ Indicates support for SOCKSv5
 Indicates support for thread\-safe SSL initialization \(em see
 ne_sock_init
 .RE
+.PP
+\fBNE_FEATURE_GSSAPI\fR
+.RS 4
+Indicates support for Negotiate authentication via GSSAPI
+.RE
+.PP
+\fBNE_FEATURE_LIBPXY\fR
+.RS 4
+Indicates support for libproxy (in
+ne_session_system_proxy)
+.RE
 .SH "RETURN VALUE"
 .PP
 \fBne_has_support\fR
 returns non\-zero if the given feature is supported, or zero otherwise\&.
+.SH "HISTORY"
+.PP
+The
+\fBNE_FEATURE_GSSAPI\fR
+and
+\fBNE_FEATURE_LIBPXY\fR
+constants are only available in neon 0\&.34\&.0 and later\&.
 .SH "SEE ALSO"
 .PP
 ne_version_match(3),
 ne_sock_init(3)
-.SH "AUTHOR"
-.PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
 .SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
 .br

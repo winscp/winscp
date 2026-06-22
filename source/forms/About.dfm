@@ -6,23 +6,26 @@ object AboutDialog: TAboutDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'About application'
-  ClientHeight = 501
-  ClientWidth = 410
+  ClientHeight = 532
+  ClientWidth = 455
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   KeyPreview = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnKeyDown = FormKeyDown
   DesignSize = (
-    410
-    501)
-  PixelsPerInch = 96
-  TextHeight = 13
+    455
+    532)
+  TextHeight = 15
   object OKButton: TButton
-    Left = 243
-    Top = 468
-    Width = 75
+    Left = 281
+    Top = 499
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -34,8 +37,8 @@ object AboutDialog: TAboutDialog
   end
   object LicenseButton: TButton
     Left = 62
-    Top = 468
-    Width = 75
+    Top = 499
+    Width = 80
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = '&License...'
@@ -43,9 +46,9 @@ object AboutDialog: TAboutDialog
     OnClick = LicenseButtonClick
   end
   object HelpButton: TButton
-    Left = 325
-    Top = 468
-    Width = 75
+    Left = 367
+    Top = 499
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
@@ -55,61 +58,61 @@ object AboutDialog: TAboutDialog
   object Panel: TPanel
     Left = 0
     Top = 0
-    Width = 410
-    Height = 460
+    Width = 455
+    Height = 491
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     Color = clWindow
     ParentBackground = False
     TabOrder = 3
     DesignSize = (
-      410
-      460)
+      455
+      491)
     object ApplicationLabel: TLabel
       Left = 62
       Top = 12
-      Width = 52
-      Height = 13
+      Width = 61
+      Height = 15
       Caption = 'Application'
       ShowAccelChar = False
     end
     object VersionLabel: TLabel
       Left = 62
-      Top = 28
-      Width = 127
-      Height = 13
+      Top = 30
+      Width = 135
+      Height = 15
       Caption = 'Version 2.0.0 (Build 12) XX'
       ShowAccelChar = False
     end
     object WinSCPCopyrightLabel: TLabel
       Left = 62
-      Top = 56
-      Width = 180
-      Height = 13
+      Top = 58
+      Width = 197
+      Height = 15
       Caption = 'Copyright '#169' 2000-2003 Martin Prikryl'
       ShowAccelChar = False
     end
     object ProductSpecificMessageLabel: TLabel
       Left = 62
-      Top = 100
-      Width = 277
-      Height = 13
+      Top = 104
+      Width = 305
+      Height = 15
       Caption = 'To send comments and report bugs use support forum at:'
       ShowAccelChar = False
     end
     object Label3: TLabel
       Left = 62
-      Top = 259
-      Width = 91
-      Height = 13
+      Top = 265
+      Width = 101
+      Height = 15
       Caption = 'Portions copyright:'
       ShowAccelChar = False
     end
     object RegistrationLabel: TLabel
       Left = 62
-      Top = 144
-      Width = 127
-      Height = 13
+      Top = 150
+      Width = 141
+      Height = 15
       Caption = 'This product is licensed to:'
       ShowAccelChar = False
     end
@@ -122,27 +125,27 @@ object AboutDialog: TAboutDialog
     end
     object HomepageLabel: TStaticText
       Left = 62
-      Top = 72
-      Width = 128
-      Height = 17
+      Top = 76
+      Width = 143
+      Height = 19
       Caption = 'http://XXXXXXwinscp.net/'
       TabOrder = 0
       TabStop = True
     end
     object ForumUrlLabel: TStaticText
       Left = 62
-      Top = 116
-      Width = 148
-      Height = 17
+      Top = 122
+      Width = 167
+      Height = 19
       Caption = 'http://XXXXwinscp.net/forum/'
       TabOrder = 1
       TabStop = True
     end
     object ThirdPartyPanel: TPanel
-      Left = 62
-      Top = 277
-      Width = 338
-      Height = 168
+      Left = 64
+      Top = 283
+      Width = 383
+      Height = 193
       Anchors = [akLeft, akTop, akRight]
       BevelKind = bkTile
       BevelOuter = bvNone
@@ -151,8 +154,8 @@ object AboutDialog: TAboutDialog
     end
     object RegistrationBox: TPanel
       Left = 62
-      Top = 162
-      Width = 338
+      Top = 168
+      Width = 385
       Height = 89
       Anchors = [akLeft, akTop, akRight]
       BevelKind = bkTile
@@ -161,12 +164,12 @@ object AboutDialog: TAboutDialog
       ParentColor = True
       TabOrder = 3
       DesignSize = (
-        334
+        381
         85)
       object RegistrationSubjectLabel: TLabel
         Left = 8
         Top = 8
-        Width = 241
+        Width = 288
         Height = 65
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -177,16 +180,16 @@ object AboutDialog: TAboutDialog
       object RegistrationLicensesLabel: TLabel
         Left = 8
         Top = 43
-        Width = 106
-        Height = 13
+        Width = 118
+        Height = 15
         Caption = 'Number of Licenses: X'
         ShowAccelChar = False
       end
       object RegistrationProductIdLabel: TStaticText
         Left = 8
         Top = 65
-        Width = 148
-        Height = 17
+        Width = 141
+        Height = 19
         Caption = 'Product ID: xxxx-xxxx-xxxxx'
         ShowAccelChar = False
         TabOrder = 0

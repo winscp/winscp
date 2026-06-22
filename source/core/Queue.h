@@ -54,6 +54,7 @@ class TTerminalQueue;
 class TQueueItemProxy;
 class TTerminalQueueStatus;
 class TQueueFileList;
+class TTerminalItem;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TQueueListUpdate)
   (TTerminalQueue * Queue);
@@ -200,7 +201,7 @@ protected:
 
   void __fastcall SetStatus(TStatus Status);
   TStatus __fastcall GetStatus();
-  void __fastcall Execute(TTerminalItem * TerminalItem);
+  void __fastcall Execute();
   virtual void __fastcall DoExecute(TTerminal * Terminal) = 0;
   void __fastcall SetProgress(TFileOperationProgressType & ProgressData);
   void __fastcall GetData(TQueueItemProxy * Proxy);
@@ -208,10 +209,11 @@ protected:
   void __fastcall SetCPSLimit(unsigned long CPSLimit);
   unsigned long __fastcall GetCPSLimit();
   virtual unsigned long __fastcall DefaultCPSLimit();
-  virtual UnicodeString __fastcall StartupDirectory() const = 0;
+  virtual UnicodeString __fastcall StartupDirectory() const;
   virtual void __fastcall ProgressUpdated();
   virtual TQueueItem * __fastcall CreateParallelOperation();
   virtual bool __fastcall Complete();
+  bool IsExecutionCancelled();
 };
 //---------------------------------------------------------------------------
 class TQueueItemProxy
@@ -239,7 +241,8 @@ public:
   __property TQueueItem::TStatus Status = { read = FStatus };
   __property bool ProcessingUserAction = { read = FProcessingUserAction };
   __property int Index = { read = GetIndex };
-  __property void * UserData = { read = FUserData, write = FUserData };
+  // Clang warns on property backed by private field which is never used
+  void * UserData;
 
 private:
   TFileOperationProgressType * FProgressData;
@@ -249,7 +252,6 @@ private:
   TTerminalQueueStatus * FQueueStatus;
   TQueueItem::TInfo * FInfo;
   bool FProcessingUserAction;
-  void * FUserData;
 
   __fastcall TQueueItemProxy(TTerminalQueue * Queue, TQueueItem * QueueItem);
   virtual __fastcall ~TQueueItemProxy();
@@ -311,7 +313,6 @@ public:
 
 protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal);
-  virtual UnicodeString __fastcall StartupDirectory() const;
   virtual bool __fastcall Complete();
 };
 //---------------------------------------------------------------------------
@@ -359,7 +360,7 @@ class TUploadQueueItem : public TTransferQueueItem
 public:
   __fastcall TUploadQueueItem(TTerminal * Terminal,
     TStrings * FilesToCopy, const UnicodeString & TargetDir,
-    const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel);
+    const TCopyParamType * CopyParam, int Params, bool Parallel);
 
 protected:
   virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation);
@@ -370,16 +371,29 @@ class TDownloadQueueItem : public TTransferQueueItem
 public:
   __fastcall TDownloadQueueItem(TTerminal * Terminal,
     TStrings * FilesToCopy, const UnicodeString & TargetDir,
-    const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel);
+    const TCopyParamType * CopyParam, int Params, bool Parallel);
 
 protected:
   virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation);
 };
 //---------------------------------------------------------------------------
-class TDeleteQueueItem : public TLocatedQueueItem
+class TRemoteDeleteQueueItem : public TLocatedQueueItem
 {
 public:
-  TDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params);
+  TRemoteDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params);
+
+protected:
+  virtual void __fastcall DoExecute(TTerminal * Terminal);
+
+private:
+  std::unique_ptr<TStrings> FFilesToDelete;
+  int FParams;
+};
+//---------------------------------------------------------------------------
+class TLocalDeleteQueueItem : public TQueueItem
+{
+public:
+  TLocalDeleteQueueItem(TStrings * FilesToDelete, int Params);
 
 protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal);
@@ -456,7 +470,7 @@ private:
   void __fastcall TerminalReopenEvent(TObject * Sender);
 
   void __fastcall TerminalInformation(
-    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
+    TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalQueryUser(TObject * Sender,
     const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
     const TQueryParams * Params, unsigned int & Answer, TQueryType Type, void * Arg);
@@ -473,6 +487,7 @@ private:
   void __fastcall TerminalStartReadDirectory(TObject * Sender);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInitializeLog(TObject * Sender);
+  void DiscardException();
 };
 //---------------------------------------------------------------------------
 enum TQueueFileState { qfsQueued = 0, qfsProcessed = 1 };

@@ -31,7 +31,7 @@ interface
 
 uses
   Windows, Registry, SysUtils, Classes, ComCtrls, ShellApi, ShlObj, CommCtrl, Forms,
-  BaseUtils, System.Generics.Collections;
+  BaseUtils, System.Generics.Collections, Vcl.Graphics;
 
 const
   {Flags used by TDriveInfo.ReadDriveStatus and TDriveView.RefreshRootNodes:}
@@ -76,20 +76,22 @@ type
   private
     FData: TObjectDictionary<string, TDriveInfoRec>;
     FNoDrives: DWORD;
+    FNoViewOnDrive: DWORD;
     FDesktop: IShellFolder;
     FFolders: array[TSpecialFolder] of TSpecialFolderRec;
-    FHonorDrivePolicy: Boolean;
+    FHonorDrivePolicy: Integer;
     FUseABDrives: Boolean;
     FLoaded: Boolean;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
     procedure ReadDriveBasicStatus(Drive: string);
     procedure ResetDrive(Drive: string);
-    procedure SetHonorDrivePolicy(Value: Boolean);
+    procedure SetHonorDrivePolicy(Value: Integer);
     function GetFirstFixedDrive: Char;
     procedure Load;
     function AddDrive(Drive: string): TDriveInfoRec;
     function GetDriveBitMask(Drive: string): Integer;
     function DoAnyValidPath(DriveType: Integer; CanBeHidden: Boolean; var Path: string): Boolean;
+    function ReadDriveMask(Reg: TRegistry; ValueName: string): DWORD;
 
   public
     function Get(Drive: string): TDriveInfoRec;
@@ -107,7 +109,7 @@ type
     function GetPrettyName(Drive: string): string;
     function ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
     procedure OverrideDrivePolicy(Drive: string);
-    property HonorDrivePolicy: Boolean read FHonorDrivePolicy write SetHonorDrivePolicy;
+    property HonorDrivePolicy: Integer read FHonorDrivePolicy write SetHonorDrivePolicy;
     property FirstFixedDrive: Char read GetFirstFixedDrive;
     property UseABDrives: Boolean read FUseABDrives write FUseABDrives;
 
@@ -120,6 +122,7 @@ function GetShellFileName(PIDL: PItemIDList): string; overload;
 function GetNetWorkName(Drive: string): string;
 function GetNetWorkConnected(Drive: string): Boolean;
 function IsRootPath(Path: string): Boolean;
+function GetThumbnail(Path: string; Size: TSize): TBitmap;
 
 {Central drive information object instance of TDriveInfo}
 var
@@ -132,6 +135,10 @@ implementation
 
 uses
   Math, PIDL, OperationWithTimeout, PasTools, CompThread;
+
+type
+  PRGBQuadArray = ^TRGBQuadArray;    // From graphics.pas
+  TRGBQuadArray = array[Byte] of TRGBQuad;  // From graphics.pas
 
 var
   ThreadLock: TRTLCriticalSection;
@@ -187,7 +194,7 @@ constructor TDriveInfo.Create;
 begin
   inherited;
 
-  FHonorDrivePolicy := True;
+  FHonorDrivePolicy := 1;
   FUseABDrives := True;
   FLoaded := False;
   FData := TObjectDictionary<string, TDriveInfoRec>.Create([doOwnsValues]);
@@ -335,7 +342,7 @@ begin
   Result := @FFolders[Folder];
 end;
 
-procedure TDriveInfo.SetHonorDrivePolicy(Value: Boolean);
+procedure TDriveInfo.SetHonorDrivePolicy(Value: Integer);
 var
   Drive: TRealDrive;
 begin
@@ -367,15 +374,21 @@ end;
 procedure TDriveInfo.ReadDriveBasicStatus(Drive: string);
 var
   ValidDriveType: Boolean;
-  HiddenByDrivePolicy: Boolean;
+  InaccessibleByDrivePolicy, HiddenByDrivePolicy: Boolean;
+  DriveBitMask: Integer;
 begin
   Assert(FData.ContainsKey(Drive));
   with FData[Drive] do
   begin
     DriveType := Windows.GetDriveType(PChar(GetDriveRoot(Drive)));
-    ValidDriveType := (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
+    DriveBitMask := GetDriveBitMask(Drive);
+    InaccessibleByDrivePolicy :=
+      IsRealDrive(Drive) and ((HonorDrivePolicy and 2) <> 0) and ((DriveBitMask and FNoViewOnDrive) <> 0);
     HiddenByDrivePolicy :=
-      FHonorDrivePolicy and IsRealDrive(Drive) and ((GetDriveBitMask(Drive) and FNoDrives) <> 0);
+      IsRealDrive(Drive) and ((HonorDrivePolicy and 1) <> 0) and ((DriveBitMask and FNoDrives) <> 0);
+    ValidDriveType :=
+      (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]) and
+      (not InaccessibleByDrivePolicy);
     ValidButHiddenByDrivePolicy := ValidDriveType and HiddenByDrivePolicy;
     Valid := ValidDriveType and (not HiddenByDrivePolicy);
   end;
@@ -394,6 +407,25 @@ begin
   end;
 end;
 
+function TDriveInfo.ReadDriveMask(Reg: TRegistry; ValueName: string): DWORD;
+var
+  DataInfo: TRegDataInfo;
+begin
+  Result := 0;
+  if Reg.GetDataInfo(ValueName, DataInfo) then
+  begin
+    if (DataInfo.RegData = rdBinary) and (DataInfo.DataSize >= SizeOf(Result)) then
+    begin
+      Reg.ReadBinaryData(ValueName, Result, SizeOf(Result));
+    end
+      else
+    if DataInfo.RegData = rdInteger then
+    begin
+      Result := Reg.ReadInteger(ValueName);
+    end;
+  end;
+end;
+
 procedure TDriveInfo.Load;
 var
   Drive: TRealDrive;
@@ -402,19 +434,20 @@ var
   Drives: string;
 begin
   AppLog('Loading drives');
-  FNoDrives := 0;
   Reg := TRegistry.Create;
+  FNoDrives := 0;
+  FNoViewOnDrive := 0;
   try
-    if Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') Then
-       Reg.ReadBinaryData('NoDrives', FNoDrives, SizeOf(FNoDrives));
-  except
-    try
-      FNoDrives := Reg.ReadInteger('NoDrives');
-    except
+    if Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
+    begin
+      FNoDrives := ReadDriveMask(Reg, 'NoDrives');
+      FNoViewOnDrive := ReadDriveMask(Reg, 'NoViewOnDrive');
     end;
+  finally
+    Reg.Free;
   end;
-  Reg.Free;
   AppLog(Format('NoDrives mask: %d', [Integer(FNoDrives)]));
+  AppLog(Format('NoViewOnDrive mask: %d', [Integer(FNoViewOnDrive)]));
 
   FDesktop := nil;
 
@@ -787,6 +820,48 @@ end;
 function IsRootPath(Path: string): Boolean;
 begin
   Result := SameText(ExcludeTrailingBackslash(ExtractFileDrive(Path)), ExcludeTrailingBackslash(Path));
+end;
+
+function GetThumbnail(Path: string; Size: TSize): TBitmap;
+var
+  ImageFactory: IShellItemImageFactory;
+  X, Y: Integer;
+  Row: PRGBQuadArray;
+  Pixel: PRGBQuad;
+  Alpha: Byte;
+  Handle: HBITMAP;
+begin
+  Result := nil;
+  SHCreateItemFromParsingName(PChar(Path), nil, IShellItemImageFactory, ImageFactory);
+  if Assigned(ImageFactory) then
+  begin
+    if Succeeded(ImageFactory.GetImage(Size, SIIGBF_RESIZETOFIT, Handle)) then
+    begin
+      Result := TBitmap.Create;
+      try
+        Result.Handle := Handle;
+        Result.PixelFormat := pf32bit;
+
+        for Y := 0 to Result.Height - 1 do
+        begin
+          Row  := Result.ScanLine[Y];
+          for X := 0 to Result.Width - 1 do
+          begin
+            Pixel := @Row[X];
+            Alpha := Pixel.rgbReserved;
+            Pixel.rgbBlue := (Pixel.rgbBlue * Alpha) div 255;
+            Pixel.rgbGreen := (Pixel.rgbGreen * Alpha) div 255;
+            Pixel.rgbRed := (Pixel.rgbRed * Alpha) div 255;
+          end;
+        end;
+      except
+        Result.Free;
+        raise;
+      end;
+    end;
+
+    ImageFactory := nil; // Redundant?
+  end;
 end;
 
 initialization

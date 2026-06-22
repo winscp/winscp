@@ -37,7 +37,11 @@
 #include <openssl/opensslv.h>
 #include <openssl/evp.h>
 
-#if defined(NE_HAVE_TS_SSL) && OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#define HAVE_OPENSSL110
+#endif
+
+#if defined(NE_HAVE_TS_SSL) && !defined(HAVE_OPENSSL110)
 /* From OpenSSL 1.1.0 locking callbacks are no longer needed. */
 #define WITH_OPENSSL_LOCKING (1)
 #include <stdlib.h> /* for abort() */
@@ -70,7 +74,7 @@ typedef unsigned char ne_d2i_uchar;
 typedef const unsigned char ne_d2i_uchar;
 #endif
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#ifndef HAVE_OPENSSL110
 #define X509_get0_notBefore X509_get_notBefore
 #define X509_get0_notAfter X509_get_notAfter
 #define X509_up_ref(x) x->references++
@@ -545,6 +549,11 @@ static int provide_client_cert(SSL *ssl, X509 **cert, EVP_PKEY **pkey)
     }
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10101000L
+#define TLS_client_method SSLv23_client_method
+#define TLS_server_method SSLv23_server_method
+#endif
+
 void ne_ssl_set_clicert(ne_session *sess, const ne_ssl_client_cert *cc)
 {
     sess->client_cert = dup_client_cert(cc);
@@ -553,6 +562,7 @@ void ne_ssl_set_clicert(ne_session *sess, const ne_ssl_client_cert *cc)
 ne_ssl_context *ne_ssl_context_create(int mode)
 {
     ne_ssl_context *ctx = ne_calloc(sizeof *ctx);
+
     if (mode == NE_SSL_CTX_CLIENT) {
         ctx->ctx = SSL_CTX_new(TLS_client_method());
         ctx->sess = NULL;
@@ -564,53 +574,25 @@ ne_ssl_context *ne_ssl_context_create(int mode)
 #if defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER >= 0x3040000fL || (!defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10101000L)
         SSL_CTX_set_post_handshake_auth(ctx->ctx, 1);
 #endif
-    } else if (mode == NE_SSL_CTX_SERVER) {
-        ctx->ctx = SSL_CTX_new(SSLv23_server_method());
+    }
+    else /* mode == NE_SSL_CTX_SERVER */ {
+        ctx->ctx = SSL_CTX_new(TLS_server_method());
         SSL_CTX_set_session_cache_mode(ctx->ctx, SSL_SESS_CACHE_CLIENT);
 #ifdef SSL_OP_NO_TICKET
         /* disable ticket support since it inhibits testing of session
          * caching. */
         SSL_CTX_set_options(ctx->ctx, SSL_OP_NO_TICKET);
 #endif
-    } else {
-        ne_free(ctx);
-        return NULL;
     }
     return ctx;
 }
 
 void ne_ssl_context_set_flag(ne_ssl_context *ctx, int flag, int value)
 {
-    long opts = SSL_CTX_get_options(ctx->ctx);
-
-    switch (flag) {
-    case NE_SSL_CTX_SSLv2:
-        if (value) { 
-            /* Enable SSLv2 support; clear the "no SSLv2" flag. */
-            opts &= ~SSL_OP_NO_SSLv2;
-        } else {
-            /* Disable it: set the flag. */
-            opts |= SSL_OP_NO_SSLv2;
-        }
-        break;
-    }
-
-    SSL_CTX_set_options(ctx->ctx, opts);
 }
 
 int ne_ssl_context_get_flag(ne_ssl_context *ctx, int flag)
 {
-    switch (flag) {
-    case NE_SSL_CTX_SSLv2:
-#ifdef OPENSSL_NO_SSL2
-        return 0;
-#else
-        return ! (SSL_CTX_get_options(ctx->ctx) & SSL_OP_NO_SSLv2);
-#endif
-    default:
-        break;
-    }
-
     return 0;
 }
 
@@ -644,6 +626,49 @@ int ne_ssl_context_set_verify(ne_ssl_context *ctx,
         SSL_CTX_load_verify_locations(ctx->ctx, verify_cas, NULL);
     }
     return 0;
+}
+
+#ifdef HAVE_OPENSSL110
+/* Map neon version constants to native OpenSSL constants, returns -1
+ * on versions not supported. */
+static int proto_to_native(enum ne_ssl_protocol proto)
+{
+    switch (proto) {
+    case NE_SSL_PROTO_UNSPEC: return 0;
+    case NE_SSL_PROTO_SSL_3: return SSL3_VERSION;
+    case NE_SSL_PROTO_TLS_1_0: return TLS1_VERSION;
+    case NE_SSL_PROTO_TLS_1_1: return TLS1_1_VERSION;
+#ifdef TLS1_2_VERSION
+    case NE_SSL_PROTO_TLS_1_2: return TLS1_2_VERSION;
+#endif
+#ifdef TLS1_3_VERSION
+    case NE_SSL_PROTO_TLS_1_3: return TLS1_3_VERSION;
+#endif
+    default:
+        return -1;
+    }
+}
+#endif
+
+int ne_ssl_context_set_versions(ne_ssl_context *ctx, enum ne_ssl_protocol min,
+                                enum ne_ssl_protocol max)
+{
+#ifdef HAVE_OPENSSL110
+    int omin = proto_to_native(min), omax = proto_to_native(max), ret;
+
+    if (omin < 0 || omax < 0) {
+        return NE_SOCK_ERROR;
+    }
+
+    if ((ret = SSL_CTX_set_min_proto_version(ctx->ctx, omin)) == 1)
+        ret = SSL_CTX_set_max_proto_version(ctx->ctx, omax);
+
+    ERR_clear_error();
+    
+    return ret == 1 ? 0 : NE_SOCK_ERROR;
+#else
+    return NE_SOCK_ERROR;
+#endif
 }
 
 void ne_ssl_context_destroy(ne_ssl_context *ctx)

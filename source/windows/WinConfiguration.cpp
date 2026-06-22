@@ -19,10 +19,10 @@
 #include <DragExt.h>
 #include <Math.hpp>
 #include <StrUtils.hpp>
-#include <Generics.Defaults.hpp>
 #include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
 #include "CoreMain.h"
+#include "DriveView.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -39,6 +39,8 @@ const UnicodeString ScpCommanderRemotePanelDirViewParamsDefault = ScpExplorerDir
 const UnicodeString ScpCommanderLocalPanelDirViewParamsDefault =
   L"0;1;0|150,1;70,1;120,1;150,1;55,0;55,0;@" + SaveDefaultPixelsPerInch() + L"|5;0;1;2;3;4";
 UnicodeString QueueViewLayoutDefault;
+UnicodeString ScpCommanderWindowParamsDefault;
+UnicodeString ScpExplorerWindowParamsDefault;
 //---------------------------------------------------------------------------
 static const wchar_t FileColorDataSeparator = L':';
 TFileColorData::TFileColorData() :
@@ -133,6 +135,9 @@ void __fastcall TEditorData::ExternalEditorOptionsAutodetect()
     // A notable exception is Windows Notepad before Windows 10 1809, so here's an exception for it.
     ExternalEditorText = !IsWin10Build(17763);
 
+    // While on Windows 11, the notepad.exe open the MDI Store Windows Notepad,
+    // the notepad.exe process runs as long as the Windows Notepad tab is opened,
+    // so technically the notepad.exe is stil SDI
     SDIExternalEditor = true;
   }
 }
@@ -586,6 +591,7 @@ void __fastcall TWinConfiguration::Default()
   FCopyParamAutoSelectNotice = true;
   FLockToolbars = false;
   FSelectiveToolbarText = true;
+  FLargerToolbar = 1;
   FAutoOpenInPutty = false;
   FRefreshRemotePanel = false;
   FRefreshRemotePanelInterval = TDateTime(0, 1, 0, 0);
@@ -626,7 +632,7 @@ void __fastcall TWinConfiguration::Default()
   FExtensionsDeleted = L"";
   FLockedInterface = false;
 
-  HonorDrivePolicy = true;
+  HonorDrivePolicy = 1;
   UseABDrives = true;
   TimeoutShellOperations = true;
   TimeoutShellIconRetrieval = false;
@@ -637,6 +643,9 @@ void __fastcall TWinConfiguration::Default()
   HiContrast = false;
   EditorCheckNotModified = false;
   SessionTabCaptionTruncation = true;
+  LoadingTooLongLimit = 15;
+  RemoteThumbnailMask = EmptyStr;
+  RemoteThumbnailSizeLimit = 50 * 1024;
   FirstRun = StandardDatestamp();
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -660,6 +669,7 @@ void __fastcall TWinConfiguration::Default()
   FEditor.WarnOnEncodingFallback = true;
   FEditor.WarnOrLargeFileSize = true;
   FEditor.AutoFont = true;
+  FEditor.DisableSmoothScroll = false;
 
   FQueueView.Height = 140;
   FQueueView.HeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
@@ -700,7 +710,11 @@ void __fastcall TWinConfiguration::Default()
 
   int ExplorerWidth = Min(WorkAreaWidthScaled - 40, 960);
   int ExplorerHeight = Min(WorkAreaHeightScaled - 30, 720);
-  FScpExplorer.WindowParams = FormatDefaultWindowParams(ExplorerWidth, ExplorerHeight);
+  if (ScpExplorerWindowParamsDefault.IsEmpty())
+  {
+    ScpExplorerWindowParamsDefault = FormatDefaultWindowParams(ExplorerWidth, ExplorerHeight);
+  }
+  FScpExplorer.WindowParams = ScpExplorerWindowParamsDefault;
 
   FScpExplorer.DirViewParams = ScpExplorerDirViewParamsDefault;
   FScpExplorer.ToolbarsLayout =
@@ -721,7 +735,7 @@ void __fastcall TWinConfiguration::Default()
   FScpExplorer.SessionsTabs = true;
   FScpExplorer.StatusBar = true;
   FScpExplorer.LastLocalTargetDirectory = GetPersonalFolder();
-  FScpExplorer.ViewStyle = 0; /* vsIcon */
+  FScpExplorer.ViewStyle = dvsIcon;
   FScpExplorer.ShowFullAddress = true;
   FScpExplorer.DriveView = true;
   FScpExplorer.DriveViewWidth = 180;
@@ -729,7 +743,11 @@ void __fastcall TWinConfiguration::Default()
 
   int CommanderWidth = Min(WorkAreaWidthScaled - 40, 1090);
   int CommanderHeight = Min(WorkAreaHeightScaled - 30, 700);
-  FScpCommander.WindowParams = FormatDefaultWindowParams(CommanderWidth, CommanderHeight);
+  if (ScpCommanderWindowParamsDefault.IsEmpty())
+  {
+    ScpCommanderWindowParamsDefault = FormatDefaultWindowParams(CommanderWidth, CommanderHeight);
+  }
+  FScpCommander.WindowParams = ScpCommanderWindowParamsDefault;
 
   FScpCommander.LocalPanelWidth = 0.5;
   FScpCommander.SwappedPanels = false;
@@ -769,6 +787,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.ExplorerKeyboardShortcuts = false;
   FScpCommander.SystemContextMenu = false;
   FScpCommander.RemotePanel.DirViewParams = ScpCommanderRemotePanelDirViewParamsDefault;
+  FScpCommander.RemotePanel.ViewStyle = dvsReport;
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.DriveView = false;
   FScpCommander.RemotePanel.DriveViewHeight = 100;
@@ -777,6 +796,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.RemotePanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.RemotePanel.LastPath = UnicodeString();
   FScpCommander.LocalPanel.DirViewParams = ScpCommanderLocalPanelDirViewParamsDefault;
+  FScpCommander.LocalPanel.ViewStyle = dvsReport;
   FScpCommander.LocalPanel.StatusBar = true;
   FScpCommander.LocalPanel.DriveView = false;
   FScpCommander.LocalPanel.DriveViewHeight = 100;
@@ -785,6 +805,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.LocalPanel.LastPath = UnicodeString();
   FScpCommander.OtherLocalPanelDirViewParams = FScpCommander.LocalPanel.DirViewParams;
+  FScpCommander.OtherLocalPanelViewStyle = FScpCommander.LocalPanel.ViewStyle;
   FScpCommander.OtherLocalPanelLastPath = UnicodeString();
 
   FBookmarks->Clear();
@@ -1069,6 +1090,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     CopyParamAutoSelectNotice); \
     KEY(Bool,     LockToolbars); \
     KEY(Bool,     SelectiveToolbarText); \
+    KEY(Integer,  LargerToolbar); \
     KEY(Bool,     AutoOpenInPutty); \
     KEY(Bool,     RefreshRemotePanel); \
     KEY(DateTime, RefreshRemotePanelInterval); \
@@ -1103,7 +1125,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(DateTime, TipsShown); \
     KEY(String,   FileColors); \
     KEY(Integer,  RunsSinceLastTip); \
-    KEY(Bool,     HonorDrivePolicy); \
+    KEY(Integer,  HonorDrivePolicy); \
     KEY(Bool,     UseABDrives); \
     KEY(Integer,  LastMachineInstallations); \
     KEY(String,   FExtensionsDeleted); \
@@ -1118,6 +1140,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     HiContrast); \
     KEY(Bool,     EditorCheckNotModified); \
     KEY(Bool,     SessionTabCaptionTruncation); \
+    KEY(Integer,  LoadingTooLongLimit); \
+    KEY(String,   RemoteThumbnailMask); \
+    KEY(Integer,  RemoteThumbnailSizeLimit); \
     KEY(String,   FirstRun); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
@@ -1142,6 +1167,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     Editor.WarnOnEncodingFallback); \
     KEY(Bool,     Editor.WarnOrLargeFileSize); \
     KEY(Bool,     Editor.AutoFont); \
+    KEY(Bool,     Editor.DisableSmoothScroll); \
   ); \
   BLOCK(L"Interface\\QueueView", CANCREATE, \
     KEY(Integer,  QueueView.Height); \
@@ -1226,6 +1252,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   ); \
   BLOCK(L"Interface\\Commander\\LocalPanel", CANCREATE, \
     KEY(String,  ScpCommander.LocalPanel.DirViewParams); \
+    KEY(Integer, ScpCommander.LocalPanel.ViewStyle); \
     KEY(Bool,    ScpCommander.LocalPanel.StatusBar); \
     KEY(Bool,    ScpCommander.LocalPanel.DriveView); \
     KEY(Integer, ScpCommander.LocalPanel.DriveViewHeight); \
@@ -1236,6 +1263,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   ); \
   BLOCK(L"Interface\\Commander\\RemotePanel", CANCREATE, \
     KEY(String,  ScpCommander.RemotePanel.DirViewParams); \
+    KEY(Integer, ScpCommander.RemotePanel.ViewStyle); \
     KEY(Bool,    ScpCommander.RemotePanel.StatusBar); \
     KEY(Bool,    ScpCommander.RemotePanel.DriveView); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewHeight); \
@@ -1245,8 +1273,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,  ScpCommander.RemotePanel.LastPath); \
   ); \
   BLOCK(L"Interface\\Commander\\OtherLocalPanel", CANCREATE, \
-    KEYEX(String, ScpCommander.OtherLocalPanelDirViewParams, L"DirViewParams"); \
-    KEYEX(String, ScpCommander.OtherLocalPanelLastPath, L"LastPath"); \
+    KEYEX(String,  ScpCommander.OtherLocalPanelDirViewParams, L"DirViewParams"); \
+    KEYEX(Integer, ScpCommander.OtherLocalPanelViewStyle, L"ViewStyle"); \
+    KEYEX(String,  ScpCommander.OtherLocalPanelLastPath, L"LastPath"); \
   ); \
   BLOCK(L"Security", CANCREATE, \
     KEY(Bool,    FUseMasterPassword); \
@@ -1818,7 +1847,7 @@ bool __fastcall TWinConfiguration::IsDDExtRunning()
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::IsDDExtBroken()
 {
-  int Build = GetWindowsBuild();
+  int Build = Win32BuildNumber();
   return (Build >= 17134) && (Build < 17763);
 }
 //---------------------------------------------------------------------------
@@ -2307,6 +2336,11 @@ void __fastcall TWinConfiguration::SetSelectiveToolbarText(bool value)
   SET_CONFIG_PROPERTY(SelectiveToolbarText);
 }
 //---------------------------------------------------------------------------
+void TWinConfiguration::SetLargerToolbar(int value)
+{
+  SET_CONFIG_PROPERTY(LargerToolbar);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetAutoOpenInPutty(bool value)
 {
   SET_CONFIG_PROPERTY(AutoOpenInPutty);
@@ -2447,12 +2481,12 @@ void __fastcall TWinConfiguration::SetRunsSinceLastTip(int value)
   SET_CONFIG_PROPERTY(RunsSinceLastTip);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::GetHonorDrivePolicy()
+int __fastcall TWinConfiguration::GetHonorDrivePolicy()
 {
   return DriveInfo->HonorDrivePolicy;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetHonorDrivePolicy(bool value)
+void __fastcall TWinConfiguration::SetHonorDrivePolicy(int value)
 {
   if (HonorDrivePolicy != value)
   {
@@ -2830,6 +2864,16 @@ void TWinConfiguration::SetSessionTabCaptionTruncation(bool value)
   SET_CONFIG_PROPERTY(SessionTabCaptionTruncation);
 }
 //---------------------------------------------------------------------------
+void TWinConfiguration::SetLoadingTooLongLimit(int value)
+{
+  DriveViewLoadingTooLongLimit = value;
+}
+//---------------------------------------------------------------------------
+int TWinConfiguration::GetLoadingTooLongLimit()
+{
+  return DriveViewLoadingTooLongLimit;
+}
+//---------------------------------------------------------------------------
 void TWinConfiguration::SetFirstRun(const UnicodeString & value)
 {
   SET_CONFIG_PROPERTY(FirstRun);
@@ -2960,6 +3004,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"MinimizeToTray", MinimizeToTray);
   UnicodeString ToolbarsButtons = (Interface == ifExplorer) ? ScpExplorer.ToolbarsButtons : ScpCommander.ToolbarsButtons;
   Usage->Set(L"AnyHiddenToolbarButtons", !ToolbarsButtons.IsEmpty());
+  Usage->Set(L"LargerToolbar", LargerToolbar);
   Usage->Set(L"FileColors", !FileColors.IsEmpty());
   Usage->Set(L"DragDropDrives", !DDDrives.IsEmpty());
   Usage->Set(L"ShowingTips", ShowTips);

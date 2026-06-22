@@ -71,6 +71,41 @@
 	parser search is used.</para>
 	
       </sect1>
+
+      <sect1 id="example">
+        <title>Example application</title>
+
+	<para>The code below is a simple example which sends a
+	<literal>PUT</literal> request, using the API from
+	<literal>&lt;ne_basic.h&gt;</literal>:
+
+<programlisting><![CDATA[
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <ne_basic.h>
+
+static const char data[] = "Example data.\n";
+
+int main(int argc, char **argv)
+{
+    ne_session *sess;
+    int ec = EXIT_SUCCESS;
+
+    ne_sock_init(); /* Global library initialization. */
+
+    sess = ne_session_create("http", "localhost", 80);
+
+    if (ne_putbuf(sess, "/dav/data.txt", data, sizeof data)) {
+        fprintf(stderr, "PUT Request failed: %s\n", ne_get_error(sess));
+        ec = EXIT_FAILURE;
+    }
+
+    ne_session_destroy(sess);
+
+    return ec;
+}
+]]></programlisting></para></sect1>
       
       <sect1 id="compliance">
 	<title>Standards compliance</title>
@@ -104,7 +139,25 @@
         <quote>chunked</quote>.</para></sect2>
 
         <sect2>
-        <title>RFC 2617, HTTP Authentication: Basic and Digest Access Authentication</title>
+        <title><ulink url="https://datatracker.ietf.org/doc/html/rfc3986">RFC 3986</ulink> Uniform Resource Identifier (URI): Generic Syntax and <ulink url="https://datatracker.ietf.org/doc/html/rfc6874">RFC 6874</ulink>, Representing IPv6 Zone Identifiers in Address Literals and Uniform Resource Identifiers</title>
+
+        <para>&neon; parses and handles scoped IPv6 link-local literal
+        addresses passed to <xref linkend="refsess"/> since version
+        <literal>0.34</literal>, following the syntax in RFC 6874. An
+        example <literal>host</literal> argument would be
+        <literal>"[fe80::cafe%25eth0]"</literal> where
+        <literal>"eth0"</literal> is the scope ID. Since <ulink
+        url="https://datatracker.ietf.org/doc/html/rfc9110">RFC
+        9110</ulink> does not reference the extended syntax of scoped
+        IPv6 literals, and a scope ID has no meaningful interpretation
+        outside of the client host, it is omitted from the
+        <literal>Host</literal> header sent over the wire. So the
+        example argument here translates to an HTTP/1.1 header field
+        of <literal>Host: [fe80::cafe]</literal>.</para>
+        </sect2>
+
+        <sect2>
+        <title>RFC 7616, HTTP Digest Access Authentication</title>
 
         <para>&neon; is not strictly compliant with the quoting rules
         given in the grammar for the <literal>Authorization</literal>
@@ -114,7 +167,19 @@
         (Microsoft&reg; IIS 5) rejects the request if these parameters
         are not quoted.  &neon; sends these parameters with
         quotes&mdash;this is not known to cause any problems with
-        other server implementations.</para></sect2>
+        other server implementations.</para>
+
+        <para>RFC 7616 predates RFC 9112 and uses conflicting language
+        around URIs. &neon; uses the RFC 9112
+        <literal>request-target</literal> in both the
+        <literal>A2</literal> grammar and the <literal>uri=</literal>
+        parameter of the <literal>Authorization</literal>
+        header. &neon; will accept (and resolve) any URI-reference in
+        the <literal>domain=</literal> parameter for
+        <literal>WWW-Authenticate</literal> response header
+        field.</para>
+
+        </sect2>
 
 	<sect2>
         <title>Namespaces in XML</title>

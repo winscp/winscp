@@ -6,19 +6,22 @@ object CopyDialog: TCopyDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CopyDialog'
-  ClientHeight = 225
-  ClientWidth = 511
+  ClientHeight = 235
+  ClientWidth = 567
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = False
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    511
-    225)
-  PixelsPerInch = 96
-  TextHeight = 13
+    567
+    235)
+  TextHeight = 15
   object Image: TImage
     Left = 8
     Top = 11
@@ -29,15 +32,15 @@ object CopyDialog: TCopyDialog
   object DirectoryLabel: TLabel
     Left = 46
     Top = 8
-    Width = 195
-    Height = 13
+    Width = 212
+    Height = 15
     Caption = 'Copy 2 selected files to remote directory'
   end
   object LocalDirectoryEdit: THistoryComboBox
     Left = 46
-    Top = 25
-    Width = 372
-    Height = 21
+    Top = 26
+    Width = 427
+    Height = 23
     AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
     DropDownCount = 16
@@ -48,9 +51,9 @@ object CopyDialog: TCopyDialog
   end
   object RemoteDirectoryEdit: THistoryComboBox
     Left = 46
-    Top = 25
-    Width = 456
-    Height = 21
+    Top = 26
+    Width = 513
+    Height = 23
     AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
     DropDownCount = 16
@@ -60,9 +63,9 @@ object CopyDialog: TCopyDialog
     OnChange = ControlChange
   end
   object OkButton: TButton
-    Left = 260
-    Top = 136
-    Width = 75
+    Left = 307
+    Top = 143
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = 'OK'
@@ -72,9 +75,9 @@ object CopyDialog: TCopyDialog
     OnDropDownClick = OkButtonDropDownClick
   end
   object CancelButton: TButton
-    Left = 343
-    Top = 136
-    Width = 75
+    Left = 393
+    Top = 143
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Cancel = True
@@ -83,27 +86,28 @@ object CopyDialog: TCopyDialog
     TabOrder = 7
   end
   object LocalDirectoryBrowseButton: TButton
-    Left = 427
-    Top = 23
-    Width = 75
+    Left = 479
+    Top = 25
+    Width = 80
     Height = 25
+    Anchors = [akTop, akRight]
     Caption = 'B&rowse...'
     TabOrder = 1
     OnClick = LocalDirectoryBrowseButtonClick
   end
   object QueueCheck2: TCheckBox
-    Left = 12
-    Top = 112
+    Left = 10
+    Top = 120
     Width = 317
     Height = 17
-    Caption = 'Transfer on background (add to transfer &queue) X'
+    Caption = 'Transfer in &background (add to transfer queue) X'
     TabOrder = 4
     OnClick = ControlChange
   end
   object HelpButton: TButton
-    Left = 427
-    Top = 136
-    Width = 75
+    Left = 479
+    Top = 143
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Help'
@@ -111,8 +115,8 @@ object CopyDialog: TCopyDialog
     OnClick = HelpButtonClick
   end
   object NeverShowAgainCheck: TCheckBox
-    Left = 12
-    Top = 167
+    Left = 10
+    Top = 174
     Width = 253
     Height = 17
     Caption = '&Do not show this dialog box again'
@@ -121,8 +125,8 @@ object CopyDialog: TCopyDialog
   end
   object TransferSettingsButton: TButton
     Left = 8
-    Top = 136
-    Width = 161
+    Top = 143
+    Width = 175
     Height = 25
     Caption = 'Transfer settin&gs...'
     Style = bsSplitButton
@@ -132,21 +136,22 @@ object CopyDialog: TCopyDialog
   end
   object CopyParamGroup: TGroupBox
     Left = 8
-    Top = 53
-    Width = 496
-    Height = 50
+    Top = 55
+    Width = 551
+    Height = 59
+    Anchors = [akLeft, akTop, akRight]
     Caption = 'Transfer settings'
     TabOrder = 3
     OnClick = CopyParamGroupClick
     OnContextPopup = CopyParamGroupContextPopup
     DesignSize = (
-      496
-      50)
+      551
+      59)
     object CopyParamLabel: TLabel
-      Left = 7
-      Top = 15
-      Width = 482
-      Height = 26
+      Left = 9
+      Top = 20
+      Width = 533
+      Height = 35
       Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
       Caption = 'CopyParamLabel'
@@ -157,18 +162,22 @@ object CopyDialog: TCopyDialog
   end
   object ShortCutHintPanel: TPanel
     Left = 0
-    Top = 191
-    Width = 511
-    Height = 34
+    Top = 197
+    Width = 567
+    Height = 38
     Align = alBottom
     BevelOuter = bvNone
     ParentBackground = False
     TabOrder = 9
+    DesignSize = (
+      567
+      38)
     object ShortCutHintLabel: TLabel
-      Left = 12
+      Left = 8
       Top = 3
-      Width = 490
-      Height = 28
+      Width = 551
+      Height = 32
+      Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
       Caption = 
         'In Commander interface the keyboard shortcut F5 is used to trans' +

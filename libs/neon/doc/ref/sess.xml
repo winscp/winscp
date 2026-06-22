@@ -19,7 +19,7 @@
 	  <funcprototype>
 	    <funcdef>ne_session *<function>ne_session_create</function></funcdef>
 	    <paramdef>const char *<parameter>scheme</parameter></paramdef>
-	    <paramdef>const char *<parameter>hostname</parameter></paramdef>
+	    <paramdef>const char *<parameter>host</parameter></paramdef>
 	    <paramdef>unsigned int <parameter>port</parameter></paramdef>
 	  </funcprototype>
 
@@ -47,7 +47,7 @@ other common attributes.</para>
 
 	<para>A new HTTP session is created using the
 <function>ne_session_create</function> function; the 
-<parameter>hostname</parameter> and <parameter>port</parameter>
+<parameter>host</parameter> and <parameter>port</parameter>
 parameters specify the origin server to use, along with
 the <parameter>scheme</parameter> (usually <literal>"http"</literal>).
 Before the first use of <function>ne_session_create</function> in a
@@ -56,11 +56,35 @@ perform any global initialization needed by any libraries used by
 &neon;.</para>
 
 	<para>To enable SSL/TLS for the session, pass the string
-<literal>"https"</literal> as the <parameter>scheme</parameter>
-parameter, and either register a certificate verification function
-(see <xref linkend="ne_ssl_set_verify"/>) or trust the appropriate 
-certificate (see <xref linkend="ne_ssl_trust_cert"/>, <xref
-linkend="ne_ssl_trust_default_ca"/>).</para>
+	<literal>"https"</literal> as the
+	<parameter>scheme</parameter>, and either register a
+	certificate verification function (see <xref
+	linkend="ne_ssl_set_verify"/>) or trust the appropriate
+	certificate (see <xref linkend="ne_ssl_trust_cert"/>, <xref
+	linkend="ne_ssl_trust_default_ca"/>).</para>
+
+        <para>The <parameter>host</parameter> parameter must follow
+        the definition of host <literal>host</literal> in <ulink
+        url="https://www.rfc-editor.org/rfc/rfc3986">RFC 3986</ulink>,
+        which can be an IP-literal or registered (DNS) hostname. Valid
+        examples of each: <literal>"198.51.100.42"</literal> (IPv4
+        literal address), <literal>"[2001:db8::42]"</literal> (IPv6
+        literal, which <emphasis>MUST</emphasis> be enclosed in square
+        brackets), or <literal>"www.example.com"</literal> (DNS
+        hostname). The <ulink
+        url="https://www.rfc-editor.org/rfc/rfc6874">RFC 6874</ulink>
+        syntax for scoped IPv6 link-local literal addresses is also
+        permitted, for example <literal>"[fe80::1%25eth0]"</literal>.
+        </para>
+
+        <para>The <parameter>scheme</parameter> parameter is used to
+        determine the URI for resources identified during request
+        handling. Other than special handling of the string
+        <literal>"https"</literal>, no other interpretation or
+        checking of the <parameter>scheme</parameter> is
+        performed. For example, if an HTTP-to-FTP proxy is configured,
+        a scheme of <literal>"ftp"</literal> could be used to access
+        resources.</para>
 
 	<para>To use a proxy server for the session, it must be
 	configured (see <xref linkend="ne_session_proxy"/>) before any
@@ -88,8 +112,8 @@ is a request active using the session.</para>
       <refsect1>
 	<title>Notes</title>
 
-        <para>The hostname passed to
-<function>ne_session_create</function> is resolved when the first
+        <para>If a hostname is passed to
+<function>ne_session_create</function>, it will be resolved when the first
 request using the session is dispatched; a DNS resolution failure can
 only be detected at that time (using the <literal>NE_LOOKUP</literal>
 error code); see <xref linkend="ne_request_dispatch"/> for
@@ -116,7 +140,7 @@ ne_session_destroy(sess);
       <refsect1>
 	<title>See Also</title>
 
-	<para><xref linkend="ne_ssl_set_verify"/>, <xref linkend="ne_ssl_trust_cert"/>, <xref linkend="ne_sock_init"/>, <xref linkend="ne_set_session_flag"/></para>
+	<para><xref linkend="ne_ssl_set_verify"/>, <xref linkend="ne_ssl_trust_cert"/>, <xref linkend="ne_sock_init"/>, <xref linkend="ne_set_session_flag"/>, <xref linkend="ne_session_proxy"/></para>
       </refsect1>
 
     </refentry>

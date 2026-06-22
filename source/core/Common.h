@@ -3,6 +3,7 @@
 #define CommonH
 //---------------------------------------------------------------------------
 #include <vector>
+#include "Global.h"
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, L"")
 #define THROWOSIFFALSE(C) { if (!(C)) RaiseLastOSError(); }
@@ -23,7 +24,8 @@
 //---------------------------------------------------------------------------
 extern const UnicodeString AnyMask;
 extern const wchar_t EngShortMonthNames[12][4];
-extern const char Bom[3];
+extern const char Bom[4];
+extern const UnicodeString XmlDeclaration;
 extern const wchar_t TokenPrefix;
 extern const wchar_t NoReplacement;
 extern const wchar_t TokenReplacement;
@@ -47,6 +49,7 @@ void __fastcall Shred(AnsiString & Str);
 void __fastcall Shred(RawByteString & Str);
 UnicodeString AnsiToString(const RawByteString & S);
 UnicodeString AnsiToString(const char * S, size_t Len);
+UnicodeString UTFToString(const RawByteString & S);
 UnicodeString MakeValidFileName(UnicodeString FileName);
 UnicodeString RootKeyToStr(HKEY RootKey, const UnicodeString & Default = EmptyStr);
 UnicodeString BooleanToStr(bool B);
@@ -100,6 +103,7 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall StringsToParams(TStrings * Strings);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
+UnicodeString CombinePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 UnicodeString GetNormalizedPath(const UnicodeString & Path);
 UnicodeString GetCanonicalPath(const UnicodeString & Path);
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
@@ -109,6 +113,7 @@ int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
+bool IsWideChar(wchar_t Ch) { return (Ch >= L'\x80'); }
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
 UnicodeString __fastcall ByteToHex(unsigned char B, bool UpperCase = true);
 UnicodeString __fastcall BytesToHex(const unsigned char * B, size_t Length, bool UpperCase = true, wchar_t Separator = L'\0');
@@ -143,11 +148,11 @@ bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value);
-bool __fastcall IsWinVista();
+bool IsWin64();
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
-bool __fastcall IsWin10Build(unsigned int BuildNumber);
+bool IsWin10Build(int BuildNumber);
 bool IsWin11();
 bool __fastcall IsWine();
 void EnableUWPTestMode();
@@ -163,8 +168,7 @@ UnicodeString __fastcall SizeToStr(__int64 Size);
 LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
-bool _fastcall GetWindowsProductType(DWORD & Type);
-int __fastcall GetWindowsBuild();
+DWORD GetWindowsProductType();
 UnicodeString __fastcall WindowsVersion();
 UnicodeString __fastcall WindowsVersionLong();
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);
@@ -180,9 +184,11 @@ UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int R
 TFormatSettings __fastcall GetEngFormatSettings();
 int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr);
 // The defaults are equal to defaults of TStringList class (except for Sorted)
-TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = dupIgnore);
+TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = System::Types::dupIgnore);
 bool SameIdent(const UnicodeString & Ident1, const UnicodeString & Ident2);
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents);
+UnicodeString GetTlsErrorStr(unsigned long Err);
+UnicodeString GetTlsErrorStrs();
 void __fastcall CheckCertificate(const UnicodeString & Path);
 typedef struct x509_st X509;
 typedef struct evp_pkey_st EVP_PKEY;
@@ -201,9 +207,10 @@ UnicodeString GetEnvironmentInfo();
 void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
 UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
 UnicodeString GetAncestorProcessNames();
-void NotSupported();
-void NotImplemented();
+NORETURN void NotSupported();
+NORETURN void NotImplemented();
 UnicodeString GetDividerLine();
+TStrings * ProcessFeatures(TStrings * Features, const UnicodeString & FeaturesOverride);
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {
@@ -347,17 +354,16 @@ UnicodeString __fastcall AssemblyAddRawSettings(
   TAssemblyLanguage Language, TStrings * RawSettings, const UnicodeString & ClassName,
   const UnicodeString & MethodName);
 //---------------------------------------------------------------------------
-#include "Global.h"
-//---------------------------------------------------------------------------
 template<class T>
 class TValueRestorer
 {
 public:
   __fastcall TValueRestorer(T & Target, const T & Value) :
     FTarget(Target),
-    FValue(Value),
+    FValue(Target),
     FArmed(true)
   {
+    FTarget = Value;
   }
 
   __fastcall TValueRestorer(T & Target) :
@@ -391,10 +397,9 @@ class TAutoNestingCounter : public TValueRestorer<int>
 {
 public:
   __fastcall TAutoNestingCounter(int & Target) :
-    TValueRestorer<int>(Target)
+    TValueRestorer<int>(Target, Target + 1)
   {
-    DebugAssert(Target >= 0);
-    ++Target;
+    DebugAssert(FValue >= 0);
   }
 
   __fastcall ~TAutoNestingCounter()
@@ -407,10 +412,9 @@ class TAutoFlag : public TValueRestorer<bool>
 {
 public:
   __fastcall TAutoFlag(bool & Target) :
-    TValueRestorer<bool>(Target)
+    TValueRestorer<bool>(Target, true)
   {
-    DebugAssert(!Target);
-    Target = true;
+    DebugAssert(!FValue);
   }
 
   __fastcall ~TAutoFlag()
@@ -426,7 +430,7 @@ class BiDiMap
 {
 public:
   typedef std::map<T1, T2> TFirstToSecond;
-  typedef TFirstToSecond::const_iterator const_iterator;
+  typedef typename TFirstToSecond::const_iterator const_iterator;
 
   void Add(const T1 & Value1, const T2 & Value2)
   {
@@ -436,7 +440,7 @@ public:
 
   T1 LookupFirst(const T2 & Value2) const
   {
-    TSecondToFirst::const_iterator Iterator = FSecondToFirst.find(Value2);
+    typename TSecondToFirst::const_iterator Iterator = FSecondToFirst.find(Value2);
     DebugAssert(Iterator != FSecondToFirst.end());
     return Iterator->second;
   }
@@ -492,7 +496,7 @@ public:
 
   void Remove(T EventHandler)
   {
-    TEventHandlers::iterator I = Find(EventHandler);
+    typename TEventHandlers::iterator I = Find(EventHandler);
     if (DebugAlwaysTrue(I != FEventHandlers.end()))
     {
       FEventHandlers.erase(I);
@@ -503,7 +507,7 @@ public:
   template<typename P>
   void Invoke(const P & p)
   {
-    TEventHandlers::iterator I = FEventHandlers.begin();
+    typename TEventHandlers::iterator I = FEventHandlers.begin();
     while (I != FEventHandlers.end())
     {
       (*I)(p);
@@ -536,7 +540,7 @@ private:
   typedef std::vector<T> TEventHandlers;
   TEventHandlers FEventHandlers;
 
-  TEventHandlers::iterator Find(T EventHandler)
+  typename TEventHandlers::iterator Find(T EventHandler)
   {
     return std::find(FEventHandlers.begin(), FEventHandlers.end(), EventHandler);
   }

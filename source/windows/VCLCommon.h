@@ -9,6 +9,7 @@
 #include <HistoryComboBox.hpp>
 //---------------------------------------------------------------------------
 const TColor LinkColor = clBlue;
+extern const UnicodeString ContextSeparator;
 //---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index);
 void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex = -1);
@@ -19,11 +20,11 @@ int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption);
 void AutoSizeCheckBox(TCheckBox * CheckBox);
 void __fastcall InitializeSystemSettings();
 void __fastcall FinalizeSystemSettings();
-void __fastcall LocalSystemSettings(TCustomForm * Control);
-void __fastcall UseSystemSettingsPre(TCustomForm * Control);
-void __fastcall UseSystemSettingsPost(TCustomForm * Control);
-void __fastcall UseSystemSettings(TCustomForm * Control);
-void __fastcall ResetSystemSettings(TCustomForm * Control);
+void __fastcall LocalSystemSettings(TForm * Control);
+void __fastcall UseSystemSettingsPre(TForm * Control);
+void __fastcall UseSystemSettingsPost(TForm * Control);
+void __fastcall UseSystemSettings(TForm * Control);
+void __fastcall ResetSystemSettings(TForm * Control);
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url = L"",
   TNotifyEvent OnEnter = NULL);
 void __fastcall LinkActionLabel(TStaticText * StaticText);
@@ -70,7 +71,6 @@ FormType * __fastcall SafeFormCreate(TComponent * Owner = NULL)
 {
   return dynamic_cast<FormType *>(_SafeFormCreate(__classid(FormType), Owner));
 }
-bool __fastcall SupportsSplitButton();
 TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButton = NULL);
 void __fastcall DefaultButton(TButton * Button, bool Default);
 void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
@@ -89,7 +89,7 @@ TPanel * __fastcall CreateBlankPanel(TComponent * Owner);
 typedef void __fastcall (*TRescaleEvent)(TComponent * Sender, TObject * Token);
 void __fastcall SetRescaleFunction(
   TComponent * Component, TRescaleEvent OnRescale, TObject * Token = NULL, bool OwnsToken = false);
-void __fastcall RecordFormImplicitRescale(TForm * Form);
+TWindowState GetWindowStateBeforeMimimize(TForm * Form);
 void __fastcall CountClicksForWindowPrint(TForm * Form);
 bool IsButtonBeingClicked(TButtonControl * Button);
 bool IsCancelButtonBeingClicked(TControl * Control);
@@ -97,5 +97,8 @@ TCanvas * CreateControlCanvas(TControl * Control);
 void AutoSizeButton(TButton * Button);
 namespace Tb2item { class TTBCustomItem; }
 void GiveTBItemPriority(Tb2item::TTBCustomItem * Item);
+void DeleteChildren(TWinControl * Control);
+void AutoSizeLabel(TLabel * Label);
+void AutoSizeLabel(TStaticText * Label);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

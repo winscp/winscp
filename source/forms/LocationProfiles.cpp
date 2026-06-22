@@ -198,6 +198,7 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
 
   UseSystemSettings(this);
   SelectScaledImageList(BookmarkImageList);
+  SessionProfilesView->Images = TreeViewImageList(BookmarkImageList);
   LoadDialogImage(Image, L"Open folder");
 }
 //---------------------------------------------------------------------

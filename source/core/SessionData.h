@@ -17,7 +17,7 @@ enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDA
 #define FSPROTOCOL_COUNT (fsS3+1)
 extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
-enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGroup15, kexDHGroup16, kexDHGroup17, kexDHGroup18, kexDHGEx, kexRSA, kexECDH, kexNTRUHybrid, kexCount };
+enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGroup15, kexDHGroup16, kexDHGroup17, kexDHGroup18, kexDHGEx, kexRSA, kexECDH, kexNTRUHybrid, kexMLKEM25519Hybrid, kexMLKEMNISTHybrid, kexCount };
 #define KEX_COUNT (kexCount)
 enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkCount };
 #define HOSTKEY_COUNT (hkCount)
@@ -40,6 +40,7 @@ enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12, tls13
 // has to match libs3 S3UriStyle
 enum TS3UrlStyle { s3usVirtualHost, s3usPath };
 enum TSessionSource { ssNone, ssStored, ssStoredModified };
+const int SFTPMaxVersionAuto = -1;
 enum TSessionUrlFlags
 {
   sufSpecific = 0x01,
@@ -234,6 +235,8 @@ private:
   int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
   UnicodeString FS3SessionToken;
+  UnicodeString FS3RoleArn;
+  UnicodeString FS3RoleSessionName;
   UnicodeString FS3Profile;
   TS3UrlStyle FS3UrlStyle;
   TAutoSwitch FS3MaxKeys;
@@ -429,6 +432,8 @@ private:
   void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
   void __fastcall SetS3SessionToken(UnicodeString value);
+  void __fastcall SetS3RoleArn(UnicodeString value);
+  void __fastcall SetS3RoleSessionName(UnicodeString value);
   void __fastcall SetS3Profile(UnicodeString value);
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetS3MaxKeys(TAutoSwitch value);
@@ -505,7 +510,7 @@ public:
   TSessionData * __fastcall Clone();
   void __fastcall Default();
   void __fastcall DefaultSettings();
-  void __fastcall NonPersistant();
+  void __fastcall NonPersistent();
   void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
   void __fastcall ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
   void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring);
@@ -716,6 +721,8 @@ public:
   __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property UnicodeString S3SessionToken = { read = FS3SessionToken, write = SetS3SessionToken };
+  __property UnicodeString S3RoleArn = { read = FS3RoleArn, write = SetS3RoleArn };
+  __property UnicodeString S3RoleSessionName = { read = FS3RoleSessionName, write = SetS3RoleSessionName };
   __property UnicodeString S3Profile = { read = FS3Profile, write = SetS3Profile };
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
@@ -759,7 +766,7 @@ public:
     bool UseDefaults = false, bool PuttyImport = false);
   void __fastcall Save(THierarchicalStorage * Storage, bool All = false);
   void __fastcall SelectAll(bool Select);
-  void __fastcall Import(TStoredSessionList * From, bool OnlySelected, TList * Imported);
+  bool Import(TStoredSessionList * From, bool OnlySelected, TList * Imported);
   void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   TSessionData * __fastcall AtSession(int Index)
     { return (TSessionData*)AtObject(Index); }
@@ -786,10 +793,10 @@ public:
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
 
-  static int __fastcall ImportHostKeys(
+  static int ImportHostKeys(
     THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected);
-  static void __fastcall ImportHostKeys(
-    const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
+  static void ImportHostKeys(THierarchicalStorage * SourceStorage, TStoredSessionList * Sessions, bool OnlySelected);
+  static void ImportHostKeys(const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);
   static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
   static void SelectKnownHostsForSelectedSessions(TStoredSessionList * KnownHosts, TStoredSessionList * Sessions);
@@ -812,7 +819,7 @@ private:
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void __fastcall DoGetFolderOrWorkspace(const UnicodeString & Name, TList * List, bool NoRecrypt);
-  static THierarchicalStorage * __fastcall CreateHostKeysStorageForWritting();
+  static THierarchicalStorage * __fastcall CreateHostKeysStorageForWriting();
 };
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData);

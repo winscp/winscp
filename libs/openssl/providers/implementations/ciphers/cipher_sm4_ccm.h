@@ -10,13 +10,14 @@
 #include "crypto/sm4.h"
 #include "prov/ciphercommon.h"
 #include "prov/ciphercommon_ccm.h"
+#include "crypto/sm4_platform.h"
 
 typedef struct prov_sm4_ccm_ctx_st {
     PROV_CCM_CTX base; /* Must be first */
     union {
         OSSL_UNION_ALIGN;
         SM4_KEY ks;
-    } ks;                       /* SM4 key schedule to use */
+    } ks; /* SM4 key schedule to use */
 } PROV_SM4_CCM_CTX;
 
 const PROV_CCM_HW *ossl_prov_sm4_hw_ccm(size_t keylen);

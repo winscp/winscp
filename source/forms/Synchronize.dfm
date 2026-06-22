@@ -6,62 +6,64 @@ object SynchronizeDialog: TSynchronizeDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Keep remote directory up to date X'
-  ClientHeight = 445
-  ClientWidth = 468
+  ClientHeight = 466
+  ClientWidth = 518
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   KeyPreview = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
-    468
-    445)
-  PixelsPerInch = 96
-  TextHeight = 13
+    518
+    466)
+  TextHeight = 15
   object DirectoriesGroup: TGroupBox
     Left = 8
-    Top = 6
-    Width = 453
-    Height = 119
+    Top = 8
+    Width = 502
+    Height = 120
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Directories'
     TabOrder = 0
     DesignSize = (
-      453
-      119)
+      502
+      120)
     object LocalDirectoryLabel: TLabel
       Left = 49
-      Top = 19
-      Width = 195
-      Height = 13
+      Top = 22
+      Width = 222
+      Height = 15
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Watch for changes in the local directory:'
       FocusControl = LocalDirectoryEdit
     end
     object RemoteDirectoryLabel: TLabel
       Left = 49
-      Top = 68
-      Width = 281
-      Height = 13
+      Top = 69
+      Width = 314
+      Height = 15
       Anchors = [akLeft, akTop, akRight]
       Caption = '... &and automatically reflect them on the remote directory:'
       FocusControl = RemoteDirectoryEdit
     end
     object Image: TImage
       Left = 11
-      Top = 22
+      Top = 24
       Width = 32
       Height = 32
       AutoSize = True
     end
     object RemoteDirectoryEdit: THistoryComboBox
       Left = 49
-      Top = 84
-      Width = 393
-      Height = 21
+      Top = 87
+      Width = 444
+      Height = 23
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
@@ -71,9 +73,9 @@ object SynchronizeDialog: TSynchronizeDialog
     end
     object LocalDirectoryEdit: THistoryComboBox
       Left = 49
-      Top = 35
-      Width = 312
-      Height = 21
+      Top = 40
+      Width = 358
+      Height = 23
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
@@ -82,9 +84,9 @@ object SynchronizeDialog: TSynchronizeDialog
       OnChange = ControlChange
     end
     object LocalDirectoryBrowseButton: TButton
-      Left = 367
-      Top = 33
-      Width = 75
+      Left = 413
+      Top = 39
+      Width = 80
       Height = 25
       Anchors = [akTop, akRight]
       Caption = 'B&rowse...'
@@ -93,9 +95,9 @@ object SynchronizeDialog: TSynchronizeDialog
     end
   end
   object StopButton: TButton
-    Left = 183
-    Top = 312
-    Width = 88
+    Left = 216
+    Top = 323
+    Width = 94
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Stop'
@@ -103,9 +105,9 @@ object SynchronizeDialog: TSynchronizeDialog
     OnClick = StopButtonClick
   end
   object CancelButton: TButton
-    Left = 277
-    Top = 312
-    Width = 88
+    Left = 316
+    Top = 323
+    Width = 94
     Height = 25
     Anchors = [akTop, akRight]
     Cancel = True
@@ -115,37 +117,37 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object OptionsGroup: TGroupBox
     Left = 8
-    Top = 130
-    Width = 453
-    Height = 119
+    Top = 134
+    Width = 502
+    Height = 118
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Synchronize options'
     TabOrder = 1
     DesignSize = (
-      453
-      119)
+      502
+      118)
     object SynchronizeDeleteCheck: TCheckBox
-      Left = 11
-      Top = 20
-      Width = 196
+      Left = 9
+      Top = 22
+      Width = 239
       Height = 17
       Caption = '&Delete files'
       TabOrder = 0
       OnClick = ControlChange
     end
     object SaveSettingsCheck: TCheckBox
-      Left = 11
-      Top = 92
-      Width = 196
+      Left = 9
+      Top = 91
+      Width = 239
       Height = 17
       Caption = 'Use same &options next time'
       TabOrder = 6
       OnClick = ControlChange
     end
     object SynchronizeExistingOnlyCheck: TCheckBox
-      Left = 229
-      Top = 20
-      Width = 213
+      Left = 254
+      Top = 22
+      Width = 239
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Existing files only'
@@ -153,18 +155,18 @@ object SynchronizeDialog: TSynchronizeDialog
       OnClick = ControlChange
     end
     object SynchronizeRecursiveCheck: TCheckBox
-      Left = 11
-      Top = 44
-      Width = 196
+      Left = 9
+      Top = 45
+      Width = 239
       Height = 17
       Caption = 'Update s&ubdirectories'
       TabOrder = 2
       OnClick = ControlChange
     end
     object SynchronizeSynchronizeCheck: TGrayedCheckBox
-      Left = 229
-      Top = 68
-      Width = 213
+      Left = 254
+      Top = 70
+      Width = 239
       Height = 17
       AllowGrayed = True
       Anchors = [akLeft, akTop, akRight]
@@ -173,18 +175,18 @@ object SynchronizeDialog: TSynchronizeDialog
       OnClick = ControlChange
     end
     object SynchronizeSelectedOnlyCheck: TCheckBox
-      Left = 229
-      Top = 44
-      Width = 213
+      Left = 254
+      Top = 46
+      Width = 239
       Height = 17
       Caption = 'Selected files o&nly'
       TabOrder = 3
       OnClick = ControlChange
     end
     object ContinueOnErrorCheck: TCheckBox
-      Left = 11
+      Left = 9
       Top = 68
-      Width = 196
+      Width = 239
       Height = 17
       Caption = 'Continue on &error'
       TabOrder = 4
@@ -192,9 +194,9 @@ object SynchronizeDialog: TSynchronizeDialog
     end
   end
   object StartButton: TButton
-    Left = 183
-    Top = 312
-    Width = 88
+    Left = 216
+    Top = 323
+    Width = 94
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Start'
@@ -204,9 +206,9 @@ object SynchronizeDialog: TSynchronizeDialog
     OnDropDownClick = StartButtonDropDownClick
   end
   object MinimizeButton: TButton
-    Left = 277
-    Top = 312
-    Width = 88
+    Left = 316
+    Top = 323
+    Width = 94
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Minimize'
@@ -216,8 +218,8 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object TransferSettingsButton: TButton
     Left = 8
-    Top = 312
-    Width = 161
+    Top = 323
+    Width = 175
     Height = 25
     Caption = 'Transfer settin&gs...'
     TabOrder = 2
@@ -226,22 +228,22 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object CopyParamGroup: TGroupBox
     Left = 8
-    Top = 254
-    Width = 453
-    Height = 50
+    Top = 258
+    Width = 502
+    Height = 59
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Transfer settings'
     TabOrder = 7
     OnClick = CopyParamGroupClick
     OnContextPopup = CopyParamGroupContextPopup
     DesignSize = (
-      453
-      50)
+      502
+      59)
     object CopyParamLabel: TLabel
-      Left = 7
-      Top = 15
-      Width = 439
-      Height = 26
+      Left = 9
+      Top = 20
+      Width = 484
+      Height = 35
       Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
       Caption = 'CopyParamLabel'
@@ -251,9 +253,9 @@ object SynchronizeDialog: TSynchronizeDialog
     end
   end
   object HelpButton: TButton
-    Left = 371
-    Top = 312
-    Width = 88
+    Left = 416
+    Top = 323
+    Width = 94
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Help'
@@ -262,20 +264,20 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object LogPanel: TPanel
     Left = 0
-    Top = 345
-    Width = 468
-    Height = 100
+    Top = 353
+    Width = 518
+    Height = 113
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 9
     DesignSize = (
-      468
-      100)
+      518
+      113)
     object LogView: TListView
       Left = 8
       Top = 2
-      Width = 452
-      Height = 90
+      Width = 502
+      Height = 103
       Anchors = [akLeft, akTop, akRight, akBottom]
       Columns = <
         item

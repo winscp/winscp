@@ -1,73 +1,58 @@
 object RightsFrame: TRightsFrame
   Left = 0
   Top = 0
-  Width = 239
-  Height = 109
+  Width = 258
+  Height = 130
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  ParentFont = False
   TabOrder = 0
   OnContextPopup = FrameContextPopup
-  object OwnerLabel: TLabel
-    Left = 4
-    Top = 4
-    Width = 32
-    Height = 13
-    Caption = '&Owner'
-    FocusControl = OwnerReadCheck
-  end
-  object GroupLabel: TLabel
-    Left = 4
-    Top = 24
-    Width = 29
-    Height = 13
-    Caption = '&Group'
-    FocusControl = GroupReadCheck
-  end
-  object OthersLabel: TLabel
-    Left = 4
-    Top = 44
-    Width = 33
-    Height = 13
-    Caption = 'Ot&hers'
-    FocusControl = OthersReadCheck
-  end
   object OthersButton: TSpeedButton
     Tag = 3
-    Left = 0
-    Top = 41
-    Width = 56
-    Height = 19
+    Left = 3
+    Top = 50
+    Width = 43
+    Height = 21
+    Caption = 'Ot&hers'
     Flat = True
     OnClick = RightsButtonsClick
   end
   object GroupButton: TSpeedButton
     Tag = 2
-    Left = 0
-    Top = 21
-    Width = 56
-    Height = 19
+    Left = 3
+    Top = 27
+    Width = 39
+    Height = 21
+    Caption = '&Group'
     Flat = True
     OnClick = RightsButtonsClick
   end
   object OwnerButton: TSpeedButton
     Tag = 1
-    Left = 0
-    Top = 1
-    Width = 56
-    Height = 19
+    Left = 3
+    Top = 4
+    Width = 40
+    Height = 21
+    Caption = '&Owner'
     Flat = True
     OnClick = RightsButtonsClick
   end
   object OctalLabel: TLabel
-    Left = 4
-    Top = 68
-    Width = 29
-    Height = 13
+    Left = 7
+    Top = 78
+    Width = 31
+    Height = 15
     Caption = 'O&ctal:'
     FocusControl = OctalEdit
   end
   object OwnerReadCheck: TGrayedCheckBox
     Tag = 256
-    Left = 58
-    Top = 3
+    Left = 65
+    Top = 6
     Width = 34
     Height = 17
     Hint = 'Read'
@@ -79,8 +64,8 @@ object RightsFrame: TRightsFrame
   end
   object OwnerWriteCheck: TGrayedCheckBox
     Tag = 128
-    Left = 95
-    Top = 3
+    Left = 103
+    Top = 6
     Width = 34
     Height = 17
     Hint = 'Write'
@@ -92,8 +77,8 @@ object RightsFrame: TRightsFrame
   end
   object OwnerExecuteCheck: TGrayedCheckBox
     Tag = 64
-    Left = 132
-    Top = 3
+    Left = 141
+    Top = 6
     Width = 31
     Height = 17
     Hint = 'Execute/Enter'
@@ -105,8 +90,8 @@ object RightsFrame: TRightsFrame
   end
   object GroupReadCheck: TGrayedCheckBox
     Tag = 32
-    Left = 58
-    Top = 23
+    Left = 65
+    Top = 29
     Width = 34
     Height = 17
     Caption = 'R'
@@ -117,8 +102,8 @@ object RightsFrame: TRightsFrame
   end
   object GroupWriteCheck: TGrayedCheckBox
     Tag = 16
-    Left = 95
-    Top = 23
+    Left = 103
+    Top = 29
     Width = 33
     Height = 17
     Caption = 'W'
@@ -129,8 +114,8 @@ object RightsFrame: TRightsFrame
   end
   object GroupExecuteCheck: TGrayedCheckBox
     Tag = 8
-    Left = 132
-    Top = 23
+    Left = 141
+    Top = 29
     Width = 31
     Height = 17
     Caption = 'X'
@@ -141,8 +126,8 @@ object RightsFrame: TRightsFrame
   end
   object OthersReadCheck: TGrayedCheckBox
     Tag = 4
-    Left = 58
-    Top = 43
+    Left = 65
+    Top = 52
     Width = 34
     Height = 17
     Caption = 'R'
@@ -153,8 +138,8 @@ object RightsFrame: TRightsFrame
   end
   object OthersWriteCheck: TGrayedCheckBox
     Tag = 2
-    Left = 95
-    Top = 43
+    Left = 103
+    Top = 52
     Width = 33
     Height = 17
     Caption = 'W'
@@ -165,8 +150,8 @@ object RightsFrame: TRightsFrame
   end
   object OthersExecuteCheck: TGrayedCheckBox
     Tag = 1
-    Left = 132
-    Top = 43
+    Left = 141
+    Top = 52
     Width = 31
     Height = 17
     Caption = 'X'
@@ -176,8 +161,8 @@ object RightsFrame: TRightsFrame
     OnClick = ControlChange
   end
   object DirectoriesXCheck: TCheckBox
-    Left = 5
-    Top = 89
+    Left = 10
+    Top = 102
     Width = 156
     Height = 17
     Caption = 'Add &X to directories'
@@ -185,10 +170,10 @@ object RightsFrame: TRightsFrame
     OnClick = ControlChange
   end
   object OctalEdit: TEdit
-    Left = 55
-    Top = 64
-    Width = 64
-    Height = 21
+    Left = 65
+    Top = 75
+    Width = 70
+    Height = 23
     MaxLength = 4
     TabOrder = 12
     Text = 'OctalEdit'
@@ -197,9 +182,9 @@ object RightsFrame: TRightsFrame
   end
   object SetUidCheck: TGrayedCheckBox
     Tag = 2048
-    Left = 169
-    Top = 3
-    Width = 70
+    Left = 179
+    Top = 6
+    Width = 77
     Height = 17
     Caption = 'Set UID'
     TabOrder = 3
@@ -207,9 +192,9 @@ object RightsFrame: TRightsFrame
   end
   object SetGIDCheck: TGrayedCheckBox
     Tag = 1024
-    Left = 169
-    Top = 23
-    Width = 70
+    Left = 179
+    Top = 29
+    Width = 77
     Height = 17
     Caption = 'Set GID'
     TabOrder = 7
@@ -217,18 +202,18 @@ object RightsFrame: TRightsFrame
   end
   object StickyBitCheck: TGrayedCheckBox
     Tag = 512
-    Left = 169
-    Top = 43
-    Width = 70
+    Left = 179
+    Top = 52
+    Width = 77
     Height = 17
     Caption = 'Sticky bit'
     TabOrder = 11
     OnClick = ControlChange
   end
   object CloseButton: TButton
-    Left = 160
-    Top = 80
-    Width = 75
+    Left = 171
+    Top = 98
+    Width = 80
     Height = 25
     Caption = 'Close'
     TabOrder = 14
@@ -729,7 +714,6 @@ object RightsFrame: TRightsFrame
           AE426082}
       end>
     Left = 104
-    Bitmap = {}
   end
   object RightsImages120: TPngImageList
     Height = 20
@@ -1173,7 +1157,6 @@ object RightsFrame: TRightsFrame
           000049454E44AE426082}
       end>
     Left = 112
-    Bitmap = {}
   end
   object RightsImages144: TPngImageList
     Height = 24
@@ -1649,7 +1632,6 @@ object RightsFrame: TRightsFrame
           7D41B4E95000B20000940F64EF2976481D0000000049454E44AE426082}
       end>
     Left = 120
-    Bitmap = {}
   end
   object RightsImages192: TPngImageList
     Height = 32
@@ -2165,6 +2147,5 @@ object RightsFrame: TRightsFrame
           8A08009C0E18080000E784EDDF83CCD63A0000000049454E44AE426082}
       end>
     Left = 128
-    Bitmap = {}
   end
 end

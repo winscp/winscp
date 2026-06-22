@@ -7,19 +7,43 @@
 #include <FileOperationProgress.h>
 #include <WinInterface.h>
 #include <Vcl.AppEvnts.hpp>
+#include <deque>
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
 class TTerminalQueue;
 class TAuthenticateForm;
 class ITaskbarList3;
+class TThumbnailDownloadQueueItem;
 //---------------------------------------------------------------------------
 enum TTerminalPendingAction { tpNull, tpNone, tpReconnect, tpFree };
+//---------------------------------------------------------------------------
+struct TRemoteThumbnailNeeded
+{
+  int Index;
+  TRemoteFile * File;
+  TSize ThumbnailSize;
+};
+//---------------------------------------------------------------------------
+struct TRemoteThumbnailData
+{
+  UnicodeString FileName;
+  TBitmap * Thumbnail;
+  TSize ThumbnailSize;
+};
+//---------------------------------------------------------------------------
+typedef std::map<int, TRemoteThumbnailData> TRemoteThumbnailsMap;
+typedef std::deque<TRemoteThumbnailNeeded> TRemoteThumbnailsQueue;
 //---------------------------------------------------------------------------
 class TManagedTerminal : public TTerminal
 {
 public:
   __fastcall TManagedTerminal(TSessionData * SessionData, TConfiguration * Configuration);
   virtual __fastcall ~TManagedTerminal();
+
+  void StartLoadingDirectory();
+  void DisableThumbnails();
+  void ThumbnailVisible(int Index, const UnicodeString & FileName, bool Visible);
+  void PopThumbnailQueue();
 
   bool LocalBrowser;
   TSessionData * StateData;
@@ -37,6 +61,16 @@ public:
   // Sessions that should not close when they fail to connect
   // (i.e. those that were ever connected or were opened as a part of a workspace)
   bool Permanent;
+  std::unique_ptr<TCriticalSection> ThumbnailsSection;
+  bool ThumbnailsEnabled;
+  TThumbnailDownloadQueueItem * ThumbnailDownloadQueueItem;
+
+  TRemoteThumbnailsMap Thumbnails;
+  TRemoteThumbnailsQueue ThumbnailsQueue;
+  int ThumbnailVisibleResult;
+
+private:
+  void ReleaseThumbnails();
 };
 //---------------------------------------------------------------------------
 class TTerminalManager : public TTerminalList
@@ -83,6 +117,8 @@ public:
   bool HookFatalExceptionMessageDialog(TMessageParams & Params);
   void UnhookFatalExceptionMessageDialog();
   bool ScheduleTerminalReconnnect(TTerminal * Terminal);
+  TBitmap * ThumbnailNeeded(TManagedTerminal * Terminal, int Index, TRemoteFile * File, const TSize & Size);
+  void TerminalLoadedDirectory(TManagedTerminal * ATerminal);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TManagedTerminal * ActiveSession = { read = FActiveSession, write = SetActiveSession };
@@ -161,7 +197,7 @@ private:
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,
     int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInformation(
-    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
+    TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalCustomCommand(TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
   void __fastcall FreeAll();
   void __fastcall SessionReady();
@@ -171,7 +207,7 @@ private:
   void __fastcall SaveTerminal(TTerminal * Terminal);
   void __fastcall SetActiveSessionIndex(int value);
   void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,
-    bool Temp, const UnicodeString & FileName, bool Success,
+    bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
     TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall DeleteLocalFile(const UnicodeString FileName, bool Alternative, int & Deleted);
@@ -202,6 +238,28 @@ private:
   bool IsUpdating();
   bool SupportedSession(TSessionData * Data);
   void __fastcall TerminalFatalExceptionTimer(unsigned int & Result);
+  void NeedThumbnailDownloadQueueItem(TManagedTerminal * ATerminal);
+};
+//---------------------------------------------------------------------------
+class TThumbnailDownloadQueueItem : public TTransferQueueItem
+{
+public:
+  TThumbnailDownloadQueueItem(
+    TCustomScpExplorerForm * ScpExplorer, TManagedTerminal * Terminal, const UnicodeString & SourceDir,
+    const UnicodeString & TargetDir, const TCopyParamType * CopyParam);
+  __fastcall ~TThumbnailDownloadQueueItem();
+
+protected:
+  virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation);
+
+private:
+  TManagedTerminal * FManagedTerminal;
+  TCustomScpExplorerForm * FScpExplorer;
+  int FIndex;
+  bool FVisible;
+
+  bool Continue();
+  bool CheckQueueFront(int Index, const UnicodeString & FileName, TSize ThumbnailSize);
 };
 //---------------------------------------------------------------------------
 #endif

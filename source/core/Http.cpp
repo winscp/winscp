@@ -18,6 +18,7 @@ THttp::THttp()
   FOnDownload = NULL;
   FOnError = NULL;
   FResponseLimit = -1;
+  FConnectTimeout = 0;
 
   FRequestHeaders = NULL;
   FResponseHeaders = new TStringList();
@@ -72,6 +73,7 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
     {
       TProxyMethod ProxyMethod = ProxyHost.IsEmpty() ? ::pmNone : pmHTTP;
       InitNeonSession(NeonSession, ProxyMethod, ProxyHost, ProxyPort, UnicodeString(), UnicodeString(), NULL);
+      ne_set_connect_timeout(NeonSession, ConnectTimeout);
 
       if (IsTls)
       {
@@ -164,10 +166,14 @@ void THttp::Post(const UnicodeString & Request)
   SendRequest("POST", Request);
 }
 //---------------------------------------------------------------------------
+void THttp::Put(const UnicodeString & Request)
+{
+  SendRequest("PUT", Request);
+}
+//---------------------------------------------------------------------------
 UnicodeString THttp::GetResponse()
 {
-  UTF8String UtfResponse(FResponse);
-  return UnicodeString(UtfResponse);
+  return UTFToString(FResponse);
 }
 //---------------------------------------------------------------------------
 int THttp::NeonBodyReaderImpl(const char * Buf, size_t Len)
@@ -266,10 +272,11 @@ int THttp::NeonServerSSLCallbackImpl(int Failures, const ne_ssl_certificate * AC
     while (true);
 
     UnicodeString RootCert = UnicodeString(NeonExportCertificate(RootCertificate));
+    AppLogFmt(L"Root certificate: %s", (RootCert));
     if (RootCert == Certificate)
     {
       Failures &= ~NE_SSL_UNTRUSTED;
-      AppLogFmt(L"Certificate is known (%d)", (Failures));
+      AppLogFmt(L"Root certificate is known (%d)", (Failures));
     }
   }
 

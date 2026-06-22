@@ -31,7 +31,9 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   TConfiguration * Configuration) :
   TTerminal(SessionData, Configuration),
   LocalBrowser(false), LocalExplorerState(NULL), RemoteExplorerState(NULL), OtherLocalExplorerState(NULL),
-  ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false), DisconnectedTemporarily(false)
+  ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false), DisconnectedTemporarily(false),
+  ThumbnailsSection(new TCriticalSection()), ThumbnailsEnabled(false), ThumbnailDownloadQueueItem(NULL),
+  ThumbnailVisibleResult(-1)
 {
   StateData = new TSessionData(L"");
   StateData->Assign(SessionData);
@@ -44,6 +46,81 @@ __fastcall TManagedTerminal::~TManagedTerminal()
   delete LocalExplorerState;
   delete OtherLocalExplorerState;
   delete RemoteExplorerState;
+  ReleaseThumbnails();
+  DebugAssert(ThumbnailDownloadQueueItem == NULL);
+}
+//---------------------------------------------------------------------------
+void TManagedTerminal::StartLoadingDirectory()
+{
+  // just in case it wasn't already (like when only reloading the list view on view style change)
+  DisableThumbnails();
+  AppLog(L"Starting loading directory");
+  TGuard Guard(ThumbnailsSection.get());
+  DebugAssert(TTerminalManager::Instance()->ActiveTerminal == this);
+  ReleaseThumbnails();
+  DebugAssert(ThumbnailsQueue.empty());
+}
+//---------------------------------------------------------------------------
+void TManagedTerminal::DisableThumbnails()
+{
+  TGuard Guard(ThumbnailsSection.get());
+  ThumbnailsEnabled = false;
+  ThumbnailVisibleResult = 0;
+  TRemoteThumbnailsQueue Queue;
+  Queue.swap(ThumbnailsQueue);
+  TRemoteThumbnailsQueue::iterator I = Queue.begin();
+  while (I != Queue.end())
+  {
+    delete I->File;
+    I++;
+  }
+}
+//---------------------------------------------------------------------------
+void TManagedTerminal::PopThumbnailQueue()
+{
+  delete ThumbnailsQueue.front().File;
+  ThumbnailsQueue.pop_front();
+}
+//---------------------------------------------------------------------------
+void TManagedTerminal::ThumbnailVisible(int Index, const UnicodeString & FileName, bool Visible)
+{
+  if (!ThumbnailsQueue.empty() &&
+      (ThumbnailsQueue.front().Index == Index) &&
+      (ThumbnailsQueue.front().File->FullFileName == FileName) && // should check ThumbnailSize too
+      // weren't thumbnails disabled meanwhile?
+      (ThumbnailVisibleResult < 0))
+  {
+    ThumbnailVisibleResult = Visible ? 1 : 0;
+
+    // Delete right now, so that if new visible thumbail request for the same file comes,
+    // before this negative visibility response is processed, the new request can get queued
+    if (!Visible)
+    {
+      PopThumbnailQueue();
+      TRemoteThumbnailsMap::iterator I = Thumbnails.find(Index);
+      if (DebugAlwaysTrue(I != Thumbnails.end()) &&
+          DebugAlwaysTrue(I->second.Thumbnail == NULL))
+      {
+        Thumbnails.erase(I);
+      }
+    }
+  }
+  else
+  {
+    ThumbnailVisibleResult = 0;
+  }
+}
+//---------------------------------------------------------------------------
+void TManagedTerminal::ReleaseThumbnails()
+{
+  TRemoteThumbnailsMap Map;
+  Thumbnails.swap(Map);
+  TRemoteThumbnailsMap::iterator I = Map.begin();
+  while (I != Map.end())
+  {
+    delete I->second.Thumbnail;
+    I++;
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -313,8 +390,7 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
   UnicodeString OrigRemoteDirectory = Terminal->SessionData->RemoteDirectory;
   try
   {
-    TValueRestorer<TTerminal *> OpeningTerminalRestorer(FOpeningTerminal);
-    FOpeningTerminal = Terminal;
+    TValueRestorer<TTerminal *> OpeningTerminalRestorer(FOpeningTerminal, Terminal);
     TTerminalThread * TerminalThread = new TTerminalThread(Terminal);
     TerminalThread->AllowAbandon = (Terminal == ActiveTerminal);
     try
@@ -567,6 +643,7 @@ void __fastcall TTerminalManager::DisconnectActiveTerminal()
   delete OldQueue;
 
   ActiveTerminal->Disconnected = true;
+  ActiveTerminal->DisableThumbnails();
   if (ScpExplorer != NULL)
   {
     SessionReady(); // in case it was never connected
@@ -787,6 +864,8 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
 
       if (PActiveSession != NULL)
       {
+        PActiveSession->DisableThumbnails();
+
         if (PActiveSession->DisconnectedTemporarily && DebugAlwaysTrue(PActiveSession->Disconnected))
         {
           PActiveSession->Disconnected = false;
@@ -1386,7 +1465,7 @@ void __fastcall TTerminalManager::AuthenticatingDone()
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalInformation(
-  TTerminal * Terminal, const UnicodeString & Str, bool DebugUsedArg(Status), int Phase, const UnicodeString & Additional)
+  TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional)
 {
   if (ScpExplorer != NULL)
   {
@@ -1425,12 +1504,11 @@ void __fastcall TTerminalManager::TerminalInformation(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
-  TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success,
+  TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
   TOnceDoneOperation & OnceDoneOperation)
 {
   DebugAssert(ScpExplorer);
-  ScpExplorer->OperationFinished(Operation, Side, Temp, FileName, Success,
-    OnceDoneOperation);
+  ScpExplorer->OperationFinished(Operation, Side, Temp, FileName, Success, NotCancelled, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationProgress(
@@ -2034,4 +2112,181 @@ void __fastcall TTerminalManager::TerminalFatalExceptionTimer(unsigned int & Res
     Result = qaRetry;
     FTerminalReconnnecteScheduled = false;
   }
+}
+//---------------------------------------------------------------------------
+TBitmap * TTerminalManager::ThumbnailNeeded(TManagedTerminal * Terminal, int Index, TRemoteFile * File, const TSize & Size)
+{
+  TGuard Guard(Terminal->ThumbnailsSection.get());
+  TRemoteThumbnailsMap::iterator I = Terminal->Thumbnails.find(Index);
+  TBitmap * Result;
+  if ((I != Terminal->Thumbnails.end()) &&
+      UnixSamePath(File->FileName, I->second.FileName) &&
+      (I->second.ThumbnailSize == Size))
+  {
+    Result = I->second.Thumbnail;
+  }
+  else
+  {
+    TRemoteThumbnailNeeded ThumbnailNeeded;
+    ThumbnailNeeded.Index = Index;
+    ThumbnailNeeded.File = File->Duplicate();
+    ThumbnailNeeded.ThumbnailSize = Size;
+    Terminal->ThumbnailsQueue.push_back(ThumbnailNeeded);
+    if (I != Terminal->Thumbnails.end())
+    {
+      delete I->second.Thumbnail;
+    }
+    // Prevent duplicates in queue
+    TRemoteThumbnailData ThumbnailData;
+    ThumbnailData.FileName = File->FileName;
+    ThumbnailData.Thumbnail = NULL;
+    ThumbnailData.ThumbnailSize = Size;
+    Terminal->Thumbnails.insert(std::make_pair(Index, ThumbnailData));
+
+    if (Terminal->ThumbnailsEnabled)
+    {
+      NeedThumbnailDownloadQueueItem(Terminal);
+    }
+
+    Result = NULL;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::NeedThumbnailDownloadQueueItem(TManagedTerminal * ATerminal)
+{
+  // Expects that ThumbnailsSection is already locked
+  if (ATerminal->ThumbnailDownloadQueueItem == NULL)
+  {
+    ATerminal->ThumbnailDownloadQueueItem = ScpExplorer->AddThumbnailDownloadQueueItem(ATerminal);
+  }
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::TerminalLoadedDirectory(TManagedTerminal * ATerminal)
+{
+  DebugAssert(ActiveTerminal == ATerminal);
+  TGuard Guard(ATerminal->ThumbnailsSection.get());
+
+  AppLog(L"Loaded directory");
+  ATerminal->ThumbnailsEnabled = true;
+  if (!ATerminal->ThumbnailsQueue.empty())
+  {
+    NeedThumbnailDownloadQueueItem(ATerminal);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TThumbnailDownloadQueueItem::TThumbnailDownloadQueueItem(
+    TCustomScpExplorerForm * ScpExplorer, TManagedTerminal * Terminal, const UnicodeString & SourceDir,
+    const UnicodeString & TargetDir, const TCopyParamType * CopyParam) :
+  TTransferQueueItem(Terminal, NULL, TargetDir, CopyParam, cpNoConfirmation | cpTemporary, osRemote, true, false),
+  FScpExplorer(ScpExplorer), FManagedTerminal(Terminal)
+{
+  FInfo->Source = SourceDir;
+}
+//---------------------------------------------------------------------------
+__fastcall TThumbnailDownloadQueueItem::~TThumbnailDownloadQueueItem()
+{
+  RecursiveDeleteFile(ExcludeTrailingBackslash(FTargetDir));
+}
+//---------------------------------------------------------------------------
+bool TThumbnailDownloadQueueItem::Continue()
+{
+  return !IsExecutionCancelled() && FManagedTerminal->ThumbnailsEnabled;
+}
+//---------------------------------------------------------------------------
+bool TThumbnailDownloadQueueItem::CheckQueueFront(int Index, const UnicodeString & FileName, TSize ThumbnailSize)
+{
+  TRemoteThumbnailsQueue & ThumbnailsQueue = FManagedTerminal->ThumbnailsQueue;
+  bool Result = !ThumbnailsQueue.empty();
+  if (Result)
+  {
+    const TRemoteThumbnailNeeded & ThumbnailNeeded = ThumbnailsQueue.front();
+    Result =
+      (ThumbnailNeeded.Index == Index) &&
+      (ThumbnailNeeded.File->FullFileName == FileName) &&
+      (ThumbnailNeeded.ThumbnailSize == ThumbnailSize);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TThumbnailDownloadQueueItem::DoTransferExecute(TTerminal * Terminal, TParallelOperation *)
+{
+  TCriticalSection * Section = FManagedTerminal->ThumbnailsSection.get();
+  TGuard Guard(Section);
+  UnicodeString LastSourceDir;
+  TRemoteThumbnailsQueue & ThumbnailsQueue = FManagedTerminal->ThumbnailsQueue;
+  while (Continue() && !ThumbnailsQueue.empty())
+  {
+    const TRemoteThumbnailNeeded & ThumbnailNeeded = ThumbnailsQueue.front();
+    FManagedTerminal->ThumbnailVisibleResult = -1;
+    int Index = ThumbnailNeeded.Index;
+    std::unique_ptr<TRemoteFile> File(ThumbnailNeeded.File->Duplicate());
+    TSize ThumbnailSize = ThumbnailNeeded.ThumbnailSize;
+    UnicodeString FileName = File->FullFileName.Unique();
+    AppLogFmt(L"Retrieving thumbnail for %s", (FileName));
+    FManagedTerminal->ThumbnailVisibleResult = -1;
+    FScpExplorer->PostThumbnailVisibleQueueQuery(Index, FileName);
+
+    LastSourceDir = UnixExtractFileDir(FileName);
+
+    {
+      TGuard ItemGuard(FSection);
+      FInfo->Source = FileName;
+    }
+
+    while (Continue() &&
+           (FManagedTerminal->ThumbnailVisibleResult < 0))
+    {
+      TUnguard Unguard(Section);
+      Sleep(10);
+    }
+
+    if (Continue())
+    {
+      if (FManagedTerminal->ThumbnailVisibleResult == 0)
+      {
+        DebugAssert(ThumbnailsQueue.empty() || (&ThumbnailsQueue.front() != &ThumbnailNeeded));
+      }
+      else if (DebugAlwaysTrue(CheckQueueFront(Index, FileName, ThumbnailSize)))
+      {
+        std::unique_ptr<TStringList> Files(new TStringList());
+        Files->AddObject(FileName, File.get());
+
+        std::unique_ptr<TBitmap> Thumbnail;
+
+        {
+          TUnguard Unguard(Section);
+          Terminal->CopyToLocal(Files.get(), FTargetDir, FCopyParam, FParams, NULL);
+          UnicodeString LocalPath =
+            TPath::Combine(FTargetDir, Terminal->ChangeFileName(FCopyParam, UnixExtractFileName(FileName), osRemote, false));
+          Thumbnail.reset(GetThumbnail(LocalPath, ThumbnailSize));
+        }
+
+        if (CheckQueueFront(Index, FileName, ThumbnailSize))
+        {
+          TRemoteThumbnailsMap::iterator I = FManagedTerminal->Thumbnails.find(Index);
+          if (DebugAlwaysTrue(I != FManagedTerminal->Thumbnails.end()))
+          {
+            TRemoteThumbnailData & RemoteThumbnailData = I->second;
+            if (DebugAlwaysTrue(RemoteThumbnailData.FileName == UnixExtractFileName(FileName)) &&
+                DebugAlwaysTrue(RemoteThumbnailData.ThumbnailSize == ThumbnailSize) &&
+                DebugAlwaysTrue(RemoteThumbnailData.Thumbnail == NULL))
+            {
+              RemoteThumbnailData.Thumbnail = Thumbnail.release();
+              FManagedTerminal->PopThumbnailQueue();
+              FScpExplorer->PostThumbnailDrawRequest(Index);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  {
+    TGuard ItemGuard(FSection);
+    FInfo->Source = LastSourceDir;
+  }
+
+  FManagedTerminal->ThumbnailDownloadQueueItem = NULL;
 }

@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 #include "stdafx.h"
 #include "FileZillaApi.h"
-#include "mainthread.h"
+#include "MainThread.h"
 
 //////////////////////////////////////////////////////////////////////
 // Konstruktion/Destruktion
@@ -416,7 +416,7 @@ int CFileZillaApi::Rename(CString oldName, CString newName, const CServerPath &p
 
 int CFileZillaApi::SetAsyncRequestResult(int nAction, CAsyncRequestData *pData)
 {
-  if (!this || !pData)
+  if (!pData)
     return FZ_REPLY_CRITICALERROR | FZ_REPLY_INVALIDPARAM;
 
   if (IsBadWritePtr(pData, sizeof(CAsyncRequestData)))

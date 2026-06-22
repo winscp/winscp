@@ -40,7 +40,6 @@ type
     FShowHiddenDirs: Boolean;
     FNaturalOrderNumericalSorting: Boolean;
     FDarkMode: Boolean;
-    FContinue: Boolean;
     FImageList: TImageList;
     FScrollOnDragOver: TTreeViewScrollOnDragOver;
     FRecreatingHandle: Boolean;
@@ -83,7 +82,7 @@ type
     function IsCustomDrawn(Target: TCustomDrawTarget; Stage: TCustomDrawStage): Boolean; override;
     function CustomDrawItem(Node: TTreeNode; State: TCustomDrawState;
       Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean; override;
-    procedure NeedImageLists(Recreate: Boolean);
+    procedure NeedImageLists;
     procedure DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
     function DoCompareText(Text1, Text2: string): Integer;
     procedure UpdateItemHeight;
@@ -99,6 +98,7 @@ type
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
     procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
+    procedure ChangeScale(M, D: Integer; isDpiChange: Boolean); override;
 
     procedure Delete(Node: TTreeNode); override;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
@@ -110,7 +110,7 @@ type
 
     procedure DDDragEnter(DataObj: IDataObject; KeyState: Longint;
       Point: TPoint; var Effect: Longint; var Accept: Boolean);
-    procedure DDDragLeave;
+    procedure DDDragLeave(Dummy: Integer);
     procedure DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint; PreferredEffect: LongInt);
     procedure DDDrop(DataObj: IDataObject; KeyState: Longint; Point: TPoint;
       var Effect: Longint);
@@ -165,7 +165,6 @@ type
     destructor Destroy; override;
 
     procedure ValidateDirectory(Node: TTreeNode);
-    procedure CenterNode(Node: TTreeNode); virtual;
     function SortChildren(ParentNode: TTreeNode; Recurse: Boolean): Boolean;
     function IterateSubTree(var StartNode : TTreeNode;
       CallBackFunc: TCallBackFunc; Recurse: TRecursiveScan;
@@ -225,7 +224,6 @@ type
     property Directory: string read GetDirectory write SetDirectory;
     property DragNode: TTreeNode read FDragNode;
 
-    property Continue: Boolean read FContinue write FContinue;
     property LastDDResult: TDragResult read FLastDDResult;
   end;
 
@@ -247,7 +245,6 @@ begin
   FContextMenu := False;
   FCanChange := True;
   FUseSystemContextMenu := True;
-  FContinue := True;
   FNaturalOrderNumericalSorting := True;
   FDarkMode := False;
   FRecreatingHandle := False;
@@ -313,7 +310,12 @@ var
   ImageHeight: Integer;
   TextHeight: Integer;
 begin
-  ImageHeight := (Images.Width * 9) div 8;
+  // Particularly when called from CMFontChanged because we are changing (reverting)
+  // the default form font, the Images might not be set up yet
+  if Assigned(Images) then
+    ImageHeight := (Images.Width * 9) div 8
+  else
+    ImageHeight := 0;
   // 16 seems to be the system default tree view item height
   TextHeight := ScaleByControlTextHeightRunTime(Canvas, 16);
   TreeView_SetItemHeight(Handle, Max(ImageHeight, TextHeight));
@@ -325,24 +327,25 @@ begin
   UpdateItemHeight;
 end;
 
-procedure TCustomDriveView.NeedImageLists(Recreate: Boolean);
+procedure TCustomDriveView.NeedImageLists;
 var
   AImages: TImageList;
 begin
   if not Assigned(Images) then
   begin
     Images := TImageList.Create(Self);
-    Images.BkColor := Color;
   end;
 
   AImages := ShellImageListForControl(Self, ilsSmall);
   if Images.Handle <> AImages.Handle then
   begin
+    // When assigned directly (as in TCustomDirView), when moving from low to high DPI display,
+    // the images are resized vertically two times (thoguh originally, this approach was likely taken
+    // for different reasons)
     Images.Handle := AImages.Handle;
-  end;
+    Images.ShareImages := AImages.ShareImages;
+    Images.DrawingStyle := AImages.DrawingStyle;
 
-  if (not Assigned(FImageList)) or Recreate then
-  begin
     if Assigned(FImageList) then
       FImageList.Free;
 
@@ -355,7 +358,21 @@ end;
 procedure TCustomDriveView.CMDPIChanged(var Message: TMessage);
 begin
   inherited;
-  NeedImageLists(True);
+  NeedImageLists;
+end;
+
+procedure TCustomDriveView.ChangeScale(M, D: Integer; isDpiChange: Boolean);
+begin
+  inherited;
+  // WORKAROUND
+  // The Indent seems to be scaled by Windows.
+  // The TCustomTreeView.ChangeScale redundantly scales it again when Images.IsScaled
+  // (and we need Images.IsScaled, otherwise TCustomTreeView enables DPI [pixel] scaling)
+  // But we cannot just revert the scaling, because it is needed when DPI changes on runtime.
+  // (strangelly for plain tree view [e.g. navigation tree on preferences dialog, it works correctly,
+  // so it seems that Windows scales Ident on runtime only when the tree have images -
+  // what is confirmed by double scaling on Login dialog - so there we should do the same trick)
+  Indent := ScaleByCurrentPPI(19, Self);
 end;
 
 procedure TCustomDriveView.CreateWnd;
@@ -364,7 +381,7 @@ begin
 
   if DarkMode then AllowDarkModeForWindow(Self, DarkMode);
 
-  NeedImageLists(False);
+  NeedImageLists;
 
   if not (csDesigning in ComponentState) then
     FDragImageList := TDragImageList.Create(Self);
@@ -471,7 +488,7 @@ begin
     FOnDDDragEnter(Self, DataObj, KeyState, Point, Effect, Accept);
 end; {DDDragEnter}
 
-procedure TCustomDriveView.DDDragLeave;
+procedure TCustomDriveView.DDDragLeave(Dummy: Integer);
 begin
   if Assigned(DropTarget) then
   begin
@@ -925,6 +942,8 @@ var
   Point: TPoint;
   PrevAutoPopup: Boolean;
 begin
+  // Not sure what is this exactly for, as without AutoPopup, the inherited WMContextMenu is almost noop.
+  // In general it would be better to override DoContextPopup
   PrevAutoPopup := False;
   try
     if Assigned(PopupMenu) then
@@ -968,6 +987,7 @@ begin
   end;
 end; {WMContextMenu}
 
+// Might not be always called, see comment in TDriveView.DestroyWnd
 procedure TCustomDriveView.CMRecreateWnd(var Msg: TMessage);
 var
   HadHandle: Boolean;
@@ -1068,61 +1088,6 @@ begin
   ValidateDirectoryEx(Node, rsRecursiveExisting, False);
 end;  {ValidateDirectory}
 
-procedure TCustomDriveView.CenterNode(Node: TTreeNode);
-var
-  NodePos: TRect;
-  ScrollInfo: TScrollInfo;
-begin
-  if Assigned(Node) and (Items.Count > 0) then
-  begin
-    Node.MakeVisible;
-
-    NodePos  := Node.DisplayRect(False);
-    with ScrollInfo do
-    begin
-      cbSize := SizeOf(ScrollInfo);
-      fMask := SIF_ALL;
-      nMin := 0;
-      nMax := 0;
-      nPage := 0;
-    end;
-    GetScrollInfo(Handle, SB_VERT, ScrollInfo);
-
-    if ScrollInfo.nMin <> ScrollInfo.nMax then
-    begin
-      {Scroll tree up:}
-      if (NodePos.Top < Height div 4) and (ScrollInfo.nPos > 0) then
-      begin
-        ScrollInfo.fMask := SIF_POS;
-        while (ScrollInfo.nPos > 0) and (NodePos.Top < (Height div 4)) do
-        begin
-          Perform(WM_VSCROLL, SB_LINEUP, 0);
-          GetScrollInfo(Handle, SB_VERT, ScrollInfo);
-          NodePos := Node.DisplayRect(False);
-        end;
-      end
-        else
-      if (NodePos.Top > ((Height * 3) div 4)) then
-      begin
-        {Scroll tree down:}
-        ScrollInfo.fMask := SIF_POS;
-        while (ScrollInfo.nPos + ABS(ScrollInfo.nPage) < ScrollInfo.nMax) and
-          (NodePos.Top > ((Height * 3) div 4)) and
-          (ScrollInfo.nPage > 0) do
-        begin
-          Perform(WM_VSCROLL, SB_LINEDOWN, 0);
-          GetScrollInfo(Handle, SB_VERT, ScrollInfo);
-          NodePos := Node.DisplayRect(False);
-        end;
-      end;
-      NodePos := Node.DisplayRect(True);
-    end;
-
-    if NodePos.Left < 50 then
-      Perform(WM_HSCROLL, SB_PAGELEFT, 0);
-  end;
-end; {CenterNode}
-
 function TCustomDriveView.DoCompareText(Text1, Text2: string): Integer;
 begin
   Result := CompareLogicalTextPas(Text1, Text2, NaturalOrderNumericalSorting);
@@ -1153,17 +1118,17 @@ function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
 
     Node := StartNode.GetFirstChild;
 
-    while Assigned(Node) and FContinue do
+    while Assigned(Node) do
     begin
       NextNode := StartNode.GetNextChild(Node);
       NodeHasChilds := Node.HasChildren;
 
-      if (not FContinue) or (not CallBackFunc(Node, Data)) then Exit;
+      if not CallBackFunc(Node, Data) then Exit;
 
       if Assigned(Node) and
          (Recurse = rsRecursiveExisting) and NodeHasChilds then
       begin
-        if (not ScanSubTree(Node)) or (not FContinue) then Exit;
+        if not ScanSubTree(Node) then Exit;
       end;
 
       Node := NextNode;
@@ -1173,7 +1138,6 @@ function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
 
 begin {IterateSubTree}
   Result := False;
-  FContinue := True;
   if Assigned(CallBackFunc) then
   begin
     if ScanStartNode = coScanStartNode then
@@ -1182,7 +1146,7 @@ begin {IterateSubTree}
     end;
 
     if (not Assigned(StartNode)) or
-       FContinue and ScanSubTree(StartNode) then
+       ScanSubTree(StartNode) then
     begin
       Result := True;
     end;

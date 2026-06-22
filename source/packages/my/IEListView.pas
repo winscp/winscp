@@ -147,7 +147,6 @@ type
     property ShowHint;
     property TabOrder;
     property TabStop default True;
-    property ViewStyle;
     property Visible;
     property OnChange;
     property OnChanging;
@@ -537,6 +536,7 @@ begin
   inherited;
 end; { TCustomIEListView.WMNotify }
 
+// Might not be always called, see comment in TDriveView.DestroyWnd
 procedure TCustomIEListView.CMRecreateWnd(var Message: TMessage);
 begin
   inherited;

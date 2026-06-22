@@ -5,17 +5,18 @@ BEGIN
   // GitHub organization description
   // <meta name="description">
   DESCRIPTION_80_LETTERS3, "WinSCP is a free file manager for Windows supporting FTP, SFTP, S3 and WebDAV."
-  // REGISTERED_APP_DESC4
+  // REGISTERED_APP_DESC5
   // GitHub repository description
   // Facebook <meta property="og:description">
-  DESCRIPTION_250_LETTERS3, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It supports also local-local mode and FTPS, S3, SCP and WebDAV protocols. Power users can automate WinSCP using .NET assembly."
-  // readme.md
-  // Microsoft Store "Description"
+  DESCRIPTION_250_LETTERS4, "WinSCP is a popular free file manager for Windows supporting SFTP, FTP, FTPS, SCP, S3, WebDAV and local-to-local file transfers. A powerful tool to enhance your productivity with a user-friendly interface and automation options like .NET assembly."
+  // readme_source.md => readme.md
+  // Microsoft Store "Description" (automatic)
   // SourceForge "Full Description"
-  DESCRIPTION_450_LETTERS3, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It offers an easy to use GUI to copy files between a local and remote computer using multiple protocols: Amazon S3, FTP, FTPS, SCP, SFTP or WebDAV. WinSCP can copy files between two local folders too. Power users can automate WinSCP using .NET assembly. WinSCP is available in English and many other languages."
+  DESCRIPTION_450_LETTERS4, "WinSCP is a popular free file manager for Windows supporting SFTP, FTP, FTPS, SCP, S3, WebDAV and local-to-local file transfers. A powerful tool to enhance your productivity with a user-friendly interface and automation options like .NET assembly or batch file scripting. Use WinSCP also for file editing, directory synchronization and site management. WinSCP is open-source and well documented. It is available in English and many other languages."
   // "English" shall be replaced by translation language
   DESCRIPTION_2000_LETTERS3, "WinSCP is a popular free SFTP and FTP client for Windows. Moreover, WinSCP is a powerful universal file manager that will improve your productivity. WinSCP can copy files between a local and remote computer using multiple protocols: Amazon S3, FTP, FTPS, SCP, SFTP or WebDAV. WinSCP can copy files between two local folders too. On the one hand, WinSCP offers an easy to use graphical user interface; you can choose between Windows Explorer look and tabbed twin-panel interface like Norton commander. On the other hand, advanced users can automate WinSCP functionality using .NET assembly or simple batch file scripting. You will use WinSCP for all common operations with files. You can start editing a file directly from WinSCP, either using WinSCP internal text editor or using integration with your favorite external text editor. WinSCP operations are not limited to individual files; WinSCP offers also several ways to synchronize directories. After connecting to a site you can choose to store site information for repeated access, WinSCP can even share site settings with another popular open source tool PuTTY. WinSCP integrates also with Pageant (PuTTY authentication agent) for full support of public key authentication with SSH. Admins love WinSCP support for portable operation using a configuration file instead of registry entries, suitable for operation from removable media. A comprehensive WinSCP documentation is freely accessible at https://winscp.net/. This site hosts also a very active user forum for support and feature requests. WinSCP is available in <English> and many other languages. WinSCP is an open source software distributed free of charge under the terms of the GNU General Public License (GPL)."
 
+  // SourceForge Features
   FUNCTIONS_PROTOCOLS2, "Support for Amazon S3, FTP, FTPS, SCP, SFTP or WebDAV"
   FUNCTIONS_FILE_OPERATION, "All common operations with files"
   FUNCTIONS_INTEGRATION2, "Integration with Windows, PuTTY and other applications"
@@ -94,4 +95,10 @@ BEGIN
   NEW_6_2_HOST_CERTIFICATES, "Support for OpenSSH certificates for host verification"
   NEW_6_2_SYNC_HASH, "File hash can be used as criterion for synchronization"
   NEW_6_2_MOVE_DUPLICATE, "Improved behaviour when moving and duplicating remote files"
+
+  NEW_6_4_THUMBNAILS, "Thumbnail view in file panels"
+  NEW_6_4_LARGER_UI, "Slightly larger font and toolbar buttons"
+  NEW_6_4_SYNCHRONIZATION, "Synchronization actions can be pushed to background queue"
+  NEW_6_4_LARGE_DIRS, "Optimized working with large local directories"
+  NEW_6_4_S3_ROLE, "Allowed assuming IAM role in S3 sessions"
 END

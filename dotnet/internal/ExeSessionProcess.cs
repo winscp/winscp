@@ -16,6 +16,7 @@ using System.Security.AccessControl;
 #endif
 using System.ComponentModel;
 using System.Security.Cryptography;
+using System.Linq;
 
 namespace WinSCP
 {
@@ -914,20 +915,21 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                string executablePath;
-                if (!string.IsNullOrEmpty(_session.ExecutablePath))
+                string executablePath = _session.ExecutablePath;
+                string result;
+                if (!string.IsNullOrEmpty(executablePath))
                 {
-                    executablePath = _session.ExecutablePath;
                     if (!File.Exists(executablePath))
                     {
-                        throw _logger.WriteException(new SessionLocalException(_session, string.Format(CultureInfo.CurrentCulture, "{0} does not exists.", executablePath)));
+                        throw _logger.WriteException(new SessionLocalException(_session, $"{executablePath} does not exists."));
                     }
+                    result = executablePath;
                 }
                 else
                 {
-                    executablePath = FindExecutable(_session);
+                    result = FindExecutable(_session);
                 }
-                return executablePath;
+                return result;
             }
         }
 
@@ -936,25 +938,27 @@ namespace WinSCP
         {
             Logger logger = session.Logger;
             string executablePath;
-            if (!TryFindExecutableInPath(logger, GetAssemblyPath(logger), out executablePath) &&
-                !TryFindExecutableInPath(logger, GetEntryAssemblyPath(logger), out executablePath) &&
+            List<string> paths = [];
+            string assemblyPath = GetAssemblyPath(logger);
+            // If the assembly is not loaded from a file, look to the path of the process execuable
+            // (particularly useful for single-file bundles)
+            // (also limited this way not to for example look into powershell.exe folder)
+            string processPath = !string.IsNullOrEmpty(assemblyPath) ? null : Path.GetDirectoryName(Logger.GetProcessPath());
+            if (!TryFindExecutableInPath(logger, paths, assemblyPath, out executablePath) &&
+                !TryFindExecutableInPath(logger, paths, GetEntryAssemblyPath(logger), out executablePath) &&
+                !TryFindExecutableInPath(logger, paths, processPath, out executablePath) &&
 #if !NETSTANDARD
-                !TryFindExecutableInPath(logger, GetInstallationPath(RegistryHive.CurrentUser), out executablePath) &&
-                !TryFindExecutableInPath(logger, GetInstallationPath(RegistryHive.LocalMachine), out executablePath) &&
+                !TryFindExecutableInPath(logger, paths, GetInstallationPath(RegistryHive.CurrentUser), out executablePath) &&
+                !TryFindExecutableInPath(logger, paths, GetInstallationPath(RegistryHive.LocalMachine), out executablePath) &&
 #endif
-                !TryFindExecutableInPath(logger, GetDefaultInstallationPath(), out executablePath))
+                !TryFindExecutableInPath(logger, paths, GetDefaultInstallationPath(), out executablePath))
             {
-                string entryAssemblyDesc = string.Empty;
-                Assembly entryAssembly = Assembly.GetEntryAssembly();
-                if (entryAssembly != null)
-                {
-                    entryAssemblyDesc = $", nor the entry assembly {entryAssembly.GetName().Name} ({GetEntryAssemblyPath(logger)})";
-                }
-                throw logger.WriteException(
-                    new SessionLocalException(session,
-                        string.Format(CultureInfo.CurrentCulture,
-                            "The {0} executable was not found at location of the assembly {1} ({2}){3}, nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
-                            ExeExecutableFileName, Assembly.GetExecutingAssembly().GetName().Name, GetAssemblyPath(logger), entryAssemblyDesc)));
+                string pathsStr = string.Join(", ", paths);
+                string filename = ExeExecutableFileName;
+                string message =
+                    $"The {filename} executable was not found at any of the inspected locations ({pathsStr}). " +
+                    $"You may use Session.ExecutablePath property to explicitly set path to {filename}.";
+                throw logger.WriteException(new SessionLocalException(session, message));
             }
 
             return executablePath;
@@ -984,14 +988,20 @@ namespace WinSCP
         }
 #endif
 
-        private static bool TryFindExecutableInPath(Logger logger, string path, out string result)
+        private static bool TryFindExecutableInPath(Logger logger, List<string> paths, string path, out string result)
         {
             if (string.IsNullOrEmpty(path))
             {
                 result = null;
             }
+            else if (paths.Contains(path, StringComparer.CurrentCultureIgnoreCase))
+            {
+                logger.WriteLine($"Already searched {path}");
+                result = null;
+            }
             else
             {
+                paths.Add(path);
                 string executablePath = Path.Combine(path, ExeExecutableFileName);
                 if (File.Exists(executablePath))
                 {

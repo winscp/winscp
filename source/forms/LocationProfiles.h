@@ -21,6 +21,7 @@
 #include <Bookmarks.h>
 #include <PasTools.hpp>
 #include <GUITools.h>
+#include <System.ImageList.hpp>
 //----------------------------------------------------------------------------
 class TLocationProfilesDialog : public TForm
 {

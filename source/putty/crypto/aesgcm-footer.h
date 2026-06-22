@@ -9,7 +9,7 @@
  * administrative block containing the lengths of both) is done in the
  * same way no matter what technique is used for the evaluation, so
  * that's centralised into this file, along with as much of the other
- * functionality as posible.
+ * functionality as possible.
  *
  * This footer file is #included by each implementation, but each one
  * will define its own struct type for the state, so that each alloc

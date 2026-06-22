@@ -71,6 +71,18 @@
           initialization &mdash; see <xref linkend="ne_sock_init"/></simpara>
         </listitem>
       </varlistentry>
+      <varlistentry>
+        <term><constant>NE_FEATURE_GSSAPI</constant></term>
+        <listitem>
+          <simpara>Indicates support for Negotiate authentication via GSSAPI</simpara>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>NE_FEATURE_LIBPXY</constant></term>
+        <listitem>
+          <simpara>Indicates support for libproxy (in <xref linkend="ne_session_system_proxy"/>)</simpara>
+        </listitem>
+      </varlistentry>
     </variablelist>
 
     </para>
@@ -82,6 +94,15 @@
 
     <para><function>ne_has_support</function> returns non-zero if 
     the given feature is supported, or zero otherwise.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para>The <constant>NE_FEATURE_GSSAPI</constant> and
+    <constant>NE_FEATURE_LIBPXY</constant> constants are only
+    available in &neon; 0.34.0 and later.</para>
 
   </refsect1>
 

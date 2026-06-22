@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include <vector>
 #include <Masks.hpp>
+#include <Global.h>
 //---------------------------------------------------------------------------
 class EFileMasksException : public Exception
 {
@@ -125,7 +126,7 @@ private:
     const UnicodeString & Path, const TParams * Params, const TMasks & Masks, bool Recurse);
   static inline bool MatchesMaskMask(TMask::TKind MaskKind, Masks::TMask * MaskMask, const UnicodeString & Str);
   static Masks::TMask * DoCreateMaskMask(const UnicodeString & Str);
-  void __fastcall ThrowError(int Start, int End);
+  NORETURN void __fastcall ThrowError(int Start, int End);
   bool DoMatches(
     const UnicodeString & FileName, bool Local, bool Directory, const UnicodeString & Path, const TParams * Params,
     bool RecurseInclude, bool & ImplicitMatch) const;
@@ -205,7 +206,7 @@ struct TCustomCommandData
     TSessionData * SessionData, const UnicodeString & AUserName,
     const UnicodeString & Password);
 
-  __property TSessionData * SessionData = { read = GetSesssionData };
+  __property TSessionData * SessionData = { read = GetSessionData };
 
   void __fastcall operator=(const TCustomCommandData & Data);
 
@@ -215,7 +216,7 @@ private:
   void __fastcall Init(
     TSessionData * SessionData, const UnicodeString & AUserName,
     const UnicodeString & Password, const UnicodeString & HostKey);
-  TSessionData * __fastcall GetSesssionData() const;
+  TSessionData * __fastcall GetSessionData() const;
 };
 //---------------------------------------------------------------------------
 class TFileCustomCommand : public TCustomCommand

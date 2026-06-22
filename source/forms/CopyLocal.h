@@ -29,6 +29,7 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 private:
   int FOptions;
@@ -40,9 +41,6 @@ private:
   void SetDirectoryAndFileMask(const UnicodeString & Directory, const UnicodeString & FileMask);
 
   INTERFACE_HOOK;
-
-protected:
-  virtual void __fastcall Dispatch(void * Message);
 
 public:
   TCopyLocalDialog(TComponent * Owner, bool Move, int Options);

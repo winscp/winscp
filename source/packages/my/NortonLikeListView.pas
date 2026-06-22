@@ -44,6 +44,7 @@ type
     procedure LVMEditLabel(var Message: TMessage); message LVM_EDITLABEL;
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
     procedure CMWantSpecialKey(var Message: TCMWantSpecialKey); message CM_WANTSPECIALKEY;
+    procedure WMNCDestroy(var Message: TWMNCDestroy); message WM_NCDESTROY;
     function GetMarkedCount: Integer;
     function GetMarkedFile: TListItem;
     procedure ItemSelected(Item: TListItem; Index: Integer);
@@ -68,7 +69,7 @@ type
       NewState, OldState: Word): Boolean; dynamic;
     procedure InsertItem(Item: TListItem); override;
     function NewColProperties: TCustomListViewColProperties; virtual; abstract;
-    procedure FocusSomething; virtual;
+    procedure FocusSomething(ForceMakeVisible: Boolean); virtual;
     function EnableDragOnClick: Boolean; virtual;
     function GetItemFromHItem(const Item: TLVItem): TListItem;
     function GetValid: Boolean; virtual;
@@ -76,9 +77,10 @@ type
     procedure DDBeforeDrag;
     function CanEdit(Item: TListItem): Boolean; override;
     function GetPopupMenu: TPopupMenu; override;
-    procedure ChangeScale(M, D: Integer); override;
+    procedure ChangeScale(M, D: Integer; isDpiChange: Boolean); override;
     procedure SetItemSelectedByIndex(Index: Integer; Select: Boolean);
     function GetItemSelectedByIndex(Index: Integer): Boolean;
+    procedure MakeTopItem(Item: TListItem);
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -90,6 +92,7 @@ type
       States: TItemStates): TListItem;
     procedure MakeProgressVisible(Item: TListItem);
     procedure FocusItem(Item: TListItem);
+    function IsItemVisible(Item: TListItem): Boolean;
 
     property ColProperties: TCustomListViewColProperties read FColProperties write FColProperties stored False;
 
@@ -126,12 +129,12 @@ begin
   FUpdatingSelection := 0;
   FFocusingItem := False;
   FLastSelectMethod := smNoneYet;
-  // On Windows Vista, native GetNextItem for selection stops working once we
-  // disallow deselecting any item (see ExCanChange).
+  // Since Windows Vista, native GetNextItem for selection stops working
+  // once we disallow deselecting any item (see ExCanChange).
   // So we need to manage selection state ourselves
-  // cannot use Win32MajorVersion as it is affected by compatibility mode and
-  // the bug is present even in compatibility mode
-  FManageSelection := IsVistaHard;
+  // All supported Windows versions have the bug (last time tested on Windows 11 23H2 22631),
+  // keeping the variable only as a way to tag all related code
+  FManageSelection := True;
   FFocused := 0;
   FIgnoreSetFocusFrom := INVALID_HANDLE_VALUE;
   // On Windows 7 we have to force item update when it looses focus,
@@ -608,10 +611,15 @@ begin
   FNextCharToIgnore := 0;
 end;
 
-procedure TCustomNortonLikeListView.FocusSomething;
+procedure TCustomNortonLikeListView.FocusSomething(ForceMakeVisible: Boolean);
+var
+  MakeVisible: Boolean;
 begin
+  MakeVisible := ForceMakeVisible;
   if Valid and (Items.Count > 0) and not Assigned(ItemFocused) then
   begin
+    MakeVisible := True;
+
     if (NortonLike <> nlOff) then
     begin
       SendMessage(Handle, WM_KEYDOWN, VK_DOWN, LongInt(0));
@@ -622,7 +630,7 @@ begin
       ItemFocused := Items[0];
     end;
   end;
-  if Assigned(ItemFocused) then
+  if MakeVisible and Assigned(ItemFocused) then
   begin
     ItemFocused.MakeVisible(False);
   end;
@@ -1014,11 +1022,19 @@ begin
   Dec(FUpdatingSelection);
 end; { EndUpdatingSelection }
 
+procedure TCustomNortonLikeListView.WMNCDestroy(var Message: TWMNCDestroy);
+begin
+  // VCLCOPY
+  FHeaderHandle := 0;
+  inherited;
+end;
+
 procedure TCustomNortonLikeListView.CreateWnd;
 begin
   try
     Assert(ColProperties <> nil);
     inherited;
+    // VCL gets the handle from WM_CREATE
     FHeaderHandle := ListView_GetHeader(Handle);
 
     ColProperties.ListViewWndCreated;
@@ -1076,6 +1092,11 @@ begin
     Message.Result := 1;
 end;
 
+procedure TCustomNortonLikeListView.MakeTopItem(Item: TListItem);
+begin
+  Scroll(0, Item.Top - TopItem.Top);
+end;
+
 procedure TCustomNortonLikeListView.MakeProgressVisible(Item: TListItem);
 var
   DisplayRect: TRect;
@@ -1086,14 +1107,19 @@ begin
 
     if DisplayRect.Bottom > ClientHeight then
     begin
-      Scroll(0, Item.Top - TopItem.Top);
+      MakeTopItem(Item);
     end;
   end;
 
   Item.MakeVisible(False);
 end;
 
-procedure TCustomNortonLikeListView.ChangeScale(M, D: Integer);
+function TCustomNortonLikeListView.IsItemVisible(Item: TListItem): Boolean;
+begin
+  Result := (ListView_IsItemVisible(Handle, Item.Index) <> 0);
+end;
+
+procedure TCustomNortonLikeListView.ChangeScale(M, D: Integer; isDpiChange: Boolean);
 begin
   if M <> D then
   begin
@@ -1105,6 +1131,7 @@ begin
     HandleNeeded;
   end;
   inherited;
+  ColProperties.ChangeScale(M, D);
 end;
 
 end.

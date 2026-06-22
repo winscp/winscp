@@ -20,6 +20,7 @@
 #include "WinApi.h"
 #include <DateUtils.hpp>
 #include <StrUtils.hpp>
+#include <Xml.Win.msxmldom.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -534,9 +535,7 @@ void __fastcall UpdateStaticUsage()
 
   Configuration->Usage->Set(L"WindowsVersion", (WindowsVersionLong()));
   Configuration->Usage->Set(L"WindowsProductName", (WindowsProductName()));
-  DWORD Type;
-  GetWindowsProductType(Type);
-  Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(Type)));
+  Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(GetWindowsProductType())));
   Configuration->Usage->Set(L"Windows64", IsWin64());
   Configuration->Usage->Set(L"UWP", IsUWP());
   Configuration->Usage->Set(L"PackageName", GetPackageName());
@@ -547,61 +546,21 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"EncodingMultiByteAnsi", !TEncoding::Default->IsSingleByte);
   Configuration->Usage->Set(L"PixelsPerInch", Screen->PixelsPerInch);
 
-  bool PixelsPerInchSystemDiffers = false;
+  int PrimaryPixelsPerInch = Screen->PrimaryMonitor->PixelsPerInch;
   bool PixelsPerInchMonitorsDiffer = false;
-  bool PixelsPerInchAxesDiffer = false;
-
-  HINSTANCE ShCoreLibrary = LoadLibrary(L"shcore.dll");
-  if (ShCoreLibrary != NULL)
+  for (int Index = 0; Index < Screen->MonitorCount; Index++)
   {
-    GetDpiForMonitorProc GetDpiForMonitor =
-      (GetDpiForMonitorProc)GetProcAddress(ShCoreLibrary, "GetDpiForMonitor");
-
-    if (GetDpiForMonitor != NULL)
+    if (Screen->Monitors[Index]->PixelsPerInch != PrimaryPixelsPerInch)
     {
-      unsigned int PrimaryDpiX;
-      unsigned int PrimaryDpiY;
-
-      for (int Index = 0; Index < Screen->MonitorCount; Index++)
-      {
-        unsigned int DpiX;
-        unsigned int DpiY;
-        GetDpiForMonitor(Screen->Monitors[Index]->Handle, MDT_Default, &DpiX, &DpiY);
-
-        if (DpiX != DpiY)
-        {
-          PixelsPerInchAxesDiffer = true;
-        }
-
-        if (Index == 0)
-        {
-          PrimaryDpiX = DpiX;
-          PrimaryDpiY = DpiY;
-
-          // PixelsPerInch is GetDeviceCaps(DC, LOGPIXELSY)
-          if (DpiY != (unsigned int)Screen->PixelsPerInch)
-          {
-            PixelsPerInchSystemDiffers = true;
-          }
-        }
-        else
-        {
-          if ((DpiX != PrimaryDpiX) ||
-              (DpiY != PrimaryDpiY))
-          {
-            PixelsPerInchMonitorsDiffer = true;
-          }
-        }
-      }
+      PixelsPerInchMonitorsDiffer = true;
     }
   }
 
-  if (PixelsPerInchSystemDiffers)
+  if (PrimaryPixelsPerInch != Screen->PixelsPerInch)
   {
-    Configuration->Usage->Inc(L"PixelsPerInchSystemDiffered");
+    Configuration->Usage->Inc(L"PixelsPerInchSystemDiffered2");
   }
   Configuration->Usage->Set(L"PixelsPerInchMonitorsDiffer", PixelsPerInchMonitorsDiffer);
-  Configuration->Usage->Set(L"PixelsPerInchAxesDiffer", PixelsPerInchAxesDiffer);
 
   Configuration->Usage->Set(L"WorkAreaWidth", Screen->WorkAreaWidth);
   Configuration->Usage->Set(L"WorkAreaHeight", Screen->WorkAreaHeight);
@@ -611,7 +570,7 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"ColorDepth", Planes * BitsPixel);
   Configuration->Usage->Set(L"MonitorCount", Screen->MonitorCount);
   Configuration->Usage->Set(L"NotUseThemes", !UseThemes());
-  Configuration->Usage->Set(L"ThemeDefaultFontSize", Application->DefaultFont->Size);
+  Configuration->Usage->Set(L"ThemeDefaultFontSize", std::unique_ptr<TFont>(new TFont())->Size);
   Configuration->Usage->Set(L"ThemeIconFontSize", Screen->IconFont->Size);
 
   Configuration->Usage->Set(L"SysColorWindow", ColorToRGBStr(clWindow));
@@ -631,6 +590,18 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"NetCoreVersion", GetNetCoreVersionStr());
   Configuration->Usage->Set(L"PowerShellVersion", GetPowerShellVersionStr());
   Configuration->Usage->Set(L"PwshVersion", GetPowerShellCoreVersionStr());
+
+  bool MsXmlInstalled;
+  try
+  {
+    TMSXMLDOMDocumentFactory::CreateDOMDocument();
+    MsXmlInstalled = true;
+  }
+  catch (...)
+  {
+    MsXmlInstalled = false;
+  }
+  Configuration->Usage->Set(L"MsXmlInstalled", MsXmlInstalled);
 
   UnicodeString ParentProcess = GetAncestorProcessName();
   // do not record the installer as a parent process
@@ -957,6 +928,10 @@ int __fastcall Execute()
   {
     Mode = cmKeyGen;
   }
+  else if (Params->FindSwitch(COPYID_SWITCH))
+  {
+    Mode = cmCopyId;
+  }
   else if (Params->FindSwitch(FINGERPRINTSCAN_SWITCH))
   {
     Mode = cmFingerprintScan;
@@ -1190,7 +1165,12 @@ int __fastcall Execute()
         bool TrySendToAnotherInstance =
           (ParamCommand == pcNone) &&
           (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
-          !NewInstance;
+          !NewInstance &&
+          // With /rawconfig before session url, parsing commandline does not work correctly,
+          // when opening session in the other instance.
+          // And as it is not clear what it should do anyway, let's ban it and
+          // never send to the existing instance, whenever /rawconfig is used.
+          !Params->FindSwitch(RAW_CONFIG_SWITCH);
 
         if (TrySendToAnotherInstance &&
             !AutoStartSession.IsEmpty() &&
@@ -1254,7 +1234,7 @@ int __fastcall Execute()
         return 0;
       }
 
-      // from now flash message boxes on background
+      // from now flash message boxes in background
       SetOnForeground(false);
 
       bool NeedSession = NewInstance || (ParamCommand != pcNone);

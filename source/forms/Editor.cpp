@@ -144,7 +144,7 @@ int __fastcall TPreambleFilteringFileStream::Write(
   EXCEPTION;
 }
 //---------------------------------------------------------------------------
-class TEditorRichEdit : public TNewRichEdit
+class TEditorRichEdit : public TRichEdit
 {
 public:
   virtual __fastcall TEditorRichEdit(TComponent * AOwner);
@@ -172,6 +172,8 @@ protected:
   void __fastcall SetTabSize(unsigned int TabSize);
   void __fastcall WMPaste();
   void __fastcall EMStreamIn(TMessage & Message);
+  void WMMouseWheel(TMessage & Message);
+  void WMMouseActivate(TWMMouseActivate & Message);
   bool __stdcall StreamLoad(TRichEditStreamInfo * StreamInfo,
     unsigned char * Buff, long Read, long & WasRead);
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
@@ -189,7 +191,7 @@ private:
 };
 //---------------------------------------------------------------------------
 __fastcall TEditorRichEdit::TEditorRichEdit(TComponent * AOwner) :
-  TNewRichEdit(AOwner),
+  TRichEdit(AOwner),
   FLibrary(0),
   FTabSize(0),
   FWordWrap(true),
@@ -202,16 +204,13 @@ void __fastcall TEditorRichEdit::ApplyFont()
 {
   std::unique_ptr<TFont> NewFont(new TFont());
   TWinConfiguration::RestoreFont(FFontConfiguration, NewFont.get());
-  NewFont->Size = ScaleByPixelsPerInchFromSystem(NewFont->Size, this);
+  // Rich Edit 4.1 scales the font on its own
   NewFont->Color = GetWindowTextColor(Color, FFontColor);
-  // setting DefAttributes may take quite time, even if the font attributes
-  // do not change, so avoid that if not necessary
   if (!FInitialized ||
       !SameFont(Font, NewFont.get()) ||
       (Font->Color != NewFont->Color))
   {
     Font->Assign(NewFont.get());
-    DefAttributes->Assign(Font);
   }
 }
 //---------------------------------------------------------------------------
@@ -228,6 +227,7 @@ void __fastcall TEditorRichEdit::SetFormat(
 
   // setting DefAttributes is noop if we do not have a handle
   // (btw code below would create one anyway)
+  // (and we now do not set DefAttributes anymore anyway)
   HandleNeeded();
 
   LockWindowUpdate(Handle);
@@ -290,7 +290,7 @@ void __fastcall TEditorRichEdit::Redo()
 //---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::CreateParams(TCreateParams & Params)
 {
-  TNewRichEdit::CreateParams(Params);
+  TRichEdit::CreateParams(Params);
 
   Params.Style = Params.Style |
     (HideScrollBars ? 0 : ES_DISABLENOSCROLL) |
@@ -301,7 +301,7 @@ void __fastcall TEditorRichEdit::CreateParams(TCreateParams & Params)
 //---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::CreateWnd()
 {
-  TNewRichEdit::CreateWnd();
+  TRichEdit::CreateWnd();
   if (!WinConfiguration->Editor.AutoFont)
   {
     int LangOptions = SendMessage(Handle, EM_GETLANGOPTIONS, 0, 0);
@@ -407,7 +407,45 @@ void __fastcall TEditorRichEdit::EMStreamIn(TMessage & Message)
   LoadInfo.StreamInfo = reinterpret_cast<TRichEditStreamInfo *>(EditStream->dwCookie);
   LoadInfo.RichEdit = this;
   EditStream->dwCookie = reinterpret_cast<DWORD_PTR>(&LoadInfo);
-  TNewRichEdit::Dispatch(&Message);
+  TRichEdit::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
+void TEditorRichEdit::WMMouseWheel(TMessage & Message)
+{
+  unsigned int ScrollLines = 0;
+  if (WinConfiguration->Editor.DisableSmoothScroll &&
+      SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &ScrollLines, 0) &&
+      (ScrollLines != 0))
+  {
+    int Delta = GET_WHEEL_DELTA_WPARAM(Message.WParam);
+    bool Up = (Delta > 0);
+    if (ScrollLines == WHEEL_PAGESCROLL)
+    {
+      SendMessage(Handle, WM_VSCROLL, Up ? SB_PAGEUP : SB_PAGEDOWN, 0);
+    }
+    else
+    {
+      int LinesToScroll = (abs(Delta) / WHEEL_DELTA) * ScrollLines;
+      for (int Index = 0; Index < LinesToScroll; Index++)
+      {
+        SendMessage(Handle, WM_VSCROLL, Up ? SB_LINEUP : SB_LINEDOWN, 0);
+      }
+    }
+  }
+  else
+  {
+    TRichEdit::Dispatch(&Message);
+  }
+}
+//---------------------------------------------------------------------------
+void TEditorRichEdit::WMMouseActivate(TWMMouseActivate & Message)
+{
+  // https://stackoverflow.com/q/20180213/850848
+  if ((Message.MouseMsg == WM_LBUTTONDOWN) && (GetFocus() != Handle))
+  {
+    SetFocus();
+  }
+  TRichEdit::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::Dispatch(void * Message)
@@ -423,8 +461,16 @@ void __fastcall TEditorRichEdit::Dispatch(void * Message)
       EMStreamIn(*M);
       break;
 
+    case WM_MOUSEWHEEL:
+      WMMouseWheel(*M);
+      break;
+
+    case WM_MOUSEACTIVATE:
+      WMMouseActivate(*reinterpret_cast<TWMMouseActivate *>(M));
+      break;
+
     default:
-      TNewRichEdit::Dispatch(Message);
+      TRichEdit::Dispatch(Message);
       break;
   }
 }
@@ -606,7 +652,7 @@ void __fastcall TEditorRichEdit::KeyDown(Word & Key, TShiftState Shift)
   {
     Key = 0;
   }
-  TNewRichEdit::KeyDown(Key, Shift);
+  TRichEdit::KeyDown(Key, Shift);
 }
 //---------------------------------------------------------------------------
 class TFindDialogEx : public TFindDialog
@@ -1687,29 +1733,3 @@ void __fastcall TEditorForm::UpdateBackgroundColor()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorForm::CMDpiChanged(TMessage & Message)
-{
-  bool WasModified = EditorMemo->Modified;
-  EditorMemo->ApplyFont();
-  EditorMemo->Modified = WasModified;
-  // we do not want this, but we want to prevent undo of the font change too, should be improved
-  EditorMemo->ClearUndo();
-  // Clear "modified" status in the status bar, invoked by font change
-  UpdateControls();
-  TForm::Dispatch(&Message);
-}
-//---------------------------------------------------------------------------
-void __fastcall TEditorForm::Dispatch(void * Message)
-{
-  TMessage * M = static_cast<TMessage*>(Message);
-  switch (M->Msg)
-  {
-    case CM_DPICHANGED:
-      CMDpiChanged(*M);
-      break;
-
-    default:
-      TForm::Dispatch(Message);
-      break;
-  }
-}

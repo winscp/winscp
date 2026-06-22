@@ -60,14 +60,14 @@ public:
     int Params, TFileOperationProgressType * OperationProgress,
     TOnceDoneOperation & OnceDoneOperation) = 0;
   virtual void __fastcall TransferOnDirectory(
-    const UnicodeString & Directory, const TCopyParamType * CopyParam, int Params) {};
+    const UnicodeString & Directory, const TCopyParamType * CopyParam, int Params);
   virtual void __fastcall Source(
     TLocalFileHandle & Handle, const UnicodeString & TargetDir, UnicodeString & DestFileName,
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
     TUploadSessionAction & Action, bool & ChildError) = 0;
   virtual void __fastcall DirectorySunk(
-    const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam) {};
+    const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam);
   virtual void __fastcall Sink(
     const UnicodeString & FileName, const TRemoteFile * File,
     const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,

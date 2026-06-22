@@ -1,3 +1,39 @@
+Changes in release 0.34.2:
+* Fix regression in NTLM auth in 0.34.0 (issue #190).
+* Add docs for ne_ssl_proto_name, ne_ssl_protovers, ne_get_request_target.
+
+Changes in release 0.34.1:
+* Fix regression in 207 parsing of <status> elements which omit
+  a reason-phrase (issue #188).
+* Fix ne_move() to submit lock tokens for the parent collection
+  of a source resource locked with depth: 0.
+
+Changes in release 0.34.0:
+* Interface changes:
+ - API and ABI backwards-compatible with 0.27.x and later
+ - NE_SESSFLAG_SSLv2 is now ignored
+* New interfaces and features:
+ - ne_request.h: add ne_get_response_location(),
+   add ne_get_request_target()
+ - ne_redirect.h: adds relative URI resolution per RFC 9110
+ - ne_socket.h: add ne_iaddr_set_scope(), ne_iaddr_get_scope(),
+   ne_sock_getproto()
+ - ne_session.h: add NE_SESSFLAG_STRICT session flag
+ - ne_session.h: ne_session_create() now accepts scoped IPv6
+   link-local literal addresses following the RFC 6874 syntax;
+ - ne_session.h: add ne_ssl_set_protovers() to configure TLS
+   protocol version ranges
+ - ne_utils.h: add NE_FEATURE_GSSAPI, NE_FEATURE_LIBPXY feature flags
+ - ne_ssl.h: add ne_ssl_proto_name()
+ - HTTP strictness/compliance updated for RFC 9110/9112;
+   notably stricter in parsing header field line, chunked
+   transfer-coding, status-line.
+* Bug fixes:
+ - auth: the 'realm' string passed to credentials callback is now
+   cleaned of non-printable characters.
+* Documentation & header updates for RFC 9110/9112.
+* New NE_MINIMUM_VERSION() autoconf macro for better version handling.
+
 Changes in release 0.33.0:
 * Interface changes:
  - API and ABI backwards-compatible with 0.27.x and later

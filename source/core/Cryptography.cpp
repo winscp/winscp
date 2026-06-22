@@ -7,7 +7,11 @@
 #include "Cryptography.h"
 #include "FileBuffer.h"
 #include "TextsCore.h"
+#include "CoreMain.h"
+#include "Exceptions.h"
 #include <openssl\rand.h>
+#include <openssl\err.h>
+#include <openssl\ssl.h>
 #include <process.h>
 #include <Soap.EncdDecd.hpp>
 #include <System.StrUtils.hpp>
@@ -499,7 +503,7 @@ bool __fastcall AES256Verify(UnicodeString Input, RawByteString Verifier)
   return (Mac == Mac2);
 }
 //---------------------------------------------------------------------------
-unsigned char SScrambleTable[256] =
+static unsigned char SScrambleTable[256] =
 {
     0, 223, 235, 233, 240, 185,  88, 102,  22, 130,  27,  53,  79, 125,  66, 201,
    90,  71,  51,  60, 134, 104, 172, 244, 139,  84,  91,  12, 123, 155, 237, 151,
@@ -519,8 +523,8 @@ unsigned char SScrambleTable[256] =
   206, 222, 188, 152, 210, 243,  96,  41,  86, 180, 101, 177, 166, 141, 212, 116
 };
 //---------------------------------------------------------------------------
-unsigned char * ScrambleTable;
-unsigned char * UnscrambleTable;
+static unsigned char * ScrambleTable;
+static unsigned char * UnscrambleTable;
 //---------------------------------------------------------------------------
 RawByteString __fastcall ScramblePassword(UnicodeString Password)
 {
@@ -600,6 +604,19 @@ bool __fastcall UnscramblePassword(RawByteString Scrambled, UnicodeString & Pass
   return Result;
 }
 //---------------------------------------------------------------------------
+static UnicodeString OpensslInitializationErrors;
+//---------------------------------------------------------------------------
+static bool InitOpenssl()
+{
+  // RAND_poll already calls OPENSSL_init_crypto with OPENSSL_INIT_LOAD_CONFIG and other flags.
+  // OPENSSL_init_ssl does not do much more, so it is not really big overhead.
+  // And we need to call OPENSSL_init_ssl, as it we need to use OPENSSL_INIT_LOAD_SSL_STRINGS to match what SSL_CTX_new does
+  // OPENSSL_init_ssl passes all flags to OPENSSL_init_crypto (even those it does not understand, like the very  OPENSSL_INIT_LOAD_SSL_STRINGS).
+  // And OPENSSL_init_ssl caches the initialization results based on the flags
+  ERR_clear_error();
+  return OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS, NULL);
+}
+//---------------------------------------------------------------------------
 void __fastcall CryptographyInitialize()
 {
   ScrambleTable = SScrambleTable;
@@ -609,6 +626,39 @@ void __fastcall CryptographyInitialize()
     UnscrambleTable[SScrambleTable[Index]] = (unsigned char)Index;
   }
   srand((unsigned int)time(NULL) ^ (unsigned int)getpid());
+
+  // The results are partly cached. So when later some OpenSSL function is called, which internally
+  // calls OPENSSL_init_crypto, it will fail, without doing full initialization. So afterwards
+  // the ERR_get_error might return 0, even if the function itself returns failure.
+  // So we have to remember here what went wrong.
+  // But there seems to be an issue in OpenSSL that when OPENSSL_init_crypto is called again
+  // with OPENSSL_INIT_LOAD_CONFIG, after the loading failed before, _from the same thread_, the
+  // initialization succeeds. It seems to be because the in_init_config_local recursion fuest is never cleared.
+  // So for example, is the configuration is invalid, the foreground updates check still work,
+  // as the foreground thread always initialized OpenSSL here (via RAND_poll), and the later
+  // OPENSSL_init_crypto from within updates TLS code succeeds. Similarly scripting TLS connections work.
+  // But opening GUI TLS connections (WebDAV, S3...) fail, as they are opened on background thread,
+  // and there the OPENSSL_init_crypto is first called from TLS connection.
+  // Clean solution would be to fail any TLS connection,
+  // if OPENSSL_init_crypto failed when called the first time, but that would be regression.
+  // But let's be prepared that this happens if OpenSSL is ever fixed.
+  if (!InitOpenssl())
+  {
+    OpensslInitializationErrors = GetTlsErrorStrs();
+    AppLogFmt(L"OpenSSL initialization failed (possibly wrong configuration file) - TLS connections might be failing:\n%s", (OpensslInitializationErrors));
+    char * ConfigPathBuf = CONF_get1_default_config_file();
+    UnicodeString ConfigPath = UnicodeString(UTF8String(ConfigPathBuf));
+    if (!ConfigPath.IsEmpty() && FileExists(ApiPath(ConfigPath)))
+    {
+      AppLogFmt(L"OpenSSL configuration file: %s", (ConfigPath));
+    }
+    OPENSSL_free(ConfigPathBuf);
+  }
+  else
+  {
+    AppLog(L"OpenSSL initialization succeeded");
+  }
+
   RAND_poll();
 }
 //---------------------------------------------------------------------------
@@ -617,6 +667,15 @@ void __fastcall CryptographyFinalize()
   delete[] UnscrambleTable;
   UnscrambleTable = NULL;
   ScrambleTable = NULL;
+}
+//---------------------------------------------------------------------------
+void RequireTls()
+{
+  if (!InitOpenssl())
+  {
+    UnicodeString Errors = DefaultStr(GetTlsErrorStrs(), OpensslInitializationErrors);
+    throw ExtException(MainInstructions(LoadStr(OPENSSL_INIT_ERROR)), OpensslInitializationErrors);
+  }
 }
 //---------------------------------------------------------------------------
 int __fastcall PasswordMaxLength()
@@ -676,7 +735,7 @@ TEncryption::TEncryption(const RawByteString & Key)
   }
 }
 //---------------------------------------------------------------------------
-TEncryption::~TEncryption()
+TEncryption::~TEncryption() EXCEPT
 {
   if (FContext != NULL)
   {
@@ -703,10 +762,8 @@ void TEncryption::NeedSalt()
   }
 }
 //---------------------------------------------------------------------------
-const int AesBlock = 16;
-const int AesBlockMask = 0x0F;
-UnicodeString AesCtrExt(L".aesctr.enc");
-RawByteString AesCtrMagic("aesctr.........."); // 16 bytes fixed [to match AES block size], even for future algos
+static UnicodeString AesCtrExt(L".aesctr.enc");
+static RawByteString AesCtrMagic("aesctr.........."); // 16 bytes fixed [to match AES block size], even for future algos
 //---------------------------------------------------------------------------
 int TEncryption::RoundToBlock(int Size)
 {
@@ -737,7 +794,7 @@ void TEncryption::Aes(TFileBuffer & Buffer, bool Last)
     FOverflowBuffer.SetLength(0);
   }
 
-  int Size;
+  int Size = 0; // shut up
   if (Last)
   {
     Size = Buffer.Size;

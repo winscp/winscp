@@ -4,6 +4,23 @@
 #include <stddef.h>                    /* for wchar_t */
 #include <limits.h>                    /* for INT_MAX */
 
+/*
+ * Declared before including platform.h, because that will refer to it
+ *
+ * An enum for different types of file that a GUI file requester might
+ * focus on. (Our requesters never _insist_ on a particular file type
+ * or extension - there's always an escape hatch to select any file
+ * you want - but the default can be configured.)
+ */
+typedef enum {
+    FILTER_ALL_FILES, /* no particular focus */
+    FILTER_KEY_FILES, /* .ppk */
+    FILTER_DYNLIB_FILES, /* whatever the host platform uses as shared libs */
+    FILTER_SOUND_FILES, /* whatever kind of sound file we can use as bell */
+} FilereqFilter;
+
+struct callback_set;
+
 #include "defs.h"
 #include "platform.h"
 #include "network.h"
@@ -286,64 +303,21 @@ struct unicode_data {
 #define LGTYP_PACKETS 3                /* logmode: SSH data packets */
 #define LGTYP_SSHRAW 4                 /* logmode: SSH raw data */
 
+/* Platform-generic function to set up a struct unicode_data. This is
+ * only likely to be useful to test programs; real clients will want
+ * to use the more flexible per-platform setup functions. */
+void init_ucs_generic(Conf *conf, struct unicode_data *ucsdata);
+
 /*
  * Enumeration of 'special commands' that can be sent during a
  * session, separately from the byte stream of ordinary session data.
  */
 typedef enum {
-    /*
-     * Commands that are generally useful in multiple backends.
-     */
-    SS_BRK,    /* serial-line break */
-    SS_EOF,    /* end-of-file on session input */
-    SS_NOP,    /* transmit data with no effect */
-    SS_PING,   /* try to keep the session alive (probably, but not
-                * necessarily, implemented as SS_NOP) */
-
-    /*
-     * Commands specific to Telnet.
-     */
-    SS_AYT,    /* Are You There */
-    SS_SYNCH,  /* Synch */
-    SS_EC,     /* Erase Character */
-    SS_EL,     /* Erase Line */
-    SS_GA,     /* Go Ahead */
-    SS_ABORT,  /* Abort Process */
-    SS_AO,     /* Abort Output */
-    SS_IP,     /* Interrupt Process */
-    SS_SUSP,   /* Suspend Process */
-    SS_EOR,    /* End Of Record */
-    SS_EOL,    /* Telnet end-of-line sequence (CRLF, as opposed to CR
-                * NUL that escapes a literal CR) */
-
-    /*
-     * Commands specific to SSH.
-     */
-    SS_REKEY,  /* trigger an immediate repeat key exchange */
-    SS_XCERT,  /* cross-certify another host key ('arg' indicates which) */
-
-    /*
-     * Send a POSIX-style signal. (Useful in SSH and also pterm.)
-     *
-     * We use the master list in ssh/signal-list.h to define these enum
-     * values, which will come out looking like names of the form
-     * SS_SIGABRT, SS_SIGINT etc.
-     */
-    #define SIGNAL_MAIN(name, text) SS_SIG ## name,
-    #define SIGNAL_SUB(name) SS_SIG ## name,
-    #include "ssh/signal-list.h"
-    #undef SIGNAL_MAIN
-    #undef SIGNAL_SUB
-
-    /*
-     * These aren't really special commands, but they appear in the
-     * enumeration because the list returned from
-     * backend_get_specials() will use them to specify the structure
-     * of the GUI specials menu.
-     */
-    SS_SEP,         /* Separator */
-    SS_SUBMENU,     /* Start a new submenu with specified name */
-    SS_EXITMENU,    /* Exit current submenu, or end of entire specials list */
+    /* The list of enum constants is defined in a separate header so
+     * they can be reused in other contexts */
+    #define SPECIAL(x) SS_ ## x,
+    #include "specials.h"
+    #undef SPECIAL
 } SessionSpecialCode;
 
 /*
@@ -431,6 +405,8 @@ enum {
     KEX_RSA,
     KEX_ECDH,
     KEX_NTRU_HYBRID,
+    KEX_MLKEM_25519_HYBRID,
+    KEX_MLKEM_NIST_HYBRID,
     KEX_MAX
 };
 
@@ -531,6 +507,13 @@ enum {
 };
 
 enum {
+    /* Mouse-button assignments */
+    MOUSE_COMPROMISE, /* xterm-ish but with paste on RB in case no MB exists */
+    MOUSE_XTERM, /* xterm-style: MB pastes, RB extends selection */
+    MOUSE_WINDOWS /* Windows-style: RB brings up menu. MB still extends. */
+};
+
+enum {
     /* Function key types (CONF_funky_type) */
     FUNKY_TILDE,
     FUNKY_LINUX,
@@ -549,6 +532,16 @@ enum {
 
 enum {
     FQ_DEFAULT, FQ_ANTIALIASED, FQ_NONANTIALIASED, FQ_CLEARTYPE
+};
+
+enum {
+    CURSOR_BLOCK, CURSOR_UNDERLINE, CURSOR_VERTICAL_LINE
+};
+
+enum {
+    /* these are really bit flags */
+    BOLD_STYLE_FONT = 1,
+    BOLD_STYLE_COLOUR = 2,
 };
 
 enum {
@@ -997,6 +990,17 @@ struct prompts_t {
     SeatPromptResult spr; /* some implementations need to cache one of these */
 
     /*
+     * Set this flag to indicate that the caller has encoded the
+     * prompts in UTF-8, and expects the responses to be UTF-8 too.
+     *
+     * Ideally this flag would be unnecessary because it would always
+     * be true, but for legacy reasons, we have to switch over a bit
+     * at a time from the old behaviour, and may never manage to get
+     * rid of it completely.
+     */
+    bool utf8;
+
+    /*
      * Callback you can fill in to be notified when all the prompts'
      * responses are available. After you receive this notification, a
      * further call to the get_userpass_input function will return the
@@ -1215,9 +1219,15 @@ struct SeatVtable {
     void (*notify_remote_disconnect)(Seat *seat);
 
     /*
-     * Notify the seat that the connection has suffered a fatal error.
+     * Notify the seat that the connection has suffered an error,
+     * either fatal to the whole connection or not.
+     *
+     * The latter kind of error is expected to be things along the
+     * lines of 'I/O error storing the new host key', which has
+     * traditionally been presented via a dialog box or similar.
      */
     void (*connection_fatal)(Seat *seat, const char *message);
+    void (*nonfatal)(Seat *seat, const char *message);
 
     /*
      * Notify the seat that the list of special commands available
@@ -1487,10 +1497,11 @@ static inline bool seat_interactive(Seat *seat)
 static inline bool seat_get_cursor_position(Seat *seat, int *x, int *y)
 { return  seat->vt->get_cursor_position(seat, x, y); }
 
-/* Unlike the seat's actual method, the public entry point
- * seat_connection_fatal is a wrapper function with a printf-like API,
- * defined in utils. */
+/* Unlike the seat's actual method, the public entry points
+ * seat_connection_fatal and seat_nonfatal are wrapper functions with
+ * a printf-like API, defined in utils. */
 void seat_connection_fatal(Seat *seat, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void seat_nonfatal(Seat *seat, const char *fmt, ...) PRINTF_LIKE(2, 3);
 
 /* Handy aliases for seat_output which set is_stderr to a fixed value. */
 static inline size_t seat_stdout(Seat *seat, const void *data, size_t len)
@@ -1535,6 +1546,7 @@ void nullseat_notify_session_started(Seat *seat);
 void nullseat_notify_remote_exit(Seat *seat);
 void nullseat_notify_remote_disconnect(Seat *seat);
 void nullseat_connection_fatal(Seat *seat, const char *message);
+void nullseat_nonfatal(Seat *seat, const char *message);
 void nullseat_update_specials_menu(Seat *seat);
 char *nullseat_get_ttymode(Seat *seat, const char *mode);
 void nullseat_set_busy_status(Seat *seat, BusyStatus status);
@@ -1577,6 +1589,7 @@ bool nullseat_get_cursor_position(Seat *seat, int *x, int *y);
 
 #ifndef WINSCP
 void console_connection_fatal(Seat *seat, const char *message);
+void console_nonfatal(Seat *seat, const char *message);
 SeatPromptResult console_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
@@ -1795,7 +1808,7 @@ static inline void win_unthrottle(TermWin *win, size_t size)
 /*
  * Global functions not specific to a connection instance.
  */
-void nonfatal(const char *, ...) PRINTF_LIKE(1, 2);
+NORETURN void nonfatal(const char *, ...) PRINTF_LIKE(1, 2); // WINSCP
 NORETURN void modalfatalbox(const char *, ...) PRINTF_LIKE(1, 2);
 NORETURN void cleanup_exit(int);
 
@@ -1803,282 +1816,113 @@ NORETURN void cleanup_exit(int);
  * Exports from conf.c, and a big enum (via parametric macro) of
  * configuration option keys.
  */
-#define CONFIG_OPTIONS(X) \
-    /* X(value-type, subkey-type, keyword) */ \
-    X(STR, NONE, host) \
-    X(INT, NONE, port) \
-    X(INT, NONE, protocol) /* PROT_SSH, PROT_TELNET etc */ \
-    X(INT, NONE, addressfamily) /* ADDRTYPE_IPV[46] or ADDRTYPE_UNSPEC */ \
-    X(INT, NONE, close_on_exit) /* FORCE_ON, FORCE_OFF, AUTO */ \
-    X(BOOL, NONE, warn_on_close) \
-    X(INT, NONE, ping_interval) /* in seconds */ \
-    X(BOOL, NONE, tcp_nodelay) \
-    X(BOOL, NONE, tcp_keepalives) \
-    X(STR, NONE, loghost) /* logical host being contacted, for host key check */ \
-    /* Proxy options */ \
-    X(STR, NONE, proxy_exclude_list) \
-    X(INT, NONE, proxy_dns) /* FORCE_ON, FORCE_OFF, AUTO */ \
-    X(BOOL, NONE, even_proxy_localhost) \
-    X(INT, NONE, proxy_type) /* PROXY_NONE, PROXY_SOCKS4, ... */ \
-    X(STR, NONE, proxy_host) \
-    X(INT, NONE, proxy_port) \
-    X(STR, NONE, proxy_username) \
-    X(STR, NONE, proxy_password) \
-    X(STR, NONE, proxy_telnet_command) \
-    X(INT, NONE, proxy_log_to_term) /* FORCE_ON, FORCE_OFF, AUTO */ \
-    /* SSH options */ \
-    X(STR, NONE, remote_cmd) \
-    X(STR, NONE, remote_cmd2) /* fallback if remote_cmd fails; never loaded or saved */ \
-    X(BOOL, NONE, nopty) \
-    X(BOOL, NONE, compression) \
-    X(INT, INT, ssh_kexlist) \
-    X(INT, INT, ssh_hklist) \
-    X(BOOL, NONE, ssh_prefer_known_hostkeys) \
-    X(INT, NONE, ssh_rekey_time) /* in minutes */ \
-    X(STR, NONE, ssh_rekey_data) /* string encoding e.g. "100K", "2M", "1G" */ \
-    X(BOOL, NONE, tryagent) \
-    X(BOOL, NONE, agentfwd) \
-    X(BOOL, NONE, change_username) /* allow username switching in SSH-2 */ \
-    X(INT, INT, ssh_cipherlist) \
-    X(FILENAME, NONE, keyfile) \
-    X(FILENAME, NONE, detached_cert) \
-    X(STR, NONE, auth_plugin) \
-    /* \
-     * Which SSH protocol to use. \
-     * For historical reasons, the current legal values for CONF_sshprot \
-     * are: \
-     *  0 = SSH-1 only \
-     *  3 = SSH-2 only \
-     * We used to also support \
-     *  1 = SSH-1 with fallback to SSH-2 \
-     *  2 = SSH-2 with fallback to SSH-1 \
-     * and we continue to use 0/3 in storage formats rather than the more \
-     * obvious 1/2 to avoid surprises if someone saves a session and later \
-     * downgrades PuTTY. So it's easier to use these numbers internally too. \
-     */ \
-    X(INT, NONE, sshprot) \
-    X(BOOL, NONE, ssh2_des_cbc) /* "des-cbc" unrecommended SSH-2 cipher */ \
-    X(BOOL, NONE, ssh_no_userauth) /* bypass "ssh-userauth" (SSH-2 only) */ \
-    X(BOOL, NONE, ssh_no_trivial_userauth) /* disable trivial types of auth */ \
-    X(BOOL, NONE, ssh_show_banner) /* show USERAUTH_BANNERs (SSH-2 only) */ \
-    X(BOOL, NONE, try_tis_auth) \
-    X(BOOL, NONE, try_ki_auth) \
-    X(BOOL, NONE, try_gssapi_auth) /* attempt gssapi auth via ssh userauth */ \
-    X(BOOL, NONE, try_gssapi_kex) /* attempt gssapi auth via ssh kex */ \
-    X(BOOL, NONE, gssapifwd) /* forward tgt via gss */ \
-    X(INT, NONE, gssapirekey) /* KEXGSS refresh interval (mins) */ \
-    X(INT, INT, ssh_gsslist) /* preference order for local GSS libs */ \
-    X(FILENAME, NONE, ssh_gss_custom) \
-    X(BOOL, NONE, ssh_subsys) /* run a subsystem rather than a command */ \
-    X(BOOL, NONE, ssh_subsys2) /* fallback to go with remote_cmd_ptr2 */ \
-    X(BOOL, NONE, ssh_no_shell) /* avoid running a shell */ \
-    X(STR, NONE, ssh_nc_host) /* host to connect to in `nc' mode */ \
-    X(INT, NONE, ssh_nc_port) /* port to connect to in `nc' mode */ \
-    /* Telnet options */ \
-    X(STR, NONE, termtype) \
-    X(STR, NONE, termspeed) \
-    X(STR, STR, ttymodes) /* values are "Vvalue" or "A" */ \
-    X(STR, STR, environmt) \
-    X(STR, NONE, username) \
-    X(BOOL, NONE, username_from_env) \
-    X(STR, NONE, localusername) \
-    X(BOOL, NONE, rfc_environ) \
-    X(BOOL, NONE, passive_telnet) \
-    /* Serial port options */ \
-    X(STR, NONE, serline) \
-    X(INT, NONE, serspeed) \
-    X(INT, NONE, serdatabits) \
-    X(INT, NONE, serstopbits) \
-    X(INT, NONE, serparity) /* SER_PAR_NONE, SER_PAR_ODD, ... */ \
-    X(INT, NONE, serflow) /* SER_FLOW_NONE, SER_FLOW_XONXOFF, ... */ \
-    /* Supdup options */ \
-    X(STR, NONE, supdup_location) \
-    X(INT, NONE, supdup_ascii_set) \
-    X(BOOL, NONE, supdup_more) \
-    X(BOOL, NONE, supdup_scroll) \
-    /* Keyboard options */ \
-    X(BOOL, NONE, bksp_is_delete) \
-    X(BOOL, NONE, rxvt_homeend) \
-    X(INT, NONE, funky_type) /* FUNKY_XTERM, FUNKY_LINUX, ... */ \
-    X(INT, NONE, sharrow_type) /* SHARROW_APPLICATION, SHARROW_BITMAP, ... */ \
-    X(BOOL, NONE, no_applic_c) /* totally disable app cursor keys */ \
-    X(BOOL, NONE, no_applic_k) /* totally disable app keypad */ \
-    X(BOOL, NONE, no_mouse_rep) /* totally disable mouse reporting */ \
-    X(BOOL, NONE, no_remote_resize) /* disable remote resizing */ \
-    X(BOOL, NONE, no_alt_screen) /* disable alternate screen */ \
-    X(BOOL, NONE, no_remote_wintitle) /* disable remote retitling */ \
-    X(BOOL, NONE, no_remote_clearscroll) /* disable ESC[3J */ \
-    X(BOOL, NONE, no_dbackspace) /* disable destructive backspace */ \
-    X(BOOL, NONE, no_remote_charset) /* disable remote charset config */ \
-    X(INT, NONE, remote_qtitle_action) /* remote win title query action
-                                       * (TITLE_NONE, TITLE_EMPTY, ...) */ \
-    X(BOOL, NONE, app_cursor) \
-    X(BOOL, NONE, app_keypad) \
-    X(BOOL, NONE, nethack_keypad) \
-    X(BOOL, NONE, telnet_keyboard) \
-    X(BOOL, NONE, telnet_newline) \
-    X(BOOL, NONE, alt_f4) /* is it special? */ \
-    X(BOOL, NONE, alt_space) /* is it special? */ \
-    X(BOOL, NONE, alt_only) /* is it special? */ \
-    X(INT, NONE, localecho) /* FORCE_ON, FORCE_OFF, AUTO */ \
-    X(INT, NONE, localedit) /* FORCE_ON, FORCE_OFF, AUTO */ \
-    X(BOOL, NONE, alwaysontop) \
-    X(BOOL, NONE, fullscreenonaltenter) \
-    X(BOOL, NONE, scroll_on_key) \
-    X(BOOL, NONE, scroll_on_disp) \
-    X(BOOL, NONE, erase_to_scrollback) \
-    X(BOOL, NONE, compose_key) \
-    X(BOOL, NONE, ctrlaltkeys) \
-    X(BOOL, NONE, osx_option_meta) \
-    X(BOOL, NONE, osx_command_meta) \
-    X(STR, NONE, wintitle) /* initial window title */ \
-    /* Terminal options */ \
-    X(INT, NONE, savelines) \
-    X(BOOL, NONE, dec_om) \
-    X(BOOL, NONE, wrap_mode) \
-    X(BOOL, NONE, lfhascr) \
-    X(INT, NONE, cursor_type) /* 0=block 1=underline 2=vertical */ \
-    X(BOOL, NONE, blink_cur) \
-    X(INT, NONE, beep) /* BELL_DISABLED, BELL_DEFAULT, ... */ \
-    X(INT, NONE, beep_ind) /* B_IND_DISABLED, B_IND_FLASH, ... */ \
-    X(BOOL, NONE, bellovl) /* bell overload protection active? */ \
-    X(INT, NONE, bellovl_n) /* number of bells to cause overload */ \
-    X(INT, NONE, bellovl_t) /* time interval for overload (seconds) */ \
-    X(INT, NONE, bellovl_s) /* period of silence to re-enable bell (s) */ \
-    X(FILENAME, NONE, bell_wavefile) \
-    X(BOOL, NONE, scrollbar) \
-    X(BOOL, NONE, scrollbar_in_fullscreen) \
-    X(INT, NONE, resize_action) /* RESIZE_TERM, RESIZE_DISABLED, ... */ \
-    X(BOOL, NONE, bce) \
-    X(BOOL, NONE, blinktext) \
-    X(BOOL, NONE, win_name_always) \
-    X(INT, NONE, width) \
-    X(INT, NONE, height) \
-    X(FONT, NONE, font) \
-    X(INT, NONE, font_quality) /* FQ_DEFAULT, FQ_ANTIALIASED, ... */ \
-    X(FILENAME, NONE, logfilename) \
-    X(INT, NONE, logtype) /* LGTYP_NONE, LGTYPE_ASCII, ... */ \
-    X(INT, NONE, logxfovr) /* LGXF_OVR, LGXF_APN, LGXF_ASK */ \
-    X(BOOL, NONE, logflush) \
-    X(BOOL, NONE, logheader) \
-    X(BOOL, NONE, logomitpass) \
-    X(BOOL, NONE, logomitdata) \
-    X(BOOL, NONE, hide_mouseptr) \
-    X(BOOL, NONE, sunken_edge) \
-    X(INT, NONE, window_border) /* in pixels */ \
-    X(STR, NONE, answerback) \
-    X(STR, NONE, printer) \
-    X(BOOL, NONE, no_arabicshaping) \
-    X(BOOL, NONE, no_bidi) \
-    /* Colour options */ \
-    X(BOOL, NONE, ansi_colour) \
-    X(BOOL, NONE, xterm_256_colour) \
-    X(BOOL, NONE, true_colour) \
-    X(BOOL, NONE, system_colour) \
-    X(BOOL, NONE, try_palette) \
-    X(INT, NONE, bold_style) /* 1=font 2=colour (3=both) */ \
-    X(INT, INT, colours) /* indexed by the CONF_COLOUR_* enum encoding */ \
-    /* Selection options */ \
-    X(INT, NONE, mouse_is_xterm) /* 0=compromise 1=xterm 2=Windows */ \
-    X(BOOL, NONE, rect_select) \
-    X(BOOL, NONE, paste_controls) \
-    X(BOOL, NONE, rawcnp) \
-    X(BOOL, NONE, utf8linedraw) \
-    X(BOOL, NONE, rtf_paste) \
-    X(BOOL, NONE, mouse_override) \
-    X(INT, INT, wordness) \
-    X(BOOL, NONE, mouseautocopy) \
-    X(INT, NONE, mousepaste) /* CLIPUI_IMPLICIT, CLIPUI_EXPLICIT, ... */ \
-    X(INT, NONE, ctrlshiftins) /* CLIPUI_IMPLICIT, CLIPUI_EXPLICIT, ... */ \
-    X(INT, NONE, ctrlshiftcv) /* CLIPUI_IMPLICIT, CLIPUI_EXPLICIT, ... */ \
-    X(STR, NONE, mousepaste_custom) \
-    X(STR, NONE, ctrlshiftins_custom) \
-    X(STR, NONE, ctrlshiftcv_custom) \
-    /* translations */ \
-    X(INT, NONE, vtmode) /* VT_XWINDOWS, VT_OEMANSI, ... */ \
-    X(STR, NONE, line_codepage) \
-    X(BOOL, NONE, cjk_ambig_wide) \
-    X(BOOL, NONE, utf8_override) \
-    X(BOOL, NONE, xlat_capslockcyr) \
-    /* X11 forwarding */ \
-    X(BOOL, NONE, x11_forward) \
-    X(STR, NONE, x11_display) \
-    X(INT, NONE, x11_auth) /* X11_NO_AUTH, X11_MIT, X11_XDM */ \
-    X(FILENAME, NONE, xauthfile) \
-    /* port forwarding */ \
-    X(BOOL, NONE, lport_acceptall) /* accept conns from hosts other than localhost */ \
-    X(BOOL, NONE, rport_acceptall) /* same for remote forwarded ports (SSH-2 only) */ \
-    /*                                                                \
-     * Subkeys for 'portfwd' can have the following forms:            \
-     *                                                                \
-     *   [LR]localport                                                \
-     *   [LR]localaddr:localport                                      \
-     *                                                                \
-     * Dynamic forwardings are indicated by an 'L' key, and the       \
-     * special value "D". For all other forwardings, the value        \
-     * should be of the form 'host:port'.                             \
-     */ \
-    X(STR, STR, portfwd) \
-    /* SSH bug compatibility modes. All FORCE_ON/FORCE_OFF/AUTO */ \
-    X(INT, NONE, sshbug_ignore1) \
-    X(INT, NONE, sshbug_plainpw1) \
-    X(INT, NONE, sshbug_rsa1) \
-    X(INT, NONE, sshbug_hmac2) \
-    X(INT, NONE, sshbug_derivekey2) \
-    X(INT, NONE, sshbug_rsapad2) \
-    X(INT, NONE, sshbug_pksessid2) \
-    X(INT, NONE, sshbug_rekey2) \
-    X(INT, NONE, sshbug_maxpkt2) \
-    X(INT, NONE, sshbug_ignore2) \
-    X(INT, NONE, sshbug_oldgex2) \
-    X(INT, NONE, sshbug_winadj) \
-    X(INT, NONE, sshbug_chanreq) \
-    X(INT, NONE, sshbug_dropstart) \
-    X(INT, NONE, sshbug_filter_kexinit) \
-    X(INT, NONE, sshbug_rsa_sha2_cert_userauth) \
-    /*                                                                \
-     * ssh_simple means that we promise never to open any channel     \
-     * other than the main one, which means it can safely use a very  \
-     * large window in SSH-2.                                         \
-     */ \
-    X(BOOL, NONE, ssh_simple) \
-    X(BOOL, NONE, ssh_connection_sharing) \
-    X(BOOL, NONE, ssh_connection_sharing_upstream) \
-    X(BOOL, NONE, ssh_connection_sharing_downstream) \
-    /*
-     * ssh_manual_hostkeys is conceptually a set rather than a
-     * dictionary: the string subkeys are the important thing, and the
-     * actual values to which those subkeys map are all "".
-     */ \
-    X(STR, STR, ssh_manual_hostkeys) \
-    /* Options for pterm. Should split out into platform-dependent part. */ \
-    X(BOOL, NONE, stamp_utmp) \
-    X(BOOL, NONE, login_shell) \
-    X(BOOL, NONE, scrollbar_on_left) \
-    X(BOOL, NONE, shadowbold) \
-    X(FONT, NONE, boldfont) \
-    X(FONT, NONE, widefont) \
-    X(FONT, NONE, wideboldfont) \
-    X(INT, NONE, shadowboldoffset) /* in pixels */ \
-    X(BOOL, NONE, crhaslf) \
-    X(STR, NONE, winclass) \
-    /* MPEXT BEGIN */ \
-    X(INT, NONE, connect_timeout) \
-    X(INT, NONE, sndbuf) \
-    X(STR, NONE, srcaddr) \
-    X(BOOL, NONE, force_remote_cmd2) \
-    X(BOOL, NONE, change_password) \
-    /* MPEXT END */ \
-    /* end of list */
 
-/* Now define the actual enum of option keywords using that macro. */
-#define CONF_ENUM_DEF(valtype, keytype, keyword) CONF_ ## keyword,
-enum config_primary_key { CONFIG_OPTIONS(CONF_ENUM_DEF) N_CONFIG_OPTIONS };
-#undef CONF_ENUM_DEF
+/* The master list of option keywords lives in conf.h */
+enum config_primary_key {
+    #define CONF_OPTION(keyword, ...) CONF_ ## keyword,
+    #include "conf.h"
+    #undef CONF_OPTION
+
+    N_CONFIG_OPTIONS
+};
+
+/* Types that appear in Conf keys and values. */
+enum {
+    /*
+     * CONF_TYPE_NONE is included in this enum because sometimes you
+     * need a placeholder for 'no type found'. (In Rust you'd leave it
+     * out, and use Option<ConfType> for those situations.)
+     *
+     * In particular, it's used as the subkey type for options that
+     * don't have subkeys.
+     */
+    CONF_TYPE_NONE,
+
+    /* Booleans, accessed via conf_get_bool and conf_set_bool */
+    CONF_TYPE_BOOL,
+
+    /* Integers, accessed via conf_get_int and conf_set_int */
+    CONF_TYPE_INT,
+
+    /*
+     * NUL-terminated char strings, accessed via conf_get_str and
+     * conf_set_str.
+     *
+     * Where character encoding is relevant, these are generally
+     * expected to be in the host system's default character encoding.
+     *
+     * (Character encoding might not be relevant at all: for example,
+     * if the string is going to be used as a shell command on Unix,
+     * then the exec system call will want a char string anyway.)
+     */
+    CONF_TYPE_STR,
+
+    /* NUL-terminated char strings encoded in UTF-8, accessed via
+     * conf_get_utf8 and conf_set_utf8. */
+    CONF_TYPE_UTF8,
+
+    /*
+     * A type that can be _either_ a char string in system encoding
+     * (aka CONF_TYPE_STR), _or_ a char string in UTF-8 (aka
+     * CONF_TYPE_UTF8). You can set it to be one or the other via
+     * conf_set_str or conf_set_utf8. To read it, you must use
+     * conf_get_str_ambi(), which returns a char string and a boolean
+     * telling you whether it's UTF-8.
+     *
+     * These can't be used as _keys_ in Conf, only as values. (If you
+     * used them as keys, you'd have to answer the difficult question
+     * of whether a UTF-8 and a non-UTF-8 string should be considered
+     * equal.)
+     */
+    CONF_TYPE_STR_AMBI,
+
+    /* PuTTY's OS-specific 'Filename' data type, accessed via
+     * conf_get_filename and conf_set_filename */
+    CONF_TYPE_FILENAME,
+
+    /* PuTTY's GUI-specific 'FontSpec' data type, accessed via
+     * conf_get_fontspec and conf_set_fontspec */
+    CONF_TYPE_FONT,
+};
+
+struct ConfKeyInfo {
+    int subkey_type;
+    int value_type;
+
+    union {
+        // WINSCP changed order, because only the first member can be initialized
+        // and char* can be casted to int, but not to bool
+        int ival;
+        bool bval;
+        const char *sval;
+    } default_value;
+
+    bool save_custom : 1;
+    bool load_custom : 1;
+    bool not_saved : 1;
+
+    const char *save_keyword;
+    const ConfSaveEnumType *storage_enum;
+};
+struct ConfSaveEnumType {
+    const ConfSaveEnumValue *values;
+    size_t nvalues;
+};
+struct ConfSaveEnumValue {
+    int confval, storageval;
+    bool obsolete;
+};
+
+extern const ConfKeyInfo conf_key_info[];
+bool conf_enum_map_to_storage(const ConfSaveEnumType *etype,
+                              int confval, int *storageval_out);
+bool conf_enum_map_from_storage(const ConfSaveEnumType *etype,
+                                int storageval, int *confval_out);
 
 /* Functions handling configuration structures. */
 Conf *conf_new(void);                  /* create an empty configuration */
 void conf_free(Conf *conf);
+void conf_clear(Conf *conf);    /* likely only useful for test programs */
 Conf *conf_copy(Conf *oldconf);
 void conf_copy_into(Conf *dest, Conf *src);
 /* Mandatory accessor functions: enforce by assertion that keys exist. */
@@ -2086,6 +1930,9 @@ bool conf_get_bool(Conf *conf, int key);
 int conf_get_int(Conf *conf, int key);
 int conf_get_int_int(Conf *conf, int key, int subkey);
 char *conf_get_str(Conf *conf, int key);   /* result still owned by conf */
+char *conf_get_utf8(Conf *conf, int key);   /* result still owned by conf */
+char *conf_get_str_ambi( /* result still owned by conf; 'utf8' may be NULL */
+    Conf *conf, int key, bool *utf8);
 char *conf_get_str_str(Conf *conf, int key, const char *subkey);
 Filename *conf_get_filename(Conf *conf, int key);
 FontSpec *conf_get_fontspec(Conf *conf, int key); /* still owned by conf */
@@ -2103,6 +1950,9 @@ void conf_set_bool(Conf *conf, int key, bool value);
 void conf_set_int(Conf *conf, int key, int value);
 void conf_set_int_int(Conf *conf, int key, int subkey, int value);
 void conf_set_str(Conf *conf, int key, const char *value);
+void conf_set_utf8(Conf *conf, int key, const char *value);
+bool conf_try_set_str(Conf *conf, int key, const char *value);
+bool conf_try_set_utf8(Conf *conf, int key, const char *value);
 void conf_set_str_str(Conf *conf, int key,
                       const char *subkey, const char *val);
 void conf_del_str_str(Conf *conf, int key, const char *subkey);
@@ -2116,7 +1966,15 @@ bool conf_deserialise(Conf *conf, BinarySource *src);/*returns true on success*/
  * Functions to copy, free, serialise and deserialise FontSpecs.
  * Provided per-platform, to go with the platform's idea of a
  * FontSpec's contents.
+ *
+ * The full fontspec_new is declared in the platform header, because
+ * each platform may need it to have a different prototype, due to
+ * constructing fonts in different ways. But fontspec_new_default()
+ * will at least produce _some_ kind of a FontSpec, for use in
+ * situations where one needs to exist (e.g. to put in a Conf) and be
+ * freeable but won't actually be used for anything important.
  */
+FontSpec *fontspec_new_default(void);
 FontSpec *fontspec_copy(const FontSpec *f);
 void fontspec_free(FontSpec *f);
 void fontspec_serialise(BinarySink *bs, FontSpec *f);
@@ -2219,7 +2077,7 @@ void term_lost_clipboard_ownership(Terminal *, int clipboard);
 void term_update(Terminal *);
 void term_invalidate(Terminal *);
 void term_blink(Terminal *, bool set_cursor);
-void term_do_paste(Terminal *, const wchar_t *, int);
+void term_do_paste(Terminal *, const wchar_t *, size_t);
 void term_nopaste(Terminal *);
 void term_copyall(Terminal *, const int *, int);
 void term_pre_reconfig(Terminal *, Conf *);
@@ -2402,28 +2260,7 @@ void ldisc_configure(Ldisc *, Conf *);
 void ldisc_free(Ldisc *);
 void ldisc_send(Ldisc *, const void *buf, int len, bool interactive);
 void ldisc_echoedit_update(Ldisc *);
-typedef struct LdiscInputToken {
-    /*
-     * Structure that encodes any single item of data that Ldisc can
-     * buffer: either a single character of raw data, or a session
-     * special.
-     */
-    bool is_special;
-    union {
-        struct {
-            /* if is_special == false */
-            char chr;
-        };
-        struct {
-            /* if is_special == true */
-            SessionSpecialCode code;
-            int arg;
-        };
-    };
-} LdiscInputToken;
-bool ldisc_has_input_buffered(Ldisc *);
-LdiscInputToken ldisc_get_input_token(Ldisc *); /* asserts there is input */
-void ldisc_enable_prompt_callback(Ldisc *, prompts_t *);
+void ldisc_provide_userpass_le(Ldisc *, TermLineEditor *);
 void ldisc_check_sendok(Ldisc *);
 
 /*
@@ -2490,15 +2327,9 @@ extern const char commitid[];
 /*
  * Exports from unicode.c in platform subdirs.
  */
-#ifndef CP_UTF8
-#define CP_UTF8 65001
-#endif
 /* void init_ucs(void); -- this is now in platform-specific headers */
 bool is_dbcs_leadbyte(int codepage, char byte);
-int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
-             wchar_t *wcstr, int wclen);
-int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
-             char *mbstr, int mblen, const char *defchr);
+/* For put_mb_to_wc / put_wc_to_mb, see marshal.h */
 wchar_t xlat_uskbd2cyrllic(int ch);
 int check_compose(int first, int second);
 int decode_codepage(const char *cp_name);
@@ -2571,6 +2402,8 @@ bool have_ssh_host_key(Seat *seat, const char *host, int port, const char *keyty
  * that aren't equivalents to things in windlg.c et al.
  */
 extern bool console_batch_mode, console_antispoof_prompt;
+extern bool console_set_batch_mode(bool);
+extern bool console_set_stdio_prompts(bool);
 SeatPromptResult console_get_userpass_input(prompts_t *p);
 bool is_interactive(void);
 void console_print_error_msg(const char *prefix, const char *msg);
@@ -2578,6 +2411,11 @@ void console_print_error_msg_fmt_v(
     const char *prefix, const char *fmt, va_list ap);
 void console_print_error_msg_fmt(const char *prefix, const char *fmt, ...)
     PRINTF_LIKE(2, 3);
+
+/*
+ * Exports from either console frontends or terminal.c.
+ */
+extern bool set_legacy_charset_handling(bool);
 
 /*
  * Exports from printing.c in platform subdirs.
@@ -2595,17 +2433,11 @@ void printer_finish_job(printer_job *);
  * Exports from cmdline.c (and also cmdline_error(), which is
  * defined differently in various places and required _by_
  * cmdline.c).
- *
- * Note that cmdline_process_param takes a const option string, but a
- * writable argument string. That's not a mistake - that's so it can
- * zero out password arguments in the hope of not having them show up
- * avoidably in Unix 'ps'.
  */
 struct cmdline_get_passwd_input_state { bool tried; };
 #define CMDLINE_GET_PASSWD_INPUT_STATE_INIT { .tried = false }
 extern const cmdline_get_passwd_input_state cmdline_get_passwd_input_state_new;
-
-int cmdline_process_param(const char *, char *, int, Conf *);
+int cmdline_process_param(CmdlineArg *, CmdlineArg *, int, Conf *);
 void cmdline_run_saved(Conf *);
 void cmdline_cleanup(void);
 SeatPromptResult cmdline_get_passwd_input(
@@ -2613,6 +2445,33 @@ SeatPromptResult cmdline_get_passwd_input(
 bool cmdline_host_ok(Conf *);
 bool cmdline_verbose(void);
 bool cmdline_loaded_session(void);
+
+/*
+ * Abstraction provided by each platform to represent a command-line
+ * argument. May not be as simple as a default-encoded string: on
+ * Windows, command lines can be Unicode representing characters not
+ * in the system codepage, so you might need to retrieve the argument
+ * in a richer form.
+ */
+struct CmdlineArgList {
+    /* args[0], args[1], ... represent the original arguments in the
+     * command line. Then there's a null pointer. Further arguments
+     * can be invented to add to the array after that, in which case
+     * they'll be freed with the rest of the CmdlineArgList, but
+     * aren't logically part of the original command line. */
+    CmdlineArg **args;
+    size_t nargs, argssize;
+};
+struct CmdlineArg {
+    CmdlineArgList *list;
+};
+const char *cmdline_arg_to_utf8(CmdlineArg *arg); /* may fail */
+const char *cmdline_arg_to_str(CmdlineArg *arg);  /* must not fail */
+Filename *cmdline_arg_to_filename(CmdlineArg *arg);  /* caller must free */
+void cmdline_arg_wipe(CmdlineArg *arg);
+CmdlineArg *cmdline_arg_from_str(CmdlineArgList *list, const char *string);
+/* Platforms provide their own constructors for CmdlineArgList */
+void cmdline_arg_list_free(CmdlineArgList *list);
 
 /*
  * Here we have a flags word provided by each tool, which describes
@@ -2636,6 +2495,7 @@ extern const unsigned cmdline_tooltype;
     X(TOOLTYPE_HOST_ARG_FROM_LAUNCHABLE_LOAD)   \
     X(TOOLTYPE_PORT_ARG)                        \
     X(TOOLTYPE_NO_VERBOSE_OPTION)               \
+    X(TOOLTYPE_GUI)                             \
     /* end of list */
 #define BITFLAG_INDEX(val) val ## _bitflag_index,
 enum { TOOLTYPE_LIST(BITFLAG_INDEX) };
@@ -2660,6 +2520,8 @@ void conf_filesel_handler(dlgcontrol *ctrl, dlgparam *dlg,
 void conf_fontsel_handler(dlgcontrol *ctrl, dlgparam *dlg,
                           void *data, int event);
 
+// to avoid "[bcc32c Warning] anonymous types declared in an anonymous union are an extension"
+#ifndef WINSCP
 struct conf_editbox_handler_type {
     /* Structure passed as context2 to conf_editbox_handler */
     enum { EDIT_STR, EDIT_INT, EDIT_FIXEDPOINT } type;
@@ -2694,6 +2556,7 @@ extern const struct conf_editbox_handler_type conf_editbox_str;
 extern const struct conf_editbox_handler_type conf_editbox_int;
 #define ED_STR CP(&conf_editbox_str)
 #define ED_INT CP(&conf_editbox_int)
+#endif
 
 void setup_config_box(struct controlbox *b, bool midsession,
                       int protocol, int protcfginfo);
@@ -2753,6 +2616,7 @@ enum {
  * as fontspec_serialise and fontspec_deserialise above.
  */
 Filename *filename_from_str(const char *string);
+Filename *filename_from_utf8(const char *ustr); // WINSCP
 const char *filename_to_str(const Filename *fn);
 const char* in_memory_key_data(const Filename *fn); // WINSCP
 bool filename_equal(const Filename *f1, const Filename *f2);
@@ -2974,6 +2838,9 @@ Socket *platform_start_subprocess(const char *cmd, Plug *plug,
 #define LOW_SURROGATE_START 0xdc00
 #define LOW_SURROGATE_END 0xdfff
 #endif
+
+/* REGIONAL INDICATOR SYMBOL LETTER A-Z */
+#define IS_REGIONAL_INDICATOR_LETTER(wc) ((unsigned)(wc) - 0x1F1E6U < 26)
 
 /* These macros exist in the Windows API, so the environment may
  * provide them. If not, define them in terms of the above. */

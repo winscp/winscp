@@ -42,9 +42,19 @@ void __fastcall SelectScaledImageList(TImageList * ImageList);
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList);
 void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName);
 int __fastcall DialogImageSize(TForm * Form);
-int __fastcall NormalizePixelsPerInch(int PixelsPerInch);
+int NormalizePixelsPerInch(int PixelsPerInch);
+int LargerPixelsPerInch(int PixelsPerInch, int Larger);
 void __fastcall HideComponentsPanel(TForm * Form);
-UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool HaveNext);
+struct TIncrementalSearchState
+{
+  TIncrementalSearchState();
+  void Reset();
+
+  bool Searching;
+  UnicodeString Text;
+  bool HaveNext;
+};
+UnicodeString FormatIncrementalSearchStatus(const TIncrementalSearchState & SearchState);
 namespace Webbrowserex
 {
   class TWebBrowserEx;
@@ -101,6 +111,7 @@ using namespace Pngimagelist;
 TPngImageList * __fastcall GetAnimationsImages(TControl * Control);
 TImageList * __fastcall GetButtonImages(TControl * Control);
 TPngImageList * __fastcall GetDialogImages(TControl * Control);
+TCustomImageList * TreeViewImageList(TPngImageList * ImageList);
 void __fastcall ReleaseImagesModules();
 //---------------------------------------------------------------------------
 class TFrameAnimation
@@ -165,22 +176,6 @@ private:
   TControl * __fastcall GetHintControl(void * Data);
   void __fastcall SplitHint(
     TControl * HintControl, const UnicodeString & Hint, UnicodeString & ShortHint, UnicodeString & LongHint);
-};
-//---------------------------------------------------------------------------
-// Newer version rich edit that supports "Friendly name hyperlinks" and
-// allows wider range of Unicode characters: https://stackoverflow.com/q/47433656/850848
-class TNewRichEdit : public TRichEdit
-{
-public:
-  virtual __fastcall TNewRichEdit(TComponent * AOwner);
-
-protected:
-  virtual void __fastcall CreateParams(TCreateParams & Params);
-  virtual void __fastcall CreateWnd();
-  virtual void __fastcall DestroyWnd();
-
-private:
-  HINSTANCE FLibrary;
 };
 //---------------------------------------------------------------------------
 // Based on:

@@ -23,6 +23,7 @@ public:
 
   void Get();
   void Post(const UnicodeString & Request);
+  void Put(const UnicodeString & Request);
   bool IsCertificateError();
 
   __property UnicodeString URL = { read = FURL, write = FURL };
@@ -37,6 +38,7 @@ public:
   __property THttpDownloadEvent OnDownload = { read = FOnDownload, write = FOnDownload };
   __property THttpErrorEvent OnError = { read = FOnError, write = FOnError };
   __property UnicodeString Certificate = { read = FCertificate, write = FCertificate };
+  __property int ConnectTimeout = { read = FConnectTimeout, write = FConnectTimeout };
 
 private:
   UnicodeString FURL;
@@ -52,6 +54,7 @@ private:
   TStrings * FRequestHeaders;
   TStrings * FResponseHeaders;
   UnicodeString FCertificate;
+  int FConnectTimeout;
 
   static int NeonBodyReader(void * UserData, const char * Buf, size_t Len);
   int NeonBodyReaderImpl(const char * Buf, size_t Len);

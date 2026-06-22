@@ -16,13 +16,11 @@
 //---------------------------------------------------------------------------
 #include <RemoteFiles.h>
 #include <GUITools.h>
+#include <System.ImageList.hpp>
 //---------------------------------------------------------------------------
 class TRightsFrame : public TFrame
 {
 __published:
-  TLabel *GroupLabel;
-  TLabel *OthersLabel;
-  TLabel *OwnerLabel;
   TGrayedCheckBox *OwnerReadCheck;
   TGrayedCheckBox *OwnerWriteCheck;
   TGrayedCheckBox *OwnerExecuteCheck;
@@ -85,6 +83,9 @@ private:
   UnicodeString FAddXToDirectoriesSuffix;
   bool FInitialized;
   bool FAcl;
+  UnicodeString FOwnerCaption;
+  UnicodeString FGroupCaption;
+  UnicodeString FOthersCaption;
 
   void CycleRights(TRights::TRightGroup RightGroup);
   bool __fastcall GetAddXToDirectories();
@@ -128,6 +129,9 @@ protected:
   void __fastcall CMCancelMode(TCMCancelMode & Message);
   void __fastcall CMDialogKey(TCMDialogKey & Message);
   void __fastcall WMContextMenu(TWMContextMenu & Message);
+  void CMDPIChanged(TMessage & Message);
+  void CMDialogChar(TCMDialogChar & Message);
+  void WMUpdateUIState(TMessage & Message);
   bool __fastcall IsAncestor(TControl * Control, TControl * Ancestor);
   DYNAMIC void __fastcall DoExit();
   void __fastcall SetPopup(bool value);
@@ -137,6 +141,9 @@ protected:
   void __fastcall UpdateOctalEdit();
   void __fastcall UpdateByOctal();
   void DisplayAsAcl(TRights::TRight ReadRight, TRights::TRight WriteRight, TRights::TRight ExecRight, TRights::TRight SpecialRight);
+  void UpdateButtons();
+  void UpdateButton(TSpeedButton * Button, UnicodeString & Caption);
+  bool IsButtonAccel(TCMDialogChar & Message, TSpeedButton * Button, TWinControl * FocusControl);
 
   INTERFACE_HOOK_CUSTOM(TFrame);
 

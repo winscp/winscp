@@ -627,6 +627,14 @@ static void ssh2_write_kexinit_lists(
             preferred_kex[n_preferred_kex++] =
                 &ssh_ntru_hybrid_kex;
             break;
+          case KEX_MLKEM_25519_HYBRID:
+            preferred_kex[n_preferred_kex++] =
+                &ssh_mlkem_curve25519_hybrid_kex;
+            break;
+          case KEX_MLKEM_NIST_HYBRID:
+            preferred_kex[n_preferred_kex++] =
+                &ssh_mlkem_nist_hybrid_kex;
+            break;
           case KEX_WARN:
             /* Flag for later. Don't bother if it's the last in
              * the list. */
@@ -1187,7 +1195,7 @@ static ScanKexinitsResult ssh2_scan_kexinits(
              * Otherwise, any match failure _is_ a fatal error.
              */
             ScanKexinitsResult skr;
-                skr.success = false, skr.error = SKR_UNKNOWN_ID,
+                skr.success = false, skr.error = SKR_NO_AGREEMENT,
                 skr.kind = kexlist_descr[i], skr.desc = slists[i];
             return skr;
         }
@@ -2834,7 +2842,7 @@ void get_hostkey_algs(int type, int * count, cp_ssh_keyalg ** sign_keys)
     int i;
     int max = lenof(ssh2_hostkey_algs);
     *count = 0;
-    *sign_keys = snewn(max, cp_ssh_keyalg *);
+    *sign_keys = snewn(max, cp_ssh_keyalg);
     for (i = 0; i < max; i++)
     {
         if ((type < 0) || (ssh2_hostkey_algs[i].id == type))
@@ -2846,7 +2854,7 @@ void get_hostkey_algs(int type, int * count, cp_ssh_keyalg ** sign_keys)
 }
 
 // WINSCP
-void get_macs(int * count, const struct ssh2_macalg *** amacs)
+void get_macs(int * count, const struct ssh2_macalg * const ** amacs)
 {
     *amacs = macs;
     *count = lenof(macs);

@@ -128,7 +128,6 @@ __fastcall TCopyDialog::TCopyDialog(
   FPresetsMenu = new TPopupMenu(this);
 
   HotTrackLabel(CopyParamLabel);
-  CopyParamListButton(TransferSettingsButton);
   HotTrackLabel(ShortCutHintLabel);
 
   if (FLAGSET(FOptions, coBrowse))
@@ -255,17 +254,11 @@ void __fastcall TCopyDialog::AdjustControls()
   RemoteDirectoryEdit->Visible = false;
   LocalDirectoryEdit->Visible = false;
   DirectoryEdit->Visible = FLAGCLEAR(FOptions, coTemp);
-  EnableControl(DirectoryEdit, FLAGCLEAR(FOptions, coDisableDirectory));
   EnableControl(DirectoryLabel, DirectoryEdit->Enabled);
   EnableControl(LocalDirectoryBrowseButton, DirectoryEdit->Enabled);
   DirectoryLabel->FocusControl = DirectoryEdit;
 
-  UnicodeString QueueLabel = LoadStr(COPY_BACKGROUND);
-  if (FLAGCLEAR(FOptions, coNoQueue))
-  {
-    QueueLabel = FMTLOAD(COPY_QUEUE, (QueueLabel));
-  }
-  QueueCheck2->Caption = QueueLabel;
+  QueueCheck2->Caption = FMTLOAD(COPY_QUEUE, (LoadStr(COPY_BACKGROUND)));
 
   AdjustTransferControls();
 
@@ -434,8 +427,7 @@ bool __fastcall TCopyDialog::Execute()
     Configuration->BeginUpdate();
     try
     {
-      if (FLAGSET(OutputOptions, cooSaveSettings) &&
-          FLAGCLEAR(FOptions, coDisableSaveSettings))
+      if (FLAGSET(OutputOptions, cooSaveSettings))
       {
         GUIConfiguration->DefaultCopyParam = Params;
       }
@@ -501,14 +493,7 @@ void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
-  if (!SupportsSplitButton())
-  {
-    CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
-  }
-  else
-  {
-    CopyParamGroupClick(NULL);
-  }
+  CopyParamGroupClick(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::GenerateCode()
@@ -579,9 +564,7 @@ void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
   ::CopyParamListPopup(R, FPresetsMenu,
     FCopyParams, FPreset, CopyParamClick,
     AdditionalOptions |
-      FLAGMASK(
-          FLAGCLEAR(FOptions, coDisableSaveSettings) && !RemoteTransfer,
-        cplSaveSettings) |
+      FLAGMASK(!RemoteTransfer, cplSaveSettings) |
       FLAGMASK(FLAGCLEAR(FOutputOptions, cooRemoteTransfer) && FLAGCLEAR(FOptions, coTemp), cplGenerateCode),
     ActualCopyParamAttrs(),
     FSaveSettings);
@@ -630,14 +613,9 @@ void __fastcall TCopyDialog::OkButtonDropDownClick(TObject *)
   MenuPopup(OkMenu, OkButton);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::Dispatch(void * Message)
+void __fastcall TCopyDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == CM_DPICHANGED)
-  {
-    AutoSizeCheckBox(NeverShowAgainCheck);
-  }
-
-  TForm::Dispatch(Message);
+  DebugUsedParam2(OldDPI, NewDPI);
+  AutoSizeCheckBox(NeverShowAgainCheck);
 }
 //---------------------------------------------------------------------------

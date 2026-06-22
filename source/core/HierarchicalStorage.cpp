@@ -21,21 +21,8 @@
 #define WRITE_REGISTRY(Method) \
   try { FRegistry->Method(Name, Value); } catch(...) { }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi, bool Value)
+UnicodeString PuttyEscape(const RawByteString & Source, bool Value)
 {
-  RawByteString Source;
-  if (ForceAnsi)
-  {
-    Source = RawByteString(PuttyStr(Str));
-  }
-  else
-  {
-    Source = RawByteString(UTF8String(Str));
-    if (Source.Length() > Str.Length())
-    {
-      Source.Insert(Bom, 1);
-    }
-  }
   strbuf * sb = strbuf_new();
   escape_registry_key(Source.c_str(), sb);
   RawByteString Dest(sb->s);
@@ -48,6 +35,31 @@ UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi, boo
   return UnicodeString(Dest.c_str(), Dest.Length());
 }
 //---------------------------------------------------------------------------
+bool ToUnicode(const UnicodeString & Str, RawByteString & Utf)
+{
+  Utf = RawByteString(UTF8String(Str));
+  bool Result = (Utf.Length() > Str.Length());
+  if (Result)
+  {
+    Utf.Insert(Bom, 1);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi, bool Value)
+{
+  RawByteString Source;
+  if (ForceAnsi)
+  {
+    Source = RawByteString(PuttyStr(Str));
+  }
+  else
+  {
+    ToUnicode(Str, Source);
+  }
+  return PuttyEscape(Source, Value);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
 {
   // Str should contain ASCII characters only
@@ -57,9 +69,9 @@ UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
   RawByteString Dest(sb->s);
   strbuf_free(sb);
   UnicodeString Result;
-  if (Dest.SubString(1, LENOF(Bom)) == Bom)
+  if (Dest.SubString(1, strlen(Bom)) == Bom)
   {
-    Dest.Delete(1, LENOF(Bom));
+    Dest.Delete(1, strlen(Bom));
     Result = UTF8ToString(Dest);
   }
   else
@@ -79,32 +91,53 @@ UnicodeString __fastcall PuttyMungeStr(const UnicodeString & Str)
   return MungeStr(Str, true, false);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall MungeIniName(const UnicodeString & Str)
+UnicodeString __fastcall MungeIniName(const UnicodeString & Str, bool ForceAnsi)
 {
-  int P = Str.Pos(L"=");
-  // make this fast for now
-  if (P > 0)
+  bool NeedEscaping = false;
+  for (int Index = 1; !NeedEscaping && (Index <= Str.Length()); Index++)
   {
-    return ReplaceStr(Str, L"=", L"%3D");
+    wchar_t Ch = Str[Index];
+    NeedEscaping = IsWideChar(Ch) || (Ch == L'=');
+  }
+  UnicodeString Result;
+  if (!ForceAnsi && NeedEscaping)
+  {
+    RawByteString Utf;
+    ToUnicode(Str, Utf);
+    Result = PuttyEscape(Utf, false);
   }
   else
   {
-    return Str;
+    Result = Str;
   }
+  Result = ReplaceStr(Result, L"=", L"%3D");
+  return Result;
 }
+//---------------------------------------------------------------------------
+static UnicodeString EscapedBom(TraceInitStr(PuttyEscape(Bom, false)));
 //---------------------------------------------------------------------------
 UnicodeString __fastcall UnMungeIniName(const UnicodeString & Str)
 {
-  int P = Str.Pos(L"%3D");
-  // make this fast for now
-  if (P > 0)
+  UnicodeString Result;
+  if (StartsStr(EscapedBom, Str))
   {
-    return ReplaceStr(Str, L"%3D", L"=");
+    Result = UnMungeStr(Str);
   }
   else
   {
-    return Str;
+    // Backward compatibility only, with versions that did not Unicode-encoded strings with =.
+    // Can be dropped eventually.
+    int P = Str.Pos(L"%3D");
+    if (P > 0)
+    {
+      Result = ReplaceStr(Str, L"%3D", L"=");
+    }
+    else
+    {
+      Result = Str;
+    }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 template<typename T>
@@ -145,10 +178,10 @@ TIntMapping CreateIntMappingFromEnumNames(const UnicodeString & ANames)
 //---------------------------------------------------------------------------
 TIntMapping AutoSwitchMapping = CreateIntMapping(L"on", asOn, L"off", asOff, L"auto", asAuto);
 TIntMapping AutoSwitchReversedMapping = CreateIntMapping(L"on", asOff, L"off", asOn, L"auto", asAuto);
-TIntMapping BoolMapping = CreateIntMapping(L"on", true, L"off", false);
+static TIntMapping BoolMapping = CreateIntMapping(L"on", true, L"off", false);
 //===========================================================================
-UnicodeString AccessValueName(L"Access");
-UnicodeString DefaultAccessString(L"inherit");
+static UnicodeString AccessValueName(L"Access");
+static UnicodeString DefaultAccessString(L"inherit");
 //---------------------------------------------------------------------------
 __fastcall THierarchicalStorage::THierarchicalStorage(const UnicodeString & AStorage)
 {
@@ -235,6 +268,17 @@ UnicodeString __fastcall THierarchicalStorage::MungeKeyName(const UnicodeString 
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString THierarchicalStorage::MungeIniName(const UnicodeString & Str)
+{
+  UnicodeString Result = ::MungeIniName(Str, ForceAnsi);
+  // This does not handle Ansi-encoded value with equal sign, but that's an edge case
+  if ((Result != Str) && !ForceAnsi && CanRead() && DoValueExists(Str, true))
+  {
+    Result = ::MungeIniName(Str, true);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall THierarchicalStorage::DoReadRootAccessString()
 {
   UnicodeString Result;
@@ -311,7 +355,7 @@ unsigned int __fastcall THierarchicalStorage::GetCurrentAccess()
 bool __fastcall THierarchicalStorage::OpenSubKeyPath(const UnicodeString & KeyPath, bool CanCreate)
 {
   DebugAssert(!KeyPath.IsEmpty() && (KeyPath[KeyPath.Length()] != L'\\'));
-  bool Result;
+  bool Result = false; // shut up
   UnicodeString Buf(KeyPath);
   int Opens = 0;
   while (!Buf.IsEmpty())
@@ -507,7 +551,7 @@ bool __fastcall THierarchicalStorage::ValueExists(const UnicodeString & Value)
 {
   if (CanRead())
   {
-    return DoValueExists(Value);
+    return DoValueExists(Value, ForceAnsi);
   }
   else
   {
@@ -1029,8 +1073,9 @@ bool __fastcall TRegistryStorage::DoKeyExists(const UnicodeString & SubKey, bool
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRegistryStorage::DoValueExists(const UnicodeString & Value)
+bool __fastcall TRegistryStorage::DoValueExists(const UnicodeString & Value, bool DebugUsedArg(AForceAnsi))
 {
+  // TODO: use AForceAnsi
   bool Result = FRegistry->ValueExists(Value);
   return Result;
 }
@@ -1325,7 +1370,9 @@ void __fastcall TCustomIniFileStorage::DoGetValueNames(TStrings * Strings)
   FIniFile->ReadSection(CurrentSection, Strings);
   for (int Index = 0; Index < Strings->Count; Index++)
   {
-    Strings->Strings[Index] = UnMungeIniName(Strings->Strings[Index]);
+    UnicodeString S = Strings->Strings[Index];
+    S = UnMungeIniName(S);
+    Strings->Strings[Index] = S;
   }
 }
 //---------------------------------------------------------------------------
@@ -1336,16 +1383,16 @@ bool __fastcall TCustomIniFileStorage::DoKeyExists(const UnicodeString & SubKey,
     DoKeyExistsInternal(MungeStr(SubKey, AForceAnsi, false));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::DoValueExistsInternal(const UnicodeString & Value)
+bool __fastcall TCustomIniFileStorage::DoValueExistsInternal(const UnicodeString & Value, bool AForceAnsi)
 {
-  return FIniFile->ValueExists(CurrentSection, MungeIniName(Value));
+  return FIniFile->ValueExists(CurrentSection, ::MungeIniName(Value, AForceAnsi));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::DoValueExists(const UnicodeString & Value)
+bool __fastcall TCustomIniFileStorage::DoValueExists(const UnicodeString & Value, bool AForceAnsi)
 {
   return
-    (HandleByMasterStorage() && FMasterStorage->ValueExists(Value)) ||
-    DoValueExistsInternal(Value);
+    (HandleByMasterStorage() && FMasterStorage->DoValueExists(Value, AForceAnsi)) ||
+    DoValueExistsInternal(Value, AForceAnsi);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::DoDeleteValue(const UnicodeString & Name)
@@ -1369,7 +1416,7 @@ bool __fastcall TCustomIniFileStorage::HandleByMasterStorage()
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::HandleReadByMasterStorage(const UnicodeString & Name)
 {
-  return HandleByMasterStorage() && !DoValueExistsInternal(Name);
+  return HandleByMasterStorage() && !DoValueExistsInternal(Name, ForceAnsi);
 }
 //---------------------------------------------------------------------------
 size_t __fastcall TCustomIniFileStorage::DoBinaryDataSize(const UnicodeString & Name)
@@ -1400,7 +1447,7 @@ bool __fastcall TCustomIniFileStorage::DoReadBool(const UnicodeString & Name, bo
 //---------------------------------------------------------------------------
 int __fastcall TCustomIniFileStorage::DoReadIntegerWithMapping(const UnicodeString & Name, int Default, const TIntMapping * Mapping)
 {
-  int Result;
+  int Result = 0; // shut up
   bool ReadAsInteger = true;
   UnicodeString MungedName = MungeIniName(Name);
   if (Mapping != NULL) // optimization
@@ -1882,7 +1929,7 @@ bool __fastcall TOptionsIniFile::AllowWrite()
 
     case wmFail:
       NotImplemented();
-      return false; // never gets here
+      UNREACHABLE_AFTER_NORETURN(return false);
 
     case wmIgnore:
       return false;
@@ -2006,11 +2053,13 @@ void __fastcall TOptionsIniFile::ReadSections(TStrings * Strings)
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::ReadSectionValues(const UnicodeString Section, TStrings * /*Strings*/)
 {
+  DebugUsedParam(Section);
   NotImplemented();
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::EraseSection(const UnicodeString Section)
 {
+  DebugUsedParam(Section);
   if (AllowWrite())
   {
     NotImplemented();

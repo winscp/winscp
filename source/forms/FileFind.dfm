@@ -5,12 +5,16 @@ object FileFindDialog: TFileFindDialog
   HelpKeyword = 'ui_find'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'FindX'
-  ClientHeight = 417
+  ClientHeight = 419
   ClientWidth = 562
   Color = clBtnFace
   Constraints.MinHeight = 240
   Constraints.MinWidth = 400
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Icon.Data = {
     000001000700404000000100200028420000760000003030000001002000A825
     00009E4200002828000001002000681A0000466800002020000001002000A810
@@ -1357,55 +1361,54 @@ object FileFindDialog: TFileFindDialog
     0000C0000000C0000000C0010000C0030000C0030000C0030000C0030000C003
     0000C0030000C0030000C0030000C0030000C0070000C00F0000FFFF0000}
   KeyPreview = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
     562
-    417)
-  PixelsPerInch = 96
-  TextHeight = 13
+    419)
+  TextHeight = 15
   object FilterGroup: TGroupBox
     Left = 8
-    Top = 6
-    Width = 434
-    Height = 127
+    Top = 8
+    Width = 432
+    Height = 122
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Filter'
     TabOrder = 0
     DesignSize = (
-      434
-      127)
+      432
+      122)
     object MaskLabel: TLabel
       Left = 49
-      Top = 20
-      Width = 47
-      Height = 13
+      Top = 22
+      Width = 52
+      Height = 15
       Caption = '&File mask:'
       FocusControl = MaskEdit
     end
     object RemoteDirectoryLabel: TLabel
       Left = 49
       Top = 71
-      Width = 48
-      Height = 13
+      Width = 51
+      Height = 15
       Caption = 'Sear&ch in:'
       FocusControl = RemoteDirectoryEdit
     end
     object AnimationPaintBox: TPaintBox
       Left = 11
-      Top = 23
+      Top = 24
       Width = 32
       Height = 32
     end
     object RemoteDirectoryEdit: THistoryComboBox
       Left = 49
-      Top = 87
+      Top = 89
       Width = 374
-      Height = 21
+      Height = 23
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
@@ -1415,9 +1418,9 @@ object FileFindDialog: TFileFindDialog
     end
     object MaskEdit: THistoryComboBox
       Left = 49
-      Top = 36
+      Top = 40
       Width = 288
-      Height = 21
+      Height = 23
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
@@ -1428,7 +1431,7 @@ object FileFindDialog: TFileFindDialog
     end
     object MaskHintText: TStaticText
       Left = 213
-      Top = 59
+      Top = 63
       Width = 124
       Height = 17
       Alignment = taRightJustify
@@ -1440,7 +1443,7 @@ object FileFindDialog: TFileFindDialog
     end
     object MaskButton: TButton
       Left = 343
-      Top = 34
+      Top = 39
       Width = 80
       Height = 25
       Anchors = [akTop, akRight]
@@ -1450,8 +1453,8 @@ object FileFindDialog: TFileFindDialog
     end
   end
   object StartStopButton: TButton
-    Left = 448
-    Top = 11
+    Left = 446
+    Top = 15
     Width = 108
     Height = 25
     Anchors = [akTop, akRight]
@@ -1461,8 +1464,8 @@ object FileFindDialog: TFileFindDialog
     OnClick = StartStopButtonClick
   end
   object HelpButton: TButton
-    Left = 448
-    Top = 42
+    Left = 446
+    Top = 46
     Width = 108
     Height = 25
     Anchors = [akTop, akRight]
@@ -1472,24 +1475,23 @@ object FileFindDialog: TFileFindDialog
   end
   object FileViewPanel: TPanel
     Left = 8
-    Top = 142
-    Width = 434
-    Height = 252
+    Top = 136
+    Width = 432
+    Height = 254
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 3
     object FileView: TIEListView
       Left = 0
       Top = 0
-      Width = 434
-      Height = 252
+      Width = 432
+      Height = 254
       Align = alClient
       FullDrag = True
       ReadOnly = True
       RowSelect = True
       PopupMenu = FileViewPopupMenu
       TabOrder = 0
-      ViewStyle = vsReport
       OnDblClick = FileViewDblClick
       OnEnter = ControlChange
       OnExit = ControlChange
@@ -1512,6 +1514,7 @@ object FileFindDialog: TFileFindDialog
           Caption = 'Changed'
           Width = 90
         end>
+      ViewStyle = vsReport
       OnCompare = FileViewCompare
       OnContextPopup = FileViewContextPopup
       OnSelectItem = FileViewSelectItem
@@ -1521,13 +1524,13 @@ object FileFindDialog: TFileFindDialog
     Left = 0
     Top = 398
     Width = 562
-    Height = 19
+    Height = 21
     Panels = <>
     SimplePanel = True
   end
   object FocusButton: TButton
-    Left = 448
-    Top = 142
+    Left = 446
+    Top = 136
     Width = 108
     Height = 25
     Action = FocusAction
@@ -1535,17 +1538,17 @@ object FileFindDialog: TFileFindDialog
     TabOrder = 4
   end
   object CopyButton: TButton
-    Left = 448
-    Top = 369
-    Width = 106
+    Left = 446
+    Top = 365
+    Width = 108
     Height = 25
     Action = CopyAction
     Anchors = [akRight, akBottom]
     TabOrder = 8
   end
   object DeleteButton: TButton
-    Left = 448
-    Top = 235
+    Left = 446
+    Top = 229
     Width = 108
     Height = 25
     Action = DeleteAction
@@ -1553,8 +1556,8 @@ object FileFindDialog: TFileFindDialog
     TabOrder = 7
   end
   object DownloadButton: TButton
-    Left = 448
-    Top = 204
+    Left = 446
+    Top = 198
     Width = 108
     Height = 25
     Action = DownloadAction
@@ -1562,8 +1565,8 @@ object FileFindDialog: TFileFindDialog
     TabOrder = 6
   end
   object EditButton: TButton
-    Left = 448
-    Top = 173
+    Left = 446
+    Top = 167
     Width = 108
     Height = 25
     Action = EditAction

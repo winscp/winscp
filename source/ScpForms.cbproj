@@ -1,366 +1,366 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<PropertyGroup>
-		<ProjectGuid>{58677B04-A1B8-4709-A590-464869E7397E}</ProjectGuid>
-		<ProjectVersion>15.4</ProjectVersion>
-		<Config Condition="'$(Config)'==''">Release</Config>
-		<FrameworkType>None</FrameworkType>
-		<Base>True</Base>
-		<Platform Condition="'$(Platform)'==''">Win32</Platform>
-		<TargetedPlatforms>1</TargetedPlatforms>
-		<AppType>StaticLibrary</AppType>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
-		<Cfg_1>true</Cfg_1>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
-		<Cfg_2>true</Cfg_2>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base)'!=''">
-		<_TCHARMapping>wchar_t</_TCHARMapping>
-		<AllPackageLibs>vcl.lib;rtl.lib;My.lib;vclx.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;vclie.lib</AllPackageLibs>
-		<BCC_AllWarnings>true</BCC_AllWarnings>
-		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
-		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-		<BCC_wdiu>false</BCC_wdiu>
-		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
-		<IncludePath>windows\;forms\;core;components;resource;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;$(BDS)\include\windows;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
-		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-		<Manifest_File>None</Manifest_File>
-		<Multithreaded>true</Multithreaded>
-		<OutputExt>lib</OutputExt>
-		<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;DragDrop.bpi;My.bpi;DriveDir.bpi;$(PackageImports)</PackageImports>
-		<ProjectType>CppStaticLibrary</ProjectType>
-		<SanitizedProjectName>ScpForms</SanitizedProjectName>
-		<TLIB_PageSize>512</TLIB_PageSize>
-		<UsingDelphiRTL>true</UsingDelphiRTL>
-		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-		<VerInfo_Locale>1033</VerInfo_Locale>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1)'!=''">
-		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-		<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-		<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
-		<BCC_MonitorGlobalAndStackData>true</BCC_MonitorGlobalAndStackData>
-		<BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
-		<BCC_MonitorThis>true</BCC_MonitorThis>
-		<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-		<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-		<BCC_StackFrames>true</BCC_StackFrames>
-		<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-		<DCC_Define>DEBUG</DCC_Define>
-		<DCC_Optimize>false</DCC_Optimize>
-		<Defines>_DEBUG;$(Defines)</Defines>
-		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-		<TASM_Debugging>Full</TASM_Debugging>
-		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-		<Defines>NDEBUG;$(Defines)</Defines>
-		<TASM_Debugging>None</TASM_Debugging>
-	</PropertyGroup>
-	<ItemGroup>
-		<CppCompile Include="forms\About.cpp">
-			<BuildOrder>27</BuildOrder>
-			<Form>AboutDialog</Form>
-			<DependentOn>forms\About.h</DependentOn>
-			<BuildOrder>14</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\About.dfm"/>
-		<CppCompile Include="forms\Authenticate.cpp">
-			<BuildOrder>24</BuildOrder>
-			<Form>AuthenticateForm</Form>
-			<DependentOn>forms\Authenticate.h</DependentOn>
-			<BuildOrder>17</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Authenticate.dfm"/>
-		<CppCompile Include="forms\Cleanup.cpp">
-			<BuildOrder>21</BuildOrder>
-			<Form>CleanupDialog</Form>
-			<DependentOn>forms\Cleanup.h</DependentOn>
-			<BuildOrder>20</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Cleanup.dfm"/>
-		<CppCompile Include="forms\Console.cpp">
-			<BuildOrder>23</BuildOrder>
-			<Form>ConsoleDialog</Form>
-			<DependentOn>forms\Console.h</DependentOn>
-			<BuildOrder>20</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Console.dfm"/>
-		<CppCompile Include="forms\Copy.cpp">
-			<BuildOrder>26</BuildOrder>
-			<Form>CopyDialog</Form>
-			<DependentOn>forms\Copy.h</DependentOn>
-			<BuildOrder>23</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Copy.dfm"/>
-		<CppCompile Include="forms\CopyLocal.cpp">
-			<Form>CopyLocalDialog</Form>
-			<FormType>dfm</FormType>
-			<DependentOn>forms\CopyLocal.h</DependentOn>
-			<BuildOrder>37</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\CopyLocal.dfm"/>
-		<CppCompile Include="forms\CopyParamCustom.cpp">
-			<BuildOrder>32</BuildOrder>
-			<Form>CopyParamCustomDialog</Form>
-			<DependentOn>forms\CopyParamCustom.h</DependentOn>
-			<BuildOrder>29</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\CopyParamCustom.dfm"/>
-		<CppCompile Include="forms\CopyParamPreset.cpp">
-			<BuildOrder>36</BuildOrder>
-			<Form>CopyParamPresetDialog</Form>
-			<DependentOn>forms\CopyParamPreset.h</DependentOn>
-			<BuildOrder>35</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\CopyParamPreset.dfm"/>
-		<CppCompile Include="forms\CopyParams.cpp">
-			<BuildOrder>29</BuildOrder>
-			<Form>CopyParamsFrame</Form>
-			<DesignClass>TFrame</DesignClass>
-			<DependentOn>forms\CopyParams.h</DependentOn>
-			<BuildOrder>22</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\CopyParams.dfm"/>
-		<CppCompile Include="forms\CreateDirectory.cpp">
-			<BuildOrder>38</BuildOrder>
-			<Form>CreateDirectoryDialog</Form>
-			<DependentOn>forms\CreateDirectory.h</DependentOn>
-			<BuildOrder>35</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\CreateDirectory.dfm"/>
-		<CppCompile Include="forms\Custom.cpp">
-			<BuildOrder>44</BuildOrder>
-			<Form>CustomDialog</Form>
-			<DependentOn>forms\Custom.h</DependentOn>
-			<BuildOrder>37</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Custom.dfm"/>
-		<CppCompile Include="forms\CustomCommand.cpp">
-			<BuildOrder>41</BuildOrder>
-			<Form>CustomCommandDialog</Form>
-			<DependentOn>forms\CustomCommand.h</DependentOn>
-			<BuildOrder>38</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\CustomCommand.dfm"/>
-		<CppCompile Include="forms\EditMask.cpp">
-			<Form>EditMaskDialog</Form>
-			<DependentOn>forms\EditMask.h</DependentOn>
-			<BuildOrder>39</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\EditMask.dfm"/>
-		<CppCompile Include="forms\Editor.cpp">
-			<BuildOrder>47</BuildOrder>
-			<Form>EditorForm</Form>
-			<DependentOn>forms\Editor.h</DependentOn>
-			<BuildOrder>34</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Editor.dfm"/>
-		<CppCompile Include="forms\EditorPreferences.cpp">
-			<BuildOrder>50</BuildOrder>
-			<Form>EditorPreferencesDialog</Form>
-			<DependentOn>forms\EditorPreferences.h</DependentOn>
-			<BuildOrder>31</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\EditorPreferences.dfm"/>
-		<CppCompile Include="forms\FileFind.cpp">
-			<BuildOrder>56</BuildOrder>
-			<Form>FileFindDialog</Form>
-			<DependentOn>forms\FileFind.h</DependentOn>
-			<BuildOrder>33</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\FileFind.dfm"/>
-		<CppCompile Include="forms\FileSystemInfo.cpp">
-			<BuildOrder>53</BuildOrder>
-			<Form>FileSystemInfoDialog</Form>
-			<DependentOn>forms\FileSystemInfo.h</DependentOn>
-			<BuildOrder>30</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\FileSystemInfo.dfm"/>
-		<CppCompile Include="forms\FullSynchronize.cpp">
-			<BuildOrder>59</BuildOrder>
-			<Form>FullSynchronizeDialog</Form>
-			<DependentOn>forms\FullSynchronize.h</DependentOn>
-			<BuildOrder>32</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\FullSynchronize.dfm"/>
-		<CppCompile Include="forms\GenerateUrl.cpp">
-			<Form>GenerateUrlDialog</Form>
-			<FormType>dfm</FormType>
-			<DependentOn>forms\GenerateUrl.h</DependentOn>
-			<BuildOrder>38</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\GenerateUrl.dfm"/>
-		<CppCompile Include="forms\ImportSessions.cpp">
-			<BuildOrder>68</BuildOrder>
-			<Form>ImportSessionsDialog</Form>
-			<DependentOn>forms\ImportSessions.h</DependentOn>
-			<BuildOrder>5</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\ImportSessions.dfm"/>
-		<CppCompile Include="forms\InputDlg.cpp">
-			<BuildOrder>5</BuildOrder>
-			<BuildOrder>26</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="forms\License.cpp">
-			<BuildOrder>8</BuildOrder>
-			<Form>LicenseDialog</Form>
-			<DependentOn>forms\License.h</DependentOn>
-			<BuildOrder>71</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\License.dfm"/>
-		<CppCompile Include="forms\LocationProfiles.cpp">
-			<BuildOrder>74</BuildOrder>
-			<Form>LocationProfilesDialog</Form>
-			<DependentOn>forms\LocationProfiles.h</DependentOn>
-			<BuildOrder>7</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\LocationProfiles.dfm"/>
-		<CppCompile Include="forms\Login.cpp">
-			<BuildOrder>80</BuildOrder>
-			<Form>LoginDialog</Form>
-			<DependentOn>forms\Login.h</DependentOn>
-			<BuildOrder>1</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Login.dfm"/>
-		<CppCompile Include="forms\MessageDlg.cpp">
-			<BuildOrder>8</BuildOrder>
-			<Form>MessageForm</Form>
-			<DependentOn>forms\MessageDlg.h</DependentOn>
-			<BuildOrder>25</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\MessageDlg.dfm"/>
-		<CppCompile Include="forms\OpenDirectory.cpp">
-			<BuildOrder>86</BuildOrder>
-			<Form>OpenDirectoryDialog</Form>
-			<DependentOn>forms\OpenDirectory.h</DependentOn>
-			<BuildOrder>3</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\OpenDirectory.dfm"/>
-		<CppCompile Include="forms\Preferences.cpp">
-			<BuildOrder>89</BuildOrder>
-			<Form>PreferencesDialog</Form>
-			<DependentOn>forms\Preferences.h</DependentOn>
-			<BuildOrder>2</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Preferences.dfm"/>
-		<CppCompile Include="forms\Progress.cpp">
-			<BuildOrder>92</BuildOrder>
-			<Form>ProgressForm</Form>
-			<DependentOn>forms\Progress.h</DependentOn>
-			<BuildOrder>9</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Progress.dfm"/>
-		<CppCompile Include="forms\Properties.cpp">
-			<BuildOrder>95</BuildOrder>
-			<Form>PropertiesDialog</Form>
-			<DependentOn>forms\Properties.h</DependentOn>
-			<BuildOrder>16</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Properties.dfm"/>
-		<CppCompile Include="forms\RemoteTransfer.cpp">
-			<BuildOrder>98</BuildOrder>
-			<Form>RemoteTransferDialog</Form>
-			<DependentOn>forms\RemoteTransfer.h</DependentOn>
-			<BuildOrder>15</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\RemoteTransfer.dfm"/>
-		<CppCompile Include="forms\Rights.cpp">
-			<BuildOrder>18</BuildOrder>
-			<Form>RightsFrame</Form>
-			<DesignClass>TFrame</DesignClass>
-			<DependentOn>forms\Rights.h</DependentOn>
-			<BuildOrder>101</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Rights.dfm"/>
-		<CppCompile Include="forms\SelectMask.cpp">
-			<BuildOrder>14</BuildOrder>
-			<Form>SelectMaskDialog</Form>
-			<DependentOn>forms\SelectMask.h</DependentOn>
-			<BuildOrder>107</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\SelectMask.dfm"/>
-		<CppCompile Include="forms\SiteAdvanced.cpp">
-			<BuildOrder>80</BuildOrder>
-			<Form>SiteAdvancedDialog</Form>
-			<DependentOn>forms\SiteAdvanced.h</DependentOn>
-			<BuildOrder>1</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\SiteAdvanced.dfm"/>
-		<CppCompile Include="forms\Symlink.cpp">
-			<BuildOrder>110</BuildOrder>
-			<Form>SymlinkDialog</Form>
-			<DependentOn>forms\Symlink.h</DependentOn>
-			<BuildOrder>11</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Symlink.dfm"/>
-		<CppCompile Include="forms\Synchronize.cpp">
-			<BuildOrder>113</BuildOrder>
-			<Form>SynchronizeDialog</Form>
-			<DependentOn>forms\Synchronize.h</DependentOn>
-			<BuildOrder>10</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Synchronize.dfm"/>
-		<CppCompile Include="forms\SynchronizeChecklist.cpp">
-			<BuildOrder>13</BuildOrder>
-			<Form>SynchronizeChecklistDialog</Form>
-			<DependentOn>forms\SynchronizeChecklist.h</DependentOn>
-			<BuildOrder>116</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\SynchronizeChecklist.dfm"/>
-		<CppCompile Include="forms\SynchronizeProgress.cpp">
-			<BuildOrder>12</BuildOrder>
-			<Form>SynchronizeProgressForm</Form>
-			<DependentOn>forms\SynchronizeProgress.h</DependentOn>
-			<BuildOrder>119</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\SynchronizeProgress.dfm"/>
-		<CppCompile Include="windows\VCLCommon.cpp">
-			<BuildOrder>28</BuildOrder>
-			<BuildOrder>11</BuildOrder>
-		</CppCompile>
-		<BuildConfiguration Include="Base">
-			<Key>Base</Key>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Debug">
-			<Key>Cfg_1</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Release">
-			<Key>Cfg_2</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-	</ItemGroup>
-	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
-	<ProjectExtensions>
-		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
-		<Borland.ProjectType>CppStaticLibrary</Borland.ProjectType>
-		<BorlandProject>
-			<CPlusPlusBuilder.Personality>
-				<ProjectProperties>
-					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
-					<ProjectProperties Name="ManagePaths">True</ProjectProperties>
-					<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
-					<ProjectProperties Name="IndexFiles">False</ProjectProperties>
-				</ProjectProperties>
-			</CPlusPlusBuilder.Personality>
-			<Platforms>
-				<Platform value="Win32">True</Platform>
-				<Platform value="Win64">False</Platform>
-			</Platforms>
-		</BorlandProject>
-		<ProjectFileVersion>12</ProjectFileVersion>
-	</ProjectExtensions>
-	<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+    <PropertyGroup>
+        <ProjectGuid>{58677B04-A1B8-4709-A590-464869E7397E}</ProjectGuid>
+        <ProjectVersion>19.5</ProjectVersion>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <FrameworkType>None</FrameworkType>
+        <Base>True</Base>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
+        <AppType>StaticLibrary</AppType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <_TCHARMapping>wchar_t</_TCHARMapping>
+        <AllPackageLibs>vcl.lib;rtl.lib;My.lib;vclx.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;vclie.lib</AllPackageLibs>
+        <BCC_AllWarnings>true</BCC_AllWarnings>
+        <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+        <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BCC_wdiu>false</BCC_wdiu>
+        <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+        <IncludePath>windows\;forms\;core;components;resource;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;$(BDS)\include\windows;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+        <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+        <Manifest_File>None</Manifest_File>
+        <Multithreaded>true</Multithreaded>
+        <OutputExt>lib</OutputExt>
+        <PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;DragDrop.bpi;My.bpi;DriveDir.bpi;$(PackageImports)</PackageImports>
+        <ProjectType>CppStaticLibrary</ProjectType>
+        <SanitizedProjectName>ScpForms</SanitizedProjectName>
+        <TLIB_PageSize>1024</TLIB_PageSize>
+        <UsingDelphiRTL>true</UsingDelphiRTL>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+        <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+        <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+        <BCC_MonitorGlobalAndStackData>true</BCC_MonitorGlobalAndStackData>
+        <BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
+        <BCC_MonitorThis>true</BCC_MonitorThis>
+        <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+        <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+        <BCC_StackFrames>true</BCC_StackFrames>
+        <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_Define>DEBUG</DCC_Define>
+        <DCC_Optimize>false</DCC_Optimize>
+        <Defines>_DEBUG;$(Defines)</Defines>
+        <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+        <TASM_Debugging>Full</TASM_Debugging>
+        <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <Defines>NDEBUG;$(Defines)</Defines>
+        <TASM_Debugging>None</TASM_Debugging>
+    </PropertyGroup>
+    <ItemGroup>
+        <CppCompile Include="forms\About.cpp">
+            <BuildOrder>27</BuildOrder>
+            <Form>AboutDialog</Form>
+            <DependentOn>forms\About.h</DependentOn>
+            <BuildOrder>14</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\About.dfm"/>
+        <CppCompile Include="forms\Authenticate.cpp">
+            <BuildOrder>24</BuildOrder>
+            <Form>AuthenticateForm</Form>
+            <DependentOn>forms\Authenticate.h</DependentOn>
+            <BuildOrder>17</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Authenticate.dfm"/>
+        <CppCompile Include="forms\Cleanup.cpp">
+            <BuildOrder>21</BuildOrder>
+            <Form>CleanupDialog</Form>
+            <DependentOn>forms\Cleanup.h</DependentOn>
+            <BuildOrder>20</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Cleanup.dfm"/>
+        <CppCompile Include="forms\Console.cpp">
+            <BuildOrder>23</BuildOrder>
+            <Form>ConsoleDialog</Form>
+            <DependentOn>forms\Console.h</DependentOn>
+            <BuildOrder>20</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Console.dfm"/>
+        <CppCompile Include="forms\Copy.cpp">
+            <BuildOrder>26</BuildOrder>
+            <Form>CopyDialog</Form>
+            <DependentOn>forms\Copy.h</DependentOn>
+            <BuildOrder>23</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Copy.dfm"/>
+        <CppCompile Include="forms\CopyLocal.cpp">
+            <Form>CopyLocalDialog</Form>
+            <FormType>dfm</FormType>
+            <DependentOn>forms\CopyLocal.h</DependentOn>
+            <BuildOrder>37</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\CopyLocal.dfm"/>
+        <CppCompile Include="forms\CopyParamCustom.cpp">
+            <BuildOrder>32</BuildOrder>
+            <Form>CopyParamCustomDialog</Form>
+            <DependentOn>forms\CopyParamCustom.h</DependentOn>
+            <BuildOrder>29</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\CopyParamCustom.dfm"/>
+        <CppCompile Include="forms\CopyParamPreset.cpp">
+            <BuildOrder>36</BuildOrder>
+            <Form>CopyParamPresetDialog</Form>
+            <DependentOn>forms\CopyParamPreset.h</DependentOn>
+            <BuildOrder>35</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\CopyParamPreset.dfm"/>
+        <CppCompile Include="forms\CopyParams.cpp">
+            <BuildOrder>29</BuildOrder>
+            <Form>CopyParamsFrame</Form>
+            <DesignClass>TFrame</DesignClass>
+            <DependentOn>forms\CopyParams.h</DependentOn>
+            <BuildOrder>22</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\CopyParams.dfm"/>
+        <CppCompile Include="forms\CreateDirectory.cpp">
+            <BuildOrder>38</BuildOrder>
+            <Form>CreateDirectoryDialog</Form>
+            <DependentOn>forms\CreateDirectory.h</DependentOn>
+            <BuildOrder>35</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\CreateDirectory.dfm"/>
+        <CppCompile Include="forms\Custom.cpp">
+            <BuildOrder>44</BuildOrder>
+            <Form>CustomDialog</Form>
+            <DependentOn>forms\Custom.h</DependentOn>
+            <BuildOrder>37</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Custom.dfm"/>
+        <CppCompile Include="forms\CustomCommand.cpp">
+            <BuildOrder>41</BuildOrder>
+            <Form>CustomCommandDialog</Form>
+            <DependentOn>forms\CustomCommand.h</DependentOn>
+            <BuildOrder>38</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\CustomCommand.dfm"/>
+        <CppCompile Include="forms\EditMask.cpp">
+            <Form>EditMaskDialog</Form>
+            <DependentOn>forms\EditMask.h</DependentOn>
+            <BuildOrder>39</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\EditMask.dfm"/>
+        <CppCompile Include="forms\Editor.cpp">
+            <BuildOrder>47</BuildOrder>
+            <Form>EditorForm</Form>
+            <DependentOn>forms\Editor.h</DependentOn>
+            <BuildOrder>34</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Editor.dfm"/>
+        <CppCompile Include="forms\EditorPreferences.cpp">
+            <BuildOrder>50</BuildOrder>
+            <Form>EditorPreferencesDialog</Form>
+            <DependentOn>forms\EditorPreferences.h</DependentOn>
+            <BuildOrder>31</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\EditorPreferences.dfm"/>
+        <CppCompile Include="forms\FileFind.cpp">
+            <BuildOrder>56</BuildOrder>
+            <Form>FileFindDialog</Form>
+            <DependentOn>forms\FileFind.h</DependentOn>
+            <BuildOrder>33</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\FileFind.dfm"/>
+        <CppCompile Include="forms\FileSystemInfo.cpp">
+            <BuildOrder>53</BuildOrder>
+            <Form>FileSystemInfoDialog</Form>
+            <DependentOn>forms\FileSystemInfo.h</DependentOn>
+            <BuildOrder>30</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\FileSystemInfo.dfm"/>
+        <CppCompile Include="forms\FullSynchronize.cpp">
+            <BuildOrder>59</BuildOrder>
+            <Form>FullSynchronizeDialog</Form>
+            <DependentOn>forms\FullSynchronize.h</DependentOn>
+            <BuildOrder>32</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\FullSynchronize.dfm"/>
+        <CppCompile Include="forms\GenerateUrl.cpp">
+            <Form>GenerateUrlDialog</Form>
+            <FormType>dfm</FormType>
+            <DependentOn>forms\GenerateUrl.h</DependentOn>
+            <BuildOrder>38</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\GenerateUrl.dfm"/>
+        <CppCompile Include="forms\ImportSessions.cpp">
+            <BuildOrder>68</BuildOrder>
+            <Form>ImportSessionsDialog</Form>
+            <DependentOn>forms\ImportSessions.h</DependentOn>
+            <BuildOrder>5</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\ImportSessions.dfm"/>
+        <CppCompile Include="forms\InputDlg.cpp">
+            <BuildOrder>5</BuildOrder>
+            <BuildOrder>26</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="forms\License.cpp">
+            <BuildOrder>8</BuildOrder>
+            <Form>LicenseDialog</Form>
+            <DependentOn>forms\License.h</DependentOn>
+            <BuildOrder>71</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\License.dfm"/>
+        <CppCompile Include="forms\LocationProfiles.cpp">
+            <BuildOrder>74</BuildOrder>
+            <Form>LocationProfilesDialog</Form>
+            <DependentOn>forms\LocationProfiles.h</DependentOn>
+            <BuildOrder>7</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\LocationProfiles.dfm"/>
+        <CppCompile Include="forms\Login.cpp">
+            <BuildOrder>80</BuildOrder>
+            <Form>LoginDialog</Form>
+            <DependentOn>forms\Login.h</DependentOn>
+            <BuildOrder>1</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Login.dfm"/>
+        <CppCompile Include="forms\MessageDlg.cpp">
+            <BuildOrder>8</BuildOrder>
+            <Form>MessageForm</Form>
+            <DependentOn>forms\MessageDlg.h</DependentOn>
+            <BuildOrder>25</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\MessageDlg.dfm"/>
+        <CppCompile Include="forms\OpenDirectory.cpp">
+            <BuildOrder>86</BuildOrder>
+            <Form>OpenDirectoryDialog</Form>
+            <DependentOn>forms\OpenDirectory.h</DependentOn>
+            <BuildOrder>3</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\OpenDirectory.dfm"/>
+        <CppCompile Include="forms\Preferences.cpp">
+            <BuildOrder>89</BuildOrder>
+            <Form>PreferencesDialog</Form>
+            <DependentOn>forms\Preferences.h</DependentOn>
+            <BuildOrder>2</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Preferences.dfm"/>
+        <CppCompile Include="forms\Progress.cpp">
+            <BuildOrder>92</BuildOrder>
+            <Form>ProgressForm</Form>
+            <DependentOn>forms\Progress.h</DependentOn>
+            <BuildOrder>9</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Progress.dfm"/>
+        <CppCompile Include="forms\Properties.cpp">
+            <BuildOrder>95</BuildOrder>
+            <Form>PropertiesDialog</Form>
+            <DependentOn>forms\Properties.h</DependentOn>
+            <BuildOrder>16</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Properties.dfm"/>
+        <CppCompile Include="forms\RemoteTransfer.cpp">
+            <BuildOrder>98</BuildOrder>
+            <Form>RemoteTransferDialog</Form>
+            <DependentOn>forms\RemoteTransfer.h</DependentOn>
+            <BuildOrder>15</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\RemoteTransfer.dfm"/>
+        <CppCompile Include="forms\Rights.cpp">
+            <BuildOrder>18</BuildOrder>
+            <Form>RightsFrame</Form>
+            <DesignClass>TFrame</DesignClass>
+            <DependentOn>forms\Rights.h</DependentOn>
+            <BuildOrder>101</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Rights.dfm"/>
+        <CppCompile Include="forms\SelectMask.cpp">
+            <BuildOrder>14</BuildOrder>
+            <Form>SelectMaskDialog</Form>
+            <DependentOn>forms\SelectMask.h</DependentOn>
+            <BuildOrder>107</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\SelectMask.dfm"/>
+        <CppCompile Include="forms\SiteAdvanced.cpp">
+            <BuildOrder>80</BuildOrder>
+            <Form>SiteAdvancedDialog</Form>
+            <DependentOn>forms\SiteAdvanced.h</DependentOn>
+            <BuildOrder>1</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\SiteAdvanced.dfm"/>
+        <CppCompile Include="forms\Symlink.cpp">
+            <BuildOrder>110</BuildOrder>
+            <Form>SymlinkDialog</Form>
+            <DependentOn>forms\Symlink.h</DependentOn>
+            <BuildOrder>11</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Symlink.dfm"/>
+        <CppCompile Include="forms\Synchronize.cpp">
+            <BuildOrder>113</BuildOrder>
+            <Form>SynchronizeDialog</Form>
+            <DependentOn>forms\Synchronize.h</DependentOn>
+            <BuildOrder>10</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\Synchronize.dfm"/>
+        <CppCompile Include="forms\SynchronizeChecklist.cpp">
+            <BuildOrder>13</BuildOrder>
+            <Form>SynchronizeChecklistDialog</Form>
+            <DependentOn>forms\SynchronizeChecklist.h</DependentOn>
+            <BuildOrder>116</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\SynchronizeChecklist.dfm"/>
+        <CppCompile Include="forms\SynchronizeProgress.cpp">
+            <BuildOrder>12</BuildOrder>
+            <Form>SynchronizeProgressForm</Form>
+            <DependentOn>forms\SynchronizeProgress.h</DependentOn>
+            <BuildOrder>119</BuildOrder>
+        </CppCompile>
+        <FormResources Include="forms\SynchronizeProgress.dfm"/>
+        <CppCompile Include="windows\VCLCommon.cpp">
+            <BuildOrder>28</BuildOrder>
+            <BuildOrder>11</BuildOrder>
+        </CppCompile>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+    <ProjectExtensions>
+        <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+        <Borland.ProjectType>CppStaticLibrary</Borland.ProjectType>
+        <BorlandProject>
+            <CPlusPlusBuilder.Personality>
+                <ProjectProperties>
+                    <ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+                    <ProjectProperties Name="ManagePaths">True</ProjectProperties>
+                    <ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+                    <ProjectProperties Name="IndexFiles">False</ProjectProperties>
+                </ProjectProperties>
+            </CPlusPlusBuilder.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

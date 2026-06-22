@@ -79,58 +79,14 @@
 #include "ssh.h"
 #include "mpint.h"
 #include "ntru.h"
-
-/* ----------------------------------------------------------------------
- * Preliminaries: we're going to need to do modular arithmetic on
- * small values (considerably smaller than 2^16), and we need to do it
- * without using integer division which might not be time-safe.
- *
- * The strategy for this is the same as I used in
- * mp_mod_known_integer: see there for the proofs. The basic idea is
- * that we precompute the reciprocal of our modulus as a fixed-point
- * number, and use that to get an approximate quotient which we
- * subtract off. For these integer sizes, precomputing a fixed-point
- * reciprocal of the form (2^48 / modulus) leaves us at most off by 1
- * in the quotient, so there's a single (time-safe) trial subtraction
- * at the end.
- *
- * (It's possible that some speed could be gained by not reducing
- * fully at every step. But then you'd have to carefully identify all
- * the places in the algorithm where things are compared to zero. This
- * was the easiest way to get it all working in the first place.)
- */
-
-/* Precompute the reciprocal */
-static uint64_t reciprocal_for_reduction(uint16_t q)
-{
-    return ((uint64_t)1 << 48) / q;
-}
-
-/* Reduce x mod q, assuming qrecip == reciprocal_for_reduction(q) */
-static uint16_t reduce(uint32_t x, uint16_t q, uint64_t qrecip)
-{
-    uint64_t unshifted_quot = x * qrecip;
-    uint64_t quot = unshifted_quot >> 48;
-    uint16_t reduced = x - quot * q;
-    reduced -= q * (1 & ((q-1 - reduced) >> 15));
-    return reduced;
-}
-
-/* Reduce x mod q as above, but also return the quotient */
-static uint16_t reduce_with_quot(uint32_t x, uint32_t *quot_out,
-                                 uint16_t q, uint64_t qrecip)
-{
-    uint64_t unshifted_quot = x * qrecip;
-    uint64_t quot = unshifted_quot >> 48;
-    uint16_t reduced = x - quot * q;
-    uint64_t extraquot = (1 & ((q-1 - reduced) >> 15));
-    reduced -= extraquot * q;
-    *quot_out = quot + extraquot;
-    return reduced;
-}
+#include "smallmoduli.h"
 
 /* Invert x mod q, assuming it's nonzero. (For time-safety, no check
- * is made for zero; it just returns 0.) */
+ * is made for zero; it just returns 0.)
+ *
+ * Expects qrecip == reciprocal_for_reduction(q). (But it's passed in
+ * as a parameter to save recomputing it, on the theory that the
+ * caller will have had it lying around already in most cases.) */
 static uint16_t invert(uint16_t x, uint16_t q, uint64_t qrecip)
 {
     /* Fermat inversion: compute x^(q-2), since x^(q-1) == 1. */
@@ -1170,21 +1126,15 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
     ntru_scale(f3, f, 3, p, q);
 
     /*
-     * Try to invert 3*f over Z_q. This should be _almost_ guaranteed
-     * to succeed, since Z_q/<x^p-x-1> is a field, so the only
-     * non-invertible value is 0. Even so, there _is_ one, so check
-     * the return value!
+     * Invert 3*f over Z_q. This is guaranteed to succeed, since
+     * Z_q/<x^p-x-1> is a field, so the only non-invertible value is
+     * 0. And f is nonzero because it came from ntru_gen_short (hence,
+     * w of its components are nonzero), hence so is 3*f.
      */
     { // WINSCP
     uint16_t *f3inv = snewn(p, uint16_t);
-    if (!ntru_ring_invert(f3inv, f3, p, q)) {
-        ring_free(f, p);
-        ring_free(f3, p);
-        ring_free(f3inv, p);
-        ring_free(g, p);
-        ring_free(ginv, p);
-        return NULL;
-    }
+    bool expect_always_success = ntru_ring_invert(f3inv, f3, p, q);
+    assert(expect_always_success);
 
     /*
      * Make the public key, by converting g to a polynomial over q and
@@ -1657,14 +1607,7 @@ static void ntru_session_hash(
 }
 
 /* ----------------------------------------------------------------------
- * Top-level key exchange and SSH integration.
- *
- * Although this system borrows the ECDH packet structure, it's unlike
- * true ECDH in that it is completely asymmetric between client and
- * server. So we have two separate vtables of methods for the two
- * sides of the system, and a third vtable containing only the class
- * methods, in particular a constructor which chooses which one to
- * instantiate.
+ * Top-level KEM functions.
  */
 
 /*
@@ -1676,422 +1619,162 @@ static void ntru_session_hash(
 #define q_LIVE 4591
 #define w_LIVE 286
 
-static char *ssh_ntru_description(const ssh_kex *kex)
-{
-    return dupprintf("NTRU Prime / Curve25519 hybrid key exchange");
-}
-
-/*
- * State structure for the client, which takes the role of inventing a
- * key pair and decrypting a secret plaintext sent to it by the server.
- */
-typedef struct ntru_client_key {
+struct ntru_dk {
     NTRUKeyPair *keypair;
-    ecdh_key *curve25519;
-
-    ecdh_key ek;
-} ntru_client_key;
-
-static void ssh_ntru_client_free(ecdh_key *dh);
-static void ssh_ntru_client_getpublic(ecdh_key *dh, BinarySink *bs);
-static bool ssh_ntru_client_getkey(ecdh_key *dh, ptrlen remoteKey,
-                                   BinarySink *bs);
-
-static const ecdh_keyalg ssh_ntru_client_vt = {
-    /* This vtable has no 'new' method, because it's constructed via
-     * the selector vt below */
-    NULL, // WINSCP
-    /*.free =*/ ssh_ntru_client_free,
-    /*.getpublic =*/ ssh_ntru_client_getpublic,
-    /*.getkey =*/ ssh_ntru_client_getkey,
-    /*.description =*/ ssh_ntru_description,
+    strbuf *encoded;
+    pq_kem_dk dk;
 };
 
-static ecdh_key *ssh_ntru_client_new(void)
+static pq_kem_dk *ntru_vt_keygen(const pq_kemalg *alg, BinarySink *ek)
 {
-    ntru_client_key *nk = snew(ntru_client_key);
-    nk->ek.vt = &ssh_ntru_client_vt;
-
-    nk->keypair = ntru_keygen(p_LIVE, q_LIVE, w_LIVE);
-    nk->curve25519 = ecdh_key_new(&ssh_ec_kex_curve25519, false);
-
-    return &nk->ek;
+    struct ntru_dk *ndk = snew(struct ntru_dk);
+    ndk->dk.vt = alg;
+    ndk->encoded = strbuf_new_nm();
+    ndk->keypair = ntru_keygen(p_LIVE, q_LIVE, w_LIVE);
+    ntru_encode_pubkey(ndk->keypair->h, p_LIVE, q_LIVE, ek);
+    return &ndk->dk;
 }
 
-static void ssh_ntru_client_free(ecdh_key *dh)
+static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
+                           ptrlen ek)
 {
-    ntru_client_key *nk = container_of(dh, ntru_client_key, ek);
-    ntru_keypair_free(nk->keypair);
-    ecdh_key_free(nk->curve25519);
-    sfree(nk);
-}
-
-static void ssh_ntru_client_getpublic(ecdh_key *dh, BinarySink *bs)
-{
-    ntru_client_key *nk = container_of(dh, ntru_client_key, ek);
-
-    /*
-     * The client's public information is a single SSH string
-     * containing the NTRU public key and the Curve25519 public point
-     * concatenated. So write both of those into the output
-     * BinarySink.
-     */
-    ntru_encode_pubkey(nk->keypair->h, p_LIVE, q_LIVE, bs);
-    ecdh_key_getpublic(nk->curve25519, bs);
-}
-
-static bool ssh_ntru_client_getkey(ecdh_key *dh, ptrlen remoteKey,
-                                   BinarySink *bs)
-{
-    ntru_client_key *nk = container_of(dh, ntru_client_key, ek);
-
-    /*
-     * We expect the server to have sent us a string containing a
-     * ciphertext, a confirmation hash, and a Curve25519 public point.
-     * Extract all three.
-     */
     BinarySource src[1];
-    BinarySource_BARE_INIT_PL(src, remoteKey);
-
-    { // WINSCP
-    uint16_t *ciphertext = snewn(p_LIVE, uint16_t);
-    ptrlen ciphertext_encoded = ntru_decode_ciphertext(
-        ciphertext, nk->keypair, src);
-    ptrlen confirmation_hash = get_data(src, 32);
-    ptrlen curve25519_remoteKey = get_data(src, 32);
-
-    if (get_err(src) || get_avail(src)) {
-        /* Hard-fail if the input wasn't exactly the right length */
-        ring_free(ciphertext, p_LIVE);
-        return false;
-    }
-
-    /*
-     * Main hash object which will combine the NTRU and Curve25519
-     * outputs.
-     */
-    { // WINSCP
-    ssh_hash *h = ssh_hash_new(&ssh_sha512);
-
-    /* Reusable buffer for storing various hash outputs. */
-    uint8_t hashdata[64];
-
-    /*
-     * NTRU side.
-     */
-    {
-        /* Decrypt the ciphertext to recover the server's plaintext */
-        uint16_t *plaintext = snewn(p_LIVE, uint16_t);
-        ntru_decrypt(plaintext, ciphertext, nk->keypair);
-
-        /* Make the confirmation hash */
-        ntru_confirmation_hash(hashdata, plaintext, nk->keypair->h,
-                               p_LIVE, q_LIVE);
-
-        /* Check it matches the one the server sent */
-        { // WINSCP
-        unsigned ok = smemeq(hashdata, confirmation_hash.ptr, 32);
-
-        /* If not, substitute in rho for the plaintext in the session hash */
-        unsigned mask = ok-1;
-        { // WINSCP
-        size_t i;
-        for (i = 0; i < p_LIVE; i++)
-            plaintext[i] ^= mask & (plaintext[i] ^ nk->keypair->rho[i]);
-        } // WINSCP
-
-        /* Compute the session hash, whether or not we did that */
-        ntru_session_hash(hashdata, ok, plaintext, p_LIVE, ciphertext_encoded,
-                          confirmation_hash);
-
-        /* Free temporary values */
-        ring_free(plaintext, p_LIVE);
-        ring_free(ciphertext, p_LIVE);
-
-        /* And put the NTRU session hash into the main hash object. */
-        put_data(h, hashdata, 32);
-        } // WINSCP
-    }
-
-    /*
-     * Curve25519 side.
-     */
-    {
-        strbuf *otherkey = strbuf_new_nm();
-
-        /* Call out to Curve25519 to compute the shared secret from that
-         * kex method */
-        bool ok = ecdh_key_getkey(nk->curve25519, curve25519_remoteKey,
-                                  BinarySink_UPCAST(otherkey));
-
-        /* If that failed (which only happens if the other end does
-         * something wrong, like sending a low-order curve point
-         * outside the subgroup it's supposed to), we might as well
-         * just abort and return failure. That's what we'd have done
-         * in standalone Curve25519. */
-        if (!ok) {
-            ssh_hash_free(h);
-            smemclr(hashdata, sizeof(hashdata));
-            strbuf_free(otherkey);
-            return false;
-        }
-
-        /*
-         * ecdh_key_getkey will have returned us a chunk of data
-         * containing an encoded mpint, which is how the Curve25519
-         * output normally goes into the exchange hash. But in this
-         * context we want to treat it as a fixed big-endian 32 bytes,
-         * so extract it from its encoding and put it into the main
-         * hash object in the new format.
-         */
-        { // WINSCP
-        BinarySource src[1];
-        BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(otherkey));
-        { // WINSCP
-        mp_int *curvekey = get_mp_ssh2(src);
-
-        { // WINSCP
-        unsigned i;
-        for (i = 32; i-- > 0 ;)
-            put_byte(h, mp_get_byte(curvekey, i));
-        } // WINSCP
-
-        mp_free(curvekey);
-        strbuf_free(otherkey);
-        } // WINSCP
-        } // WINSCP
-    }
-
-    /*
-     * Finish up: compute the final output hash (full 64 bytes of
-     * SHA-512 this time), and return it encoded as a string.
-     */
-    ssh_hash_final(h, hashdata);
-    put_stringpl(bs, make_ptrlen(hashdata, sizeof(hashdata)));
-    smemclr(hashdata, sizeof(hashdata));
-
-    return true;
-    } // WINSCP
-    } // WINSCP
-}
-
-/*
- * State structure for the server, which takes the role of inventing a
- * secret plaintext and sending it to the client encrypted with the
- * public key the client sent.
- */
-typedef struct ntru_server_key {
-    uint16_t *plaintext;
-    strbuf *ciphertext_encoded, *confirmation_hash;
-    ecdh_key *curve25519;
-
-    ecdh_key ek;
-} ntru_server_key;
-
-static void ssh_ntru_server_free(ecdh_key *dh);
-static void ssh_ntru_server_getpublic(ecdh_key *dh, BinarySink *bs);
-static bool ssh_ntru_server_getkey(ecdh_key *dh, ptrlen remoteKey,
-                                   BinarySink *bs);
-
-static const ecdh_keyalg ssh_ntru_server_vt = {
-    /* This vtable has no 'new' method, because it's constructed via
-     * the selector vt below */
-    NULL, // WINSCP
-    /*.free =*/ ssh_ntru_server_free,
-    /*.getpublic =*/ ssh_ntru_server_getpublic,
-    /*.getkey =*/ ssh_ntru_server_getkey,
-    /*.description =*/ ssh_ntru_description,
-};
-
-static ecdh_key *ssh_ntru_server_new(void)
-{
-    ntru_server_key *nk = snew(ntru_server_key);
-    nk->ek.vt = &ssh_ntru_server_vt;
-
-    nk->plaintext = snewn(p_LIVE, uint16_t);
-    nk->ciphertext_encoded = strbuf_new_nm();
-    nk->confirmation_hash = strbuf_new_nm();
-    ntru_gen_short(nk->plaintext, p_LIVE, w_LIVE);
-
-    nk->curve25519 = ecdh_key_new(&ssh_ec_kex_curve25519, false);
-
-    return &nk->ek;
-}
-
-static void ssh_ntru_server_free(ecdh_key *dh)
-{
-    ntru_server_key *nk = container_of(dh, ntru_server_key, ek);
-    ring_free(nk->plaintext, p_LIVE);
-    strbuf_free(nk->ciphertext_encoded);
-    strbuf_free(nk->confirmation_hash);
-    ecdh_key_free(nk->curve25519);
-    sfree(nk);
-}
-
-static bool ssh_ntru_server_getkey(ecdh_key *dh, ptrlen remoteKey,
-                                   BinarySink *bs)
-{
-    ntru_server_key *nk = container_of(dh, ntru_server_key, ek);
-
-    /*
-     * In the server, getkey is called first, with the public
-     * information received from the client. We expect the client to
-     * have sent us a string containing a public key and a Curve25519
-     * public point.
-     */
-    BinarySource src[1];
-    BinarySource_BARE_INIT_PL(src, remoteKey);
+    BinarySource_BARE_INIT_PL(src, ek);
 
     { // WINSCP
     uint16_t *pubkey = snewn(p_LIVE, uint16_t);
     ntru_decode_pubkey(pubkey, p_LIVE, q_LIVE, src);
-    { // WINSCP
-    ptrlen curve25519_remoteKey = get_data(src, 32);
 
     if (get_err(src) || get_avail(src)) {
-        /* Hard-fail if the input wasn't exactly the right length */
+        /* Hard-fail if the input wasn't exactly the right length */ 
         ring_free(pubkey, p_LIVE);
         return false;
     }
 
-    /*
-     * Main hash object which will combine the NTRU and Curve25519
-     * outputs.
-     */
+    /* Invent a valid NTRU plaintext. */
     { // WINSCP
-    ssh_hash *h = ssh_hash_new(&ssh_sha512);
+    uint16_t *plaintext = snewn(p_LIVE, uint16_t);
+    ntru_gen_short(plaintext, p_LIVE, w_LIVE);
 
-    /* Reusable buffer for storing various hash outputs. */
-    uint8_t hashdata[64];
+    /* Encrypt the plaintext, and encode the ciphertext into a strbuf,
+     * so we can reuse it for both the session hash and sending to the
+     * client. */
+    { // WINSCP
+    uint16_t *ciphertext = snewn(p_LIVE, uint16_t);
+    ntru_encrypt(ciphertext, plaintext, pubkey, p_LIVE, q_LIVE);
+    { // WINSCP
+    strbuf *ciphertext_encoded = strbuf_new_nm();
+    ntru_encode_ciphertext(ciphertext, p_LIVE, q_LIVE,
+                           BinarySink_UPCAST(ciphertext_encoded));
+    put_datapl(c, ptrlen_from_strbuf(ciphertext_encoded));
 
-    /*
-     * NTRU side.
-     */
-    {
-        /* Encrypt the plaintext we generated at construction time,
-         * and encode the ciphertext into a strbuf so we can reuse it
-         * for both the session hash and sending to the client. */
-        uint16_t *ciphertext = snewn(p_LIVE, uint16_t);
-        ntru_encrypt(ciphertext, nk->plaintext, pubkey, p_LIVE, q_LIVE);
-        ntru_encode_ciphertext(ciphertext, p_LIVE, q_LIVE,
-                               BinarySink_UPCAST(nk->ciphertext_encoded));
-        ring_free(ciphertext, p_LIVE);
+    /* Compute the confirmation hash, and append that to the data sent
+     * to the other side. */
+    { // WINSCP
+    uint8_t confhash[32];
+    ntru_confirmation_hash(confhash, plaintext, pubkey, p_LIVE, q_LIVE);
+    put_data(c, confhash, 32);
 
-        /* Compute the confirmation hash, and write it into another
-         * strbuf. */
-        ntru_confirmation_hash(hashdata, nk->plaintext, pubkey,
-                               p_LIVE, q_LIVE);
-        put_data(nk->confirmation_hash, hashdata, 32);
+    /* Compute the session hash, i.e. the output shared secret. */
+    { // WINSCP
+    uint8_t sesshash[32];
+    ntru_session_hash(sesshash, 1, plaintext, p_LIVE,
+                      ptrlen_from_strbuf(ciphertext_encoded),
+                      make_ptrlen(confhash, 32));
+    put_data(k, sesshash, 32);
 
-        /* Compute the session hash (which is easy on the server side,
-         * requiring no conditional substitution). */
-        ntru_session_hash(hashdata, 1, nk->plaintext, p_LIVE,
-                          ptrlen_from_strbuf(nk->ciphertext_encoded),
-                          ptrlen_from_strbuf(nk->confirmation_hash));
-
-        /* And put the NTRU session hash into the main hash object. */
-        put_data(h, hashdata, 32);
-
-        /* Now we can free the public key */
-        ring_free(pubkey, p_LIVE);
-    }
-
-    /*
-     * Curve25519 side.
-     */
-    {
-        strbuf *otherkey = strbuf_new_nm();
-
-        /* Call out to Curve25519 to compute the shared secret from that
-         * kex method */
-        bool ok = ecdh_key_getkey(nk->curve25519, curve25519_remoteKey,
-                                  BinarySink_UPCAST(otherkey));
-        /* As on the client side, abort if Curve25519 reported failure */
-        if (!ok) {
-            ssh_hash_free(h);
-            smemclr(hashdata, sizeof(hashdata));
-            strbuf_free(otherkey);
-            return false;
-        }
-
-        /* As on the client side, decode Curve25519's mpint so we can
-         * re-encode it appropriately for our hash preimage */
-        { // WINSCP
-        BinarySource src[1];
-        BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(otherkey));
-        { // WINSCP
-        mp_int *curvekey = get_mp_ssh2(src);
-
-        { // WINSCP
-        unsigned i;
-        for (i = 32; i-- > 0 ;)
-            put_byte(h, mp_get_byte(curvekey, i));
-        } // WINSCP
-
-        mp_free(curvekey);
-        strbuf_free(otherkey);
-        } // WINSCP
-        } // WINSCP
-    }
-
-    /*
-     * Finish up: compute the final output hash (full 64 bytes of
-     * SHA-512 this time), and return it encoded as a string.
-     */
-    ssh_hash_final(h, hashdata);
-    put_stringpl(bs, make_ptrlen(hashdata, sizeof(hashdata)));
-    smemclr(hashdata, sizeof(hashdata));
+    ring_free(pubkey, p_LIVE);
+    ring_free(plaintext, p_LIVE);
+    ring_free(ciphertext, p_LIVE);
+    strbuf_free(ciphertext_encoded);
+    smemclr(confhash, sizeof(confhash));
+    smemclr(sesshash, sizeof(sesshash));
 
     return true;
     } // WINSCP
     } // WINSCP
     } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
-static void ssh_ntru_server_getpublic(ecdh_key *dh, BinarySink *bs)
+static bool ntru_vt_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
 {
-    ntru_server_key *nk = container_of(dh, ntru_server_key, ek);
+    struct ntru_dk *ndk = container_of(dk, struct ntru_dk, dk);
 
-    /*
-     * In the server, this function is called after getkey, so we
-     * already have all our pieces prepared. Just concatenate them all
-     * into the 'server's public data' string to go in ECDH_REPLY.
-     */
-    put_datapl(bs, ptrlen_from_strbuf(nk->ciphertext_encoded));
-    put_datapl(bs, ptrlen_from_strbuf(nk->confirmation_hash));
-    ecdh_key_getpublic(nk->curve25519, bs);
+    /* Expect a string containing a ciphertext and a confirmation hash. */
+    BinarySource src[1];
+    BinarySource_BARE_INIT_PL(src, c);
+
+    { // WINSCP
+    uint16_t *ciphertext = snewn(p_LIVE, uint16_t);
+    ptrlen ciphertext_encoded = ntru_decode_ciphertext(
+        ciphertext, ndk->keypair, src);
+    ptrlen confirmation_hash = get_data(src, 32);
+
+    if (get_err(src) || get_avail(src)) {
+        /* Hard-fail if the input wasn't exactly the right length */
+        ring_free(ciphertext, p_LIVE);
+        return false;
+    }
+
+    /* Decrypt the ciphertext to recover the sender's plaintext */
+    { // WINSCP
+    uint16_t *plaintext = snewn(p_LIVE, uint16_t);
+    ntru_decrypt(plaintext, ciphertext, ndk->keypair);
+
+    /* Make the confirmation hash */
+    { // WINSCP
+    uint8_t confhash[32];
+    ntru_confirmation_hash(confhash, plaintext, ndk->keypair->h,
+                           p_LIVE, q_LIVE);
+
+    /* Check it matches the one the server sent */
+    { // WINSCP
+    unsigned ok = smemeq(confhash, confirmation_hash.ptr, 32);
+
+    /* If not, substitute in rho for the plaintext in the session hash */
+    unsigned mask = ok-1;
+    size_t i; // WINSCP
+    for (i = 0; i < p_LIVE; i++)
+        plaintext[i] ^= mask & (plaintext[i] ^ ndk->keypair->rho[i]);
+
+    /* Compute the session hash, whether or not we did that */
+    { // WINSCP
+    uint8_t sesshash[32];
+    ntru_session_hash(sesshash, ok, plaintext, p_LIVE, ciphertext_encoded,
+                      confirmation_hash);
+    put_data(k, sesshash, 32);
+
+    ring_free(plaintext, p_LIVE);
+    ring_free(ciphertext, p_LIVE);
+    smemclr(confhash, sizeof(confhash));
+    smemclr(sesshash, sizeof(sesshash));
+
+    return true;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
-/* ----------------------------------------------------------------------
- * Selector vtable that instantiates the appropriate one of the above,
- * depending on is_server.
- */
-static ecdh_key *ssh_ntru_new(const ssh_kex *kex, bool is_server)
+static void ntru_vt_free_dk(pq_kem_dk *dk)
 {
-    if (is_server)
-        return ssh_ntru_server_new();
-    else
-        return ssh_ntru_client_new();
+    struct ntru_dk *ndk = container_of(dk, struct ntru_dk, dk);
+    strbuf_free(ndk->encoded);
+    ntru_keypair_free(ndk->keypair);
+    sfree(ndk);
 }
 
-static const ecdh_keyalg ssh_ntru_selector_vt = {
-    /* This is a never-instantiated vtable which only implements the
-     * functions that don't require an instance. */
-    /*.new =*/ ssh_ntru_new,
-    NULL, NULL, NULL, // WINSCP
-    /*.description =*/ ssh_ntru_description,
-};
-
-static const ssh_kex ssh_ntru_curve25519 = {
-    /*.name =*/ "sntrup761x25519-sha512@openssh.com",
+const pq_kemalg ssh_ntru = {
+    /*.keygen =*/ ntru_vt_keygen,
+    /*.encaps =*/ ntru_vt_encaps,
+    /*.decaps =*/ ntru_vt_decaps,
+    /*.free_dk =*/ ntru_vt_free_dk,
     NULL, // WINSCP
-    /*.main_type =*/ KEXTYPE_ECDH,
-    /*.hash =*/ &ssh_sha512,
-    /*.ecdh_vt =*/ &ssh_ntru_selector_vt,
+    /*.description =*/ "NTRU Prime",
+    /*.ek_len =*/ 1158,
+    /*.c_len =*/ 1039,
 };
-
-static const ssh_kex *const hybrid_list[] = {
-    &ssh_ntru_curve25519,
-};
-
-const ssh_kexes ssh_ntru_hybrid_kex = { lenof(hybrid_list), hybrid_list };

@@ -68,7 +68,7 @@ void __fastcall TScpExplorerForm::RestoreFormParams()
   DebugAssert(Configuration);
 
   TCustomScpExplorerForm::RestoreFormParams();
-  RestoreForm(WinConfiguration->ScpExplorer.WindowParams, this);
+  RestoreForm(WinConfiguration->ScpExplorer.WindowParams, this, false, ScpExplorerWindowParamsDefault);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::ConfigurationChanged()
@@ -86,7 +86,7 @@ void __fastcall TScpExplorerForm::RestoreParams()
   bool HadHandleAllocated = RemoteDirView->HandleAllocated();
   RemoteDirView->UnixColProperties->ParamsStr = WinConfiguration->ScpExplorer.DirViewParams;
   RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
-  RemoteDirView->ViewStyle = (TViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
+  RemoteDirView->DirViewStyle = (TDirViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
   if (HadHandleAllocated)
   {
     // This is here to make our persistence checks in VerifyControl pass,
@@ -121,7 +121,7 @@ void __fastcall TScpExplorerForm::StoreParams()
 
     WinConfiguration->ScpExplorer.WindowParams = StoreForm(this);
     WinConfiguration->ScpExplorer.DirViewParams = RemoteDirView->UnixColProperties->ParamsStr;
-    WinConfiguration->ScpExplorer.ViewStyle = RemoteDirView->ViewStyle;
+    WinConfiguration->ScpExplorer.ViewStyle = RemoteDirView->DirViewStyle;
     WinConfiguration->ScpExplorer.DriveView = RemoteDrivePanel->Visible;
     WinConfiguration->ScpExplorer.DriveViewWidth = RemoteDrivePanel->Width;
     WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this);
@@ -443,4 +443,6 @@ void __fastcall TScpExplorerForm::UpdateControls()
   {
     ActiveControl = RemoteDirView;
   }
+
+  ColumndsSubmenuItem->Enabled = (RemoteDirView->DirViewStyle == dvsReport);
 }

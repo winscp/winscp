@@ -1,0 +1,92 @@
+'\" t
+.\"     Title: ne_ssl_proto_name
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 15 April 2025
+.\"    Manual: neon API reference
+.\"    Source: neon 0.34.2
+.\"  Language: English
+.\"
+.TH "NE_SSL_PROTO_NAME" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_ssl_proto_name \- SSL/TLS protocol version to name mapping
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_ssl\&.h>
+.fi
+.ft
+.HP \w'const\ char\ *ne_ssl_proto_name('u
+.BI "const char *ne_ssl_proto_name(enum\ ne_ssl_protocol\ " "proto" ");"
+.SH "DESCRIPTION"
+.PP
+The
+\fBne_ssl_proto_name\fR
+function returns a human\-readable name for a SSL/TLS version constant\&. The set of versions currently are as follows:
+.PP
+\fBNE_SSL_PROTO_UNSPEC\fR
+.RS 4
+unspecified/unknown version
+.RE
+.PP
+\fBNE_SSL_PROTO_SSL3\fR
+.RS 4
+SSL v3
+.RE
+.PP
+\fBNE_SSL_PROTO_TLS_1_0\fR
+.RS 4
+TLS v1\&.0
+.RE
+.PP
+\fBNE_SSL_PROTO_TLS_1_1\fR
+.RS 4
+TLS v1\&.1
+.RE
+.PP
+\fBNE_SSL_PROTO_TLS_1_2\fR
+.RS 4
+TLS v1\&.2
+.RE
+.PP
+\fBNE_SSL_PROTO_TLS_1_3\fR
+.RS 4
+TLS v1\&.3
+.RE
+.SH "RETURN VALUE"
+.PP
+The
+\fBne_ssl_proto_name\fR
+function always returns a non\-NULL
+string even if the version constant is not valid\&.
+.SH "HISTORY"
+.PP
+\fBne_ssl_proto_name\fR
+is available in neon 0\&.34\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+ne_ssl_set_protovers
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
+.br

@@ -141,6 +141,8 @@ extern "C" {
  **/
 #define S3_DEFAULT_HOSTNAME                "s3.amazonaws.com"
 
+#define S3_SERVICE                         "s3" // WINSCP
+
 
 /**
  * S3_MAX_BUCKET_NAME_SIZE is the maximum size of a bucket name.
@@ -748,6 +750,8 @@ typedef struct S3BucketContext
      * If NULL, the default region ("us-east-1") will be used.
      */
     const char *authRegion;
+
+    const char *service; // WINSCP
 } S3BucketContext;
 
 

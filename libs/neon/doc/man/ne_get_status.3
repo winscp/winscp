@@ -2,12 +2,12 @@
 .\"     Title: ne_get_status
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 15 April 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_GET_STATUS" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_GET_STATUS" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_get_status \- retrieve HTTP response status for request
+ne_get_status, ne_get_response_location \- retrieve HTTP response properties
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -38,6 +38,8 @@ ne_get_status \- retrieve HTTP response status for request
 .ft
 .HP \w'const\ ne_status\ *ne_get_status('u
 .BI "const ne_status *ne_get_status(const\ ne_request\ *" "request" ");"
+.HP \w'ne_uri\ *ne_get_response_location('u
+.BI "ne_uri *ne_get_response_location(ne_request\ *" "request" ");"
 .SH "DESCRIPTION"
 .PP
 The
@@ -48,12 +50,21 @@ dispatched (the return value of
 \fBne_request_dispatch\fR
 or
 \fBne_begin_request\fR
-was zero)\&. The object remains valid until the associated request object is destroyed\&.
-.SH "SEE ALSO"
+was zero)\&.
 .PP
-ne_status,
-ne_request_create
-.SH "EXAMPLE"
+If the response includes a
+Location
+header, the
+\fBne_get_response_location\fR
+function parses and resolves the URI\-reference relative to the request target\&. If a fragment ("#fragment") is applicable to the request target, it can be passed as an argument to allow appropriate relative resolution\&.
+.SH "RETURN VALUE"
+.PP
+\fBne_get_status\fR
+returns a pointer to the HTTP status object giving the result of a request\&. This pointer is valid until the associated request object is destroyed\&.
+.PP
+\fBne_get_response_location\fR
+returns a malloc\-allocated ne_uri object, or NULL if either the URI in the Location header could not be parsed or the Location header was not present\&.
+.SH "EXAMPLES"
 .PP
 Display the response status code of applying the
 HEAD
@@ -73,11 +84,15 @@ ne_request_destroy(req);
 .if n \{\
 .RE
 .\}
-.SH "AUTHOR"
+.SH "HISTORY"
 .PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
+\fBne_get_response_location\fR
+is available in neon 0\&.34\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+ne_status,
+ne_request_create
 .SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
 .br

@@ -1,242 +1,242 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<PropertyGroup>
-		<ProjectGuid>{E0BF1CDA-E75F-4F22-8190-70A30CBE74EE}</ProjectGuid>
-		<ProjectVersion>15.4</ProjectVersion>
-		<Config Condition="'$(Config)'==''">Release</Config>
-		<FrameworkType>None</FrameworkType>
-		<Base>True</Base>
-		<Platform Condition="'$(Platform)'==''">Win32</Platform>
-		<TargetedPlatforms>1</TargetedPlatforms>
-		<AppType>StaticLibrary</AppType>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-		<Base_Win32>true</Base_Win32>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
-		<Cfg_1>true</Cfg_1>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
-		<Cfg_2>true</Cfg_2>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base)'!=''">
-		<_TCHARMapping>wchar_t</_TCHARMapping>
-		<AllPackageLibs>rtl.lib;vclx.lib;vcl.lib;xmlrtl.lib</AllPackageLibs>
-		<BCC_AllWarnings>true</BCC_AllWarnings>
-		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
-		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-		<BCC_wdiu>false</BCC_wdiu>
-		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<Defines>WINSCP;_WINDOWS;WIN32;WINNT;OPENSSL_NO_DEPRECATED_1_1_0;_CRTIMP=;_LIB;$(BUILD_TYPE);$(Defines)</Defines>
-		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
-		<ILINK_LibraryPath>$(BDS)\lib;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>core\;putty;putty\windows;filezilla;resource;..\libs\openssl\include;..\libs\expat\lib;..\libs\neon\src;..\libs\libs3\inc;..\libs\mfc\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
-		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-		<Manifest_File>None</Manifest_File>
-		<Multithreaded>true</Multithreaded>
-		<OutputExt>lib</OutputExt>
-		<ProjectType>CppStaticLibrary</ProjectType>
-		<SanitizedProjectName>ScpCore</SanitizedProjectName>
-		<TLIB_PageSize>512</TLIB_PageSize>
-		<UsingDelphiRTL>true</UsingDelphiRTL>
-		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-		<VerInfo_Locale>1033</VerInfo_Locale>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win32)'!=''">
-		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1)'!=''">
-		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-		<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-		<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
-		<BCC_MonitorGlobalAndStackData>true</BCC_MonitorGlobalAndStackData>
-		<BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
-		<BCC_MonitorThis>true</BCC_MonitorThis>
-		<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-		<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-		<BCC_StackFrames>true</BCC_StackFrames>
-		<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-		<DCC_Define>DEBUG</DCC_Define>
-		<DCC_Optimize>false</DCC_Optimize>
-		<Defines>_DEBUG;$(Defines)</Defines>
-		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-		<TASM_Debugging>Full</TASM_Debugging>
-		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-		<Defines>NDEBUG;$(Defines)</Defines>
-		<TASM_Debugging>None</TASM_Debugging>
-	</PropertyGroup>
-	<ItemGroup>
-		<CppCompile Include="core\Bookmarks.cpp">
-			<BuildOrder>5</BuildOrder>
-			<BuildOrder>17</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Common.cpp">
-			<BuildOrder>8</BuildOrder>
-			<BuildOrder>18</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Configuration.cpp">
-			<BuildOrder>19</BuildOrder>
-			<BuildOrder>11</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\CopyParam.cpp">
-			<BuildOrder>14</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\CoreMain.cpp">
-			<BuildOrder>17</BuildOrder>
-			<BuildOrder>15</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Cryptography.cpp">
-			<BuildOrder>20</BuildOrder>
-			<BuildOrder>16</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Exceptions.cpp">
-			<BuildOrder>23</BuildOrder>
-			<BuildOrder>20</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\FileBuffer.cpp">
-			<BuildOrder>26</BuildOrder>
-			<BuildOrder>24</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\FileInfo.cpp">
-			<BuildOrder>29</BuildOrder>
-			<BuildOrder>25</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\FileMasks.cpp">
-			<BuildOrder>32</BuildOrder>
-			<BuildOrder>26</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\FileOperationProgress.cpp">
-			<BuildOrder>35</BuildOrder>
-			<BuildOrder>21</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\FileSystems.cpp">
-			<BuildOrder>38</BuildOrder>
-			<BuildOrder>22</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\FtpFileSystem.cpp">
-			<BuildOrder>41</BuildOrder>
-			<BuildOrder>23</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Global.cpp">
-			<BuildOrder>29</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\HierarchicalStorage.cpp">
-			<BuildOrder>44</BuildOrder>
-			<BuildOrder>13</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Http.cpp">
-			<BuildOrder>4</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\NamedObjs.cpp">
-			<BuildOrder>47</BuildOrder>
-			<BuildOrder>3</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\NeonIntf.cpp">
-			<BuildOrder>47</BuildOrder>
-			<BuildOrder>3</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Option.cpp">
-			<BuildOrder>50</BuildOrder>
-			<BuildOrder>4</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\PuttyIntf.cpp">
-			<BuildOrder>53</BuildOrder>
-			<BuildOrder>5</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Queue.cpp">
-			<BuildOrder>56</BuildOrder>
-			<BuildOrder>0</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\RemoteFiles.cpp">
-			<BuildOrder>59</BuildOrder>
-			<BuildOrder>1</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\S3FileSystem.cpp">
-			<DependentOn>core\S3FileSystem.h</DependentOn>
-			<BuildOrder>32</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\ScpFileSystem.cpp">
-			<BuildOrder>62</BuildOrder>
-			<BuildOrder>2</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Script.cpp">
-			<BuildOrder>65</BuildOrder>
-			<BuildOrder>6</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\SecureShell.cpp">
-			<BuildOrder>68</BuildOrder>
-			<BuildOrder>10</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Security.cpp">
-			<BuildOrder>71</BuildOrder>
-			<BuildOrder>11</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\SessionData.cpp">
-			<BuildOrder>74</BuildOrder>
-			<BuildOrder>12</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\SessionInfo.cpp">
-			<BuildOrder>77</BuildOrder>
-			<BuildOrder>7</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\SftpFileSystem.cpp">
-			<BuildOrder>80</BuildOrder>
-			<BuildOrder>8</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Terminal.cpp">
-			<BuildOrder>9</BuildOrder>
-			<BuildOrder>83</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\Usage.cpp">
-			<BuildOrder>27</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="core\WebDAVFileSystem.cpp">
-			<BuildOrder>42</BuildOrder>
-			<BuildOrder>23</BuildOrder>
-		</CppCompile>
-		<BuildConfiguration Include="Base">
-			<Key>Base</Key>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Debug">
-			<Key>Cfg_1</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Release">
-			<Key>Cfg_2</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-	</ItemGroup>
-	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
-	<ProjectExtensions>
-		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
-		<Borland.ProjectType>CppStaticLibrary</Borland.ProjectType>
-		<BorlandProject>
-			<CPlusPlusBuilder.Personality>
-				<ProjectProperties>
-					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
-					<ProjectProperties Name="ManagePaths">True</ProjectProperties>
-					<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
-					<ProjectProperties Name="IndexFiles">False</ProjectProperties>
-				</ProjectProperties>
-			</CPlusPlusBuilder.Personality>
-			<Platforms>
-				<Platform value="Win32">True</Platform>
-				<Platform value="Win64">False</Platform>
-			</Platforms>
-		</BorlandProject>
-		<ProjectFileVersion>12</ProjectFileVersion>
-	</ProjectExtensions>
-	<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+    <PropertyGroup>
+        <ProjectGuid>{E0BF1CDA-E75F-4F22-8190-70A30CBE74EE}</ProjectGuid>
+        <ProjectVersion>19.5</ProjectVersion>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <FrameworkType>None</FrameworkType>
+        <Base>True</Base>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
+        <AppType>StaticLibrary</AppType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <_TCHARMapping>wchar_t</_TCHARMapping>
+        <AllPackageLibs>rtl.lib;vclx.lib;vcl.lib;xmlrtl.lib</AllPackageLibs>
+        <BCC_AllWarnings>true</BCC_AllWarnings>
+        <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+        <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BCC_wdiu>false</BCC_wdiu>
+        <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <Defines>WINSCP;_WINDOWS;WIN32;WINNT;OPENSSL_NO_DEPRECATED_1_1_0;_CRTIMP=;_LIB;$(BUILD_TYPE);$(Defines)</Defines>
+        <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+        <ILINK_LibraryPath>$(BDS)\lib;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <IncludePath>core\;putty;putty\windows;filezilla;resource;..\libs\openssl\include;..\libs\expat\lib;..\libs\neon\src;..\libs\libs3\inc;..\libs\mfc\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+        <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+        <Manifest_File>None</Manifest_File>
+        <Multithreaded>true</Multithreaded>
+        <OutputExt>lib</OutputExt>
+        <ProjectType>CppStaticLibrary</ProjectType>
+        <SanitizedProjectName>ScpCore</SanitizedProjectName>
+        <TLIB_PageSize>512</TLIB_PageSize>
+        <UsingDelphiRTL>true</UsingDelphiRTL>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+        <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+        <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+        <BCC_MonitorGlobalAndStackData>true</BCC_MonitorGlobalAndStackData>
+        <BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
+        <BCC_MonitorThis>true</BCC_MonitorThis>
+        <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+        <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+        <BCC_StackFrames>true</BCC_StackFrames>
+        <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_Define>DEBUG</DCC_Define>
+        <DCC_Optimize>false</DCC_Optimize>
+        <Defines>_DEBUG;$(Defines)</Defines>
+        <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+        <TASM_Debugging>Full</TASM_Debugging>
+        <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <Defines>NDEBUG;$(Defines)</Defines>
+        <TASM_Debugging>None</TASM_Debugging>
+    </PropertyGroup>
+    <ItemGroup>
+        <CppCompile Include="core\Bookmarks.cpp">
+            <BuildOrder>5</BuildOrder>
+            <BuildOrder>17</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Common.cpp">
+            <BuildOrder>8</BuildOrder>
+            <BuildOrder>18</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Configuration.cpp">
+            <BuildOrder>19</BuildOrder>
+            <BuildOrder>11</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\CopyParam.cpp">
+            <BuildOrder>14</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\CoreMain.cpp">
+            <BuildOrder>17</BuildOrder>
+            <BuildOrder>15</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Cryptography.cpp">
+            <BuildOrder>20</BuildOrder>
+            <BuildOrder>16</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Exceptions.cpp">
+            <BuildOrder>23</BuildOrder>
+            <BuildOrder>20</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\FileBuffer.cpp">
+            <BuildOrder>26</BuildOrder>
+            <BuildOrder>24</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\FileInfo.cpp">
+            <BuildOrder>29</BuildOrder>
+            <BuildOrder>25</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\FileMasks.cpp">
+            <BuildOrder>32</BuildOrder>
+            <BuildOrder>26</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\FileOperationProgress.cpp">
+            <BuildOrder>35</BuildOrder>
+            <BuildOrder>21</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\FileSystems.cpp">
+            <BuildOrder>38</BuildOrder>
+            <BuildOrder>22</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\FtpFileSystem.cpp">
+            <BuildOrder>41</BuildOrder>
+            <BuildOrder>23</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Global.cpp">
+            <BuildOrder>29</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\HierarchicalStorage.cpp">
+            <BuildOrder>44</BuildOrder>
+            <BuildOrder>13</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Http.cpp">
+            <BuildOrder>4</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\NamedObjs.cpp">
+            <BuildOrder>47</BuildOrder>
+            <BuildOrder>3</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\NeonIntf.cpp">
+            <BuildOrder>47</BuildOrder>
+            <BuildOrder>3</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Option.cpp">
+            <BuildOrder>50</BuildOrder>
+            <BuildOrder>4</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\PuttyIntf.cpp">
+            <BuildOrder>53</BuildOrder>
+            <BuildOrder>5</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Queue.cpp">
+            <BuildOrder>56</BuildOrder>
+            <BuildOrder>0</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\RemoteFiles.cpp">
+            <BuildOrder>59</BuildOrder>
+            <BuildOrder>1</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\S3FileSystem.cpp">
+            <DependentOn>core\S3FileSystem.h</DependentOn>
+            <BuildOrder>32</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\ScpFileSystem.cpp">
+            <BuildOrder>62</BuildOrder>
+            <BuildOrder>2</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Script.cpp">
+            <BuildOrder>65</BuildOrder>
+            <BuildOrder>6</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\SecureShell.cpp">
+            <BuildOrder>68</BuildOrder>
+            <BuildOrder>10</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Security.cpp">
+            <BuildOrder>71</BuildOrder>
+            <BuildOrder>11</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\SessionData.cpp">
+            <BuildOrder>74</BuildOrder>
+            <BuildOrder>12</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\SessionInfo.cpp">
+            <BuildOrder>77</BuildOrder>
+            <BuildOrder>7</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\SftpFileSystem.cpp">
+            <BuildOrder>80</BuildOrder>
+            <BuildOrder>8</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Terminal.cpp">
+            <BuildOrder>9</BuildOrder>
+            <BuildOrder>83</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\Usage.cpp">
+            <BuildOrder>27</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="core\WebDAVFileSystem.cpp">
+            <BuildOrder>42</BuildOrder>
+            <BuildOrder>23</BuildOrder>
+        </CppCompile>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+    <ProjectExtensions>
+        <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+        <Borland.ProjectType>CppStaticLibrary</Borland.ProjectType>
+        <BorlandProject>
+            <CPlusPlusBuilder.Personality>
+                <ProjectProperties>
+                    <ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+                    <ProjectProperties Name="ManagePaths">True</ProjectProperties>
+                    <ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+                    <ProjectProperties Name="IndexFiles">False</ProjectProperties>
+                </ProjectProperties>
+            </CPlusPlusBuilder.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

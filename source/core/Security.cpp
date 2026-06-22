@@ -11,7 +11,7 @@
 #define PWALG_SIMPLE_INTERNAL 0x00
 #define PWALG_SIMPLE_EXTERNAL 0x01
 #define PWALG_SIMPLE_INTERNAL2 0x02
-RawByteString PWALG_SIMPLE_STRING("0123456789ABCDEF");
+static RawByteString PWALG_SIMPLE_STRING("0123456789ABCDEF");
 //---------------------------------------------------------------------------
 RawByteString SimpleEncryptChar(unsigned char Ch)
 {
@@ -171,8 +171,9 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, U
       reinterpret_cast<const char *>(&ChainConfig);
     // The hExclusiveRoot and hExclusiveTrustedPeople were added in Windows 7.
     // The CertGetCertificateChain fails with E_INVALIDARG when we include them to ChainConfig.cbSize.
+    // The dwExclusiveFlags was added in Windows 8
     DebugAssert(ChainConfigSize == 40);
-    DebugAssert(ChainConfigSize == sizeof(CERT_CHAIN_ENGINE_CONFIG) - sizeof(ChainConfig.hExclusiveRoot) - sizeof(ChainConfig.hExclusiveTrustedPeople));
+    DebugAssert(ChainConfigSize == sizeof(CERT_CHAIN_ENGINE_CONFIG) - sizeof(ChainConfig.hExclusiveRoot) - sizeof(ChainConfig.hExclusiveTrustedPeople) - sizeof(ChainConfig.dwExclusiveFlags));
     ChainConfig.cbSize = ChainConfigSize;
     ChainConfig.hRestrictedRoot = NULL;
     ChainConfig.hRestrictedTrust = NULL;

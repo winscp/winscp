@@ -100,6 +100,7 @@ private:
   UnicodeString FHumanRights;
   TTerminal *FTerminal;
   wchar_t FType;
+  UnicodeString FTags;
   bool FCyclicLink;
   UnicodeString FFullFileName;
   int FIsHidden;
@@ -126,7 +127,7 @@ private:
   void __fastcall SetIsHidden(bool value);
   bool __fastcall GetIsParentDirectory() const;
   bool __fastcall GetIsThisDirectory() const;
-  bool __fastcall GetIsInaccesibleDirectory() const;
+  bool __fastcall GetIsInaccessibleDirectory() const;
   UnicodeString __fastcall GetExtension();
   UnicodeString __fastcall GetUserModificationStr();
   void __fastcall LoadTypeInfo();
@@ -178,10 +179,11 @@ public:
   __property bool HaveFullFileName  = { read = GetHaveFullFileName };
   __property int IconIndex = { read = GetIconIndex };
   __property UnicodeString TypeName = { read = GetTypeName };
+  __property UnicodeString Tags = { read = FTags, write = FTags };
   __property bool IsHidden = { read = GetIsHidden, write = SetIsHidden };
   __property bool IsParentDirectory = { read = GetIsParentDirectory };
   __property bool IsThisDirectory = { read = GetIsThisDirectory };
-  __property bool IsInaccesibleDirectory  = { read=GetIsInaccesibleDirectory };
+  __property bool IsInaccesibleDirectory  = { read=GetIsInaccessibleDirectory };
   __property UnicodeString Extension  = { read=GetExtension };
   __property bool IsEncrypted  = { read = FIsEncrypted };
 };
@@ -221,6 +223,7 @@ public:
   TRemoteFile * __fastcall FindFile(const UnicodeString &FileName);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall AddFile(TRemoteFile * File);
+  virtual void ExtractFile(TRemoteFile * File);
 
   static TStrings * __fastcall CloneStrings(TStrings * List);
   static bool AnyDirectory(TStrings * List);
@@ -432,8 +435,8 @@ private:
   void __fastcall SetRightUndef(TRight Right, TState value);
 };
 //---------------------------------------------------------------------------
-enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess, vpEncrypt };
-typedef Set<TValidProperty, vpRights, vpEncrypt> TValidProperties;
+enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess, vpEncrypt, vpTags };
+typedef Set<TValidProperty, vpRights, vpTags> TValidProperties;
 class TRemoteProperties
 {
 public:
@@ -446,6 +449,7 @@ public:
   __int64 Modification; // unix time
   __int64 LastAccess; // unix time
   bool Encrypt;
+  UnicodeString Tags;
 
   __fastcall TRemoteProperties();
   __fastcall TRemoteProperties(const TRemoteProperties & rhp);
@@ -496,8 +500,15 @@ public:
     bool IsRemoteOnly() const { return (Action == saDownloadNew) || (Action == saDeleteRemote); }
     bool IsLocalOnly() const { return (Action == saUploadNew) || (Action == saDeleteLocal); }
     bool HasSize() const { return !IsDirectory || FDirectoryHasSize; }
+    __int64 __fastcall GetBaseSize() const;
     __int64 __fastcall GetSize() const;
     __int64 __fastcall GetSize(TAction AAction) const;
+    UnicodeString GetLocalPath() const;
+    // Contrary to RemoteFile->FullFileName, this does not include trailing slash for directories
+    UnicodeString GetRemotePath() const;
+    UnicodeString GetLocalTarget() const;
+    UnicodeString GetRemoteTarget() const;
+    TStrings * GetFileList() const;
 
     ~TItem();
 
@@ -506,6 +517,7 @@ public:
     bool FDirectoryHasSize;
 
     TItem();
+    __int64 __fastcall GetBaseSize(TAction AAction) const;
   };
 
   typedef std::vector<const TSynchronizeChecklist::TItem *> TItemList;
@@ -518,10 +530,13 @@ public:
 
   static TAction __fastcall Reverse(TAction Action);
   static bool __fastcall IsItemSizeIrrelevant(TAction Action);
+  bool GetNextChecked(int & Index, const TItem *& Item) const;
 
   __property int Count = { read = GetCount };
   __property int CheckedCount = { read = GetCheckedCount };
   __property const TItem * Item[int Index] = { read = GetItem };
+
+  static int Compare(const TItem * Item1, const TItem * Item2);
 
 protected:
   TSynchronizeChecklist();

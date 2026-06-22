@@ -23,7 +23,6 @@
 #include <PasTools.hpp>
 #include <VCLCommon.h>
 #include <WinApi.h>
-#include <Vcl.ScreenTips.hpp>
 #include <HistoryComboBox.hpp>
 #include <vssym32.h>
 #include <DateUtils.hpp>
@@ -80,7 +79,7 @@ bool __fastcall FindFile(UnicodeString & Path)
         while (!Result && !Paths.IsEmpty())
         {
           UnicodeString P = CutToChar(Paths, L';', false);
-          // Not using TPath::Combine as it throws on an invalid path and PATH is not under our control
+          // Not using CombinePaths as it throws on an invalid path and PATH is not under our control
           NewPath = IncludeTrailingBackslash(P) + Path;
           Result = FileExistsFix(NewPath);
           if (Result)
@@ -1103,7 +1102,7 @@ static void __fastcall DoSelectScaledImageList(TImageList * ImageList)
 {
   TImageList * MatchingList = NULL;
   int MachingPixelsPerInch = 0;
-  int PixelsPerInch = GetComponentPixelsPerInch(ImageList);
+  int PixelsPerInch = LargerPixelsPerInch(GetComponentPixelsPerInch(ImageList), WinConfiguration->LargerToolbar);
 
   for (int Index = 0; Index < ImageList->Owner->ComponentCount; Index++)
   {
@@ -1168,7 +1167,8 @@ void __fastcall SelectScaledImageList(TImageList * ImageList)
 //---------------------------------------------------------------------------
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList)
 {
-  // Maybe this is not necessary, once the TPngImageList::Assign was fixed
+  // Maybe this is not necessary, once the TPngImageList::Assign was fixed.
+  // But if we ever use Assign, make sure the target keeps its Scaled property.
   TPngImageList * PngTargetList = dynamic_cast<TPngImageList *>(TargetList);
   TPngImageList * PngSourceList = dynamic_cast<TPngImageList *>(SourceList);
 
@@ -1285,11 +1285,23 @@ void __fastcall HideComponentsPanel(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool HaveNext)
+TIncrementalSearchState::TIncrementalSearchState()
+{
+  Reset();
+}
+//---------------------------------------------------------------------------
+void TIncrementalSearchState::Reset()
+{
+  Searching = false;
+  Text = EmptyStr;
+  HaveNext = false;
+}
+//---------------------------------------------------------------------------
+UnicodeString FormatIncrementalSearchStatus(const TIncrementalSearchState & SearchState)
 {
   UnicodeString Result =
-    L" " + FMTLOAD(INC_SEARCH, (Text)) +
-    (HaveNext ? L" " + LoadStr(INC_NEXT_SEARCH) : UnicodeString());
+    FMTLOAD(INC_SEARCH, (DefaultStr(SearchState.Text, LoadStr(INC_SEARCH_TYPE)))) +
+    ((SearchState.HaveNext && DebugAlwaysTrue(!SearchState.Text.IsEmpty())) ? L" " + LoadStr(INC_NEXT_SEARCH) : EmptyStr);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1810,7 +1822,7 @@ static std::map<int, TPngImageList *> AnimationsImages;
 static std::map<int, TImageList *> ButtonImages;
 static std::map<int, TPngImageList *> DialogImages;
 //---------------------------------------------------------------------------
-int __fastcall NormalizePixelsPerInch(int PixelsPerInch)
+int __fastcall DoNormalizePixelsPerInch(int PixelsPerInch, bool Larger)
 {
   if (PixelsPerInch >= 192)
   {
@@ -1818,17 +1830,33 @@ int __fastcall NormalizePixelsPerInch(int PixelsPerInch)
   }
   else if (PixelsPerInch >= 144)
   {
-    PixelsPerInch = 144;
+    PixelsPerInch = Larger ? 192 : 144;
   }
   else if (PixelsPerInch >= 120)
   {
-    PixelsPerInch = 120;
+    PixelsPerInch = Larger ? 144 : 120;
   }
   else
   {
-    PixelsPerInch = 96;
+    PixelsPerInch = Larger ? 120 : 96;
   }
   return PixelsPerInch;
+}
+//---------------------------------------------------------------------------
+int NormalizePixelsPerInch(int PixelsPerInch)
+{
+  return DoNormalizePixelsPerInch(PixelsPerInch, false);
+}
+//---------------------------------------------------------------------------
+int LargerPixelsPerInch(int PixelsPerInch, int Larger)
+{
+  int Result = PixelsPerInch;
+  while (Larger > 0)
+  {
+    Result = DoNormalizePixelsPerInch(Result, true);
+    Larger--;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 static int __fastcall NeedImagesModule(TControl * Control)
@@ -2194,6 +2222,8 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 
   Canvas->Font->Assign(GetFont(HintControl, AHint));
 
+  // from XE6 Vcl.ScreenTips.pas, but absent in 11
+  const cScreenTipTextOnlyWidth = 210;
   const int ScreenTipTextOnlyWidth = ScaleByTextHeight(HintControl, cScreenTipTextOnlyWidth);
 
   int LongHintMargin = 0; // shut up
@@ -2370,54 +2400,6 @@ void __fastcall TScreenTipHintWindow::Paint()
   }
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-__fastcall TNewRichEdit::TNewRichEdit(TComponent * AOwner) :
-  TRichEdit(AOwner),
-  FLibrary(0)
-{
-}
-//---------------------------------------------------------------------------
-void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
-{
-  UnicodeString RichEditModuleName(L"MSFTEDIT.DLL");
-  long int OldError;
-
-  OldError = SetErrorMode(SEM_NOOPENFILEERRORBOX);
-  FLibrary = LoadLibrary(RichEditModuleName.c_str());
-  SetErrorMode(OldError);
-
-  // No fallback, MSFTEDIT.DLL is available since Windows XP
-  // https://learn.microsoft.com/en-us/archive/blogs/murrays/richedit-versions
-  if (FLibrary == 0)
-  {
-    throw Exception(FORMAT(L"Cannot load %s", (RichEditModuleName)));
-  }
-
-  TCustomMemo::CreateParams(Params);
-  // MSDN says that we should use MSFTEDIT_CLASS to load Rich Edit 4.1:
-  // https://learn.microsoft.com/en-us/windows/win32/controls/about-rich-edit-controls
-  // But MSFTEDIT_CLASS is defined as "RICHEDIT50W",
-  // so not sure what version we are loading.
-  // Seem to work on Windows XP SP3.
-  CreateSubClass(Params, MSFTEDIT_CLASS);
-}
-//---------------------------------------------------------------------------
-void __fastcall TNewRichEdit::CreateWnd()
-{
-  TRichEdit::CreateWnd();
-  SendMessage(Handle, EM_SETEDITSTYLEEX, 0, SES_EX_HANDLEFRIENDLYURL);
-}
-//---------------------------------------------------------------------------
-void __fastcall TNewRichEdit::DestroyWnd()
-{
-  TRichEdit::DestroyWnd();
-
-  if (FLibrary != 0)
-  {
-    FreeLibrary(FLibrary);
-  }
-}
-//---------------------------------------------------------------------------
 static int HideAccelFlag(TControl * Control)
 {
   //ask the top level window about its UI state
@@ -2590,4 +2572,11 @@ void GUIFinalize()
     Thread->WaitFor();
     delete Thread;
   }
+}
+//---------------------------------------------------------------------------
+TCustomImageList * TreeViewImageList(TPngImageList * ImageList)
+{
+  // WORKAROUND Prevent DPI scaling, see TCustomTreeView.SetImages
+  ImageList->Scaled = true;
+  return ImageList;
 }

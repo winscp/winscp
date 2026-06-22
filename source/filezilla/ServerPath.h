@@ -35,7 +35,6 @@ protected:
   std::list<CString> m_Segments;
   typedef std::list<CString>::iterator tIter;
   typedef std::list<CString>::const_iterator tConstIter;
-  typedef std::list<CString>::const_iterator tConstIter;
   CString m_Prefix;
   int m_nServerType;
 

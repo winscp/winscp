@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 void __fastcall CryptographyInitialize();
 void __fastcall CryptographyFinalize();
+void RequireTls();
 RawByteString __fastcall ScramblePassword(UnicodeString Password);
 bool __fastcall UnscramblePassword(RawByteString Scrambled, UnicodeString & Password);
 void __fastcall AES256EncyptWithMAC(RawByteString Input, UnicodeString Password,
@@ -24,7 +25,7 @@ class TEncryption
 {
 public:
   TEncryption(const RawByteString & Key);
-  ~TEncryption();
+  ~TEncryption() EXCEPT;
 
   static bool IsEncryptedFileName(const UnicodeString & FileName);
 

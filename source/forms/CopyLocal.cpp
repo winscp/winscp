@@ -156,14 +156,9 @@ void __fastcall TCopyLocalDialog::LocalDirectoryBrowseButtonClick(TObject *)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyLocalDialog::Dispatch(void * Message)
+void __fastcall TCopyLocalDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == CM_DPICHANGED)
-  {
-    AutoSizeCheckBox(NeverShowAgainCheck);
-  }
-
-  TForm::Dispatch(Message);
+  DebugUsedParam2(OldDPI, NewDPI);
+  AutoSizeCheckBox(NeverShowAgainCheck);
 }
 //---------------------------------------------------------------------------

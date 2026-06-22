@@ -6,6 +6,7 @@
 #include "PngImageList.hpp"
 #include <Vcl.Controls.hpp>
 #include <Vcl.ImgList.hpp>
+#include <System.ImageList.hpp>
 //---------------------------------------------------------------------------
 class TGlyphs144Module : public TDataModule
 {

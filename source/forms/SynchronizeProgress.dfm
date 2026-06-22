@@ -7,52 +7,54 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   ClientHeight = 219
   ClientWidth = 424
   Color = clWindow
-  ParentFont = True
-  OldCreateOrder = False
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   DesignSize = (
     424
     219)
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object TimeLeftLabel: TLabel
     Left = 141
-    Top = 49
+    Top = 50
     Width = 79
-    Height = 13
+    Height = 15
     AutoSize = False
     Caption = '00:00:00'
     ShowAccelChar = False
   end
   object TimeLeftLabelLabel: TLabel
-    Left = 49
-    Top = 49
-    Width = 45
-    Height = 13
+    Left = 50
+    Top = 50
+    Width = 50
+    Height = 15
     Caption = 'Time left:'
     ShowAccelChar = False
   end
   object Label1: TLabel
-    Left = 49
-    Top = 9
-    Width = 28
-    Height = 13
+    Left = 50
+    Top = 14
+    Width = 31
+    Height = 15
     Caption = 'Local:'
     ShowAccelChar = False
   end
   object Label2: TLabel
-    Left = 49
-    Top = 29
-    Width = 41
-    Height = 13
+    Left = 50
+    Top = 32
+    Width = 44
+    Height = 15
     Caption = 'Remote:'
     ShowAccelChar = False
   end
   object RemoteDirectoryLabel: TPathLabel
     Left = 141
-    Top = 30
+    Top = 32
     Width = 273
-    Height = 13
+    Height = 15
     UnixPath = True
     IndentHorizontal = 0
     IndentVertical = 0
@@ -62,9 +64,9 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   end
   object LocalDirectoryLabel: TPathLabel
     Left = 141
-    Top = 9
+    Top = 14
     Width = 273
-    Height = 13
+    Height = 15
     IndentHorizontal = 0
     IndentVertical = 0
     Align = alNone
@@ -73,34 +75,34 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   end
   object StartTimeLabel: TLabel
     Left = 141
-    Top = 49
+    Top = 50
     Width = 81
-    Height = 13
+    Height = 15
     AutoSize = False
     Caption = '00:00:00'
     ShowAccelChar = False
   end
   object StartTimeLabelLabel: TLabel
-    Left = 49
-    Top = 49
-    Width = 51
-    Height = 13
+    Left = 50
+    Top = 50
+    Width = 54
+    Height = 15
     Caption = 'Start time:'
     ShowAccelChar = False
   end
   object Label3: TLabel
-    Left = 49
-    Top = 69
-    Width = 66
-    Height = 13
+    Left = 50
+    Top = 68
+    Width = 73
+    Height = 15
     Caption = 'Time elapsed:'
     ShowAccelChar = False
   end
   object TimeElapsedLabel: TLabel
     Left = 141
-    Top = 69
+    Top = 68
     Width = 79
-    Height = 13
+    Height = 15
     AutoSize = False
     Caption = '00:00:00'
     ShowAccelChar = False
@@ -112,7 +114,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Height = 32
   end
   object ToolbarPanel: TPanel
-    Left = 49
+    Left = 50
     Top = 115
     Width = 185
     Height = 28
@@ -166,8 +168,8 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     TabOrder = 1
   end
   object OperationProgress: TProgressBar
-    Left = 49
-    Top = 88
+    Left = 50
+    Top = 86
     Width = 365
     Height = 16
     Anchors = [akLeft, akTop, akRight]
@@ -308,7 +310,6 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       end>
     Left = 40
     Top = 166
-    Bitmap = {}
   end
   object ImageList120: TPngImageList
     Height = 20
@@ -440,7 +441,6 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       end>
     Left = 136
     Top = 166
-    Bitmap = {}
   end
   object ImageList144: TPngImageList
     Height = 24
@@ -577,7 +577,6 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       end>
     Left = 224
     Top = 166
-    Bitmap = {}
   end
   object ImageList192: TPngImageList
     Height = 32
@@ -670,6 +669,5 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       end>
     Left = 312
     Top = 166
-    Bitmap = {}
   end
 end

@@ -42,6 +42,7 @@ type
     function GetVisible(Index: Integer): Boolean;
     function GetWidths(Index: Integer): Integer;
     procedure SetAlignments(Index: Integer; Value: TAlignment);
+    procedure SetVisibleInternal(Index: Integer; Value: Boolean; SaveWidth: Boolean);
     procedure SetVisible(Index: Integer; Value: Boolean);
     procedure SetWidths(Index: Integer; Value: Integer);
     function GetCaptions(Index: Integer): string;
@@ -52,13 +53,13 @@ type
     procedure UpdateFromListView;
     procedure UpdateOrderFromListView;
     procedure UpdateListViewOrder;
-    procedure UpdateListViewMaxMinWidth;
     function GetProperties(Index: Integer): TCustomListViewColProperty;
     function GetIndexByOrder(Order: Integer): Integer;
     function ColumnsExists: Boolean;
     procedure SetRuntimeVisible(Index: Integer; Value: Boolean; SaveWidth: Boolean);
     function GetColumn(Index: Integer): TListColumn;
     procedure CreateProperties(ACount: Integer);
+    function DefaultConstraint(Value: Integer; Visible: Boolean; Def: Integer): Integer;
 
     property Columns: TListColumns read GetColumns stored False;
   public
@@ -69,6 +70,7 @@ type
     procedure ListViewWndCreated;
     procedure ListViewWndDestroying;
     procedure ListViewWndDestroyed;
+    procedure ChangeScale(M, D: Integer);
     property Count: Integer read GetCount stored False;
     property Alignments[Index: Integer]: TAlignment read GetAlignments write SetAlignments;
     property Captions[Index: Integer]: string read GetCaptions write SetCaptions;
@@ -146,6 +148,7 @@ var
   ColStr: string;
   Index: Integer;
   NeedInvalidate, NewVisible: Boolean;
+  NewWidth: Integer;
 begin
   Index := 0;
   NeedInvalidate := False;
@@ -154,11 +157,14 @@ begin
     while (Value <> '') and (Index < Count) do
     begin
       ColStr := CutToChar(Value, ';', True);
-      Widths[Index] := LoadDimension(StrToInt(CutToChar(ColStr, ',', True)), PixelsPerInch, FListView);
+      NewWidth := LoadDimension(StrToInt(CutToChar(ColStr, ',', True)), PixelsPerInch, FListView);
+      Widths[Index] := NewWidth;
       NewVisible := Boolean(StrToInt(CutToChar(ColStr, ',', True)));
       if Visible[Index] <> NewVisible then
       begin
-        Visible[Index] := NewVisible;
+        // As we are within BeginUpdate guard, the width set just above is not propadated to WinAPI.
+        // As reading width retrieves it from WinAPI (if the control is already allocated), we actually save wrong width.
+        SetVisibleInternal(Index, NewVisible, False);
         NeedInvalidate := True;
       end;
       Inc(Index);
@@ -351,7 +357,7 @@ begin
   SetOrderStr(OrderStr);
 end;
 
-procedure TCustomListViewColProperties.SetVisible(Index: Integer; Value: Boolean);
+procedure TCustomListViewColProperties.SetVisibleInternal(Index: Integer; Value: Boolean; SaveWidth: Boolean);
 var
   I: Integer;
   Properties: TCustomListViewColProperty;
@@ -381,7 +387,7 @@ begin
       Properties.Visible := True;
 
       if ColumnsExists then
-        SetRuntimeVisible(Index, True, True);
+        SetRuntimeVisible(Index, True, SaveWidth);
     end
       else
     begin
@@ -389,7 +395,7 @@ begin
       Properties.Visible := False;
 
       if ColumnsExists then
-        SetRuntimeVisible(Index, False, True);
+        SetRuntimeVisible(Index, False, SaveWidth);
 
       // hidden column is moved to the front,
       // unless column to the left is not hidden already
@@ -416,6 +422,11 @@ begin
     if FListView.HandleAllocated then
       FListView.Invalidate;
   end;
+end;
+
+procedure TCustomListViewColProperties.SetVisible(Index: Integer; Value: Boolean);
+begin
+  SetVisibleInternal(Index, Value, True);
 end;
 
 procedure TCustomListViewColProperties.SetRuntimeVisible(
@@ -558,12 +569,17 @@ begin
   end;
 end;
 
+function TCustomListViewColProperties.DefaultConstraint(Value: Integer; Visible: Boolean; Def: Integer): Integer;
+begin
+  if (Value > 0) and Visible then Result := Value
+    else Result := Def;
+end;
+
 procedure TCustomListViewColProperties.ListViewWndCreated;
 var
   Index: Integer;
   Properties: TCustomListViewColProperty;
   Column: TListColumn;
-  W: Integer;
 begin
   if FListViewManaged then
   begin
@@ -577,36 +593,29 @@ begin
     UpdateListView;
   end;
 
-  if not FConstraintsInitialized then
+  Assert(ColumnsExists);
+  for Index := 0 to Count - 1 do
   begin
-    FConstraintsInitialized := True;
+    Column := GetColumn(Index);
+    Properties := GetProperties(Index);
 
-    for Index := 0 to Count - 1 do
+    if not FConstraintsInitialized then
     begin
-      Column := GetColumn(Index);
-      Properties := GetProperties(Index);
+      Properties.MaxWidth := DefaultConstraint(Column.MaxWidth, Properties.Visible, DefaultListViewMaxWidth);
+      Properties.MinWidth := DefaultConstraint(Column.MinWidth, Properties.Visible, DefaultListViewMinWidth);
+    end;
 
-      // Is this branching needed?
-      if Properties.Visible then
-      begin
-        W := Column.MaxWidth;
-        if W = 0 then W := DefaultListViewMaxWidth;
-        Properties.MaxWidth := ScaleByTextHeight(FListView, W);
-
-        W := Column.MinWidth;
-        if W = 0 then W := DefaultListViewMinWidth;
-        Properties.MinWidth := ScaleByTextHeight(FListView, W);
-      end
-        else
-      begin
-        Column.MaxWidth := ScaleByTextHeight(FListView, Column.MaxWidth);
-        Column.MinWidth := ScaleByTextHeight(FListView, Column.MinWidth);
-      end;
+    // To apply the default constraints to columns that do not have their own
+    if Properties.Visible then
+    begin
+      Column.MaxWidth := Properties.MaxWidth;
+      if Column.Width > Column.MaxWidth then Column.Width := Column.MaxWidth;
+      Column.MinWidth := Properties.MinWidth;
+      if Column.Width < Column.MinWidth then Column.Width := Column.MinWidth;
     end;
   end;
 
-  // To apply the default constraints to columns that do not have their own
-  UpdateListViewMaxMinWidth;
+  FConstraintsInitialized := True;
 end;
 
 procedure TCustomListViewColProperties.ListViewWndDestroying;
@@ -618,6 +627,30 @@ procedure TCustomListViewColProperties.ListViewWndDestroyed;
 begin
   if not FListViewManaged then
     FCreated := False;
+end;
+
+procedure TCustomListViewColProperties.ChangeScale(M, D: Integer);
+var
+  Index: Integer;
+  Properties: TCustomListViewColProperty;
+  Column: TListColumn;
+begin
+  for Index := 0 to Count - 1 do
+  begin
+    Properties := GetProperties(Index);
+    // This is not perfect, as the constraints apply on re-scaled width before they are re-scaled themselves
+    if Properties.Visible and ColumnsExists then
+    begin
+      Column := GetColumn(Index);
+      Column.MaxWidth := MulDiv(Column.MaxWidth, M, D);
+      Column.MinWidth := MulDiv(Column.MinWidth, M, D);
+    end
+      else
+    begin
+      Properties.MaxWidth := MulDiv(Properties.MaxWidth, M, D);
+      Properties.MinWidth := MulDiv(Properties.MinWidth, M, D);
+    end;
+  end;
 end;
 
 procedure TCustomListViewColProperties.UpdateListViewOrder;
@@ -637,29 +670,6 @@ begin
     Temp[Properties.Order] := Index;
   end;
   ListView_SetColumnOrderArray(FListView.Handle, Count, PInteger(Temp));
-end;
-
-procedure TCustomListViewColProperties.UpdateListViewMaxMinWidth;
-var
-  Index: Integer;
-  Column: TListColumn;
-  Properties: TCustomListViewColProperty;
-begin
-  Assert(ColumnsExists);
-
-  for Index := 0 to Count-1 do
-  begin
-    Column := GetColumn(Index);
-    Properties := GetProperties(Index);
-
-    if Properties.Visible then
-    begin
-      Column.MaxWidth := Properties.MaxWidth;
-      if Column.Width > Column.MaxWidth then Column.Width := Column.MaxWidth;
-      Column.MinWidth := Properties.MinWidth;
-      if Column.Width < Column.MinWidth then Column.Width := Column.MinWidth;
-    end;
-  end;
 end;
 
 procedure TCustomListViewColProperties.UpdateListView;

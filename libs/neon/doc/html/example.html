@@ -1,0 +1,31 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Example application</title><link rel="stylesheet" type="text/css" href="manual.css"><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot"><link rel="home" href="index.html" title="neon HTTP/WebDAV client library"><link rel="up" href="intro.html" title="Chapter 1. Introduction"><link rel="prev" href="using.html" title="How to use neon from your application"><link rel="next" href="compliance.html" title="Standards compliance"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Example application</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="using.html">Prev</a> </td><th width="60%" align="center">Chapter 1. Introduction</th><td width="20%" align="right"> <a accesskey="n" href="compliance.html">Next</a></td></tr></table><hr></div><div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="example"></a>Example application</h2></div></div></div><p>The code below is a simple example which sends a
+	<code class="literal">PUT</code> request, using the API from
+	<code class="literal">&lt;ne_basic.h&gt;</code>:
+
+</p><pre class="programlisting">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#include &lt;ne_basic.h&gt;
+
+static const char data[] = "Example data.\n";
+
+int main(int argc, char **argv)
+{
+    ne_session *sess;
+    int ec = EXIT_SUCCESS;
+
+    ne_sock_init(); /* Global library initialization. */
+
+    sess = ne_session_create("http", "localhost", 80);
+
+    if (ne_putbuf(sess, "/dav/data.txt", data, sizeof data)) {
+        fprintf(stderr, "PUT Request failed: %s\n", ne_get_error(sess));
+        ec = EXIT_FAILURE;
+    }
+
+    ne_session_destroy(sess);
+
+    return ec;
+}
+</pre></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="using.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="intro.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="compliance.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">How to use neon from your application </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Standards compliance</td></tr></table></div></body></html>

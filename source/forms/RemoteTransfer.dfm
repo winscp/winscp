@@ -6,57 +6,59 @@ object RemoteTransferDialog: TRemoteTransferDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'RemoteTransferDialog'
-  ClientHeight = 179
-  ClientWidth = 420
+  ClientHeight = 181
+  ClientWidth = 464
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = False
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    420
-    179)
-  PixelsPerInch = 96
-  TextHeight = 13
+    464
+    181)
+  TextHeight = 15
   object Group: TGroupBox
     Left = 8
-    Top = 6
-    Width = 404
-    Height = 131
+    Top = 8
+    Width = 448
+    Height = 133
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     DesignSize = (
-      404
-      131)
+      448
+      133)
     object SessionLabel: TLabel
-      Left = 49
-      Top = 12
-      Width = 74
-      Height = 13
+      Left = 47
+      Top = 9
+      Width = 77
+      Height = 15
       Caption = 'Target &session:'
       FocusControl = SessionCombo
     end
     object Label3: TLabel
-      Left = 49
-      Top = 60
-      Width = 98
-      Height = 13
+      Left = 47
+      Top = 59
+      Width = 104
+      Height = 15
       Caption = 'Target remote &path:'
       FocusControl = DirectoryEdit
     end
     object Image: TImage
-      Left = 11
-      Top = 15
+      Left = 9
+      Top = 12
       Width = 32
       Height = 32
       AutoSize = True
     end
     object SessionCombo: TComboBox
-      Left = 49
-      Top = 28
-      Width = 344
-      Height = 21
+      Left = 47
+      Top = 30
+      Width = 392
+      Height = 23
       Style = csDropDownList
       Anchors = [akLeft, akTop, akRight]
       DropDownCount = 16
@@ -65,10 +67,10 @@ object RemoteTransferDialog: TRemoteTransferDialog
       OnChange = SessionComboChange
     end
     object DirectoryEdit: THistoryComboBox
-      Left = 49
-      Top = 76
-      Width = 344
-      Height = 21
+      Left = 47
+      Top = 77
+      Width = 392
+      Height = 23
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
@@ -76,9 +78,9 @@ object RemoteTransferDialog: TRemoteTransferDialog
       OnChange = ControlChange
     end
     object NotDirectCopyCheck: TCheckBox
-      Left = 55
-      Top = 105
-      Width = 340
+      Left = 49
+      Top = 106
+      Width = 390
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'Duplicate via local &temporary copy'
@@ -87,9 +89,9 @@ object RemoteTransferDialog: TRemoteTransferDialog
     end
   end
   object OkButton: TButton
-    Left = 168
-    Top = 146
-    Width = 75
+    Left = 204
+    Top = 148
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -98,9 +100,9 @@ object RemoteTransferDialog: TRemoteTransferDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 252
-    Top = 146
-    Width = 75
+    Left = 290
+    Top = 148
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -109,9 +111,9 @@ object RemoteTransferDialog: TRemoteTransferDialog
     TabOrder = 2
   end
   object HelpButton: TButton
-    Left = 336
-    Top = 146
-    Width = 75
+    Left = 376
+    Top = 148
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'

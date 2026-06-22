@@ -256,6 +256,12 @@ void __fastcall TUsage::SetMax(const UnicodeString & Key, int Value)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TUsage::IncAndSetMax(const UnicodeString & IncKey, const UnicodeString & MaxKey, int Value)
+{
+  Inc(IncKey, Value);
+  SetMax(MaxKey, Value);
+}
+//---------------------------------------------------------------------------
 void __fastcall TUsage::SetMax(const UnicodeString & Key, int Value,
   TCounters & Counters)
 {
@@ -336,5 +342,5 @@ void __fastcall TUsage::Serialize(
 int __fastcall TUsage::CalculateCounterSize(__int64 Size)
 {
   const int SizeCounterFactor = 10240;
-  return (Size <= 0) ? 0 : (Size < SizeCounterFactor ? 1 : Size / SizeCounterFactor);
+  return (Size <= 0) ? 0 : (Size < SizeCounterFactor ? 1 : static_cast<int>(Size / SizeCounterFactor));
 }

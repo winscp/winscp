@@ -1,0 +1,82 @@
+'\" t
+.\"     Title: ne_get_request_target
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 15 April 2025
+.\"    Manual: neon API reference
+.\"    Source: neon 0.34.2
+.\"  Language: English
+.\"
+.TH "NE_GET_REQUEST_TARGE" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_get_request_target \- retrieve request target
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_request\&.h>
+.fi
+.ft
+.HP \w'const\ ne_uri\ *ne_get_request_target('u
+.BI "const ne_uri *ne_get_request_target(ne_request\ *" "req" ");"
+.SH "DESCRIPTION"
+.PP
+The
+\fBne_get_request_target\fR
+returns the request target URI as a pointer to an
+ne_uri
+object\&. The "target resource" of a request is defined per
+\m[blue]\fBSection 7\&.1 of RFC 9110\fR\m[]\&\s-2\u[1]\d\s+2
+and is derived from the parameters used to create the request with
+ne_request_create
+and the parameters used to create the session with
+ne_session_create\&.
+.SH "RETURN VALUE"
+.PP
+The
+\fBne_get_request_target\fR
+function returns a
+ne_uri, or
+NULL
+if it was not possible to create the target URI\&. The latter can only occur if the path used to create the request object was not a valid URI path\&. Note that the
+\fIpath\fR
+field of the returned object can be the empty string if the
+authority\-form
+of the URI is used\&.
+.SH "HISTORY"
+.PP
+\fBne_get_request_target\fR
+is available in neon 0\&.34\&.0 and later\&.
+.SH "SEE ALSO"
+.PP
+ne_request_create,
+ne_session_create\&.
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
+.br
+.SH "REFERENCES"
+.IP " 1." 4
+Section 7.1 of RFC 9110
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc9110.html#section-7.1
+.RE

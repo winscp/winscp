@@ -6,23 +6,25 @@ object PropertiesDialog: TPropertiesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Properties'
-  ClientHeight = 416
-  ClientWidth = 357
+  ClientHeight = 424
+  ClientWidth = 398
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    357
-    416)
-  PixelsPerInch = 96
-  TextHeight = 13
+    398
+    424)
+  TextHeight = 15
   object OkButton: TButton
-    Left = 99
-    Top = 386
-    Width = 75
+    Left = 138
+    Top = 391
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -31,9 +33,9 @@ object PropertiesDialog: TPropertiesDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 187
-    Top = 386
-    Width = 75
+    Left = 224
+    Top = 391
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -42,10 +44,10 @@ object PropertiesDialog: TPropertiesDialog
     TabOrder = 2
   end
   object PageControl: TPageControl
-    Left = 5
-    Top = 5
-    Width = 346
-    Height = 374
+    Left = 0
+    Top = 0
+    Width = 398
+    Height = 385
     ActivePage = CommonSheet
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
@@ -53,99 +55,99 @@ object PropertiesDialog: TPropertiesDialog
     object CommonSheet: TTabSheet
       Caption = 'Common'
       DesignSize = (
-        338
-        346)
+        390
+        355)
       object Bevel1: TBevel
-        Left = 8
-        Top = 47
-        Width = 320
+        Left = 5
+        Top = 44
+        Width = 378
         Height = 9
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
       object Label1: TLabel
-        Left = 8
-        Top = 58
-        Width = 44
-        Height = 13
+        Left = 5
+        Top = 55
+        Width = 49
+        Height = 15
         Caption = 'Location:'
         ShowAccelChar = False
       end
       object Label2: TLabel
-        Left = 8
-        Top = 80
+        Left = 5
+        Top = 78
         Width = 23
-        Height = 13
+        Height = 15
         Caption = 'Size:'
         ShowAccelChar = False
       end
       object LinksToLabelLabel: TLabel
-        Left = 8
-        Top = 102
-        Width = 40
-        Height = 13
+        Left = 5
+        Top = 101
+        Width = 44
+        Height = 15
         Caption = 'Links to:'
         ShowAccelChar = False
       end
       object Bevel2: TBevel
-        Left = 8
-        Top = 125
-        Width = 320
+        Left = 5
+        Top = 124
+        Width = 378
         Height = 9
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
       object RightsLabel: TLabel
-        Left = 8
-        Top = 203
-        Width = 59
-        Height = 13
+        Left = 5
+        Top = 201
+        Width = 66
+        Height = 15
         Caption = 'Permissions:'
         FocusControl = RightsFrame
       end
       object GroupOwnerRightsBevel: TBevel
-        Left = 8
-        Top = 193
-        Width = 320
+        Left = 5
+        Top = 190
+        Width = 378
         Height = 9
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
       object GroupLabel: TLabel
-        Left = 8
-        Top = 166
-        Width = 33
-        Height = 13
+        Left = 5
+        Top = 162
+        Width = 36
+        Height = 15
         Caption = 'Group:'
         FocusControl = GroupComboBox
       end
       object OwnerLabel: TLabel
-        Left = 8
-        Top = 138
-        Width = 36
-        Height = 13
+        Left = 5
+        Top = 136
+        Width = 38
+        Height = 15
         Caption = 'Owner:'
         FocusControl = OwnerComboBox
       end
       object FileIconImage: TImage
-        Left = 11
-        Top = 8
+        Left = 8
+        Top = 5
         Width = 32
         Height = 32
         AutoSize = True
       end
       object RecursiveBevel: TBevel
-        Left = 8
-        Top = 312
-        Width = 320
+        Left = 5
+        Top = 322
+        Width = 378
         Height = 9
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
       object LocationLabel: TEdit
-        Left = 85
-        Top = 58
-        Width = 241
+        Left = 90
+        Top = 55
+        Width = 293
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
@@ -155,9 +157,9 @@ object PropertiesDialog: TPropertiesDialog
         Text = 'LocationLabel'
       end
       object FileLabel: TEdit
-        Left = 85
-        Top = 18
-        Width = 241
+        Left = 90
+        Top = 13
+        Width = 293
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
@@ -167,9 +169,9 @@ object PropertiesDialog: TPropertiesDialog
         Text = 'FileLabel'
       end
       object SizeLabel: TEdit
-        Left = 85
-        Top = 80
-        Width = 160
+        Left = 90
+        Top = 78
+        Width = 215
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
@@ -179,9 +181,9 @@ object PropertiesDialog: TPropertiesDialog
         Text = 'SizeLabel'
       end
       object LinksToLabel: TEdit
-        Left = 85
-        Top = 102
-        Width = 241
+        Left = 90
+        Top = 101
+        Width = 293
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
@@ -191,9 +193,9 @@ object PropertiesDialog: TPropertiesDialog
         Text = 'LinksToLabel'
       end
       object GroupView: TEdit
-        Left = 85
-        Top = 166
-        Width = 241
+        Left = 90
+        Top = 162
+        Width = 293
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
@@ -203,9 +205,9 @@ object PropertiesDialog: TPropertiesDialog
         Text = 'GroupView'
       end
       object OwnerView: TEdit
-        Left = 85
-        Top = 138
-        Width = 241
+        Left = 90
+        Top = 136
+        Width = 293
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
@@ -215,17 +217,17 @@ object PropertiesDialog: TPropertiesDialog
         Text = 'OwnerView'
       end
       inline RightsFrame: TRightsFrame
-        Left = 81
-        Top = 199
-        Width = 247
-        Height = 109
+        Left = 89
+        Top = 194
+        Width = 258
+        Height = 128
         TabOrder = 5
       end
       object GroupComboBox: TComboBox
-        Left = 85
-        Top = 163
-        Width = 161
-        Height = 21
+        Left = 90
+        Top = 159
+        Width = 179
+        Height = 23
         DropDownCount = 16
         MaxLength = 50
         TabOrder = 3
@@ -234,10 +236,10 @@ object PropertiesDialog: TPropertiesDialog
         OnExit = GroupComboBoxExit
       end
       object OwnerComboBox: TComboBox
-        Left = 85
-        Top = 135
-        Width = 161
-        Height = 21
+        Left = 90
+        Top = 133
+        Width = 179
+        Height = 23
         DropDownCount = 16
         MaxLength = 50
         TabOrder = 1
@@ -246,9 +248,9 @@ object PropertiesDialog: TPropertiesDialog
         OnExit = OwnerComboBoxExit
       end
       object RecursiveCheck2: TCheckBox
-        Left = 12
-        Top = 322
-        Width = 317
+        Left = 8
+        Top = 332
+        Width = 375
         Height = 17
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Set owner, group and permissions &recursively'
@@ -256,7 +258,7 @@ object PropertiesDialog: TPropertiesDialog
         OnClick = ControlChange
       end
       object CalculateSizeButton: TButton
-        Left = 248
+        Left = 303
         Top = 72
         Width = 80
         Height = 25
@@ -270,21 +272,21 @@ object PropertiesDialog: TPropertiesDialog
       Caption = 'Checksum'
       ImageIndex = 1
       DesignSize = (
-        338
-        346)
+        390
+        355)
       object Label6: TLabel
-        Left = 13
-        Top = 13
-        Width = 49
-        Height = 13
+        Left = 5
+        Top = 8
+        Width = 57
+        Height = 15
         Caption = '&Algorithm:'
         FocusControl = ChecksumAlgEdit
       end
       object ChecksumView: TListView
-        Left = 6
-        Top = 40
-        Width = 326
-        Height = 297
+        Left = 5
+        Top = 34
+        Width = 378
+        Height = 315
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -304,13 +306,13 @@ object PropertiesDialog: TPropertiesDialog
         PopupMenu = ListViewMenu
         TabOrder = 2
         ViewStyle = vsReport
-        OnContextPopup = ChecksumViewContextPopup
+        OnContextPopup = ListViewContextPopup
       end
       object ChecksumAlgEdit: TComboBox
-        Left = 80
-        Top = 9
-        Width = 121
-        Height = 21
+        Left = 90
+        Top = 5
+        Width = 152
+        Height = 23
         AutoComplete = False
         Anchors = [akLeft, akTop, akRight]
         MaxLength = 250
@@ -322,9 +324,9 @@ object PropertiesDialog: TPropertiesDialog
           'Xmd5')
       end
       object ChecksumButton: TButton
-        Left = 208
-        Top = 7
-        Width = 122
+        Left = 248
+        Top = 4
+        Width = 135
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Calculate checksum'
@@ -332,28 +334,28 @@ object PropertiesDialog: TPropertiesDialog
         OnClick = ChecksumButtonClick
       end
       object ChecksumGroup: TGroupBox
-        Left = 6
-        Top = 40
-        Width = 326
-        Height = 41
+        Left = 5
+        Top = 34
+        Width = 378
+        Height = 51
         Anchors = [akLeft, akRight, akBottom]
         Caption = 'Checksum'
         TabOrder = 3
         DesignSize = (
-          326
-          41)
+          378
+          51)
         object ChecksumUnknownLabel: TLabel
           Left = 10
           Top = 18
-          Width = 117
-          Height = 13
+          Width = 135
+          Height = 15
           Caption = 'ChecksumUnknownLabel'
           ShowAccelChar = False
         end
         object ChecksumEdit: TEdit
-          Left = 10
-          Top = 18
-          Width = 306
+          Left = 9
+          Top = 22
+          Width = 358
           Height = 19
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -365,11 +367,77 @@ object PropertiesDialog: TPropertiesDialog
         end
       end
     end
+    object TagsSheet: TTabSheet
+      Caption = 'Tags'
+      ImageIndex = 2
+      DesignSize = (
+        390
+        355)
+      object TagsView: TListView
+        Left = 3
+        Top = 5
+        Width = 382
+        Height = 227
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Columns = <
+          item
+            Caption = 'Key'
+            Width = 100
+          end
+          item
+            Caption = 'Value'
+            Width = 100
+          end>
+        ColumnClick = False
+        DoubleBuffered = True
+        HideSelection = False
+        ReadOnly = True
+        RowSelect = True
+        ParentDoubleBuffered = False
+        PopupMenu = ListViewMenu
+        TabOrder = 0
+        ViewStyle = vsReport
+        OnContextPopup = ListViewContextPopup
+        OnDblClick = TagsViewDblClick
+        OnKeyDown = TagsViewKeyDown
+        OnSelectItem = TagsViewSelectItem
+      end
+      object AddTagButton: TButton
+        Left = 133
+        Top = 238
+        Width = 80
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Add...'
+        TabOrder = 1
+        OnClick = AddTagButtonClick
+      end
+      object RemoveTagButton: TButton
+        Left = 305
+        Top = 238
+        Width = 80
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Remove'
+        TabOrder = 3
+        OnClick = RemoveTagButtonClick
+      end
+      object EditTagButton: TButton
+        Left = 219
+        Top = 238
+        Width = 80
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Edit...'
+        TabOrder = 2
+        OnClick = EditTagButtonClick
+      end
+    end
   end
   object HelpButton: TButton
-    Left = 275
-    Top = 386
-    Width = 75
+    Left = 310
+    Top = 391
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
@@ -378,7 +446,7 @@ object PropertiesDialog: TPropertiesDialog
   end
   object ListViewMenu: TPopupMenu
     Left = 16
-    Top = 384
+    Top = 400
     object Copy: TMenuItem
       Caption = '&Copy'
       OnClick = CopyClick

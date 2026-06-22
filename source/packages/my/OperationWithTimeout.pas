@@ -5,9 +5,6 @@ interface
 uses
   Winapi.Windows, Winapi.ShlObj, Winapi.ShellAPI, ActiveX;
 
-function ShellFolderGetAttributesOfWithTimeout(
-  ShellFolder: IShellFolder; cidl: UINT; apidl: PItemIDList; var rgfInOut: UINT; Timeout: Integer): HResult;
-
 function SHGetFileInfoWithTimeout(
   pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
   cbFileInfo, uFlags: UINT; Timeout: Integer): DWORD_PTR;
@@ -34,14 +31,6 @@ type
 
   TOperation = class(TObject)
   public
-    // ShellFolderGetAttributesOfWithTimeout
-    ShellFolder: IShellFolder;
-    cidl: UINT;
-    apidl: PItemIDList;
-    rgfInOut: UINT;
-    Timeout: Integer;
-    ResultHResult: HResult;
-
     // SHGetFileInfoWithTimeout
     PIDL: PItemIDList;
     Path: string;
@@ -51,7 +40,8 @@ type
     ResultDWordPtr: DWORD_PTR;
 
     // ShellFolderParseDisplayNameWithTimeout
-    // Uses ShellFolder and ResultHResult
+    ShellFolder: IShellFolder;
+    ResultHResult: HResult;
     hwndOwner: HWND;
     pbcReserved: Pointer;
     DisplayName: string;
@@ -133,42 +123,6 @@ begin
     end;
   end;
 {$ENDIF}
-end;
-
-procedure ShellFolderGetAttributesOfOperation(Operation: TOperation);
-var
-  ErrorMode: Word;
-begin
-  ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
-  try
-    Operation.ResultHResult := Operation.ShellFolder.GetAttributesOf(Operation.cidl, Operation.apidl, Operation.rgfInOut);
-  except
-    Operation.ResultHResult := E_FAIL;
-  end;
-  SetErrorMode(ErrorMode);
-end;
-
-function ShellFolderGetAttributesOfWithTimeout(
-  ShellFolder: IShellFolder; cidl: UINT; apidl: PItemIDList; var rgfInOut: UINT; Timeout: Integer): HResult;
-var
-  Operation: TOperation;
-begin
-  Operation := TOperation.Create;
-  Operation.ShellFolder := ShellFolder;
-  Operation.cidl := cidl;
-  Operation.apidl := apidl;
-  Operation.rgfInOut := rgfInOut;
-  if WaitForOperation(Operation, ShellFolderGetAttributesOfOperation, Timeout) then
-  begin
-    rgfInOut := Operation.rgfInOut;
-    Result := Operation.ResultHResult;
-    Operation.Free;
-  end
-    else
-  begin
-    rgfInOut := 0;
-    Result := E_FAIL;
-  end;
 end;
 
 procedure SHGetFileInfoOperation(Operation: TOperation);

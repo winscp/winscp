@@ -6,9 +6,7 @@ inherited ScpCommanderForm: TScpCommanderForm
   Caption = 'ScpCommanderForm'
   ClientHeight = 670
   ClientWidth = 898
-  OldCreateOrder = True
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Splitter: TSplitter [0]
     Left = 435
     Top = 186
@@ -92,6 +90,19 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.LocalPathToClipboardAction2
         end
         object TBXSeparatorItem4: TTBXSeparatorItem
+        end
+        object TBXSubmenuItem17: TTBXSubmenuItem
+          Caption = '&View'
+          HelpKeyword = 'ui_file_panel#view_style'
+          Hint = 'Change directory view style'
+          object TBXItem270: TTBXItem
+            Action = NonVisualDataModule.LocalReportAction
+          end
+          object TBXSeparatorItem76: TTBXSeparatorItem
+          end
+          object TBXItem271: TTBXItem
+            Action = NonVisualDataModule.LocalThumbnailAction
+          end
         end
         object TBXSubmenuItem3: TTBXSubmenuItem
           Caption = '&Sort'
@@ -537,6 +548,21 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem133: TTBXItem
             Action = NonVisualDataModule.SelectiveToolbarTextAction
           end
+          object TBXItem272: TTBXSubmenuItem
+            Action = NonVisualDataModule.ToolbarIconSizeAction
+            object TBXItem273: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeNormalAction
+              RadioItem = True
+            end
+            object TBXItem274: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeLargeAction
+              RadioItem = True
+            end
+            object TBXItem275: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeVeryLargeAction
+              RadioItem = True
+            end
+          end
         end
         object TBXSubmenuItem11: TTBXSubmenuItem
           Action = NonVisualDataModule.CommanderLocalPanelAction
@@ -710,6 +736,19 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.RemotePathToClipboardAction2
         end
         object TBXSeparatorItem27: TTBXSeparatorItem
+        end
+        object TBXSubmenuItem19: TTBXSubmenuItem
+          Caption = '&View'
+          HelpKeyword = 'ui_file_panel#view_style'
+          Hint = 'Change directory view style'
+          object TBXItem276: TTBXItem
+            Action = NonVisualDataModule.RemoteReportAction
+          end
+          object TBXSeparatorItem77: TTBXSeparatorItem
+          end
+          object TBXItem277: TTBXItem
+            Action = NonVisualDataModule.RemoteThumbnailAction
+          end
         end
         object TBXSubmenuItem16: TTBXSubmenuItem
           Caption = '&Sort'
@@ -1078,7 +1117,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 299
+      Left = 300
       Top = 129
       Caption = 'Custom Commands'
       ChevronMenu = True
@@ -1105,7 +1144,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 79
       Width = 458
-      Height = 19
+      Height = 21
       UnixPath = True
       IndentVertical = 3
       AutoSizeVertical = True
@@ -1119,7 +1158,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited RemotePanelSplitter: TSplitter
       Left = 0
-      Top = 143
+      Top = 145
       Width = 458
       Height = 3
       Cursor = crSizeNS
@@ -1163,13 +1202,13 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited RemoteDirPanel: TPanel
       Left = 0
-      Top = 146
+      Top = 148
       Width = 458
-      Height = 115
+      Height = 113
       Constraints.MinHeight = 70
       inherited RemoteDirView: TUnixDirView
         Width = 280
-        Height = 115
+        Height = 113
         NortonLike = nlOn
         OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
         PathLabel = RemotePathLabel
@@ -1185,16 +1224,16 @@ inherited ScpCommanderForm: TScpCommanderForm
         Left = 280
         Top = 0
         Width = 178
-        Height = 115
+        Height = 113
         Align = alRight
         Constraints.MinHeight = 70
         DoubleBuffered = True
         FullDrag = True
         HideSelection = False
+        IconOptions.AutoArrange = True
         ParentDoubleBuffered = False
         PopupMenu = NonVisualDataModule.RemoteDirViewPopup
         TabOrder = 1
-        ViewStyle = vsReport
         OnColumnRightClick = DirViewColumnRightClick
         OnEditing = DirViewEditing
         OnEnter = OtherLocalDirViewEnter
@@ -1223,10 +1262,11 @@ inherited ScpCommanderForm: TScpCommanderForm
         OnPathChange = OtherLocalDirViewPathChange
         OnBusy = DirViewBusy
         OnChangeFocus = DirViewChangeFocus
+        DirViewStyle = dvsReport
       end
     end
     inherited RemoteDrivePanel: TPanel
-      Top = 98
+      Top = 100
       Width = 458
       Height = 45
       Align = alTop
@@ -1321,6 +1361,19 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXItem170: TTBXItem
           Action = NonVisualDataModule.RemoteTreeAction
+        end
+        object TBXSubmenuItem32: TTBXSubmenuItem
+          Caption = 'Change directory view style'
+          ImageIndex = 11
+          Options = [tboDropdownArrow]
+          object TBXItem278: TTBXItem
+            Action = NonVisualDataModule.RemoteReportAction
+          end
+          object TBXSeparatorItem78: TTBXSeparatorItem
+          end
+          object TBXItem279: TTBXItem
+            Action = NonVisualDataModule.RemoteThumbnailAction
+          end
         end
       end
       object RemotePathToolbar: TTBXToolbar
@@ -1444,7 +1497,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteSelectionToolbar: TTBXToolbar
-        Left = 295
+        Left = 328
         Top = 27
         Caption = 'Remote Selection'
         DockPos = 282
@@ -1489,7 +1542,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited QueueView3: TListView
       Width = 898
-      Height = 48
+      Height = 46
       TabStop = False
     end
     inherited QueueDock: TTBXDock
@@ -1520,7 +1573,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 79
       Width = 435
-      Height = 19
+      Height = 21
       IndentVertical = 3
       AutoSizeVertical = True
       HotTrack = True
@@ -1534,7 +1587,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalPanelSplitter: TSplitter
       Left = 0
-      Top = 143
+      Top = 145
       Width = 435
       Height = 3
       Cursor = crSizeNS
@@ -1587,18 +1640,18 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDirView: TDirView
       Left = 0
-      Top = 146
+      Top = 148
       Width = 435
-      Height = 115
+      Height = 113
       Align = alClient
       Constraints.MinHeight = 70
       DoubleBuffered = True
       FullDrag = True
       HideSelection = False
+      IconOptions.AutoArrange = True
       ParentDoubleBuffered = False
       PopupMenu = NonVisualDataModule.LocalDirViewPopup
       TabOrder = 1
-      ViewStyle = vsReport
       OnColumnRightClick = DirViewColumnRightClick
       OnEditing = DirViewEditing
       OnEnter = LocalDirViewEnter
@@ -1628,6 +1681,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnPathChange = LocalDirViewPathChange
       OnBusy = DirViewBusy
       OnChangeFocus = DirViewChangeFocus
+      DirViewStyle = dvsReport
     end
     object LocalTopDock: TTBXDock
       Left = 0
@@ -1683,6 +1737,19 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXItem164: TTBXItem
           Action = NonVisualDataModule.LocalTreeAction
+        end
+        object TBXSubmenuItem4: TTBXSubmenuItem
+          Caption = 'Change directory view style'
+          ImageIndex = 11
+          Options = [tboDropdownArrow]
+          object TBXItem269: TTBXItem
+            Action = NonVisualDataModule.LocalReportAction
+          end
+          object TBXSeparatorItem75: TTBXSeparatorItem
+          end
+          object TBXItem268: TTBXItem
+            Action = NonVisualDataModule.LocalThumbnailAction
+          end
         end
       end
       object LocalPathToolbar: TTBXToolbar
@@ -1803,7 +1870,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object LocalSelectionToolbar: TTBXToolbar
-        Left = 217
+        Left = 244
         Top = 27
         Caption = 'Local Selection'
         DockPos = 217
@@ -1826,7 +1893,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDriveView: TDriveView
       Left = 0
-      Top = 98
+      Top = 100
       Width = 435
       Height = 45
       WatchDirectory = True

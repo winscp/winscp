@@ -745,13 +745,11 @@ void __fastcall TRemoteTokenList::Add(const TRemoteToken & Token)
   FTokens.push_back(Token);
   if (Token.IDValid)
   {
-    std::pair<TIDMap::iterator, bool> Position =
-      FIDMap.insert(TIDMap::value_type(Token.ID, FTokens.size() - 1));
+    FIDMap.insert(TIDMap::value_type(Token.ID, FTokens.size() - 1));
   }
   if (Token.NameValid)
   {
-    std::pair<TNameMap::iterator, bool> Position =
-      FNameMap.insert(TNameMap::value_type(Token.Name, FTokens.size() - 1));
+    FNameMap.insert(TNameMap::value_type(Token.Name, FTokens.size() - 1));
   }
 }
 //---------------------------------------------------------------------------
@@ -903,6 +901,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(IsSymLink);
     COPY_FP(LinkTo);
     COPY_FP(Type);
+    COPY_FP(Tags);
     COPY_FP(CyclicLink);
     COPY_FP(HumanRights);
     COPY_FP(IsEncrypted);
@@ -1004,7 +1003,7 @@ Boolean __fastcall TRemoteFile::GetIsThisDirectory() const
   return (FileName == THISDIRECTORY);
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
+Boolean __fastcall TRemoteFile::GetIsInaccessibleDirectory() const
 {
   Boolean Result;
   if (IsDirectory)
@@ -1572,6 +1571,12 @@ void __fastcall TRemoteFileList::AddFile(TRemoteFile * File)
   File->Directory = this;
 }
 //---------------------------------------------------------------------------
+void TRemoteFileList::ExtractFile(TRemoteFile * File)
+{
+  Extract(File);
+  File->Directory = NULL;
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall TRemoteFileList::CloneStrings(TStrings * List)
 {
   std::unique_ptr<TStringList> Result(new TStringList());
@@ -1738,12 +1743,12 @@ void __fastcall TRemoteDirectory::SetIncludeParentDirectory(Boolean value)
     if (value && ParentDirectory)
     {
       DebugAssert(IndexOf(ParentDirectory) < 0);
-      Add(ParentDirectory);
+      AddFile(ParentDirectory);
     }
     else if (!value && ParentDirectory)
     {
       DebugAssert(IndexOf(ParentDirectory) >= 0);
-      Extract(ParentDirectory);
+      ExtractFile(ParentDirectory);
     }
   }
 }
@@ -2696,7 +2701,8 @@ __fastcall TRemoteProperties::TRemoteProperties(const TRemoteProperties & rhp) :
   Owner(rhp.Owner),
   Modification(rhp.Modification),
   LastAccess(rhp.Modification),
-  Encrypt(rhp.Encrypt)
+  Encrypt(rhp.Encrypt),
+  Tags(rhp.Tags)
 {
 }
 //---------------------------------------------------------------------------
@@ -2710,6 +2716,7 @@ void __fastcall TRemoteProperties::Default()
   Owner.Clear();
   Recursive = false;
   Encrypt = false;
+  Tags = EmptyStr;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) const
@@ -2724,7 +2731,8 @@ bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) co
         (Valid.Contains(vpGroup) && (Group != rhp.Group)) ||
         (Valid.Contains(vpModification) && (Modification != rhp.Modification)) ||
         (Valid.Contains(vpLastAccess) && (LastAccess != rhp.LastAccess)) ||
-        (Valid.Contains(vpEncrypt) && (Encrypt != rhp.Encrypt)))
+        (Valid.Contains(vpEncrypt) && (Encrypt != rhp.Encrypt)) ||
+        (Valid.Contains(vpTags) && (Tags != rhp.Tags)))
     {
       Result = false;
     }
@@ -2766,6 +2774,8 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
         CommonProperties.Group = File->Group;
         CommonProperties.Valid << vpGroup;
       }
+      CommonProperties.Tags = File->Tags;
+      CommonProperties.Valid << vpTags;
     }
     else
     {
@@ -2780,6 +2790,11 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
       {
         CommonProperties.Group.Clear();
         CommonProperties.Valid >> vpGroup;
+      }
+      if (CommonProperties.Tags != File->Tags)
+      {
+        CommonProperties.Tags = EmptyStr;
+        CommonProperties.Valid >> vpTags;
       }
     }
   }
@@ -2807,6 +2822,11 @@ TRemoteProperties __fastcall TRemoteProperties::ChangedProperties(
     if (NewProperties.Owner == OriginalProperties.Owner)
     {
       NewProperties.Valid >> vpOwner;
+    }
+
+    if (NewProperties.Tags == OriginalProperties.Tags)
+    {
+      NewProperties.Valid >> vpTags;
     }
   }
   return NewProperties;
@@ -2843,7 +2863,7 @@ void __fastcall TRemoteProperties::Save(THierarchicalStorage * Storage) const
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TItem::TItem() :
-  Action(saNone), IsDirectory(false), RemoteFile(NULL), Checked(true), ImageIndex(-1), FDirectoryHasSize(false)
+  Action(saNone), IsDirectory(false), ImageIndex(-1), Checked(true), RemoteFile(NULL), FDirectoryHasSize(false)
 {
   Local.ModificationFmt = mfFull;
   Local.Modification = 0;
@@ -2884,21 +2904,78 @@ __int64 __fastcall TSynchronizeChecklist::TItem::GetSize(TAction AAction) const
   }
   else
   {
-    switch (AAction)
-    {
-      case saUploadNew:
-      case saUploadUpdate:
-        return Local.Size;
-
-      case saDownloadNew:
-      case saDownloadUpdate:
-        return Remote.Size;
-
-      default:
-        DebugFail();
-        return 0;
-    }
+    return GetBaseSize(AAction);
   }
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize() const
+{
+  return GetBaseSize(Action);
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize(TAction AAction) const
+{
+  switch (AAction)
+  {
+    case saUploadNew:
+    case saUploadUpdate:
+    case saDeleteLocal:
+      return Local.Size;
+
+    case saDownloadNew:
+    case saDownloadUpdate:
+    case saDeleteRemote:
+      return Remote.Size;
+
+    default:
+      DebugFail();
+      return 0;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalPath() const
+{
+  return CombinePaths(Local.Directory, Local.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetRemotePath() const
+{
+  return UnixCombinePaths(Remote.Directory, Remote.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget() const
+{
+  return IncludeTrailingBackslash(Local.Directory);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetRemoteTarget() const
+{
+  return UnixIncludeTrailingBackslash(Remote.Directory);
+};
+//---------------------------------------------------------------------------
+TStrings * TSynchronizeChecklist::TItem::GetFileList() const
+{
+  std::unique_ptr<TStrings> FileList(new TStringList());
+  switch (Action)
+  {
+    case TSynchronizeChecklist::saDownloadNew:
+    case TSynchronizeChecklist::saDownloadUpdate:
+    case TSynchronizeChecklist::saDeleteRemote:
+      FileList->AddObject(GetRemotePath(), RemoteFile);
+      break;
+
+    case TSynchronizeChecklist::saUploadNew:
+    case TSynchronizeChecklist::saUploadUpdate:
+    case TSynchronizeChecklist::saDeleteLocal:
+      FileList->Add(GetLocalPath());
+      break;
+
+    default:
+      DebugFail();
+      NotImplemented();
+      UNREACHABLE_AFTER_NORETURN(break);
+  }
+  return FileList.release();
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -2921,11 +2998,8 @@ void TSynchronizeChecklist::Add(TItem * Item)
   FList->Add(Item);
 }
 //---------------------------------------------------------------------------
-int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
+int TSynchronizeChecklist::Compare(const TItem * Item1, const TItem * Item2)
 {
-  TItem * Item1 = static_cast<TItem *>(AItem1);
-  TItem * Item2 = static_cast<TItem *>(AItem2);
-
   int Result;
   if (!Item1->Local.Directory.IsEmpty())
   {
@@ -2943,6 +3017,11 @@ int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
+{
+  return Compare(static_cast<TItem *>(AItem1), static_cast<TItem *>(AItem2));
 }
 //---------------------------------------------------------------------------
 void TSynchronizeChecklist::Sort()
@@ -2966,6 +3045,22 @@ int TSynchronizeChecklist::GetCheckedCount() const
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TSynchronizeChecklist::GetNextChecked(int & Index, const TItem *& AItem) const
+{
+  while (Index < Count)
+  {
+    const TItem * TheItem = Item[Index];
+    Index++;
+    if (TheItem->Checked)
+    {
+      AItem = TheItem;
+      return true;
+    }
+  }
+  AItem = NULL;
+  return false;
 }
 //---------------------------------------------------------------------------
 const TSynchronizeChecklist::TItem * TSynchronizeChecklist::GetItem(int Index) const
@@ -3107,13 +3202,11 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
   {
     FTotalSize = 0;
 
-    for (int Index = 0; Index < FChecklist->Count; Index++)
+    int Index = 0;
+    const TSynchronizeChecklist::TItem * ChecklistItem;
+    while (FChecklist->GetNextChecked(Index, ChecklistItem))
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem = FChecklist->Item[Index];
-      if (ChecklistItem->Checked)
-      {
-        FTotalSize += ItemSize(ChecklistItem);
-      }
+      FTotalSize += ItemSize(ChecklistItem);
     }
   }
 
@@ -3134,7 +3227,7 @@ int TSynchronizeProgress::Progress(const TFileOperationProgressType * CurrentIte
     __int64 Processed = GetProcessed(CurrentItemOperationProgress);
     if (FTotalSize > 0)
     {
-      Result = (Processed * 100) / FTotalSize;
+      Result = static_cast<int>((Processed * 100) / FTotalSize);
     }
     else
     {

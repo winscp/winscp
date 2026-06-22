@@ -54,6 +54,7 @@
 #define NE_FMT_OFF_T "ld"
 #define NE_FMT_OFF64_T "I64d"
 #define NE_FMT_NE_OFF_T NE_FMT_OFF_T
+#define NE_FMT_TIME_T "ld"
 
 #ifndef NE_FMT_XML_SIZE
 #define NE_FMT_XML_SIZE "d"

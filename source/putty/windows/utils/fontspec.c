@@ -14,6 +14,11 @@ FontSpec *fontspec_new(const char *name, bool bold, int height, int charset)
     return f;
 }
 
+FontSpec *fontspec_new_default(void)
+{
+    return fontspec_new("", false, 0, 0);
+}
+
 FontSpec *fontspec_copy(const FontSpec *f)
 {
     return fontspec_new(f->name, f->isbold, f->height, f->charset);

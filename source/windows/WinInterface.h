@@ -56,6 +56,8 @@ const int mpAllowContinueOnError = 0x02;
 #define STDIN_SWITCH L"StdIn"
 #define STDINOUT_BINARY_VALUE L"binary"
 #define STDINOUT_CHUNKED_VALUE L"chunked"
+#define COPYID_SWITCH L"CopyId"
+#define IDENTITY_SWITCH L"Identity"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 
@@ -164,6 +166,7 @@ bool __fastcall DoCustomCommandOptionsDialog(
 void __fastcall DoUsageStatisticsDialog();
 void __fastcall DoSiteRawDialog(TSessionData * Data);
 bool DoSshHostCADialog(bool Add, TSshHostCA & SshHostCA);
+bool DoTagDialog(bool Add, TStrings * Tags, UnicodeString & Key, UnicodeString & Value);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
@@ -185,7 +188,7 @@ typedef void __fastcall (__closure *TInputDialogInitialize)
 bool __fastcall InputDialog(const UnicodeString ACaption,
   const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword = HELP_NONE,
   TStrings * History = NULL, bool PathInput = false,
-  TInputDialogInitialize OnInitialize = NULL, bool Echo = true, int Width = 275);
+  TInputDialogInitialize OnInitialize = NULL, bool Echo = true, int Width = 305);
 
 // forms\About.cpp
 struct TRegistration
@@ -214,12 +217,8 @@ void __fastcall DoConsoleDialog(TTerminal * Terminal,
 // forms\Copy.cpp
 const coTemp                = 0x001;
 const coDisableQueue        = 0x002;
-const coDisableDirectory    = 0x008; // not used anymore
 const coDoNotShowAgain      = 0x020;
-const coDisableSaveSettings = 0x040; // not used anymore
-const coDoNotUsePresets     = 0x080; // not used anymore
 const coAllowRemoteTransfer = 0x100;
-const coNoQueue             = 0x200;
 const coShortCutHint        = 0x800;
 const coAllFiles            = 0x1000;
 const coBrowse              = 0x2000;
@@ -313,6 +312,8 @@ const cpMode =  0x01;
 const cpOwner = 0x02;
 const cpGroup = 0x04;
 const cpAcl =   0x08;
+const poUserGroupByID = 0x01;
+const poTags =          0x02;
 typedef void __fastcall (__closure *TCalculateSizeEvent)
   (TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
    bool & Close);
@@ -325,7 +326,7 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     const UnicodeString Directory, const TRemoteTokenList * GroupList,
     const TRemoteTokenList * UserList, TStrings * ChecksumAlgs,
     TRemoteProperties * Properties,
-    int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
+    int AllowedChanges, int Options, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
 typedef bool (__closure * TDirectoryExistsEvent)(void * Session, const UnicodeString & Directory);
@@ -392,16 +393,18 @@ typedef void __fastcall (__closure *TCustomCommandMenuEvent)
 typedef void __fastcall (__closure *TFullSynchronizeEvent)(
   void * Token, TProcessedSynchronizationChecklistItem OnProcessedItem,
   TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+typedef void (__closure *TQueueSynchronizeEvent)(void * Token);
 typedef void __fastcall (__closure *TSynchronizeChecklistCalculateSize)
   (TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
 typedef void __fastcall (__closure *TSynchronizeMoveEvent)(
-  TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
+  TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token);
 typedef void __fastcall (__closure *TSynchronizeBrowseEvent)(
   TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+  TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
   TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
 
@@ -457,6 +460,7 @@ extern const UnicodeString OKButtonName;
 enum TConsoleMode
 {
   cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan, cmDumpCallstack, cmInfo, cmComRegistration,
+  cmCopyId,
 };
 int __fastcall Console(TConsoleMode Mode);
 
@@ -473,7 +477,7 @@ typedef void __fastcall (__closure *TFindEvent)
 typedef void __fastcall (__closure *TFocusFileEvent)
   (TTerminal * Terminal, const UnicodeString & Path);
 typedef void __fastcall (__closure *TFileOperationFinishedEvent)
-  (TOperationSide Side, const UnicodeString & FileName, bool Success);
+  (TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled);
 typedef void __fastcall (__closure *TFileListOperationEvent)
   (TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
 void __fastcall ShowFileFindDialog(
@@ -489,7 +493,6 @@ void __fastcall DoGenerateTransferCodeDialog(
   bool ToRemote, bool Move, int CopyParamAttrs, TSessionData * Data, TFilesSelected FilesSelected,
   TStrings * FileList, const UnicodeString & Path, const TCopyParamType & CopyParam);
 
-void __fastcall CopyParamListButton(TButton * Button);
 const int cplNone =             0x00;
 const int cplCustomizeDefault = 0x02;
 const int cplSaveSettings =     0x04;
@@ -524,8 +527,6 @@ UnicodeString __fastcall StoreColor(TColor Color);
 
 void __fastcall FixButtonImage(TButton * Button);
 void __fastcall CenterButtonImage(TButton * Button);
-
-void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 
 int __fastcall AdjustLocaleFlag(const UnicodeString & S, TLocaleFlagOverride LocaleFlagOverride, bool Recommended, int On, int Off);
 

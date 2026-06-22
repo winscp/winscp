@@ -18,6 +18,8 @@ enum TTransferDirection { tdToRemote, tdToLocal };
 enum TTransferType { ttCopy, ttMove };
 typedef void __fastcall (__closure *TDDDragFileName)
   (TObject * Sender, TRemoteFile * File, UnicodeString & FileName);
+typedef void __fastcall (__closure *TThumbnailNeededEvent)
+  (TUnixDirView * Sender, TListItem * Item, TRemoteFile * File, const TSize & Size, TBitmap *& Bitmap);
 //---------------------------------------------------------------------------
 class PACKAGE TUnixDirView : public TCustomUnixDirView
 {
@@ -35,6 +37,8 @@ private:
   bool __fastcall GetActive();
   TCustomUnixDriveView * FDriveView;
   TNotifyEvent FOnRead;
+  TNotifyEvent FOnStartReading;
+  TThumbnailNeededEvent FOnThumbnailNeeded;
   TObject * FAnnouncedDriveViewState;
   void __fastcall SetTerminal(TTerminal *value);
   void __fastcall DoSetTerminal(TTerminal *value, bool Replace);
@@ -61,6 +65,7 @@ protected:
   virtual TColor __fastcall ItemColor(TListItem * Item);
   virtual UnicodeString __fastcall ItemFileName(TListItem * Item);
   virtual int __fastcall ItemImageIndex(TListItem * Item, bool Cache);
+  virtual TBitmap * __fastcall ItemThumbnail(TListItem * Item, const TSize & Size);
   virtual TObject * __fastcall ItemData(TListItem * Item);
   virtual bool __fastcall ItemIsFile(TListItem * Item);
   virtual bool __fastcall ItemMatchesFilter(TListItem * Item, const TFileFilter &Filter);
@@ -159,7 +164,10 @@ __published:
   __property MultiSelect;
   __property TNotifyEvent OnDisplayProperties = { read = FOnDisplayProperties, write = FOnDisplayProperties };
   __property ReadOnly;
+  __property DirViewStyle;
   __property TNotifyEvent OnRead = { read = FOnRead, write = FOnRead };
+  __property TNotifyEvent OnStartReading = { read = FOnStartReading, write = FOnStartReading };
+  __property TThumbnailNeededEvent OnThumbnailNeeded = { read = FOnThumbnailNeeded, write = FOnThumbnailNeeded };
 
   // The only way to make Items stored automatically and survive handle recreation.
   // Though we should implement custom persisting to avoid publishing this

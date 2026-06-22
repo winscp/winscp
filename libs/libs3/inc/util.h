@@ -73,10 +73,12 @@
 
 #define MAX_ACCESS_KEY_ID_LENGTH S3_MAX_ACCESS_KEY_ID_LENGTH
 
+#define S3_MAX_SCOPE_LENGTH 3 // WINSCP "s3"/"sts"
+
 // Maximum length of a credential string
-// <access key>/<yyyymmdd>/<region>/s3/aws4_request
+// <access key>/<yyyymmdd>/<region>/<scope>/aws4_request // WINSCP
 #define MAX_CREDENTIAL_SIZE \
-   (MAX_ACCESS_KEY_ID_LENGTH + 1) + 8 + 1 + S3_MAX_REGION_LENGTH + sizeof("/s3/aws4_request")
+   (MAX_ACCESS_KEY_ID_LENGTH + 1) + 8 + 1 + S3_MAX_REGION_LENGTH + sizeof("//aws4_request") + S3_MAX_SCOPE_LENGTH // WINSCP
 
 // Utilities -----------------------------------------------------------------
 

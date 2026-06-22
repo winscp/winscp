@@ -56,6 +56,9 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#ifdef HAVE_NET_IF_H
+#include <net/if.h>
+#endif
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -65,6 +68,9 @@
 #endif
 #ifdef HAVE_WSPIAPI_H
 #include <wspiapi.h>
+#endif
+#if (defined WINSCP) && (HAVE_IF_INDEXTONAME)
+#include <iphlpapi.h>
 #endif
 #endif
 
@@ -131,11 +137,15 @@ typedef struct in_addr ne_inet_addr;
 #endif
 
 /* "Be Conservative In What You Build". */
+#ifdef WINSCP
+#define USE_NONBLOCKING_CONNECT
+#else
 #if defined(HAVE_FCNTL) && defined(O_NONBLOCK) && defined(F_SETFL) \
     && defined(HAVE_GETSOCKOPT) && defined(SO_ERROR) \
     && defined(HAVE_SOCKLEN_T) && defined(SOL_SOCKET) \
     && defined(EINPROGRESS)
 #define USE_NONBLOCKING_CONNECT
+#endif
 #endif
 
 #include "ne_internal.h"
@@ -1263,6 +1273,40 @@ int ne_iaddr_reverse(const ne_inet_addr *ia, char *buf, size_t bufsiz)
 #endif
 }
 
+int ne_iaddr_set_scope(ne_inet_addr *ia, const char *scope)
+{
+#ifdef HAVE_IF_NAMETOINDEX
+    unsigned int idx;
+
+    if (ia->ai_family != AF_INET6) return EINVAL;
+
+    idx = if_nametoindex(scope);
+    if (idx) {
+        struct sockaddr_in6 *in6 = SACAST(in6, ia->ai_addr);
+        in6->sin6_scope_id = idx;
+        return 0;
+    }
+    else
+        return errno;
+#else
+    return ENODEV;
+#endif
+}
+
+char *ne_iaddr_get_scope(const ne_inet_addr *ia)
+{
+#ifdef HAVE_IF_INDEXTONAME
+    struct sockaddr_in6 *in6 = SACAST(in6, ia->ai_addr);
+    char buf[IF_NAMESIZE];
+
+    if (ia->ai_family != AF_INET6) return NULL;
+
+    if (in6->sin6_scope_id && if_indextoname(in6->sin6_scope_id, buf) == buf)
+        return ne_strdup(buf);
+#endif
+    return NULL;
+}
+
 void ne_addr_destroy(ne_sock_addr *addr)
 {
 #ifdef USE_GETADDRINFO
@@ -1305,6 +1349,10 @@ static int timed_connect(ne_socket *sock, int fd,
     if (sock->cotimeout) {
         int errnum, flags;
 
+        #ifdef WINSCP
+        flags = 1;
+        ioctlsocket(fd, FIONBIO, &flags);
+        #else
         /* Get flags and then set O_NONBLOCK. */
         flags = fcntl(fd, F_GETFL);
         if (flags & O_NONBLOCK) {
@@ -1316,6 +1364,7 @@ static int timed_connect(ne_socket *sock, int fd,
             set_strerror(sock, errno);
             return NE_SOCK_ERROR;
         }
+        #endif
         
         ret = raw_connect(fd, sa, salen);
         if (ret == -1) {
@@ -1354,10 +1403,15 @@ static int timed_connect(ne_socket *sock, int fd,
         }
         
         /* Reset to old flags; fail on error if no previous error. */
+        #ifdef WINSCP
+        flags = 0;
+        ioctlsocket(fd, FIONBIO, &flags);
+        #else
         if (fcntl(fd, F_SETFL, flags) == -1 && !ret) {
             set_strerror(sock, errno);
             ret = NE_SOCK_ERROR;
         }
+        #endif
     } else 
 #endif /* USE_NONBLOCKING_CONNECT */
     {
@@ -1795,6 +1849,28 @@ static int remove_sess(void *userdata, gnutls_datum_t key)
 {
     return -1;
 }
+
+static int set_priority(ne_socket *sock, ne_ssl_context *ctx)
+{
+    gnutls_set_default_priority(sock->ssl);
+
+#ifdef HAVE_GNUTLS_SET_DEFAULT_PRIORITY_APPEND
+    if (ctx->priority) {
+        const char *pos = NULL;
+
+        NE_DEBUG(NE_DBG_SSL, "ssl: Using priority string %s\n", ctx->priority);
+
+        if (gnutls_set_default_priority_append(sock->ssl, ctx->priority, &pos, 0) != GNUTLS_E_SUCCESS) {
+            ne_snprintf(sock->error, sizeof sock->error,
+                        _("SSL error: failed to set priority string at '%s'"), pos);
+            return NE_SOCK_ERROR;
+        }
+    }
+#endif
+
+    return 0;
+}
+
 #endif
 
 int ne_sock_accept_ssl(ne_socket *sock, ne_ssl_context *ctx)
@@ -1820,8 +1896,12 @@ int ne_sock_accept_ssl(ne_socket *sock, ne_ssl_context *ctx)
     unsigned int verify_status;
 
     gnutls_init(&ssl, GNUTLS_SERVER);
+    sock->ssl = ssl;
+    if (set_priority(sock, ctx)) {
+        return NE_SOCK_ERROR;
+    }
+
     gnutls_credentials_set(ssl, GNUTLS_CRD_CERTIFICATE, ctx->cred);
-    gnutls_set_default_priority(ssl);
 
     /* Set up dummy session cache. */
     gnutls_db_set_store_function(ssl, store_sess);
@@ -1832,7 +1912,6 @@ int ne_sock_accept_ssl(ne_socket *sock, ne_ssl_context *ctx)
     if (ctx->verify)
         gnutls_certificate_server_set_request(ssl, GNUTLS_CERT_REQUIRE);
 
-    sock->ssl = ssl;
     gnutls_transport_set_ptr(sock->ssl, (gnutls_transport_ptr_t)(long)sock->fd);
     ret = gnutls_handshake(ssl);
     if (ret < 0) {
@@ -1902,7 +1981,11 @@ int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx, void *userdata)
 #elif defined(HAVE_GNUTLS)
     /* DH and RSA params are set in ne_ssl_context_create */
     gnutls_init(&sock->ssl, GNUTLS_CLIENT);
-    gnutls_set_default_priority(sock->ssl);
+
+    if (set_priority(sock, ctx)) {
+        return NE_SOCK_ERROR;
+    }
+
     gnutls_session_set_ptr(sock->ssl, userdata);
     gnutls_credentials_set(sock->ssl, GNUTLS_CRD_CERTIFICATE, ctx->cred);
 
@@ -2016,6 +2099,51 @@ char *ne_sock_cipher(ne_socket *sock)
     {
         return NULL;
     }    
+}
+
+enum ne_ssl_protocol ne_sock_getproto(ne_socket *sock)
+{
+#ifdef NE_HAVE_SSL
+    if (sock->ssl) {
+#if defined(HAVE_OPENSSL)
+        switch (SSL_version(sock->ssl)) {
+        case SSL3_VERSION:
+            return NE_SSL_PROTO_SSL_3;
+        case TLS1_VERSION:
+            return NE_SSL_PROTO_TLS_1_0;
+        case TLS1_1_VERSION:
+            return NE_SSL_PROTO_TLS_1_1;
+#ifdef TLS1_2_VERSION
+        case TLS1_2_VERSION:
+            return NE_SSL_PROTO_TLS_1_2;
+#endif
+#ifdef TLS1_3_VERSION
+        case TLS1_3_VERSION:
+            return NE_SSL_PROTO_TLS_1_3;
+#endif
+        default:
+            break;
+        }
+#elif defined(HAVE_GNUTLS)
+        switch (gnutls_protocol_get_version(sock->ssl)) {
+        case GNUTLS_SSL3:
+            return NE_SSL_PROTO_SSL_3;
+        case GNUTLS_TLS1_0:
+            return NE_SSL_PROTO_TLS_1_0;
+        case GNUTLS_TLS1_1:
+            return NE_SSL_PROTO_TLS_1_1;
+        case GNUTLS_TLS1_2:
+            return NE_SSL_PROTO_TLS_1_2;
+        case GNUTLS_TLS1_3:
+            return NE_SSL_PROTO_TLS_1_3;
+        default:
+            break;
+        }
+#endif
+    }
+#endif /* NE_HAVE_SSL */
+
+    return NE_SSL_PROTO_UNSPEC;
 }
 
 const char *ne_sock_error(const ne_socket *sock)

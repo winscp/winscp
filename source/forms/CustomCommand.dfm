@@ -6,70 +6,70 @@ object CustomCommandDialog: TCustomCommandDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CustomCommandDialog'
-  ClientHeight = 309
-  ClientWidth = 416
+  ClientHeight = 287
+  ClientWidth = 464
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = False
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    416
-    309)
-  PixelsPerInch = 96
-  TextHeight = 13
+    464
+    287)
+  TextHeight = 15
   object Group: TGroupBox
     Left = 8
     Top = 8
-    Width = 400
-    Height = 259
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Width = 448
+    Height = 240
+    Anchors = [akLeft, akTop, akRight]
     TabOrder = 0
     DesignSize = (
-      400
-      259)
+      448
+      240)
     object DescriptionLabel: TLabel
-      Left = 11
-      Top = 16
-      Width = 57
-      Height = 13
-      Anchors = [akLeft, akTop, akRight]
+      Left = 9
+      Top = 9
+      Width = 63
+      Height = 15
       Caption = '&Description:'
       FocusControl = DescriptionEdit
     end
     object Label1: TLabel
-      Left = 11
-      Top = 64
-      Width = 88
-      Height = 13
-      Anchors = [akLeft, akTop, akRight]
+      Left = 9
+      Top = 56
+      Width = 103
+      Height = 15
       Caption = '&Custom command:'
       FocusControl = CommandEdit
     end
     object ShortCutLabel: TLabel
-      Left = 16
-      Top = 231
-      Width = 93
-      Height = 13
+      Left = 9
+      Top = 210
+      Width = 100
+      Height = 15
       Caption = '&Keyboard shortcut:'
       FocusControl = ShortCutCombo
     end
     object DescriptionEdit: TEdit
-      Left = 11
-      Top = 32
-      Width = 378
-      Height = 21
+      Left = 9
+      Top = 27
+      Width = 430
+      Height = 23
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
       TabOrder = 0
       OnChange = ControlChange
     end
     object CommandEdit: THistoryComboBox
-      Left = 11
-      Top = 80
-      Width = 378
-      Height = 21
+      Left = 9
+      Top = 74
+      Width = 430
+      Height = 23
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 2048
@@ -79,63 +79,63 @@ object CustomCommandDialog: TCustomCommandDialog
       OnSetData = CommandEditSetData
     end
     object ApplyToDirectoriesCheck: TCheckBox
-      Left = 16
-      Top = 149
-      Width = 181
+      Left = 11
+      Top = 138
+      Width = 200
       Height = 17
       Caption = '&Apply to directories'
       TabOrder = 5
       OnClick = ControlChange
     end
     object RecursiveCheck: TCheckBox
-      Left = 203
-      Top = 149
-      Width = 185
+      Left = 224
+      Top = 138
+      Width = 200
       Height = 17
       Caption = '&Execute recursively'
       TabOrder = 6
       OnClick = ControlChange
     end
     object LocalCommandButton: TRadioButton
-      Left = 203
-      Top = 122
-      Width = 185
+      Left = 224
+      Top = 115
+      Width = 200
       Height = 17
       Caption = '&Local command'
       TabOrder = 4
       OnClick = ControlChange
     end
     object RemoteCommandButton: TRadioButton
-      Left = 16
-      Top = 122
-      Width = 181
+      Left = 11
+      Top = 115
+      Width = 200
       Height = 17
       Caption = '&Remote command'
       TabOrder = 3
       OnClick = ControlChange
     end
     object ShowResultsCheck: TCheckBox
-      Left = 16
-      Top = 176
-      Width = 181
+      Left = 11
+      Top = 161
+      Width = 200
       Height = 17
       Caption = '&Show results in terminal'
       TabOrder = 7
       OnClick = ControlChange
     end
     object CopyResultsCheck: TCheckBox
-      Left = 16
-      Top = 203
-      Width = 181
+      Left = 11
+      Top = 184
+      Width = 200
       Height = 17
       Caption = 'Copy results to clip&board'
       TabOrder = 9
       OnClick = ControlChange
     end
     object HintText: TStaticText
-      Left = 272
-      Top = 103
-      Width = 117
+      Left = 321
+      Top = 97
+      Width = 118
       Height = 16
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
@@ -145,16 +145,16 @@ object CustomCommandDialog: TCustomCommandDialog
       TabStop = True
     end
     object ShortCutCombo: TComboBox
-      Left = 203
-      Top = 226
-      Width = 184
-      Height = 21
+      Left = 224
+      Top = 207
+      Width = 215
+      Height = 23
       TabOrder = 10
     end
     object RemoteFilesCheck: TCheckBox
-      Left = 203
-      Top = 176
-      Width = 181
+      Left = 224
+      Top = 161
+      Width = 200
       Height = 17
       Caption = '&Use remote files'
       TabOrder = 8
@@ -162,9 +162,9 @@ object CustomCommandDialog: TCustomCommandDialog
     end
   end
   object OkButton: TButton
-    Left = 164
-    Top = 276
-    Width = 75
+    Left = 204
+    Top = 254
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -173,9 +173,9 @@ object CustomCommandDialog: TCustomCommandDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 248
-    Top = 276
-    Width = 75
+    Left = 290
+    Top = 254
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -184,9 +184,9 @@ object CustomCommandDialog: TCustomCommandDialog
     TabOrder = 2
   end
   object HelpButton: TButton
-    Left = 332
-    Top = 276
-    Width = 75
+    Left = 376
+    Top = 254
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'

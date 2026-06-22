@@ -111,18 +111,19 @@ private:
   void __fastcall CustomReadFile(const UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
   void __fastcall DetectReturnVar();
-  bool __fastcall IsLastLine(UnicodeString & Line);
+  bool __fastcall TryRemoveLastLine(UnicodeString & Line);
+  bool IsLastLine(const UnicodeString & ALine);
   static bool __fastcall IsTotalListingLine(const UnicodeString Line);
   void __fastcall EnsureLocation();
   void __fastcall ExecCommand(TFSCommand Cmd, const TVarRec * args = NULL,
     int size = 0, int Params = -1);
-  void InvalidOutputError(const UnicodeString & Command);
+  NORETURN void InvalidOutputError(const UnicodeString & Command);
   void __fastcall ReadCommandOutput(int Params, const UnicodeString * Cmd = NULL);
   void __fastcall SCPResponse(bool * GotLastLine = NULL);
   void __fastcall SCPDirectorySource(const UnicodeString DirectoryName,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, int Level);
-  void __fastcall SCPError(const UnicodeString Message, bool Fatal);
+  NORETURN void __fastcall SCPError(const UnicodeString Message, bool Fatal);
   void __fastcall SCPSendError(const UnicodeString Message, bool Fatal);
   void __fastcall SCPSink(const UnicodeString TargetDir,
     const UnicodeString FileName, const UnicodeString SourceDir,

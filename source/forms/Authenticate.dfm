@@ -7,30 +7,33 @@ object AuthenticateForm: TAuthenticateForm
   BorderStyle = bsDialog
   Caption = 'AuthenticateForm'
   ClientHeight = 380
-  ClientWidth = 375
+  ClientWidth = 416
   Color = clBtnFace
   Constraints.MinHeight = 200
   Constraints.MinWidth = 280
-  ParentFont = True
-  OldCreateOrder = False
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object TopPanel: TPanel
     Left = 0
     Top = 0
-    Width = 375
-    Height = 65
+    Width = 416
+    Height = 63
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
     object LogView: TListBox
       Left = 48
       Top = 0
-      Width = 327
-      Height = 65
+      Width = 368
+      Height = 63
       Style = lbOwnerDrawVariable
       Align = alClient
       BevelInner = bvNone
@@ -49,7 +52,7 @@ object AuthenticateForm: TAuthenticateForm
       Left = 0
       Top = 0
       Width = 48
-      Height = 65
+      Height = 63
       Align = alLeft
       BevelOuter = bvNone
       Color = clWindow
@@ -65,9 +68,9 @@ object AuthenticateForm: TAuthenticateForm
   end
   object PasswordPanel: TPanel
     Left = 0
-    Top = 65
-    Width = 375
-    Height = 233
+    Top = 63
+    Width = 416
+    Height = 235
     Align = alBottom
     AutoSize = True
     BevelOuter = bvNone
@@ -76,18 +79,18 @@ object AuthenticateForm: TAuthenticateForm
     object PromptEditPanel: TPanel
       Left = 0
       Top = 0
-      Width = 375
-      Height = 139
+      Width = 416
+      Height = 144
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
-        375
-        139)
+        416
+        144)
       object InstructionsLabel: TLabel
         Left = 8
-        Top = 8
-        Width = 360
+        Top = 6
+        Width = 400
         Height = 39
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -101,8 +104,8 @@ object AuthenticateForm: TAuthenticateForm
       object PromptLabel1: TLabel
         Left = 8
         Top = 56
-        Width = 360
-        Height = 13
+        Width = 401
+        Height = 15
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
         Caption = '&UsernameX:'
@@ -111,9 +114,9 @@ object AuthenticateForm: TAuthenticateForm
       end
       object PromptLabel2: TLabel
         Left = 8
-        Top = 101
-        Width = 360
-        Height = 13
+        Top = 103
+        Width = 401
+        Height = 15
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
         Caption = '&PasswordX:'
@@ -122,18 +125,18 @@ object AuthenticateForm: TAuthenticateForm
       end
       object PromptEdit1: TPasswordEdit
         Left = 8
-        Top = 73
-        Width = 361
-        Height = 21
+        Top = 74
+        Width = 400
+        Height = 23
         Anchors = [akLeft, akTop, akRight]
         MaxLength = 250
         TabOrder = 0
       end
       object PromptEdit2: TPasswordEdit
         Left = 8
-        Top = 118
-        Width = 361
-        Height = 21
+        Top = 121
+        Width = 400
+        Height = 23
         Anchors = [akLeft, akTop, akRight]
         MaxLength = 250
         TabOrder = 1
@@ -141,8 +144,8 @@ object AuthenticateForm: TAuthenticateForm
     end
     object SavePasswordPanel: TPanel
       Left = 0
-      Top = 164
-      Width = 375
+      Top = 169
+      Width = 416
       Height = 25
       Align = alTop
       BevelOuter = bvNone
@@ -151,7 +154,7 @@ object AuthenticateForm: TAuthenticateForm
         Left = 14
         Top = 6
         Width = 275
-        Height = 17
+        Height = 19
         Caption = '&Change stored password to this one'
         Checked = True
         State = cbChecked
@@ -160,19 +163,19 @@ object AuthenticateForm: TAuthenticateForm
     end
     object ButtonsPanel: TPanel
       Left = 0
-      Top = 189
-      Width = 375
-      Height = 44
+      Top = 194
+      Width = 416
+      Height = 41
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 3
       DesignSize = (
-        375
-        44)
+        416
+        41)
       object PasswordOKButton: TButton
-        Left = 118
+        Left = 156
         Top = 8
-        Width = 75
+        Width = 80
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'OK'
@@ -180,9 +183,9 @@ object AuthenticateForm: TAuthenticateForm
         TabOrder = 0
       end
       object PasswordCancelButton: TButton
-        Left = 206
+        Left = 242
         Top = 8
-        Width = 75
+        Width = 80
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'Cancel'
@@ -190,9 +193,9 @@ object AuthenticateForm: TAuthenticateForm
         TabOrder = 1
       end
       object PasswordHelpButton: TButton
-        Left = 294
+        Left = 328
         Top = 8
-        Width = 75
+        Width = 80
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Help'
@@ -202,8 +205,8 @@ object AuthenticateForm: TAuthenticateForm
     end
     object SessionRememberPasswordPanel: TPanel
       Left = 0
-      Top = 139
-      Width = 375
+      Top = 144
+      Width = 416
       Height = 25
       Align = alTop
       BevelOuter = bvNone
@@ -212,7 +215,7 @@ object AuthenticateForm: TAuthenticateForm
         Left = 14
         Top = 6
         Width = 275
-        Height = 17
+        Height = 19
         Caption = '&Remember password for this session'
         Checked = True
         State = cbChecked
@@ -223,20 +226,20 @@ object AuthenticateForm: TAuthenticateForm
   object BannerPanel: TPanel
     Left = 0
     Top = 298
-    Width = 375
+    Width = 416
     Height = 82
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 2
     Visible = False
     DesignSize = (
-      375
+      416
       82)
     object BannerMemo: TMemo
       Left = 8
       Top = 8
-      Width = 360
-      Height = 34
+      Width = 400
+      Height = 35
       Anchors = [akLeft, akTop, akRight, akBottom]
       Color = clBtnFace
       PopupMenu = BannerPopupMenu
@@ -247,18 +250,18 @@ object AuthenticateForm: TAuthenticateForm
       OnContextPopup = BannerMemoContextPopup
     end
     object NeverShowAgainCheck: TCheckBox
-      Left = 15
-      Top = 53
-      Width = 188
+      Left = 14
+      Top = 55
+      Width = 229
       Height = 17
       Anchors = [akLeft, akRight, akBottom]
       Caption = '&Never show this banner again'
       TabOrder = 1
     end
     object BannerCloseButton: TButton
-      Left = 206
-      Top = 47
-      Width = 75
+      Left = 243
+      Top = 49
+      Width = 80
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = 'Continue'
@@ -266,9 +269,9 @@ object AuthenticateForm: TAuthenticateForm
       TabOrder = 2
     end
     object BannerHelpButton: TButton
-      Left = 292
-      Top = 47
-      Width = 75
+      Left = 328
+      Top = 49
+      Width = 80
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = '&Help'

@@ -72,7 +72,6 @@ private:
   bool FPermanentLogging;
   UnicodeString FLogFileName;
   UnicodeString FPermanentLogFileName;
-  int FLogWindowLines;
   bool FLogFileAppend;
   bool FLogSensitive;
   bool FPermanentLogSensitive;
@@ -99,7 +98,7 @@ private:
   UnicodeString FIniFileStorageName;
   UnicodeString FVirtualIniFileStorageName;
   std::unique_ptr<TStrings> FOptionsStorage;
-  int FProgramIniPathWrittable;
+  int FProgramIniPathWritable;
   int FTunnelLocalPortNumberLow;
   int FTunnelLocalPortNumberHigh;
   int FCacheDirectoryChangesMaxSize;
@@ -120,7 +119,7 @@ private:
   int FQueueTransfersLimit;
   int FParallelTransferThreshold;
   UnicodeString FCertificateStorage;
-  UnicodeString FAWSMetadataService;
+  UnicodeString FAWSAPI;
   UnicodeString FChecksumCommands;
   std::unique_ptr<TSshHostCAList> FSshHostCAList;
   std::unique_ptr<TSshHostCAList> FPuttySshHostCAList;
@@ -193,7 +192,7 @@ private:
   void __fastcall SetMimeTypes(UnicodeString value);
   void SetCertificateStorage(const UnicodeString & value);
   UnicodeString GetCertificateStorageExpanded();
-  void SetAWSMetadataService(const UnicodeString & value);
+  void SetAWSAPI(const UnicodeString & value);
   bool __fastcall GetCollectUsage();
   void __fastcall SetCollectUsage(bool value);
   bool __fastcall GetIsUnofficial();
@@ -234,6 +233,9 @@ protected:
   THierarchicalStorage * OpenDirectoryStatisticsCache(bool CanCreate);
   UnicodeString __fastcall GetDirectoryStatisticsCacheKey(
     const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
+  void SelectSessionsToImportIfAny(
+    TStoredSessionList * ImportSessionList, TStoredSessionList * Sessions,
+    UnicodeString & Error, const UnicodeString & NoSessionsError);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
@@ -333,6 +335,7 @@ public:
   TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
+  TStoredSessionList * SelectSessionsForImport(TStoredSessionList * Sessions, const UnicodeString & FileName, UnicodeString & Error);
   UnicodeString GetPuttySessionsKey(const UnicodeString & RootKey);
   void RefreshPuttySshHostCAList();
 
@@ -386,7 +389,7 @@ public:
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
   __property UnicodeString CertificateStorage = { read = FCertificateStorage, write = SetCertificateStorage };
   __property UnicodeString CertificateStorageExpanded = { read = GetCertificateStorageExpanded };
-  __property UnicodeString AWSMetadataService = { read = FAWSMetadataService, write = SetAWSMetadataService };
+  __property UnicodeString AWSAPI = { read = FAWSAPI, write = SetAWSAPI };
   __property UnicodeString ChecksumCommands = { read = FChecksumCommands };
   __property int LocalPortNumberMin = { read = FLocalPortNumberMin, write = SetLocalPortNumberMin };
   __property int LocalPortNumberMax = { read = FLocalPortNumberMax, write = SetLocalPortNumberMax };

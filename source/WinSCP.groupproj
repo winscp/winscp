@@ -1,216 +1,216 @@
-﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-		<PropertyGroup>
-			<ProjectGuid>{0211076C-4E8D-456E-8C3C-088ECD83BA67}</ProjectGuid>
-		</PropertyGroup>
-		<ItemGroup>
-			<Projects Include="My.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="DragDropP.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="DriveDir.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="tb2k.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="tbxp.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="Jcl.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="PngComponents.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="Putty.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="FileZilla.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="ScpCore.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="RScpComp.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="ScpForms.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="ScpResources.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="WinSCP.cbproj">
-				<Dependencies>Putty.cbproj;FileZilla.cbproj;ScpCore.cbproj;RScpComp.cbproj;ScpForms.cbproj;ScpResources.cbproj</Dependencies>
-			</Projects>
-			<Projects Include="Console.cbproj">
-				<Dependencies/>
-			</Projects>
-			<Projects Include="DragExt.cbproj">
-				<Dependencies/>
-			</Projects>
-		</ItemGroup>
-		<ProjectExtensions>
-			<Borland.Personality>Default.Personality.12</Borland.Personality>
-			<Borland.ProjectType/>
-			<BorlandProject>
-				<Default.Personality/>
-			</BorlandProject>
-		</ProjectExtensions>
-		<Target Name="My">
-			<MSBuild Projects="My.cbproj"/>
-		</Target>
-		<Target Name="My:Clean">
-			<MSBuild Projects="My.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="My:Make">
-			<MSBuild Projects="My.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="DragDropP">
-			<MSBuild Projects="DragDropP.cbproj"/>
-		</Target>
-		<Target Name="DragDropP:Clean">
-			<MSBuild Projects="DragDropP.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="DragDropP:Make">
-			<MSBuild Projects="DragDropP.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="DriveDir">
-			<MSBuild Projects="DriveDir.cbproj"/>
-		</Target>
-		<Target Name="DriveDir:Clean">
-			<MSBuild Projects="DriveDir.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="DriveDir:Make">
-			<MSBuild Projects="DriveDir.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="tb2k">
-			<MSBuild Projects="tb2k.cbproj"/>
-		</Target>
-		<Target Name="tb2k:Clean">
-			<MSBuild Projects="tb2k.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="tb2k:Make">
-			<MSBuild Projects="tb2k.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="tbxp">
-			<MSBuild Projects="tbxp.cbproj"/>
-		</Target>
-		<Target Name="tbxp:Clean">
-			<MSBuild Projects="tbxp.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="tbxp:Make">
-			<MSBuild Projects="tbxp.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="Jcl">
-			<MSBuild Projects="Jcl.cbproj"/>
-		</Target>
-		<Target Name="Jcl:Clean">
-			<MSBuild Projects="Jcl.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="Jcl:Make">
-			<MSBuild Projects="Jcl.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="PngComponents">
-			<MSBuild Projects="PngComponents.cbproj"/>
-		</Target>
-		<Target Name="PngComponents:Clean">
-			<MSBuild Projects="PngComponents.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="PngComponents:Make">
-			<MSBuild Projects="PngComponents.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="Putty">
-			<MSBuild Projects="Putty.cbproj"/>
-		</Target>
-		<Target Name="Putty:Clean">
-			<MSBuild Projects="Putty.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="Putty:Make">
-			<MSBuild Projects="Putty.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="FileZilla">
-			<MSBuild Projects="FileZilla.cbproj"/>
-		</Target>
-		<Target Name="FileZilla:Clean">
-			<MSBuild Projects="FileZilla.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="FileZilla:Make">
-			<MSBuild Projects="FileZilla.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="ScpCore">
-			<MSBuild Projects="ScpCore.cbproj"/>
-		</Target>
-		<Target Name="ScpCore:Clean">
-			<MSBuild Projects="ScpCore.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="ScpCore:Make">
-			<MSBuild Projects="ScpCore.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="RScpComp">
-			<MSBuild Projects="RScpComp.cbproj"/>
-		</Target>
-		<Target Name="RScpComp:Clean">
-			<MSBuild Projects="RScpComp.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="RScpComp:Make">
-			<MSBuild Projects="RScpComp.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="ScpForms">
-			<MSBuild Projects="ScpForms.cbproj"/>
-		</Target>
-		<Target Name="ScpForms:Clean">
-			<MSBuild Projects="ScpForms.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="ScpForms:Make">
-			<MSBuild Projects="ScpForms.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="ScpResources">
-			<MSBuild Projects="ScpResources.cbproj"/>
-		</Target>
-		<Target Name="ScpResources:Clean">
-			<MSBuild Projects="ScpResources.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="ScpResources:Make">
-			<MSBuild Projects="ScpResources.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="WinSCP" DependsOnTargets="Putty;FileZilla;ScpCore;RScpComp;ScpForms;ScpResources">
-			<MSBuild Projects="WinSCP.cbproj"/>
-		</Target>
-		<Target Name="WinSCP:Clean" DependsOnTargets="Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;ScpResources:Clean">
-			<MSBuild Projects="WinSCP.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="WinSCP:Make" DependsOnTargets="Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make">
-			<MSBuild Projects="WinSCP.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="Console">
-			<MSBuild Projects="Console.cbproj"/>
-		</Target>
-		<Target Name="Console:Clean">
-			<MSBuild Projects="Console.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="Console:Make">
-			<MSBuild Projects="Console.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="DragExt">
-			<MSBuild Projects="DragExt.cbproj"/>
-		</Target>
-		<Target Name="DragExt:Clean">
-			<MSBuild Projects="DragExt.cbproj" Targets="Clean"/>
-		</Target>
-		<Target Name="DragExt:Make">
-			<MSBuild Projects="DragExt.cbproj" Targets="Make"/>
-		</Target>
-		<Target Name="Build">
-			<CallTarget Targets="My;DragDropP;DriveDir;tb2k;tbxp;Jcl;PngComponents;Putty;FileZilla;ScpCore;RScpComp;ScpForms;ScpResources;WinSCP;Console;DragExt"/>
-		</Target>
-		<Target Name="Clean">
-			<CallTarget Targets="My:Clean;DragDropP:Clean;DriveDir:Clean;tb2k:Clean;tbxp:Clean;Jcl:Clean;PngComponents:Clean;Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;ScpResources:Clean;WinSCP:Clean;Console:Clean;DragExt:Clean"/>
-		</Target>
-		<Target Name="Make">
-			<CallTarget Targets="My:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;Jcl:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
-		</Target>
-		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
-	</Project>
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{0211076C-4E8D-456E-8C3C-088ECD83BA67}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="My.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="DragDropP.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="DriveDir.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="tb2k.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="tbxp.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Jcl.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="PngComponents.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Putty.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="FileZilla.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ScpCore.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="RScpComp.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ScpForms.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ScpResources.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="WinSCP.cbproj">
+            <Dependencies>Putty.cbproj;FileZilla.cbproj;ScpCore.cbproj;RScpComp.cbproj;ScpForms.cbproj;ScpResources.cbproj</Dependencies>
+        </Projects>
+        <Projects Include="Console.cbproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="DragExt.cbproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="My">
+        <MSBuild Projects="My.cbproj"/>
+    </Target>
+    <Target Name="My:Clean">
+        <MSBuild Projects="My.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="My:Make">
+        <MSBuild Projects="My.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="DragDropP">
+        <MSBuild Projects="DragDropP.cbproj"/>
+    </Target>
+    <Target Name="DragDropP:Clean">
+        <MSBuild Projects="DragDropP.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DragDropP:Make">
+        <MSBuild Projects="DragDropP.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="DriveDir">
+        <MSBuild Projects="DriveDir.cbproj"/>
+    </Target>
+    <Target Name="DriveDir:Clean">
+        <MSBuild Projects="DriveDir.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DriveDir:Make">
+        <MSBuild Projects="DriveDir.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="tb2k">
+        <MSBuild Projects="tb2k.cbproj"/>
+    </Target>
+    <Target Name="tb2k:Clean">
+        <MSBuild Projects="tb2k.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="tb2k:Make">
+        <MSBuild Projects="tb2k.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="tbxp">
+        <MSBuild Projects="tbxp.cbproj"/>
+    </Target>
+    <Target Name="tbxp:Clean">
+        <MSBuild Projects="tbxp.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="tbxp:Make">
+        <MSBuild Projects="tbxp.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="Jcl">
+        <MSBuild Projects="Jcl.cbproj"/>
+    </Target>
+    <Target Name="Jcl:Clean">
+        <MSBuild Projects="Jcl.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Jcl:Make">
+        <MSBuild Projects="Jcl.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="PngComponents">
+        <MSBuild Projects="PngComponents.cbproj"/>
+    </Target>
+    <Target Name="PngComponents:Clean">
+        <MSBuild Projects="PngComponents.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="PngComponents:Make">
+        <MSBuild Projects="PngComponents.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="Putty">
+        <MSBuild Projects="Putty.cbproj"/>
+    </Target>
+    <Target Name="Putty:Clean">
+        <MSBuild Projects="Putty.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Putty:Make">
+        <MSBuild Projects="Putty.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="FileZilla">
+        <MSBuild Projects="FileZilla.cbproj"/>
+    </Target>
+    <Target Name="FileZilla:Clean">
+        <MSBuild Projects="FileZilla.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FileZilla:Make">
+        <MSBuild Projects="FileZilla.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="ScpCore">
+        <MSBuild Projects="ScpCore.cbproj"/>
+    </Target>
+    <Target Name="ScpCore:Clean">
+        <MSBuild Projects="ScpCore.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ScpCore:Make">
+        <MSBuild Projects="ScpCore.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="RScpComp">
+        <MSBuild Projects="RScpComp.cbproj"/>
+    </Target>
+    <Target Name="RScpComp:Clean">
+        <MSBuild Projects="RScpComp.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="RScpComp:Make">
+        <MSBuild Projects="RScpComp.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="ScpForms">
+        <MSBuild Projects="ScpForms.cbproj"/>
+    </Target>
+    <Target Name="ScpForms:Clean">
+        <MSBuild Projects="ScpForms.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ScpForms:Make">
+        <MSBuild Projects="ScpForms.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="ScpResources">
+        <MSBuild Projects="ScpResources.cbproj"/>
+    </Target>
+    <Target Name="ScpResources:Clean">
+        <MSBuild Projects="ScpResources.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ScpResources:Make">
+        <MSBuild Projects="ScpResources.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="WinSCP" DependsOnTargets="Putty;FileZilla;ScpCore;RScpComp;ScpForms;ScpResources">
+        <MSBuild Projects="WinSCP.cbproj"/>
+    </Target>
+    <Target Name="WinSCP:Clean" DependsOnTargets="Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;ScpResources:Clean">
+        <MSBuild Projects="WinSCP.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="WinSCP:Make" DependsOnTargets="Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make">
+        <MSBuild Projects="WinSCP.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="Console">
+        <MSBuild Projects="Console.cbproj"/>
+    </Target>
+    <Target Name="Console:Clean">
+        <MSBuild Projects="Console.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Console:Make">
+        <MSBuild Projects="Console.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="DragExt">
+        <MSBuild Projects="DragExt.cbproj"/>
+    </Target>
+    <Target Name="DragExt:Clean">
+        <MSBuild Projects="DragExt.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DragExt:Make">
+        <MSBuild Projects="DragExt.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="My;DragDropP;DriveDir;tb2k;tbxp;Jcl;PngComponents;Putty;FileZilla;ScpCore;RScpComp;ScpForms;ScpResources;WinSCP;Console;DragExt"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="My:Clean;DragDropP:Clean;DriveDir:Clean;tb2k:Clean;tbxp:Clean;Jcl:Clean;PngComponents:Clean;Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;ScpResources:Clean;WinSCP:Clean;Console:Clean;DragExt:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="My:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;Jcl:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

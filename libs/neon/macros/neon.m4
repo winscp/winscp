@@ -136,12 +136,12 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 
 # Define the current versions.
 NE_VERSION_MAJOR=0
-NE_VERSION_MINOR=33
-NE_VERSION_PATCH=0
+NE_VERSION_MINOR=34
+NE_VERSION_PATCH=2
 NE_VERSION_TAG=
 
-# 0.33.x is backwards-compatible to 0.27.x, so AGE=6
-NE_LIBTOOL_VERSINFO="33:${NE_VERSION_PATCH}:6"
+# 0.34.x is backwards-compatible to 0.27.x, so AGE=7
+NE_LIBTOOL_VERSINFO="34:${NE_VERSION_PATCH}:7"
 
 NE_DEFINE_VERSIONS
 
@@ -157,14 +157,26 @@ else
 fi
 ])
 
-dnl Define the minimum required versions, usage:
-dnl   NE_REQUIRE_VERSIONS([major-version], [minor-versions])
-dnl e.g.
-dnl   NE_REQUIRE_VERSIONS([0], [24 25])
-dnl to require neon 0.24.x or neon 0.25.x.
-AC_DEFUN([NE_REQUIRE_VERSIONS], [
+dnl Define the minimum required version, usage:
+dnl   NE_MINIMUM_VERSION([major-version], [minor-version])
+dnl If a major-version of 0 is used, neon 1.x will be allowed
+dnl as backward compatible. FOr example:
+dnl   NE_MINIMUM_VERSION([0], [27])
+dnl require neon 0.27.x or later or any 1.x
+AC_DEFUN([NE_MINIMUM_VERSION], [
 m4_define([ne_require_major], [$1])
+# ## ne_require_major $1
 m4_define([ne_require_minor], [$2])
+# ## ne_require_minor $2
+])
+
+
+dnl Deprecated.
+AC_DEFUN([NE_REQUIRE_VERSIONS], [
+# Extract the first minor version from the list:
+NE_MINIMUM_VERSION([$1],m4_bregexp($2,[\([0-9]*\)\ .*],[\1]))
+m4_warn([obsolete], [The `NE_REQUIRE_VERSIONS` macro is obsolete.
+Update to use `NE_MINIMUM_VERSION`])
 ])
 
 dnl Check that the external library found in a given location
@@ -189,18 +201,24 @@ m4_ifdef([ne_require_major], [
         [AC_LANG_PROGRAM([[#include <ne_utils.h>]], [[ne_version_match(0, 0);]])],
 	[ne_cv_lib_neon=yes], [ne_cv_lib_neon=no])])
     if test "$ne_cv_lib_neon" = "yes"; then
+       ne_libmajor=`echo $ne_libver | sed 's/\..*//g'`
+       ne_libminor=`echo $ne_libver | sed 's/.*\.\([[0-9]]*\)\..*/\1/g'`
        ne_cv_lib_neonver=no
-       for v in ne_require_minor; do
-          case $ne_libver in
-          ne_require_major.$v.*) ne_cv_lib_neonver=yes ;;
-          esac
-       done
+       AC_MSG_NOTICE([found neon library version ${ne_libmajor}.${ne_libminor}.x, required ne_require_major[.]ne_require_minor[.x]])
+       # neon 1.x maintains backwards compat to neon 0.27.x
+       if test ne_require_major -eq 0 -a ne_require_minor -ge 27 \
+          -a $ne_libmajor = 1; then
+          ne_cv_lib_neonver=yes
+       elif test $ne_libmajor -eq ne_require_major \
+            -a $ne_libminor -ge ne_require_minor; then
+          ne_cv_lib_neonver=yes
+       fi
     fi
     ne_goodver=$ne_cv_lib_neonver
     LIBS=$ne_save_LIBS
     CFLAGS=$ne_save_CFLAGS
 ], [
-   # NE_REQUIRE_VERSIONS not used; presume all versions OK!
+    dnl NE_REQUIRE_VERSIONS/NE_MINIMUM_VERSION not used; anything goes.
     ne_goodver=yes
 ])
 
@@ -208,7 +226,7 @@ if test "$ne_goodver" = "yes"; then
     AC_MSG_NOTICE([using neon library $ne_libver])
     $1
 else
-    AC_MSG_NOTICE([incompatible neon library version $ne_libver: wanted ne_require_major.ne_require_minor])
+    AC_MSG_NOTICE([incompatible neon library version $ne_libver: minimum required ne_require_major.ne_require_minor])
     $2
 fi])
 
@@ -258,6 +276,10 @@ NEON_CHECK_VERSION([
     NE_DEFINE_VERSIONS
     neon_library_message="library in ${neon_prefix} (${NEON_VERSION})"
     neon_xml_parser_message="using whatever neon uses"
+    NEON_CHECK_SUPPORT([i18n], [I18N], [Internationalization])
+    NEON_CHECK_SUPPORT([dav], [DAV], [WebDAV])
+    NEON_CHECK_SUPPORT([gssapi], [GSSAPI], [GSSAPI])
+    NEON_CHECK_SUPPORT([libpxy], [LIBPXY], [libproxy])
     NEON_CHECK_SUPPORT([ssl], [SSL], [SSL])
     NEON_CHECK_SUPPORT([zlib], [ZLIB], [zlib])
     NEON_CHECK_SUPPORT([ipv6], [IPV6], [IPv6])
@@ -650,7 +672,7 @@ AC_REQUIRE([AC_FUNC_STRERROR_R])
 
 AC_CHECK_HEADERS([sys/time.h limits.h sys/select.h arpa/inet.h libintl.h \
 	signal.h sys/socket.h netinet/in.h netinet/tcp.h netdb.h sys/poll.h \
-	sys/limits.h fcntl.h iconv.h],,,
+	sys/limits.h fcntl.h iconv.h net/if.h],,,
 [AC_INCLUDES_DEFAULT
 /* netinet/tcp.h requires netinet/in.h on some platforms. */
 #ifdef HAVE_NETINET_IN_H
@@ -675,7 +697,8 @@ NE_LARGEFILE
 AC_REPLACE_FUNCS(strcasecmp)
 
 AC_CHECK_FUNCS([signal setvbuf setsockopt stpcpy poll fcntl getsockopt \
-                explicit_bzero sendmsg gettimeofday gmtime_r])
+                explicit_bzero sendmsg gettimeofday gmtime_r if_nametoindex \
+                if_indextoname])
 
 if test "x${ac_cv_func_poll}${ac_cv_header_sys_poll_h}y" = "xyesyesy"; then
   AC_DEFINE([NE_USE_POLL], 1, [Define if poll() should be used])
@@ -1054,6 +1077,7 @@ gnutls)
                   gnutls_certificate_get_x509_cas \
                   gnutls_x509_crt_sign2 \
                   gnutls_x509_crt_equals \
+                  gnutls_set_default_priority_append \
                   gnutls_certificate_set_retrieve_function2 \
                   gnutls_certificate_set_x509_system_trust \
                   gnutls_privkey_import_ext])

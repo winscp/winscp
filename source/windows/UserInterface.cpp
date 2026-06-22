@@ -115,7 +115,7 @@ void __fastcall FlashOnBackground()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall LocalSystemSettings(TCustomForm * /*Control*/)
+void __fastcall LocalSystemSettings(TForm * /*Control*/)
 {
   // noop
 }
@@ -621,8 +621,9 @@ static TComponent * LastPopupComponent = NULL;
 static TRect LastPopupRect(-1, -1, -1, -1);
 static TDateTime LastCloseUp;
 //---------------------------------------------------------------------------
-static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items)
+static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items, TBasicAction * ParentAction, TTBCustomItem *& ParentActionItem)
 {
+  ParentActionItem = NULL;
   for (int Index = 0; Index < AItems->Count; Index++)
   {
     TMenuItem * AItem = AItems->Items[Index];
@@ -632,13 +633,14 @@ static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items)
         (AItem->OnClick == NULL) && DebugAlwaysTrue(AItem->Count == 0))
     {
       TTBXLabelItem * LabelItem = new TTBXLabelItem(Items->Owner);
-      // TTBXLabelItem has it's own Caption
+      // TTBXLabelItem has its own Caption
       LabelItem->Caption = AItem->Caption;
       LabelItem->SectionHeader = true;
       Item = LabelItem;
     }
     else
     {
+      TTBXSubmenuItem * SubmenuItem = NULL;
       // see TB2DsgnConverter.pas DoConvert
       if (AItem->Caption == L"-")
       {
@@ -648,13 +650,18 @@ static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items)
       {
         if (AItem->Count > 0)
         {
-          Item = new TTBXSubmenuItem(Items->Owner);
+          SubmenuItem = new TTBXSubmenuItem(Items->Owner);
+          Item = SubmenuItem;
         }
         else
         {
           Item = new TTBXItem(Items->Owner);
         }
         Item->Action = AItem->Action;
+        if ((ParentAction != NULL) && (Item->Action == ParentAction))
+        {
+          ParentActionItem = Item;
+        }
         Item->AutoCheck = AItem->AutoCheck;
         Item->Caption = AItem->Caption;
         Item->Checked = AItem->Checked;
@@ -675,10 +682,17 @@ static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items)
       Item->Tag = AItem->Tag;
       Item->Visible = AItem->Visible;
 
-      // recurse is supported only for empty submenus (as used for custom commands)
       if (AItem->Count > 0)
       {
-        ConvertMenu(AItem, Item);
+        TTBCustomItem * ActionItem;
+        ConvertMenu(AItem, Item, AItem->Action, ActionItem);
+        if ((AItem->Action != NULL) && (ActionItem != NULL) && DebugAlwaysTrue(SubmenuItem != NULL))
+        {
+          SubmenuItem->DropdownCombo = true;
+          TTBItemOptions Options = ActionItem->Options;
+          ActionItem->Options = Options << tboDefault;
+          SubmenuItem->DropdownCombo = true;
+        }
       }
     }
 
@@ -714,7 +728,8 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TRect Rect,
       Menu->OnPopup = AMenu->OnPopup;
       Menu->Items->SubMenuImages = AMenu->Images;
 
-      ConvertMenu(AMenu->Items, Menu->Items);
+      TTBCustomItem * Dummy;
+      ConvertMenu(AMenu->Items, Menu->Items, NULL, Dummy);
     }
 
     Menu->PopupComponent = PopupComponent;
@@ -1128,11 +1143,6 @@ TPopupMenu * __fastcall CreateColorPopupMenu(TColor Color,
     LoadStr(COLOR_TRUE_DEFAULT_CAPTION), UnicodeString(),
     HELP_NONE, UnicodeString());
   return PopupMenu.release();
-}
-//---------------------------------------------------------------------------
-void __fastcall UpgradeSpeedButton(TSpeedButton * /*Button*/)
-{
-  // no-op yet
 }
 //---------------------------------------------------------------------------
 struct TThreadParam

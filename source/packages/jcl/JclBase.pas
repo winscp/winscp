@@ -61,9 +61,10 @@ uses
 // Version
 const
   JclVersionMajor   = 2;    // 0=pre-release|beta/1, 2, ...=final
-  JclVersionMinor   = 7;    // Fifth minor release since JCL 1.90
+  JclVersionMinor   = 8;    // Fifth minor release since JCL 1.90
   JclVersionRelease = 0;    // 0: pre-release|beta/ 1: release
-  JclVersionBuild   = 5676; // build number, days since march 1, 2000
+  JclVersionBuild   = 5677; // build number, days since march 1, 2000
+  JclCommit = '6380ce72';
   JclVersion = (JclVersionMajor shl 24) or (JclVersionMinor shl 16) or
     (JclVersionRelease shl 15) or (JclVersionBuild shl 0);
 
@@ -113,7 +114,7 @@ type
   UInt64 = Int64;
   {$ENDIF ~COMPILER7_UP}
   PWideChar = System.PWideChar;
-  PPWideChar = ^JclBase.PWideChar;
+  PPWideChar = ^PWideChar;
   PPAnsiChar = ^PAnsiChar;
   PInt64 = type System.PInt64;
   {$ENDIF ~FPC}
@@ -160,6 +161,11 @@ type
   {$ENDIF ~FPC}
   TJclULargeInteger = ULARGE_INTEGER;
   PJclULargeInteger = PULARGE_INTEGER;
+
+  {$IFNDEF COMPILER16_UP}
+  LONG = Longint;
+  {$EXTERNALSYM LONG}
+  {$ENDIF ~COMPILER16_UP}
 
 // Dynamic Array support
 type

@@ -6,68 +6,70 @@ object SymlinkDialog: TSymlinkDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'SymlinkDialog'
-  ClientHeight = 183
-  ClientWidth = 396
+  ClientHeight = 177
+  ClientWidth = 417
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = False
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
-    396
-    183)
-  PixelsPerInch = 96
-  TextHeight = 13
+    417
+    177)
+  TextHeight = 15
   object SymlinkGroup: TGroupBox
     Left = 8
-    Top = 6
-    Width = 380
-    Height = 135
+    Top = 8
+    Width = 401
+    Height = 130
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     DesignSize = (
-      380
-      135)
+      401
+      130)
     object FileNameLabel: TLabel
-      Left = 11
-      Top = 16
-      Width = 83
-      Height = 13
+      Left = 9
+      Top = 9
+      Width = 93
+      Height = 15
       Caption = '&Link/shortcut file:'
       FocusControl = FileNameEdit
     end
     object Label1: TLabel
-      Left = 11
-      Top = 64
-      Width = 103
-      Height = 13
+      Left = 9
+      Top = 56
+      Width = 116
+      Height = 15
       Caption = '&Point link/shortcut to:'
       FocusControl = PointToEdit
     end
     object FileNameEdit: TEdit
-      Left = 11
-      Top = 32
-      Width = 358
-      Height = 21
+      Left = 9
+      Top = 27
+      Width = 383
+      Height = 23
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
       TabOrder = 0
       OnChange = ControlChange
     end
     object PointToEdit: TEdit
-      Left = 11
-      Top = 80
-      Width = 358
-      Height = 21
+      Left = 9
+      Top = 74
+      Width = 383
+      Height = 23
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange
     end
     object HardLinkCheck: TCheckBox
-      Left = 17
-      Top = 109
-      Width = 238
+      Left = 11
+      Top = 103
+      Width = 401
       Height = 17
       Caption = '&Hard link'
       TabOrder = 2
@@ -75,9 +77,9 @@ object SymlinkDialog: TSymlinkDialog
     end
   end
   object OkButton: TButton
-    Left = 144
-    Top = 150
-    Width = 75
+    Left = 157
+    Top = 144
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -86,9 +88,9 @@ object SymlinkDialog: TSymlinkDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 228
-    Top = 150
-    Width = 75
+    Left = 243
+    Top = 144
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -97,9 +99,9 @@ object SymlinkDialog: TSymlinkDialog
     TabOrder = 2
   end
   object HelpButton: TButton
-    Left = 312
-    Top = 150
-    Width = 75
+    Left = 329
+    Top = 144
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'

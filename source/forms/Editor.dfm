@@ -8,7 +8,11 @@ object EditorForm: TEditorForm
   ClientHeight = 381
   ClientWidth = 609
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Icon.Data = {
     000001000700404000000100200028420000760000003030000001002000A825
     00009E4200002828000001002000681A0000466800002020000001002000A810
@@ -1355,13 +1359,11 @@ object EditorForm: TEditorForm
     0000C0030000C0030000C0030000C0030000C0030000C0030000C0030000C003
     0000C0030000C0030000C0010000C0010000C0000000C0000000FFF80000}
   KeyPreview = True
-  OldCreateOrder = False
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object TopDock: TTBXDock
     Left = 0
     Top = 0
@@ -2668,7 +2670,6 @@ object EditorForm: TEditorForm
       end>
     Left = 552
     Top = 56
-    Bitmap = {}
   end
   object EditorPopup: TTBXPopupMenu
     Images = EditorImages
@@ -3831,7 +3832,6 @@ object EditorForm: TEditorForm
       end>
     Left = 552
     Top = 136
-    Bitmap = {}
   end
   object EditorImages144: TPngImageList
     Height = 24
@@ -4995,7 +4995,6 @@ object EditorForm: TEditorForm
       end>
     Left = 552
     Top = 208
-    Bitmap = {}
   end
   object EditorImages192: TPngImageList
     Height = 32
@@ -6261,6 +6260,5 @@ object EditorForm: TEditorForm
       end>
     Left = 552
     Top = 272
-    Bitmap = {}
   end
 end

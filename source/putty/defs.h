@@ -11,6 +11,15 @@
 #ifndef PUTTY_DEFS_H
 #define PUTTY_DEFS_H
 
+#ifdef WINSCP
+#define HAVE_AES_NI 1
+#define HAVE_WMEMCHR 1
+#define HAVE_CMAKE_H 0
+#define HAVE_NO_STDINT_H 0
+#define HAVE_ARM_DIT 0
+#define HAVE_STRTOUMAX 1
+#endif
+
 #ifndef WINSCP
 #ifdef NDEBUG
 /*
@@ -33,11 +42,7 @@
 #include <stdio.h>                     /* for __MINGW_PRINTF_FORMAT */
 #include <stdbool.h>
 
-#ifdef WINSCP
-#define HAVE_AES_NI 1
-#endif
-
-#if (!defined WINSCP) && defined _MSC_VER && _MSC_VER < 1800
+#if defined _MSC_VER && _MSC_VER < 1800
 /* Work around lack of inttypes.h and strtoumax in older MSVC */
 #define PRIx32 "x"
 #define PRIu32 "u"
@@ -50,19 +55,18 @@
 /* Also, define a LEGACY_WINDOWS flag to enable other workarounds */
 #define LEGACY_WINDOWS
 #else
-#ifndef WINSCP
-// Not needed by the code WinSCP uses
 #include <inttypes.h>
-#else
-#define PRIu32 "u"
-#endif
 /* Because we still support older MSVC libraries which don't recognise the
  * standard C "z" modifier for size_t-sized integers, we must use an
  * inttypes.h-style macro for those */
 #define SIZEx "zx"
 #define SIZEu "zu"
 #endif
-uintmax_t strtoumax(const char *nptr, char **endptr, int base);
+
+#if !HAVE_WMEMCHR
+/* Work around lack of wmemchr in older MSVC */
+wchar_t *wmemchr(const wchar_t *s, wchar_t c, size_t n);
+#endif
 
 #if defined __GNUC__ || defined __clang__
 /*
@@ -85,6 +89,12 @@ uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #endif /* __GNUC__ */
 
 typedef struct conf_tag Conf;
+typedef struct ConfKeyInfo ConfKeyInfo;
+typedef struct ConfSaveEnumValue ConfSaveEnumValue;
+typedef struct ConfSaveEnumType ConfSaveEnumType;
+typedef struct CmdlineArgList CmdlineArgList;
+typedef struct CmdlineArg CmdlineArg;
+
 typedef struct terminal_tag Terminal;
 typedef struct term_utf8_decode term_utf8_decode;
 
@@ -102,6 +112,7 @@ typedef struct BinarySink BinarySink;
 typedef struct BinarySource BinarySource;
 typedef struct stdio_sink stdio_sink;
 typedef struct bufchain_sink bufchain_sink;
+typedef struct buffer_sink buffer_sink;
 typedef struct handle_sink handle_sink;
 
 typedef struct IdempotentCallback IdempotentCallback;
@@ -110,7 +121,7 @@ typedef struct SockAddr SockAddr;
 
 typedef struct Socket Socket;
 typedef struct Plug Plug;
-typedef struct SocketPeerInfo SocketPeerInfo;
+typedef struct SocketEndpointInfo SocketEndpointInfo;
 typedef struct DeferredSocketOpener DeferredSocketOpener;
 typedef struct DeferredSocketOpenerVtable DeferredSocketOpenerVtable;
 
@@ -124,6 +135,11 @@ typedef struct Ldisc_tag Ldisc;
 typedef struct LogContext LogContext;
 typedef struct LogPolicy LogPolicy;
 typedef struct LogPolicyVtable LogPolicyVtable;
+
+typedef struct TermLineEditor TermLineEditor;
+typedef struct TermLineEditorCallbackReceiver TermLineEditorCallbackReceiver;
+typedef struct TermLineEditorCallbackReceiverVtable
+    TermLineEditorCallbackReceiverVtable;
 
 typedef struct Seat Seat;
 typedef struct SeatVtable SeatVtable;
@@ -186,10 +202,13 @@ typedef struct ssh2_ciphers ssh2_ciphers;
 typedef struct dh_ctx dh_ctx;
 typedef struct ecdh_key ecdh_key;
 typedef struct ecdh_keyalg ecdh_keyalg;
+typedef struct pq_kemalg pq_kemalg;
+typedef struct pq_kem_dk pq_kem_dk;
 typedef struct NTRUKeyPair NTRUKeyPair;
 typedef struct NTRUEncodeSchedule NTRUEncodeSchedule;
 typedef struct RFC6979 RFC6979;
 typedef struct RFC6979Result RFC6979Result;
+typedef struct ShakeXOF ShakeXOF;
 
 typedef struct dlgparam dlgparam;
 typedef struct dlgcontrol dlgcontrol;
@@ -236,6 +255,7 @@ struct unicode_data;
     TYPECHECK(object == &((type *)0)->field,                            \
               ((type *)(((char *)(object)) - offsetof(type, field))))
 
+#undef NORETURN // WINSCP
 #if defined __GNUC__ || defined __clang__
 #define NORETURN __attribute__((__noreturn__))
 #elif defined _MSC_VER

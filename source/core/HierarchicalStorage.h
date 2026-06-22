@@ -2,7 +2,7 @@
 #ifndef HierarchicalStorageH
 #define HierarchicalStorageH
 
-#include <registry.hpp>
+#include <Registry.hpp>
 #include <memory>
 #include <map>
 //---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ public:
 
   bool __fastcall ReadBool(const UnicodeString & Name, bool Default);
   template<typename T>
-  typename T __fastcall ReadEnum(
+  T __fastcall ReadEnum(
     const UnicodeString & Name, const T & Default, const TIntMapping & Mapping = TIntMapping());
   int __fastcall ReadInteger(const UnicodeString & Name, int Default);
   __int64 __fastcall ReadInt64(const UnicodeString & Name, __int64 Default);
@@ -101,13 +101,14 @@ protected:
   UnicodeString __fastcall GetCurrentSubKeyMunged();
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
   virtual bool __fastcall DoKeyExists(const UnicodeString & SubKey, bool ForceAnsi) = 0;
-  virtual bool __fastcall DoValueExists(const UnicodeString & Value) = 0;
+  virtual bool __fastcall DoValueExists(const UnicodeString & Value, bool ForceAnsi) = 0;
   static UnicodeString __fastcall IncludeTrailingBackslash(const UnicodeString & S);
   static UnicodeString __fastcall ExcludeTrailingBackslash(const UnicodeString & S);
   virtual bool __fastcall DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate) = 0;
   virtual void __fastcall DoCloseSubKey() = 0;
   bool MungingKeyName(const UnicodeString & Key);
   UnicodeString __fastcall MungeKeyName(const UnicodeString & Key);
+  UnicodeString MungeIniName(const UnicodeString & Str);
   virtual UnicodeString __fastcall GetSource() = 0;
   virtual bool __fastcall GetTemporary();
   virtual bool __fastcall DoDeleteSubKey(const UnicodeString & SubKey) = 0;
@@ -166,7 +167,7 @@ public:
 protected:
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
   virtual bool __fastcall DoKeyExists(const UnicodeString & SubKey, bool ForceAnsi);
-  virtual bool __fastcall DoValueExists(const UnicodeString & Value);
+  virtual bool __fastcall DoValueExists(const UnicodeString & Value, bool ForceAnsi);
   virtual bool __fastcall DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate);
   virtual void __fastcall DoCloseSubKey();
   virtual UnicodeString __fastcall GetSource();
@@ -211,7 +212,7 @@ private:
   UnicodeString __fastcall GetCurrentSection();
   inline bool __fastcall HandleByMasterStorage();
   inline bool __fastcall HandleReadByMasterStorage(const UnicodeString & Name);
-  inline bool __fastcall DoValueExistsInternal(const UnicodeString & Value);
+  inline bool __fastcall DoValueExistsInternal(const UnicodeString & Value, bool ForceAnsi);
   void __fastcall DoWriteStringRawInternal(const UnicodeString & Name, const UnicodeString & Value);
   int __fastcall DoReadIntegerWithMapping(const UnicodeString & Name, int Default, const TIntMapping * Mapping);
 
@@ -225,7 +226,7 @@ protected:
   __property UnicodeString CurrentSection = { read = GetCurrentSection };
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
   virtual bool __fastcall DoKeyExists(const UnicodeString & SubKey, bool ForceAnsi);
-  virtual bool __fastcall DoValueExists(const UnicodeString & Value);
+  virtual bool __fastcall DoValueExists(const UnicodeString & Value, bool ForceAnsi);
   virtual bool __fastcall DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate);
   virtual void __fastcall DoCloseSubKey();
   virtual UnicodeString __fastcall GetSource();

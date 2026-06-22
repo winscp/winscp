@@ -133,7 +133,7 @@ type
     procedure AlignControls(AControl: TControl; var Rect: TRect); override;
     procedure BeginUpdate;
     procedure Change; dynamic;
-    procedure ChangeScale(M, D: Integer); override;
+    procedure ChangeScale(M, D: Integer; isDpiChange: Boolean); override;
     procedure Click; override;
     procedure CreateParams(var Params: TCreateParams); override;
     procedure CreateWnd; override;
@@ -510,7 +510,7 @@ begin
   end;
 end;
 
-procedure TTBXCustomStatusBar.ChangeScale(M, D: Integer);
+procedure TTBXCustomStatusBar.ChangeScale(M, D: Integer; isDpiChange: Boolean);
 var
   I: Integer;
   Panel: TTBXStatusPanel;

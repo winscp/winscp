@@ -83,6 +83,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FCustomCommandsHintItem = NULL;
   FAddedExtensions.reset(CreateSortedStringList());
   FCustomCommandOptions.reset(new TStringList());
+  FHideFocus = false;
   UseSystemSettings(this);
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
@@ -154,6 +155,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   }
 
   HideComponentsPanel(this);
+  FInitialized = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
@@ -233,6 +235,22 @@ TTabSheet * __fastcall TPreferencesDialog::FindPageForTreeNode(TTreeNode * Node)
   }
   DebugFail();
   return NULL;
+}
+//---------------------------------------------------------------------------
+TTreeNode * TPreferencesDialog::FindTreeNodeForPage(TTabSheet * Sheet)
+{
+  TTreeNode * Result = NULL;
+  for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
+  {
+    TTreeNode * Node = NavigationTree->Items->Item[Index];
+    if (Node->SelectedIndex == Sheet->Tag)
+    {
+      Result = Node;
+      break;
+    }
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
@@ -396,6 +414,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     TWinConfiguration::RestoreFont(WinConfiguration->Editor.Font, FEditorFont.get());
     FEditorFont->Color = WinConfiguration->Editor.FontColor;
     FEditorBackgroundColor = WinConfiguration->Editor.BackgroundColor;
+    EditorDisableSmoothScrollCheck->Checked = WinConfiguration->Editor.DisableSmoothScroll;
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
     BOOLPROP(EditorCheckNotModified);
@@ -797,6 +816,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     TWinConfiguration::StoreFont(FEditorFont.get(), WinConfiguration->Editor.Font);
     WinConfiguration->Editor.FontColor = FEditorFont->Color;
     WinConfiguration->Editor.BackgroundColor = FEditorBackgroundColor;
+    WinConfiguration->Editor.DisableSmoothScroll = EditorDisableSmoothScrollCheck->Checked;
     WinConfiguration->EditorList = FEditorList;
     BOOLPROP(EditorCheckNotModified);
 
@@ -1135,6 +1155,12 @@ TInterface __fastcall TPreferencesDialog::GetInterface()
   return CommanderInterfaceButton2->Checked ? ifCommander : ifExplorer;
 }
 //---------------------------------------------------------------------------
+void TPreferencesDialog::SetActivePage(TTabSheet * Page)
+{
+  PageControl->ActivePage = Page;
+  PageControlChange(NULL);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
 {
   // Load only now, particularly so that we have handles allocated already.
@@ -1152,20 +1178,24 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
 
   PrepareNavigationTree(NavigationTree);
 
+  UnicodeString SearchBanner = LoadStr(SEARCH_EDIT);
+  SearchEdit->Perform(EM_SETCUEBANNER, false, SearchBanner.c_str());
+
+  TTabSheet * InitialPage;
   switch (FPreferencesMode) {
-    case pmEditor: PageControl->ActivePage = EditorSheet; break;
-    case pmCustomCommands: PageControl->ActivePage = CustomCommandsSheet; break;
-    case pmQueue: PageControl->ActivePage = QueueSheet; break;
-    case pmLogging: PageControl->ActivePage = LogSheet; break;
-    case pmUpdates: PageControl->ActivePage = UpdatesSheet; break;
-    case pmPresets: PageControl->ActivePage = CopyParamListSheet; break;
-    case pmEditors: PageControl->ActivePage = EditorSheet; break;
-    case pmCommander: PageControl->ActivePage = CommanderSheet; break;
-    case pmEditorInternal: PageControl->ActivePage = EditorInternalSheet; break;
-    case pmFileColors: PageControl->ActivePage = FileColorsSheet; break;
-    default: PageControl->ActivePage = PreferencesSheet; break;
+    case pmEditor: InitialPage = EditorSheet; break;
+    case pmCustomCommands: InitialPage = CustomCommandsSheet; break;
+    case pmQueue: InitialPage = QueueSheet; break;
+    case pmLogging: InitialPage = LogSheet; break;
+    case pmUpdates: InitialPage = UpdatesSheet; break;
+    case pmPresets: InitialPage = CopyParamListSheet; break;
+    case pmEditors: InitialPage = EditorSheet; break;
+    case pmCommander: InitialPage = CommanderSheet; break;
+    case pmEditorInternal: InitialPage = EditorInternalSheet; break;
+    case pmFileColors: InitialPage = FileColorsSheet; break;
+    default: InitialPage = PreferencesSheet; break;
   }
-  PageControlChange(NULL);
+  SetActivePage(InitialPage);
   ActiveControl = NavigationTree;
 }
 //---------------------------------------------------------------------------
@@ -1239,8 +1269,17 @@ int __fastcall TPreferencesDialog::GetCommandListIndex(TCustomCommandList * List
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateControls()
 {
-  if (FNoUpdate == 0)
+  // ControlChange gets called when scaling the form while loading it,
+  // when the primary monitor dpi is different than system dpi
+  if (FInitialized && (FNoUpdate == 0))
   {
+    NavigationTree->HideSelection = (FSearchResults.get() != NULL);
+    if ((SearchEdit->ButtonWidth != 0) != !SearchEdit->Text.IsEmpty()) // optimization
+    {
+      SearchEdit->ButtonWidth = SearchEdit->Text.IsEmpty() ? 0 : ScaleByTextHeight(SearchEdit, 19);
+    }
+    NavigationTree->TabStop = !SearchEdit->Focused() || (FSearchResults.get() == NULL) || (FSearchResults->Count == 0);
+
     EnableControl(DDTransferConfirmationCheck2, ConfirmTransferringCheck->Checked);
     EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
     EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
@@ -1346,6 +1385,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     SetLabelHintPopup(CopyParamLabel, InfoStr);
 
+    // As we change the font (via Color), it stops being scaled automatically
+    DragExtStatusLabel->Font->Height = DDFakeFileEnabledLabel->Font->Height;
     if (WinConfiguration->IsDDExtBroken())
     {
       DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_BROKEN);
@@ -1372,7 +1413,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     EnableControl(DDDrivesMemo, DDFakeFileEnabledButton->Checked);
     EnableControl(DDDrivesLabel, DDDrivesMemo->Enabled);
-    EnableControl(DDFakeFileDisabledPanel, DDFakeFileDisabledButton->Checked);
+    EnableControl(DDWarnLackOfTempSpaceCheck, DDFakeFileDisabledButton->Checked);
     EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
       DDCustomTemporaryDirectoryButton->Checked);
     EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
@@ -1462,7 +1503,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // integration
     EnableControl(ShellIconsGroup, !IsUWP());
-    MakeDefaultHandlerItem->Visible = IsWinVista();
 
     // languages
     LanguageChangeLabel->Visible =
@@ -2160,28 +2200,25 @@ void __fastcall TPreferencesDialog::NavigationTreeChange(TObject * /*Sender*/,
 void __fastcall TPreferencesDialog::PageControlChange(TObject * /*Sender*/)
 {
   // this is probably only ever called from FormShow (explicitly)
-  bool Found = false;
   if (DebugAlwaysTrue(PageControl->ActivePage->Tag > 0))
   {
-    for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
+    TTreeNode * Node = FindTreeNodeForPage(PageControl->ActivePage);
+    if (Node != NULL)
     {
-      if (NavigationTree->Items->Item[Index]->SelectedIndex ==
-            PageControl->ActivePage->Tag)
-      {
-        NavigationTree->Items->Item[Index]->Selected = true;
-        Found = true;
-      }
+      Node->Selected = true;
+      UpdateControls();
     }
-  }
-
-  if (DebugAlwaysTrue(Found))
-  {
-    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CMDialogKey(TWMKeyDown & Message)
 {
+  if ((Message.CharCode == VK_TAB) ||
+      ((Message.CharCode >= VK_LEFT) && (Message.CharCode >= VK_DOWN)))
+  {
+    FHideFocus = false;
+  }
+
   if (Message.CharCode == VK_TAB)
   {
     TShiftState Shift = KeyDataToShiftState(Message.KeyData);
@@ -2204,6 +2241,13 @@ void __fastcall TPreferencesDialog::CMDialogKey(TWMKeyDown & Message)
       return;
     }
   }
+  else if ((Message.CharCode == VK_ESCAPE) && (FSearchResults.get() != NULL))
+  {
+    SearchEdit->Clear();
+    NavigationTree->SetFocus();
+    Message.Result = 1;
+    return;
+  }
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
@@ -2211,21 +2255,24 @@ void __fastcall TPreferencesDialog::WMHelp(TWMHelp & Message)
 {
   DebugAssert(Message.HelpInfo != NULL);
 
-  if (Message.HelpInfo->iContextType == HELPINFO_WINDOW)
+  TControl * Control = FindControl(static_cast<HWND>(Message.HelpInfo->hItemHandle));
+  // Invoke help for the active page (not for whole form), regardless of a focus
+  // (e.g. even if the focus is on a control outside pagecontrol).
+  // Except when the control has its own help (SearchEdit).
+  if (((Control == NULL) || Control->HelpKeyword.IsEmpty()) &&
+      (Message.HelpInfo->iContextType == HELPINFO_WINDOW))
   {
-    // invoke help for active page (not for whole form), regardless of focus
-    // (e.g. even if focus is on control outside pagecontrol)
     Message.HelpInfo->hItemHandle = PageControl->ActivePage->Handle;
   }
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::CMDpiChanged(TMessage & Message)
+void __fastcall TPreferencesDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
+  DebugUsedParam2(OldDPI, NewDPI);
   // To update font sizes - Note that they get scaled automatically, but as we use our own algorithm,
   // we may end up using a slightly different size, so apply it straight away for consistency
   UpdateControls();
-  TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void TPreferencesDialog::WMActivate(TWMActivate & Message)
@@ -2237,6 +2284,17 @@ void TPreferencesDialog::WMActivate(TWMActivate & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void TPreferencesDialog::CMFocusChanged(TMessage & Message)
+{
+  if (FHideFocus)
+  {
+    FHideFocus = false;
+    HideFocus(UIS_SET);
+  }
+  UpdateControls();
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::Dispatch(void *Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -2245,10 +2303,6 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
   }
-  else if (M->Msg == CM_DPICHANGED)
-  {
-    CMDpiChanged(*M);
-  }
   else if (M->Msg == WM_HELP)
   {
     WMHelp(*((TWMHelp *)Message));
@@ -2256,6 +2310,10 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   else if (M->Msg == WM_ACTIVATE)
   {
     WMActivate(*((TWMActivate *)Message));
+  }
+  else if (M->Msg == CM_FOCUSCHANGED)
+  {
+    CMFocusChanged(*M);
   }
   else
   {
@@ -2707,7 +2765,7 @@ void __fastcall TPreferencesDialog::AddExtension()
   std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[HistoryKey]));
   UnicodeString Path;
   if (InputDialog(LoadStr(ADD_EXTENSION_CAPTION), LoadStr(ADD_EXTENSION_PROMPT), Path,
-        HELP_ADD_EXTENSION, History.get(), true, NULL, true, 400) &&
+        HELP_ADD_EXTENSION, History.get(), true, NULL, true, 444) &&
       !Path.IsEmpty())
   {
     CustomWinConfiguration->History[HistoryKey] = History.get();
@@ -2984,12 +3042,78 @@ void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Send
   }
 }
 //---------------------------------------------------------------------------
+void TPreferencesDialog::HideFocus(int State)
+{
+  Perform(WM_CHANGEUISTATE, MAKEWPARAM(State, UISF_HIDEFOCUS), 0);
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::SetFocusIfEnabled(TControl * Control)
+{
+  TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
+  if ((WinControl != NULL) && WinControl->Enabled)
+  {
+    WinControl->SetFocus();
+  }
+  else if (Control->Parent != NULL)
+  {
+    SetFocusIfEnabled(Control->Parent);
+  }
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::FocusAndHighlightControl(TControl * Control, const UnicodeString & Text)
+{
+  bool HighlightInside = true;
+  TLabel * Label = dynamic_cast<TLabel *>(Control);
+  if ((Label != NULL) && (Label->FocusControl != NULL))
+  {
+    Control = Label->FocusControl;
+    HighlightInside = false;
+  }
+
+  TRadioButton * RadioButton = dynamic_cast<TRadioButton *>(Control);
+  // cannot focus non-checked radio as that would check it
+  if ((RadioButton != NULL) && !RadioButton->Checked)
+  {
+    TWinControl * RadioParent = RadioButton->Parent;
+    bool Found = false;
+    for (int Index = 0; Index < RadioParent->ControlCount; Index++)
+    {
+      TRadioButton * RadioSibling = dynamic_cast<TRadioButton *>(RadioParent->Controls[Index]);
+      if ((RadioSibling != NULL) && RadioSibling->Checked)
+      {
+        SetFocusIfEnabled(RadioSibling);
+        Found = true;
+        break;
+      }
+    }
+
+    if (!Found)
+    {
+      SetFocusIfEnabled(RadioParent);
+    }
+  }
+  else
+  {
+    SetFocusIfEnabled(Control);
+
+    if (HighlightInside)
+    {
+      TComboBox * ComboBox = dynamic_cast<TComboBox *>(Control);
+      if ((ComboBox != NULL) && (ComboBox->Style == csDropDownList) && (ComboBox->Text != Text))
+      {
+        ComboBox->DroppedDown = true;
+      }
+    }
+  }
+
+  FHideFocus = ((Perform(WM_QUERYUISTATE, 0, 0) & UISF_HIDEFOCUS) != 0);
+  HideFocus(UIS_CLEAR);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::BackgroundConfirmationsLinkClick(TObject * /*Sender*/)
 {
-  PageControl->ActivePage = QueueSheet;
-  PageControlChange(NULL);
-  QueueNoConfirmationCheck->SetFocus();
-  QueueNoConfirmationCheck->Perform(WM_CHANGEUISTATE, MAKEWPARAM(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+  SetActivePage(QueueSheet);
+  FocusAndHighlightControl(QueueNoConfirmationCheck, EmptyStr);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ConfigureCommandButtonClick(TObject * /*Sender*/)
@@ -3312,7 +3436,8 @@ UnicodeString TPreferencesDialog::Bullet(const UnicodeString & S)
   {
     Result = Bullet + Result.SubString(Dash.Length() + 1, Result.Length() - Dash.Length());
   }
-  Result = ReplaceStr(Result, sLineBreak + Dash, sLineBreak + Bullet);
+  Result = ReplaceStr(Result, sLineBreak, L"\n");
+  Result = ReplaceStr(Result, L"\n" + Dash, sLineBreak + Bullet);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -3407,5 +3532,263 @@ void __fastcall TPreferencesDialog::ConfigureSshHostCAsButtonClick(TObject *)
 {
   UnicodeString Program = FindPuttyPath();
   ExecuteShellChecked(Program, L"-host-ca");
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SearchEditButtonClick(TObject *)
+{
+  SearchEdit->Clear();
+  SearchEdit->SetFocus();
+}
+//---------------------------------------------------------------------------
+int __fastcall TPreferencesDialog::CompareControlByLocation(void * Item1, void * Item2)
+{
+  TControl * Control1 = static_cast<TControl *>(Item1);
+  TControl * Control2 = static_cast<TControl *>(Item2);
+
+  int Result = Control1->Top - Control2->Top;
+  if (Result == 0)
+  {
+    Result = Control1->Left - Control2->Left;
+    if (Result == 0)
+    {
+      Result = reinterpret_cast<IntPtr>(Control1) - reinterpret_cast<IntPtr>(Control2);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::AddSearchResult(TStrings * Results, UnicodeString & Caption, TControl * Control, bool & NewResults)
+{
+  if (ContainsTextSemiCaseSensitive(Caption, SearchEdit->Text))
+  {
+    if ((FSearchResults.get() == NULL) ||
+        (FSearchResults->Count <= Results->Count) ||
+        (FSearchResults->Strings[Results->Count] != Caption) ||
+        (FSearchResults->Objects[Results->Count] != Control))
+    {
+      NewResults = true;
+    }
+
+    Results->AddObject(Caption, Control);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString TPreferencesDialog::GetControlText(TControl * Control)
+{
+  UnicodeString Result;
+  TTabSheet * TabSheet = dynamic_cast<TTabSheet *>(Control);
+  if (TabSheet != NULL)
+  {
+    Result = DebugNotNull(FindTreeNodeForPage(TabSheet))->Text;
+  }
+  else
+  {
+    int TextLen = Control->GetTextLen();
+    Result.SetLength(TextLen);
+    Control->GetTextBuf(Result.c_str(), TextLen + 1);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::Search(TControl * Control, TStrings * Results, bool & NewResults)
+{
+  DebugAssert(Control != SearchSheet);
+
+  TCustomEdit * Edit = dynamic_cast<TCustomEdit *>(Control);
+  TComboBox * ComboBox = dynamic_cast<TComboBox *>(Control);
+  if ((Edit == NULL) &&
+      ((ComboBox == NULL) || (ComboBox->Style == csDropDownList)))
+  {
+    if (ComboBox != NULL)
+    {
+      for (int Index = 0; Index < ComboBox->Items->Count; Index++)
+      {
+        UnicodeString Item = ComboBox->Items->Strings[Index];
+        AddSearchResult(Results, Item, Control, NewResults);
+      }
+    }
+    else
+    {
+      UnicodeString Caption = StripHotkey(GetControlText(Control));
+      if (Caption.Length() >= 4) // do not search unit labels (like "s")
+      {
+        AddSearchResult(Results, Caption, Control, NewResults);
+      }
+    }
+
+    TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
+    if (WinControl != NULL)
+    {
+      std::unique_ptr<TList> Controls(new TList());
+      for (int Index = 0; Index < WinControl->ControlCount; Index++)
+      {
+        TControl * ChildControl = WinControl->Controls[Index];
+        if (ChildControl->Visible)
+        {
+          Controls->Add(ChildControl);
+        }
+      }
+
+      Controls->Sort(CompareControlByLocation);
+
+      for (int Index = 0; Index < Controls->Count; Index++)
+      {
+        TControl * ChildControl = static_cast<TControl *>(Controls->Items[Index]);
+        Search(ChildControl, Results, NewResults);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SearchResultClick(TObject * Sender)
+{
+  TStaticText * LinkLabel = DebugNotNull(dynamic_cast<TStaticText *>(Sender));
+  UnicodeString Caption = FSearchResults->Strings[LinkLabel->Tag];
+  TControl * Control = dynamic_cast<TControl *>(FSearchResults->Objects[LinkLabel->Tag]);
+
+  FSearchResults.reset(NULL);
+
+  TControl * Parent = Control;
+  TTabSheet * Page;
+  while ((Page = dynamic_cast<TTabSheet *>(Parent)) == NULL)
+  {
+    Parent = Parent->Parent;
+  }
+
+  SetActivePage(Page);
+  FocusAndHighlightControl(Control, Caption);
+}
+//---------------------------------------------------------------------------
+TWinControl * TPreferencesDialog::GetSearchParent(TControl * Control)
+{
+  TWinControl * Result;
+  TTabSheet * ParentTabSheet = dynamic_cast<TTabSheet *>(Control);
+  if (ParentTabSheet != NULL)
+  {
+    TTreeNode * TreeNode = FindTreeNodeForPage(ParentTabSheet);
+    Result = (TreeNode->Parent != NULL) ? FindPageForTreeNode(TreeNode->Parent) : NULL;
+  }
+  else
+  {
+    Result = Control->Parent;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::UpdateSearching(bool Searching)
+{
+  if (!Searching)
+  {
+    if (FSearchResults.get() != NULL)
+    {
+      NavigationTreeChange(NULL, NavigationTree->Selected);
+      FSearchResults.reset(NULL);
+      DeleteChildren(SearchGroup);
+      UpdateControls();
+    }
+  }
+  else
+  {
+    std::unique_ptr<TStrings> Results(new TStringList());
+    bool NewResults = false;
+
+    // search the pages in the tree order
+    for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
+    {
+      Search(PageControl->Pages[Index], Results.get(), NewResults);
+    }
+
+    if (NewResults || (FSearchResults.get() == NULL) || (FSearchResults->Count > Results->Count))
+    {
+      FSearchResults.reset(Results.release());
+
+      DeleteChildren(SearchGroup);
+
+      int Top = PuttyPathLabel->Top;
+      int Left = PuttyPathLabel->Left;
+      if (FSearchResults->Count == 0)
+      {
+        TLabel * Label = new TLabel(this);
+        Label->Parent = SearchGroup;
+        Label->Top = Top;
+        Label->Left = Left;
+        Label->Caption = LoadStr(SEARCH_NO_RESULTS);
+      }
+      else
+      {
+        int Padding = ScaleByTextHeight(this, 8);
+        int Width = SearchGroup->ClientWidth - Left;
+        for (int Index = 0; Index < FSearchResults->Count; Index++)
+        {
+          UnicodeString Caption = FSearchResults->Strings[Index];
+          TControl * Control = dynamic_cast<TControl *>(FSearchResults->Objects[Index]);
+
+          UnicodeString Context;
+          TWinControl * Parent = GetSearchParent(Control);
+          while ((Parent != NULL) && DebugAlwaysTrue(Parent != PageControl))
+          {
+            UnicodeString ParentCaption = GetControlText(Parent);
+            if (!ParentCaption.IsEmpty())
+            {
+              Context = ParentCaption + L" " + ContextSeparator + L" " + Context;
+            }
+            Parent = GetSearchParent(Parent);
+          }
+
+          Context = DefaultStr(Context, ContextSeparator);
+
+          TLabel * ContextLabel = new TLabel(this);
+          ContextLabel->Parent = SearchGroup;
+          ContextLabel->Top = Top;
+          ContextLabel->Left = Left;
+          ContextLabel->ShowAccelChar = false;
+          ContextLabel->Caption = Context;
+
+          TStaticText * LinkLabel = new TStaticText(this);
+          LinkLabel->Parent = SearchGroup;
+          LinkLabel->Top = ContextLabel->Top + ContextLabel->Height;
+          LinkLabel->Left = Left;
+          LinkLabel->ShowAccelChar = false;
+          LinkLabel->Caption = Caption;
+          LinkLabel->Width = Width;
+          LinkLabel->Tag = Index;
+          LinkLabel->TabStop = true;
+          LinkLabel->OnClick = SearchResultClick;
+          AutoSizeLabel(LinkLabel);
+          if (LinkLabel->Top + LinkLabel->Height > SearchGroup->ClientHeight)
+          {
+            delete ContextLabel;
+            delete LinkLabel;
+            break;
+          }
+          LinkActionLabel(LinkLabel);
+
+          Top = LinkLabel->Top + LinkLabel->Height + Padding;
+        }
+      }
+    }
+
+    PageControl->ActivePage = SearchSheet;
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SearchEditChangeEnter(TObject *)
+{
+  UpdateSearching(!SearchEdit->Text.IsEmpty());
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::NavigationTreeEnter(TObject *)
+{
+  UpdateSearching(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FormShortCut(TWMKey & Msg, bool & Handled)
+{
+  if ((Msg.CharCode == L'F') && KeyDataToShiftState(Msg.KeyData).Contains(ssCtrl))
+  {
+    SearchEdit->SetFocus();
+    Handled = true;
+  }
 }
 //---------------------------------------------------------------------------

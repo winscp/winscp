@@ -136,7 +136,6 @@ var
   C: TComponent;
   Menu: TMenu;
 begin
-  Menu := nil;
   OptionsForm := TTBConvertOptionsForm.Create(Application);
   try
     for I := 0 to Owner.ComponentCount-1 do begin

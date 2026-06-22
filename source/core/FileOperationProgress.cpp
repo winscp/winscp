@@ -321,8 +321,8 @@ void __fastcall TFileOperationProgressType::Finish(UnicodeString FileName,
   DebugAssert(InProgress);
 
   // Cancel reader is guarded
-  FOnFinished(Operation, Side, Temp, FileName,
-    Success && (Cancel == csContinue), OnceDoneOperation);
+  bool NotCancelled = (Cancel == csContinue);
+  FOnFinished(Operation, Side, Temp, FileName, Success, NotCancelled, OnceDoneOperation);
   FFilesFinished++;
   if (Success)
   {

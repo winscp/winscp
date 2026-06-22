@@ -1,628 +1,658 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<PropertyGroup>
-		<ProjectGuid>{E82E93A5-709F-4C7A-918F-811A5F660941}</ProjectGuid>
-		<ProjectVersion>15.4</ProjectVersion>
-		<Config Condition="'$(Config)'==''">Release</Config>
-		<FrameworkType>None</FrameworkType>
-		<Base>True</Base>
-		<Platform Condition="'$(Platform)'==''">Win32</Platform>
-		<TargetedPlatforms>1</TargetedPlatforms>
-		<AppType>StaticLibrary</AppType>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-		<Base_Win32>true</Base_Win32>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
-		<Cfg_1>true</Cfg_1>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
-		<Cfg_2>true</Cfg_2>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base)'!=''">
-		<AllPackageLibs>rtl.lib</AllPackageLibs>
-		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
-		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-		<BCC_wamb>true</BCC_wamb>
-		<BCC_wamp>true</BCC_wamp>
-		<BCC_wasm>true</BCC_wasm>
-		<BCC_waus>false</BCC_waus>
-		<BCC_wbbf>true</BCC_wbbf>
-		<BCC_wccc>false</BCC_wccc>
-		<BCC_wcln>true</BCC_wcln>
-		<BCC_wcsu>false</BCC_wcsu>
-		<BCC_wdef>true</BCC_wdef>
-		<BCC_weff>false</BCC_weff>
-		<BCC_wexc>true</BCC_wexc>
-		<BCC_wimp>true</BCC_wimp>
-		<BCC_wnak>true</BCC_wnak>
-		<BCC_wnod>true</BCC_wnod>
-		<BCC_wntn>true</BCC_wntn>
-		<BCC_wpad>true</BCC_wpad>
-		<BCC_wpar>false</BCC_wpar>
-		<BCC_wpch>false</BCC_wpch>
-		<BCC_wpia>false</BCC_wpia>
-		<BCC_wrch>false</BCC_wrch>
-		<BCC_wrvl>false</BCC_wrvl>
-		<BCC_wstl>true</BCC_wstl>
-		<BCC_wstv>true</BCC_wstv>
-		<BCC_wsus>false</BCC_wsus>
-		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<Defines>SECURITY_WIN32;WINSCP;MPEXT;PLATFORM_HAS_SMEMCLR;_WINDOWS;$(Defines)</Defines>
-		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
-		<IncludePath>putty\windows\utils\;putty\utils\;putty\stubs\;putty\ssh\;putty\proxy\;putty\crypto\;putty\;putty\windows\;$(BDS)\include;$(IncludePath)</IncludePath>
-		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-		<Manifest_File>None</Manifest_File>
-		<Multithreaded>true</Multithreaded>
-		<OutputExt>lib</OutputExt>
-		<ProjectType>CppStaticLibrary</ProjectType>
-		<SanitizedProjectName>Putty</SanitizedProjectName>
-		<TLIB_PageSize>256</TLIB_PageSize>
-		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-		<VerInfo_Locale>1033</VerInfo_Locale>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win32)'!=''">
-		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1)'!=''">
-		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-		<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-		<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
-		<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-		<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-		<BCC_StackFrames>true</BCC_StackFrames>
-		<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-		<DCC_Define>DEBUG</DCC_Define>
-		<DCC_Optimize>false</DCC_Optimize>
-		<Defines>_DEBUG;$(Defines)</Defines>
-		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-		<TASM_Debugging>Full</TASM_Debugging>
-		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-		<Defines>NDEBUG;$(Defines)</Defines>
-		<TASM_Debugging>None</TASM_Debugging>
-	</PropertyGroup>
-	<ItemGroup>
-		<CppCompile Include="putty\be_list.c">
-			<BuildOrder>0</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\callback.c">
-			<BuildOrder>1</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\aes-common.c">
-			<BuildOrder>9</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\aesgcm-common.c">
-			<BuildOrder>158</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\aesgcm-ref-poly.c">
-			<BuildOrder>159</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\aesgcm-select.c">
-			<BuildOrder>160</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\aesgcm-sw.c">
-			<BuildOrder>161</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\aesold.c">
-			<BuildOrder>150</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\aes-select.c">
-			<BuildOrder>11</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\aes-sw.c">
-			<BuildOrder>12</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\arcfour.c">
-			<BuildOrder>13</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\argon2.c">
-			<BuildOrder>14</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\bcrypt.c">
-			<BuildOrder>15</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\blake2.c">
-			<BuildOrder>16</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\blowfish.c">
-			<BuildOrder>17</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\chacha20-poly1305.c">
-			<BuildOrder>24</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\des.c">
-			<BuildOrder>18</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\diffie-hellman.c">
-			<BuildOrder>19</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\dsa.c">
-			<BuildOrder>20</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\ecc-arithmetic.c">
-			<BuildOrder>21</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\ecc-ssh.c">
-			<BuildOrder>22</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\hash_simple.c">
-			<BuildOrder>150</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\hmac.c">
-			<BuildOrder>23</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\mac.c">
-			<BuildOrder>25</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\mac_simple.c">
-			<BuildOrder>26</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\md5.c">
-			<BuildOrder>27</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\mpint.c">
-			<BuildOrder>28</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\ntru.c">
-			<BuildOrder>163</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\openssh-certs.c">
-			<BuildOrder>163</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\prng.c">
-			<BuildOrder>29</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\pubkey-pem.c">
-			<BuildOrder>30</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\pubkey-ppk.c">
-			<BuildOrder>31</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\rfc6979.c">
-			<BuildOrder>165</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\rsa.c">
-			<BuildOrder>32</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha1-common.c">
-			<BuildOrder>33</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha1-select.c">
-			<BuildOrder>34</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha1-sw.c">
-			<BuildOrder>35</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha256-common.c">
-			<BuildOrder>37</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha256-select.c">
-			<BuildOrder>38</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha256-sw.c">
-			<BuildOrder>39</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha3.c">
-			<BuildOrder>36</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha512-common.c">
-			<BuildOrder>40</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha512-select.c">
-			<BuildOrder>41</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\crypto\sha512-sw.c">
-			<BuildOrder>42</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\errsock.c">
-			<BuildOrder>2</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\import.c">
-			<BuildOrder>3</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\logging.c">
-			<BuildOrder>4</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\cproxy.c">
-			<BuildOrder>44</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\http_p.c">
-			<BuildOrder>45</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\interactor.c">
-			<BuildOrder>46</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\local.c">
-			<BuildOrder>47</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\nosshproxy.c">
-			<BuildOrder>48</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\proxy.c">
-			<BuildOrder>50</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\socks4.c">
-			<BuildOrder>51</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\socks5.c">
-			<BuildOrder>52</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\proxy\telnet.c">
-			<BuildOrder>54</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\settings.c">
-			<BuildOrder>5</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\agentf.c">
-			<BuildOrder>55</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\bpp2.c">
-			<BuildOrder>56</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\bpp-bare.c">
-			<BuildOrder>57</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\censor2.c">
-			<BuildOrder>58</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\common_p.c">
-			<BuildOrder>59</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\connection2.c">
-			<BuildOrder>60</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\connection2-client.c">
-			<BuildOrder>61</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\gssc.c">
-			<BuildOrder>62</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\kex2-client.c">
-			<BuildOrder>63</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\mainchan.c">
-			<BuildOrder>64</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\nosharing.c">
-			<BuildOrder>65</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\pgssapi.c">
-			<BuildOrder>66</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\portfwd.c">
-			<BuildOrder>67</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\sharing.c">
-			<BuildOrder>68</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\ssh.c">
-			<BuildOrder>69</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\transient-hostkey-cache.c">
-			<BuildOrder>70</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\transport2.c">
-			<BuildOrder>71</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\userauth2-client.c">
-			<BuildOrder>72</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\verstring.c">
-			<BuildOrder>73</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh\zlib.c">
-			<BuildOrder>75</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\sshpubk.c">
-			<BuildOrder>7</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\sshrand.c">
-			<BuildOrder>8</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\stubs\null-cipher.c">
-			<BuildOrder>153</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\stubs\null-key.c">
-			<BuildOrder>154</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\stubs\null-lp.c">
-			<BuildOrder>99</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\stubs\null-mac.c">
-			<BuildOrder>155</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\stubs\null-opener.c">
-			<BuildOrder>156</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\stubs\null-plug.c">
-			<BuildOrder>76</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\stubs\null-seat.c">
-			<BuildOrder>100</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\antispoof.c">
-			<BuildOrder>77</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\backend_socket_log.c">
-			<BuildOrder>78</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\base64_decode.c">
-			<BuildOrder>145</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\base64_decode_atom.c">
-			<BuildOrder>79</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\base64_encode.c">
-			<BuildOrder>146</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\base64_encode_atom.c">
-			<BuildOrder>80</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\base64_valid.c">
-			<BuildOrder>165</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\bufchain.c">
-			<BuildOrder>81</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\burnstr.c">
-			<BuildOrder>151</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\cert-expr.c">
-			<BuildOrder>147</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\conf.c">
-			<BuildOrder>82</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\conf_dest.c">
-			<BuildOrder>164</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\conf_launchable.c">
-			<BuildOrder>83</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\ctrlparse.c">
-			<BuildOrder>84</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\default_description.c">
-			<BuildOrder>85</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\dup_mb_to_wc.c">
-			<BuildOrder>86</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\dupcat.c">
-			<BuildOrder>148</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\dupprintf.c">
-			<BuildOrder>87</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\dupstr.c">
-			<BuildOrder>152</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\host_ca_new_free.c">
-			<BuildOrder>148</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\host_strchr.c">
-			<BuildOrder>92</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\host_strchr_internal.c">
-			<BuildOrder>93</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\host_strcspn.c">
-			<BuildOrder>90</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\host_strduptrim.c">
-			<BuildOrder>91</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\host_strrchr.c">
-			<BuildOrder>94</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\key_components.c">
-			<BuildOrder>149</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\log_proxy_stderr.c">
-			<BuildOrder>95</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\make_spr_sw_abort_static.c">
-			<BuildOrder>153</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\marshal.c">
-			<BuildOrder>96</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\memory.c">
-			<BuildOrder>97</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\memxor.c">
-			<BuildOrder>98</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\nullstrcmp.c">
-			<BuildOrder>101</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\out_of_memory.c">
-			<BuildOrder>102</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\parse_blocksize.c">
-			<BuildOrder>103</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\percent_decode.c">
-			<BuildOrder>150</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\percent_encode.c">
-			<BuildOrder>151</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\prompts.c">
-			<BuildOrder>104</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\ptrlen.c">
-			<BuildOrder>105</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\seat_connection_fatal.c">
-			<BuildOrder>107</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\seat_dialog_text.c">
-			<BuildOrder>152</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\sk_free_peer_info.c">
-			<BuildOrder>108</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\smemclr.c">
-			<BuildOrder>109</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\smemeq.c">
-			<BuildOrder>110</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\spr_get_error_message.c">
-			<BuildOrder>111</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\ssh2_pick_fingerprint.c">
-			<BuildOrder>112</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\sshutils.c">
-			<BuildOrder>113</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\strbuf.c">
-			<BuildOrder>114</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\string_length_for_printf.c">
-			<BuildOrder>154</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\stripctrl.c">
-			<BuildOrder>115</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\tempseat.c">
-			<BuildOrder>116</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\tree234.c">
-			<BuildOrder>117</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\version.c">
-			<BuildOrder>119</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\wildcard.c">
-			<BuildOrder>120</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\write_c_string_literal.c">
-			<BuildOrder>121</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\agent-client.c">
-			<BuildOrder>127</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\gss.c">
-			<BuildOrder>128</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\handle-io.c">
-			<BuildOrder>129</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\handle-socket.c">
-			<BuildOrder>130</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\handle-wait.c">
-			<BuildOrder>151</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\local-proxy.c">
-			<BuildOrder>131</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\named-pipe-client.c">
-			<BuildOrder>132</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\network.c">
-			<BuildOrder>133</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\noise.c">
-			<BuildOrder>134</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\no-jump-list.c">
-			<BuildOrder>135</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\storage.c">
-			<BuildOrder>136</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\unicode.c">
-			<BuildOrder>137</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\agent_named_pipe_name.c">
-			<BuildOrder>138</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\cryptoapi.c">
-			<BuildOrder>139</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\defaults.c">
-			<BuildOrder>140</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\escape_registry_key.c">
-			<BuildOrder>142</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\filename.c">
-			<BuildOrder>143</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\fontspec.c">
-			<BuildOrder>144</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\get_system_dir.c">
-			<BuildOrder>147</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\get_username.c">
-			<BuildOrder>145</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\load_system32_dll.c">
-			<BuildOrder>154</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\ltime.c">
-			<BuildOrder>147</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\open_for_write_would_lose_data.c">
-			<BuildOrder>149</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\registry.c">
-			<BuildOrder>162</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\security_p.c">
-			<BuildOrder>150</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\win_strerror.c">
-			<BuildOrder>152</BuildOrder>
-		</CppCompile>
-		<BuildConfiguration Include="Base">
-			<Key>Base</Key>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Debug">
-			<Key>Cfg_1</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Release">
-			<Key>Cfg_2</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-	</ItemGroup>
-	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
-	<ProjectExtensions>
-		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
-		<Borland.ProjectType>CppStaticLibrary</Borland.ProjectType>
-		<BorlandProject>
-			<CPlusPlusBuilder.Personality>
-				<ProjectProperties>
-					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
-					<ProjectProperties Name="ManagePaths">True</ProjectProperties>
-					<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
-					<ProjectProperties Name="IndexFiles">False</ProjectProperties>
-				</ProjectProperties>
-			</CPlusPlusBuilder.Personality>
-			<Platforms>
-				<Platform value="Win32">True</Platform>
-				<Platform value="Win64">False</Platform>
-			</Platforms>
-		</BorlandProject>
-		<ProjectFileVersion>12</ProjectFileVersion>
-	</ProjectExtensions>
-	<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+    <PropertyGroup>
+        <ProjectGuid>{E82E93A5-709F-4C7A-918F-811A5F660941}</ProjectGuid>
+        <ProjectVersion>19.5</ProjectVersion>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <FrameworkType>None</FrameworkType>
+        <Base>True</Base>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
+        <AppType>StaticLibrary</AppType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <AllPackageLibs>rtl.lib</AllPackageLibs>
+        <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+        <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BCC_wamb>true</BCC_wamb>
+        <BCC_wamp>true</BCC_wamp>
+        <BCC_wasm>true</BCC_wasm>
+        <BCC_waus>false</BCC_waus>
+        <BCC_wbbf>false</BCC_wbbf>
+        <BCC_wccc>false</BCC_wccc>
+        <BCC_wcln>true</BCC_wcln>
+        <BCC_wcsu>false</BCC_wcsu>
+        <BCC_wdef>true</BCC_wdef>
+        <BCC_weff>false</BCC_weff>
+        <BCC_wexc>true</BCC_wexc>
+        <BCC_wimp>true</BCC_wimp>
+        <BCC_wnak>true</BCC_wnak>
+        <BCC_wnod>true</BCC_wnod>
+        <BCC_wntn>true</BCC_wntn>
+        <BCC_wpad>true</BCC_wpad>
+        <BCC_wpar>false</BCC_wpar>
+        <BCC_wpch>false</BCC_wpch>
+        <BCC_wpia>false</BCC_wpia>
+        <BCC_wrch>false</BCC_wrch>
+        <BCC_wrvl>false</BCC_wrvl>
+        <BCC_wstl>true</BCC_wstl>
+        <BCC_wstv>true</BCC_wstv>
+        <BCC_wsus>false</BCC_wsus>
+        <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <Defines>SECURITY_WIN32;WINSCP;MPEXT;PLATFORM_HAS_SMEMCLR;_WINDOWS;$(Defines)</Defines>
+        <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+        <IncludePath>putty\windows\utils\;putty\utils\;putty\stubs\;putty\ssh\;putty\proxy\;putty\crypto\;putty\;putty\windows\;$(BDS)\include;$(IncludePath)</IncludePath>
+        <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+        <Manifest_File>None</Manifest_File>
+        <Multithreaded>true</Multithreaded>
+        <OutputExt>lib</OutputExt>
+        <ProjectType>CppStaticLibrary</ProjectType>
+        <SanitizedProjectName>Putty</SanitizedProjectName>
+        <TLIB_PageSize>512</TLIB_PageSize>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+        <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+        <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+        <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+        <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+        <BCC_StackFrames>true</BCC_StackFrames>
+        <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_Define>DEBUG</DCC_Define>
+        <DCC_Optimize>false</DCC_Optimize>
+        <Defines>_DEBUG;$(Defines)</Defines>
+        <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+        <TASM_Debugging>Full</TASM_Debugging>
+        <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <Defines>NDEBUG;$(Defines)</Defines>
+        <TASM_Debugging>None</TASM_Debugging>
+    </PropertyGroup>
+    <ItemGroup>
+        <CppCompile Include="putty\be_list.c">
+            <BuildOrder>0</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\callback.c">
+            <BuildOrder>1</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\aes-common.c">
+            <BuildOrder>9</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\aesgcm-ref-poly.c">
+            <BuildOrder>159</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\aesgcm-select.c">
+            <BuildOrder>160</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\aesgcm-sw.c">
+            <BuildOrder>161</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\aesold.c">
+            <BuildOrder>150</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\aes-select.c">
+            <BuildOrder>11</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\aes-sw.c">
+            <BuildOrder>12</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\arcfour.c">
+            <BuildOrder>13</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\argon2.c">
+            <BuildOrder>14</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\bcrypt.c">
+            <BuildOrder>15</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\blake2.c">
+            <BuildOrder>16</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\blowfish.c">
+            <BuildOrder>17</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\chacha20-poly1305.c">
+            <BuildOrder>24</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\des.c">
+            <BuildOrder>18</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\diffie-hellman.c">
+            <BuildOrder>19</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\dsa.c">
+            <BuildOrder>20</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\ecc-arithmetic.c">
+            <BuildOrder>21</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\ecc-ssh.c">
+            <BuildOrder>22</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\hash_simple.c">
+            <BuildOrder>150</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\hmac.c">
+            <BuildOrder>23</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\kex-hybrid.c">
+            <BuildOrder>174</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\mac.c">
+            <BuildOrder>25</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\mac_simple.c">
+            <BuildOrder>26</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\md5.c">
+            <BuildOrder>27</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\mlkem.c">
+            <BuildOrder>175</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\mpint.c">
+            <BuildOrder>28</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\ntru.c">
+            <BuildOrder>163</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\openssh-certs.c">
+            <BuildOrder>163</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\prng.c">
+            <BuildOrder>29</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\pubkey-pem.c">
+            <BuildOrder>30</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\pubkey-ppk.c">
+            <BuildOrder>31</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\rfc6979.c">
+            <BuildOrder>165</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\rsa.c">
+            <BuildOrder>32</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha1-common.c">
+            <BuildOrder>33</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha1-select.c">
+            <BuildOrder>34</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha1-sw.c">
+            <BuildOrder>35</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha256-common.c">
+            <BuildOrder>37</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha256-select.c">
+            <BuildOrder>38</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha256-sw.c">
+            <BuildOrder>39</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha3.c">
+            <BuildOrder>36</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha512-common.c">
+            <BuildOrder>40</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha512-select.c">
+            <BuildOrder>41</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\sha512-sw.c">
+            <BuildOrder>42</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\errsock.c">
+            <BuildOrder>2</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\import.c">
+            <BuildOrder>3</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\logging.c">
+            <BuildOrder>4</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\cproxy.c">
+            <BuildOrder>44</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\http_p.c">
+            <BuildOrder>45</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\interactor.c">
+            <BuildOrder>46</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\local.c">
+            <BuildOrder>47</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\nosshproxy.c">
+            <BuildOrder>48</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\proxy.c">
+            <BuildOrder>50</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\socks4.c">
+            <BuildOrder>51</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\socks5.c">
+            <BuildOrder>52</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\telnet.c">
+            <BuildOrder>54</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\settings.c">
+            <BuildOrder>5</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\agentf.c">
+            <BuildOrder>55</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\bpp2.c">
+            <BuildOrder>56</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\bpp-bare.c">
+            <BuildOrder>57</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\censor2.c">
+            <BuildOrder>58</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\common_p.c">
+            <BuildOrder>59</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\connection2.c">
+            <BuildOrder>60</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\connection2-client.c">
+            <BuildOrder>61</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\gssc.c">
+            <BuildOrder>62</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\kex2-client.c">
+            <BuildOrder>63</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\mainchan.c">
+            <BuildOrder>64</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\nosharing.c">
+            <BuildOrder>65</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\pgssapi.c">
+            <BuildOrder>66</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\portfwd.c">
+            <BuildOrder>67</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\sharing.c">
+            <BuildOrder>68</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\ssh.c">
+            <BuildOrder>69</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\transient-hostkey-cache.c">
+            <BuildOrder>70</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\transport2.c">
+            <BuildOrder>71</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\userauth2-client.c">
+            <BuildOrder>72</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\verstring.c">
+            <BuildOrder>73</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\ssh\zlib.c">
+            <BuildOrder>75</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\sshpubk.c">
+            <BuildOrder>7</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\sshrand.c">
+            <BuildOrder>8</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\stubs\null-cipher.c">
+            <BuildOrder>153</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\stubs\null-key.c">
+            <BuildOrder>154</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\stubs\null-lp.c">
+            <BuildOrder>99</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\stubs\null-mac.c">
+            <BuildOrder>155</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\stubs\null-opener.c">
+            <BuildOrder>156</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\stubs\null-plug.c">
+            <BuildOrder>76</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\stubs\null-seat.c">
+            <BuildOrder>100</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\stubs\null-socket.c">
+            <BuildOrder>171</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\antispoof.c">
+            <BuildOrder>77</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\backend_socket_log.c">
+            <BuildOrder>78</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\base64_decode.c">
+            <BuildOrder>145</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\base64_decode_atom.c">
+            <BuildOrder>79</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\base64_encode.c">
+            <BuildOrder>146</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\base64_encode_atom.c">
+            <BuildOrder>80</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\base64_valid.c">
+            <BuildOrder>165</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\bufchain.c">
+            <BuildOrder>81</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\burnstr.c">
+            <BuildOrder>151</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\burnwcs.c">
+            <BuildOrder>170</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\cert-expr.c">
+            <BuildOrder>147</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\conf.c">
+            <BuildOrder>82</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\conf_data.c">
+            <BuildOrder>167</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\conf_dest.c">
+            <BuildOrder>164</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\conf_launchable.c">
+            <BuildOrder>83</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\ctrlparse.c">
+            <BuildOrder>84</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\decode_utf8.c">
+            <BuildOrder>176</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\decode_utf8_to_wchar.c">
+            <BuildOrder>175</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\decode_utf8_to_wide_string.c">
+            <BuildOrder>172</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\default_description.c">
+            <BuildOrder>85</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\dup_mb_to_wc.c">
+            <BuildOrder>86</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\dup_wc_to_mb.c">
+            <BuildOrder>168</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\dupcat.c">
+            <BuildOrder>148</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\dupprintf.c">
+            <BuildOrder>87</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\dupstr.c">
+            <BuildOrder>152</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\dupwcs.c">
+            <BuildOrder>166</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\encode_utf8.c">
+            <BuildOrder>174</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\encode_wide_string_as_utf8.c">
+            <BuildOrder>173</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\host_ca_new_free.c">
+            <BuildOrder>148</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\host_strchr.c">
+            <BuildOrder>92</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\host_strchr_internal.c">
+            <BuildOrder>93</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\host_strcspn.c">
+            <BuildOrder>90</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\host_strduptrim.c">
+            <BuildOrder>91</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\host_strrchr.c">
+            <BuildOrder>94</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\key_components.c">
+            <BuildOrder>149</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\log_proxy_stderr.c">
+            <BuildOrder>95</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\logeventf.c">
+            <BuildOrder>169</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\make_spr_sw_abort_static.c">
+            <BuildOrder>153</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\marshal.c">
+            <BuildOrder>96</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\memory.c">
+            <BuildOrder>97</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\memxor.c">
+            <BuildOrder>98</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\nullstrcmp.c">
+            <BuildOrder>101</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\out_of_memory.c">
+            <BuildOrder>102</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\parse_blocksize.c">
+            <BuildOrder>103</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\prompts.c">
+            <BuildOrder>104</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\ptrlen.c">
+            <BuildOrder>105</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\seat_connection_fatal.c">
+            <BuildOrder>107</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\seat_dialog_text.c">
+            <BuildOrder>152</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\sk_free_peer_info.c">
+            <BuildOrder>108</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\smemclr.c">
+            <BuildOrder>109</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\smemeq.c">
+            <BuildOrder>110</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\spr_get_error_message.c">
+            <BuildOrder>111</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\ssh2_pick_fingerprint.c">
+            <BuildOrder>112</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\sshutils.c">
+            <BuildOrder>113</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\strbuf.c">
+            <BuildOrder>114</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\string_length_for_printf.c">
+            <BuildOrder>154</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\stripctrl.c">
+            <BuildOrder>115</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\tempseat.c">
+            <BuildOrder>116</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\tree234.c">
+            <BuildOrder>117</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\version.c">
+            <BuildOrder>119</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\wildcard.c">
+            <BuildOrder>120</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\write_c_string_literal.c">
+            <BuildOrder>121</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\agent-client.c">
+            <BuildOrder>127</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\gss.c">
+            <BuildOrder>128</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\handle-io.c">
+            <BuildOrder>129</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\handle-socket.c">
+            <BuildOrder>130</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\handle-wait.c">
+            <BuildOrder>151</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\local-proxy.c">
+            <BuildOrder>131</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\named-pipe-client.c">
+            <BuildOrder>132</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\network.c">
+            <BuildOrder>133</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\noise.c">
+            <BuildOrder>134</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\no-jump-list.c">
+            <BuildOrder>135</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\storage.c">
+            <BuildOrder>136</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\unicode.c">
+            <BuildOrder>137</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\agent_named_pipe_name.c">
+            <BuildOrder>138</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\cryptoapi.c">
+            <BuildOrder>139</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\defaults.c">
+            <BuildOrder>140</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\escape_registry_key.c">
+            <BuildOrder>142</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\filename.c">
+            <BuildOrder>143</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\fontspec.c">
+            <BuildOrder>144</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\get_system_dir.c">
+            <BuildOrder>147</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\get_username.c">
+            <BuildOrder>145</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\load_system32_dll.c">
+            <BuildOrder>154</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\ltime.c">
+            <BuildOrder>147</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\open_for_write_would_lose_data.c">
+            <BuildOrder>149</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\registry.c">
+            <BuildOrder>162</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\security_p.c">
+            <BuildOrder>150</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\windows\utils\win_strerror.c">
+            <BuildOrder>152</BuildOrder>
+        </CppCompile>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+    <ProjectExtensions>
+        <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+        <Borland.ProjectType>CppStaticLibrary</Borland.ProjectType>
+        <BorlandProject>
+            <CPlusPlusBuilder.Personality>
+                <ProjectProperties>
+                    <ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+                    <ProjectProperties Name="ManagePaths">True</ProjectProperties>
+                    <ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+                    <ProjectProperties Name="IndexFiles">False</ProjectProperties>
+                </ProjectProperties>
+            </CPlusPlusBuilder.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

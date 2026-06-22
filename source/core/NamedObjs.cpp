@@ -52,7 +52,7 @@ void __fastcall TNamedObject::MakeUniqueIn(TNamedObjectList * List)
   if (List && (List->IndexOf(this) == -1))
     while (List->FindByName(Name))
     {
-      Integer N = 0, P;
+      Integer N = 0, P CLANG_INITIALIZE(0);
       // If name already contains number parenthesis remove it (and remember it)
       if ((Name[Name.Length()] == L')') && ((P = Name.LastDelimiter(L'(')) > 0))
         try
@@ -61,7 +61,7 @@ void __fastcall TNamedObject::MakeUniqueIn(TNamedObjectList * List)
           Name.Delete(P, Name.Length() - P + 1);
           Name = Name.TrimRight();
         }
-        catch (Exception &E)
+        catch (Exception &)
         {
           N = 0;
         }

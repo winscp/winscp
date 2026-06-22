@@ -6,31 +6,33 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CopyParamPresetDialog'
-  ClientHeight = 560
-  ClientWidth = 675
+  ClientHeight = 556
+  ClientWidth = 744
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = False
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    675
-    560)
-  PixelsPerInch = 96
-  TextHeight = 13
+    744
+    556)
+  TextHeight = 15
   object Label1: TLabel
-    Left = 10
-    Top = 13
-    Width = 90
-    Height = 13
+    Left = 8
+    Top = 8
+    Width = 97
+    Height = 15
     Caption = 'Preset &description:'
     FocusControl = DescriptionEdit
   end
   object OkButton: TButton
-    Left = 423
-    Top = 527
-    Width = 75
+    Left = 484
+    Top = 523
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -39,9 +41,9 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
     TabOrder = 4
   end
   object CancelButton: TButton
-    Left = 507
-    Top = 527
-    Width = 75
+    Left = 570
+    Top = 523
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -50,70 +52,70 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
     TabOrder = 5
   end
   object DescriptionEdit: TEdit
-    Left = 10
-    Top = 29
-    Width = 405
-    Height = 21
+    Left = 8
+    Top = 24
+    Width = 450
+    Height = 23
     MaxLength = 250
     TabOrder = 0
     OnChange = ControlChange
   end
   inline CopyParamsFrame: TCopyParamsFrame
-    Left = 2
-    Top = 51
-    Width = 420
-    Height = 477
+    Left = 5
+    Top = 50
+    Width = 456
+    Height = 471
     HelpType = htKeyword
     TabOrder = 1
   end
   object RuleGroup: TGroupBox
-    Left = 426
-    Top = 91
-    Width = 240
-    Height = 430
+    Left = 472
+    Top = 89
+    Width = 264
+    Height = 428
     Anchors = [akLeft, akTop, akRight, akBottom]
     Caption = 'Autoselection rule'
     TabOrder = 3
     DesignSize = (
-      240
-      430)
+      264
+      428)
     object Label2: TLabel
-      Left = 16
-      Top = 20
-      Width = 79
-      Height = 13
+      Left = 9
+      Top = 22
+      Width = 89
+      Height = 15
       Caption = 'Hostna&me mask:'
       FocusControl = HostNameEdit
     end
     object Label3: TLabel
-      Left = 16
-      Top = 68
-      Width = 79
-      Height = 13
+      Left = 9
+      Top = 69
+      Width = 87
+      Height = 15
       Caption = 'Us&ername mask:'
       FocusControl = UserNameEdit
     end
     object Label4: TLabel
-      Left = 16
+      Left = 9
       Top = 116
-      Width = 114
-      Height = 13
+      Width = 125
+      Height = 15
       Caption = 'Remote director&y mask:'
       FocusControl = RemoteDirectoryEdit
     end
     object Label5: TLabel
-      Left = 16
-      Top = 164
-      Width = 101
-      Height = 13
+      Left = 10
+      Top = 163
+      Width = 112
+      Height = 15
       Caption = '&Local directory mask:'
       FocusControl = LocalDirectoryEdit
     end
     object HostNameEdit: TEdit
-      Left = 16
-      Top = 36
-      Width = 208
-      Height = 21
+      Left = 9
+      Top = 40
+      Width = 246
+      Height = 23
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
       TabOrder = 0
@@ -121,10 +123,10 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       OnExit = MaskEditExit
     end
     object UserNameEdit: TEdit
-      Left = 16
-      Top = 84
-      Width = 208
-      Height = 21
+      Left = 9
+      Top = 87
+      Width = 246
+      Height = 23
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
       TabOrder = 1
@@ -132,10 +134,10 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       OnExit = MaskEditExit
     end
     object RemoteDirectoryEdit: TEdit
-      Left = 16
-      Top = 132
-      Width = 208
-      Height = 21
+      Left = 9
+      Top = 134
+      Width = 246
+      Height = 23
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
       TabOrder = 2
@@ -143,10 +145,10 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       OnExit = MaskEditExit
     end
     object LocalDirectoryEdit: TEdit
-      Left = 16
-      Top = 180
-      Width = 208
-      Height = 21
+      Left = 9
+      Top = 181
+      Width = 246
+      Height = 23
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
       TabOrder = 3
@@ -154,31 +156,31 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       OnExit = MaskEditExit
     end
     object CurrentRuleButton: TButton
-      Left = 16
-      Top = 211
-      Width = 73
+      Left = 9
+      Top = 214
+      Width = 80
       Height = 25
       Caption = 'Current'
-      TabOrder = 4
+      TabOrder = 5
       OnClick = CurrentRuleButtonClick
     end
     object RuleMaskHintText: TStaticText
-      Left = 95
-      Top = 207
+      Left = 126
+      Top = 204
       Width = 129
       Height = 17
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
       AutoSize = False
       Caption = 'mask hints'
-      TabOrder = 5
+      TabOrder = 4
       TabStop = True
     end
   end
   object HasRuleCheck: TCheckBox
-    Left = 433
+    Left = 474
     Top = 66
-    Width = 216
+    Width = 262
     Height = 17
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Automatically select this preset when'
@@ -186,9 +188,9 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
     OnClick = ControlChange
   end
   object HelpButton: TButton
-    Left = 591
-    Top = 527
-    Width = 75
+    Left = 656
+    Top = 523
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'Help'

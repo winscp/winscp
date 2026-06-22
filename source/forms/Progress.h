@@ -23,6 +23,7 @@
 #include "TB2ExtItems.hpp"
 #include "TBXExtItems.hpp"
 #include <Vcl.AppEvnts.hpp>
+#include <System.ImageList.hpp>
 #include <list>
 //----------------------------------------------------------------------------
 class TProgressForm : public TForm
@@ -141,6 +142,7 @@ protected:
 public:
   static UnicodeString __fastcall ProgressStr(
     const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData);
+  static void SizeToolbar(TForm * Form, TTBXToolbar * Toolbar, TTBXDock * Dock, TPanel * ToolbarPanel);
 
   virtual __fastcall TProgressForm(
     TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, TSynchronizeProgress * SynchronizeProgress);

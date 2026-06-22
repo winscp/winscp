@@ -201,7 +201,7 @@ class TTunnelUI : public TSessionUI
 {
 public:
   __fastcall TTunnelUI(TTerminal * Terminal);
-  virtual void __fastcall Information(const UnicodeString & Str, bool Status);
+  virtual void __fastcall Information(const UnicodeString & Str);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
     TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
     TQueryType QueryType);
@@ -228,11 +228,11 @@ __fastcall TTunnelUI::TTunnelUI(TTerminal * Terminal)
   FTerminalThread = GetCurrentThreadId();
 }
 //---------------------------------------------------------------------------
-void __fastcall TTunnelUI::Information(const UnicodeString & Str, bool Status)
+void __fastcall TTunnelUI::Information(const UnicodeString & Str)
 {
   if (GetCurrentThreadId() == FTerminalThread)
   {
-    FTerminal->Information(Str, Status);
+    FTerminal->Information(Str);
   }
 }
 //---------------------------------------------------------------------------
@@ -329,7 +329,7 @@ public:
   inline __fastcall TCallbackGuard(TTerminal * FTerminal);
   inline __fastcall ~TCallbackGuard();
 
-  void __fastcall FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword);
+  NORETURN void __fastcall FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword);
   inline void __fastcall Verify();
   inline bool __fastcall Verify(Exception * E);
   void __fastcall Dismiss();
@@ -341,8 +341,8 @@ private:
 };
 //---------------------------------------------------------------------------
 __fastcall TCallbackGuard::TCallbackGuard(TTerminal * Terminal) :
-  FTerminal(Terminal),
   FFatalError(NULL),
+  FTerminal(Terminal),
   FGuarding(FTerminal->FCallbackGuard == NULL)
 {
   if (FGuarding)
@@ -362,7 +362,7 @@ __fastcall TCallbackGuard::~TCallbackGuard()
   delete FFatalError;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCallbackGuard::FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword)
+NORETURN void __fastcall TCallbackGuard::FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword)
 {
   DebugAssert(FGuarding);
 
@@ -409,7 +409,8 @@ bool __fastcall TCallbackGuard::Verify(Exception * E)
     (dynamic_cast<ECallbackGuardAbort *>(E) != NULL);
   if (Result)
   {
-    DebugAssert(FGuarding && (FFatalError != NULL));
+    DebugAssert(FGuarding);
+    DebugAssert(FFatalError != NULL);
     Verify();
   }
   return Result;
@@ -874,12 +875,12 @@ void TParallelOperation::Done(
 
             if (!FParallelFileMerging)
             {
-              // Once we obtain "merging" semaphor, we won't leave until everything is merged
+              // Once we obtain "merging" semaphore, we won't leave until everything is merged
               TAutoFlag MergingFlag(FParallelFileMerging);
 
               try
               {
-                UnicodeString TargetName = TPath::Combine(TargetDir, FParallelFileTargetName);
+                UnicodeString TargetName = CombinePaths(TargetDir, FParallelFileTargetName);
                 UnicodeString TargetNamePartial = TargetName + PartialExt;
                 UnicodeString TargetNamePartialOnly = ExtractFileName(TargetNamePartial);
 
@@ -896,7 +897,7 @@ void TParallelOperation::Done(
                     UnicodeString FileNameOnly = UnixExtractFileName(FileName);
                     // Safe as write access to FParallelFileMerged is guarded by FParallelFileMerging
                     int Index = FParallelFileMerged;
-                    UnicodeString TargetPartName = GetPartPrefix(TPath::Combine(TargetDir, FileNameOnly)) + IntToStr(Index);
+                    UnicodeString TargetPartName = GetPartPrefix(CombinePaths(TargetDir, FileNameOnly)) + IntToStr(Index);
 
                     if ((CopyParam->PartSize >= 0) && (Terminal->OperationProgress->TransferredSize != CopyParam->PartSize))
                     {
@@ -1101,7 +1102,7 @@ int TParallelOperation::GetNext(
         }
         else
         {
-          DirectoryData.OppositePath = TPath::Combine(TargetDir, OnlyFileName);
+          DirectoryData.OppositePath = CombinePaths(TargetDir, OnlyFileName);
         }
 
         DirectoryData.Exists = false;
@@ -1470,7 +1471,7 @@ void __fastcall TTerminal::Open()
       ValidateEncryptKey(FEncryptKey);
     }
 
-    DoInformation(L"", true, 1);
+    DoInformation(L"", 1);
     try
     {
       FRememberedPasswordUsed = false;
@@ -1491,14 +1492,14 @@ void __fastcall TTerminal::Open()
           DebugAssert(FTunnel == NULL);
           if (FSessionData->Tunnel)
           {
-            DoInformation(LoadStr(OPEN_TUNNEL), true);
+            Information(LoadStr(OPEN_TUNNEL));
             LogEvent(L"Opening tunnel.");
             OpenTunnel();
             Log->AddSeparator();
 
             FSessionData->ConfigureTunnel(FTunnelLocalPortNumber);
 
-            DoInformation(LoadStr(USING_TUNNEL), false);
+            Information(LoadStr(USING_TUNNEL));
             LogEvent(FORMAT(L"Connecting via tunnel interface %s:%d.",
               (FSessionData->HostNameExpanded, FSessionData->PortNumber)));
           }
@@ -1625,7 +1626,7 @@ void __fastcall TTerminal::Open()
           FCollectFileSystemUsage = false;
         }
 
-        DoInformation(LoadStr(STATUS_READY), true);
+        Information(LoadStr(STATUS_READY));
         FStatus = ssOpened;
       }
       catch(...)
@@ -1659,7 +1660,7 @@ void __fastcall TTerminal::Open()
     {
       // This does not make it through, if terminal thread is abandoned,
       // see also TTerminalManager::DoConnectTerminal
-      DoInformation(L"", true, 0);
+      DoInformation(L"", 0);
     }
   }
   catch(EFatal &)
@@ -1714,7 +1715,7 @@ void __fastcall TTerminal::OpenTunnel()
       }
       int Index = Random(Ports.size());
       int Port = Ports[Index];
-      Ports.erase(&Ports.at(Index));
+      Ports.erase(Ports.begin() + Index);
       if (IsListenerFree(Port))
       {
         FTunnelLocalPortNumber = Port;
@@ -1992,7 +1993,9 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
     if (AResult && PasswordOrPassphrasePrompt &&
         (Configuration->RememberPassword || FLAGSET(int(Prompts->Objects[0]), pupRemember)))
     {
-      RawByteString EncryptedPassword = EncryptPassword(Results->Strings[0]);
+      UnicodeString Password = DenormalizeString(Results->Strings[0]);
+      RawByteString EncryptedPassword = EncryptPassword(Password);
+      Shred(Password);
       if (FTunnelOpening)
       {
         PrimaryTerminal->FRememberedTunnelPassword = EncryptedPassword;
@@ -2088,6 +2091,10 @@ unsigned int __fastcall TTerminal::QueryUserException(const UnicodeString Query,
       delete MoreMessages;
     }
   }
+  else
+  {
+    Result = AbortAnswer(Answers);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -2095,14 +2102,14 @@ void __fastcall TTerminal::DisplayBanner(const UnicodeString & Banner)
 {
   if (OnDisplayBanner != NULL)
   {
-    unsigned int OrigParams, Params;
-    if (Configuration->ForceBanners ||
-        Configuration->ShowBanner(SessionData->SessionKey, Banner, Params))
+    unsigned int Params = 0; // shut up
+    if (Configuration->ShowBanner(SessionData->SessionKey, Banner, Params) ||
+        Configuration->ForceBanners)
     {
       bool NeverShowAgain = false;
       int Options =
         FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
-      OrigParams = Params;
+      unsigned int OrigParams = Params;
 
       TCallbackGuard Guard(this);
       try
@@ -2163,14 +2170,14 @@ void __fastcall TTerminal::ShowExtendedException(Exception * E)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoInformation(
-  const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional)
+  const UnicodeString & Str, int Phase, const UnicodeString & Additional)
 {
   if (OnInformation)
   {
     TCallbackGuard Guard(this);
     try
     {
-      OnInformation(this, Str, Status, Phase, Additional);
+      OnInformation(this, Str, Phase, Additional);
       Guard.Verify();
     }
     catch (Exception & E)
@@ -2183,9 +2190,9 @@ void __fastcall TTerminal::DoInformation(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::Information(const UnicodeString & Str, bool Status)
+void __fastcall TTerminal::Information(const UnicodeString & Str)
 {
-  DoInformation(Str, Status);
+  DoInformation(Str);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
@@ -2226,14 +2233,14 @@ void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoFinished(TFileOperation Operation, TOperationSide Side, bool Temp,
-  const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation)
+  const UnicodeString & FileName, bool Success, bool NotCancelled, TOnceDoneOperation & OnceDoneOperation)
 {
   if (OnFinished != NULL)
   {
     TCallbackGuard Guard(this);
     try
     {
-      OnFinished(Operation, Side, Temp, FileName, Success, OnceDoneOperation);
+      OnFinished(Operation, Side, Temp, FileName, Success, NotCancelled, OnceDoneOperation);
       Guard.Verify();
     }
     catch (Exception & E)
@@ -2341,12 +2348,12 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::TerminalError(UnicodeString Msg)
+NORETURN void __fastcall TTerminal::TerminalError(UnicodeString Msg)
 {
   TerminalError(NULL, Msg);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::TerminalError(
+NORETURN void __fastcall TTerminal::TerminalError(
   Exception * E, UnicodeString Msg, UnicodeString HelpKeyword)
 {
   throw ETerminal(E, Msg, HelpKeyword);
@@ -2866,7 +2873,7 @@ void __fastcall TTerminal::DoEndTransaction(bool Inform)
         {
           if (Inform)
           {
-            DoInformation(LoadStr(STATUS_OPEN_DIRECTORY), true, -1, CurrentDirectory);
+            DoInformation(LoadStr(STATUS_OPEN_DIRECTORY), -1, CurrentDirectory);
           }
           ReadDirectory(!FReadCurrentDirectoryPending);
         }
@@ -3113,7 +3120,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
   TOperationSide Side, const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
   UnicodeString Message)
 {
-  unsigned int Result;
+  unsigned int Result = qaCancel; // shut up
   TBatchOverwrite BatchOverwrite;
   bool CanAlternateResume =
     (FileParams != NULL) &&
@@ -3201,7 +3208,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
             break;
         }
 
-        // we user has not selected another batch overwrite mode,
+        // if user has not selected another batch overwrite mode,
         // keep the current one. note that we may get here even
         // when batch overwrite was selected already, but it could not be applied
         // to current transfer (see condition above)
@@ -3439,7 +3446,7 @@ void __fastcall TTerminal::DoStartup()
   BeginTransaction();
   try
   {
-    DoInformation(LoadStr(STATUS_STARTUP), true);
+    Information(LoadStr(STATUS_STARTUP));
 
     // Make sure that directory would be loaded at last
     FReadCurrentDirectoryPending = true;
@@ -3521,6 +3528,25 @@ void __fastcall TTerminal::ReadCurrentDirectory()
   }
 }
 //---------------------------------------------------------------------------
+void TTerminal::DoReadDirectoryFinish(TRemoteDirectory * Files, bool ReloadOnly)
+{
+  // Factored out to solve Clang ICE
+  TRemoteDirectory * OldFiles = FFiles;
+  FFiles = Files;
+  try
+  {
+    DoReadDirectory(ReloadOnly);
+  }
+  __finally
+  {
+    // delete only after loading new files to dir view,
+    // not to destroy the file objects that the view holds
+    // (can be issue in multi threaded environment, such as when the
+    // terminal is reconnecting in the terminal thread)
+    delete OldFiles;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
 {
   bool LoadedFromCache = false;
@@ -3573,20 +3599,7 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
       {
         DoReadDirectoryProgress(-1, 0, Cancel);
         FReadingCurrentDirectory = false;
-        TRemoteDirectory * OldFiles = FFiles;
-        FFiles = Files;
-        try
-        {
-          DoReadDirectory(ReloadOnly);
-        }
-        __finally
-        {
-          // delete only after loading new files to dir view,
-          // not to destroy the file objects that the view holds
-          // (can be issue in multi threaded environment, such as when the
-          // terminal is reconnecting in the terminal thread)
-          delete OldFiles;
-        }
+        DoReadDirectoryFinish(Files, ReloadOnly);
         if (Active)
         {
           if (SessionData->CacheDirectories)
@@ -3674,6 +3687,8 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
 {
   DebugAssert(FileList);
   DebugAssert(FFileSystem);
+
+  AppLogFmt(L"Reading directory %s", (FileList->Directory));
 
   // To match FTP upload/download, we also limit directory listing.
   // For simplicity, we limit it unconditionally, for all protocols for any kind of errors.
@@ -4005,6 +4020,14 @@ bool TTerminal::FileExists(const UnicodeString & FileName)
   return (File.get() != NULL);
 }
 //---------------------------------------------------------------------------
+bool TTerminal::DirectoryExists(const UnicodeString & FileName)
+{
+  std::unique_ptr<TRemoteFile> File(TryReadFile(FileName));
+  return
+    (File.get() != NULL) &&
+    File->IsDirectory;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::AnnounceFileListOperation()
 {
   FFileSystem->AnnounceFileListOperation();
@@ -4328,8 +4351,7 @@ void __fastcall TTerminal::DoDeleteFile(
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, int Params)
 {
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   // TODO: avoid resolving symlinks while reading subdirectories.
   // Resolving does not work anyway for relative symlinks in subdirectories
@@ -4350,6 +4372,7 @@ void __fastcall TTerminal::DeleteLocalFile(UnicodeString FileName,
   {
     OnDeleteLocalFile(FileName, FLAGSET(*((int*)Params), dfAlternative), Deleted);
   }
+  AppLogFmt(L"Deleted local file \"%s\"", (FileName));
   if (DebugAlwaysTrue((OperationProgress != NULL) && (OperationProgress->Operation == foDelete)))
   {
     OperationProgress->Succeeded(Deleted);
@@ -4554,8 +4577,7 @@ void __fastcall TTerminal::DoChangeFileProperties(const UnicodeString FileName,
 void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
   const TRemoteProperties * Properties)
 {
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   AnnounceFileListOperation();
   ProcessFiles(FileList, foSetProperties, ChangeFileProperties, (void *)Properties);
@@ -4563,8 +4585,7 @@ void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::LoadFilesProperties(TStrings * FileList)
 {
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   // see comment in TSFTPFileSystem::IsCapable
   bool Result =
@@ -4731,8 +4752,7 @@ bool TTerminal::CalculateFilesSize(TStrings * FileList, __int64 & Size, TCalcula
   // draft-peterson-streamlined-ftp-command-extensions-10
   // Implemented by Serv-U FTP.
 
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   ProcessFiles(FileList, foCalculateSize, DoCalculateFileSize, &Params);
   Size = Params.Size;
@@ -4843,7 +4863,7 @@ bool TTerminal::DoRenameOrCopyFile(
   std::unique_ptr<TRemoteFile> DuplicateFile;
   if (UnixSamePath(AbsoluteFileName, AbsoluteNewName))
   {
-    LogEvent(FORMAT(L"Tartget \"%s\" is same as source \"%s\" - skipping.", (AbsoluteNewName, AbsoluteFileName)));
+    LogEvent(FORMAT(L"Target \"%s\" is same as source \"%s\" - skipping.", (AbsoluteNewName, AbsoluteFileName)));
     Result = false;
   }
   else if (BatchOverwrite == boNone)
@@ -5482,7 +5502,7 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
     {
       // save the error, otherwise it gets overwritten by call to FileExists
       int LastError = GetLastError();
-      int FileAttr;
+      int FileAttr = 0; // shut up
       if (::FileExists(ApiPath(FileName)) &&
         (((FileAttr = FileGetAttrFix(ApiPath(FileName))) & (faReadOnly | faHidden)) != 0))
       {
@@ -5945,8 +5965,7 @@ TSynchronizeChecklist * __fastcall TTerminal::SynchronizeCollect(const UnicodeSt
   TSynchronizeDirectory OnSynchronizeDirectory,
   TSynchronizeOptions * Options)
 {
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   TSynchronizeChecklist * Checklist = new TSynchronizeChecklist();
   try
@@ -6083,6 +6102,20 @@ bool __fastcall TTerminal::IsEmptyLocalDirectory(
   }
 
   return Contents.IsEmpty();
+}
+//---------------------------------------------------------------------------
+void DestroyLocalFileList(TStringList * LocalFileList)
+{
+  // Factored out to workaround Clang ICE
+  if (LocalFileList != NULL)
+  {
+    for (int Index = 0; Index < LocalFileList->Count; Index++)
+    {
+      TSynchronizeFileData * FileData = reinterpret_cast<TSynchronizeFileData*>(LocalFileList->Objects[Index]);
+      delete FileData;
+    }
+    delete LocalFileList;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString LocalDirectory,
@@ -6254,16 +6287,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
   }
   __finally
   {
-    if (Data.LocalFileList != NULL)
-    {
-      for (int Index = 0; Index < Data.LocalFileList->Count; Index++)
-      {
-        TSynchronizeFileData * FileData = reinterpret_cast<TSynchronizeFileData*>
-          (Data.LocalFileList->Objects[Index]);
-        delete FileData;
-      }
-      delete Data.LocalFileList;
-    }
+    DestroyLocalFileList(Data.LocalFileList);
   }
 }
 //---------------------------------------------------------------------------
@@ -6333,7 +6357,7 @@ bool TTerminal::SameFileChecksum(const UnicodeString & LocalFileName, const TRem
   }
 
   std::unique_ptr<TStrings> FileList(new TStringList());
-  FileList->AddObject(File->FullFileName, File);
+  FileList->AddObject(File->FullFileName, const_cast<TRemoteFile *>(File));
   DebugAssert(FCollectedCalculatedChecksum.IsEmpty());
   FCollectedCalculatedChecksum = EmptyStr;
   CalculateFilesChecksum(Alg, FileList.get(), CollectCalculatedChecksum);
@@ -6354,6 +6378,7 @@ bool TTerminal::SameFileChecksum(const UnicodeString & LocalFileName, const TRem
 void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName,
   const TRemoteFile * File, /*TSynchronizeData*/ void * Param)
 {
+  DebugUsedParam(FileName);
   TSynchronizeData * Data = static_cast<TSynchronizeData *>(Param);
 
   // Can be NULL in scripting
@@ -6554,6 +6579,65 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
   }
 }
 //---------------------------------------------------------------------------
+TCopyParamType TTerminal::GetSynchronizeCopyParam(const TCopyParamType * CopyParam, int Params)
+{
+  TCopyParamType SyncCopyParam = *CopyParam;
+  // when synchronizing by time, we force preserving time,
+  // otherwise it does not make any sense
+  if (FLAGCLEAR(Params, spNotByTime))
+  {
+    SyncCopyParam.PreserveTime = true;
+  }
+  return SyncCopyParam;
+}
+//---------------------------------------------------------------------------
+int TTerminal::GetSynchronizeCopyParams(int Params)
+{
+  return
+    // The spNoConfirmation seems to always be present
+    FLAGMASK(DebugAlwaysTrue(FLAGSET(Params, spNoConfirmation)), cpNoConfirmation);
+}
+//---------------------------------------------------------------------------
+TQueueItem * TTerminal::SynchronizeToQueue(
+  const TSynchronizeChecklist::TItem * ChecklistItem, const TCopyParamType * CopyParam, int Params, bool Parallel)
+{
+  TQueueItem * Result;
+  if (DebugAlwaysFalse(FLAGSET(Params, spTimestamp)))
+  {
+    NotImplemented();
+  }
+  else
+  {
+    std::unique_ptr<TStrings> FileList(ChecklistItem->GetFileList());
+    switch (ChecklistItem->Action)
+    {
+      case TSynchronizeChecklist::saDownloadNew:
+      case TSynchronizeChecklist::saDownloadUpdate:
+        Result = new TDownloadQueueItem(this, FileList.get(), ChecklistItem->GetLocalTarget(), CopyParam, Params, Parallel);
+        break;
+
+      case TSynchronizeChecklist::saDeleteRemote:
+        Result = new TRemoteDeleteQueueItem(this, FileList.get(), 0);
+        break;
+
+      case TSynchronizeChecklist::saUploadNew:
+      case TSynchronizeChecklist::saUploadUpdate:
+        Result = new TUploadQueueItem(this, FileList.get(), ChecklistItem->GetRemoteTarget(), CopyParam, Params, Parallel);
+        break;
+
+      case TSynchronizeChecklist::saDeleteLocal:
+        Result = new TLocalDeleteQueueItem(FileList.get(), 0);
+        break;
+
+      default:
+        DebugFail();
+        NotImplemented();
+        UNREACHABLE_AFTER_NORETURN(break);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::SynchronizeApply(
   TSynchronizeChecklist * Checklist,
   const TCopyParamType * CopyParam, int Params,
@@ -6565,16 +6649,8 @@ void __fastcall TTerminal::SynchronizeApply(
 
   Data.OnSynchronizeDirectory = OnSynchronizeDirectory;
 
-  int CopyParams =
-    FLAGMASK(FLAGSET(Params, spNoConfirmation), cpNoConfirmation);
-
-  TCopyParamType SyncCopyParam = *CopyParam;
-  // when synchronizing by time, we force preserving time,
-  // otherwise it does not make any sense
-  if (FLAGCLEAR(Params, spNotByTime))
-  {
-    SyncCopyParam.PreserveTime = true;
-  }
+  int CopyParams = GetSynchronizeCopyParams(Params);
+  TCopyParamType SyncCopyParam = GetSynchronizeCopyParam(CopyParam, Params);
 
   if (SyncCopyParam.CalculateSize)
   {
@@ -6582,12 +6658,13 @@ void __fastcall TTerminal::SynchronizeApply(
     SyncCopyParam.CalculateSize = false;
 
     TSynchronizeChecklist::TItemList Items;
-    for (int Index = 0; Index < Checklist->Count; Index++)
+    int Index = 0;
+    const TSynchronizeChecklist::TItem * ChecklistItem;
+    while (Checklist->GetNextChecked(Index, ChecklistItem))
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[Index];
       // TSynchronizeChecklistDialog relies on us not to update a size of an item that had size already
       // See TSynchronizeChecklistDialog::UpdatedSynchronizationChecklistItems
-      if (ChecklistItem->Checked && !TSynchronizeChecklist::IsItemSizeIrrelevant(ChecklistItem->Action) &&
+      if (!TSynchronizeChecklist::IsItemSizeIrrelevant(ChecklistItem->Action) &&
           !ChecklistItem->HasSize() && DebugAlwaysTrue(ChecklistItem->IsDirectory))
       {
         Items.push_back(ChecklistItem);
@@ -6611,99 +6688,90 @@ void __fastcall TTerminal::SynchronizeApply(
   try
   {
     int Index = 0;
-    while (Index < Checklist->Count)
+    const TSynchronizeChecklist::TItem * ChecklistItem;
+    while (Checklist->GetNextChecked(Index, ChecklistItem))
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[Index];
-      if (ChecklistItem->Checked)
+      UnicodeString LocalTarget = ChecklistItem->GetLocalTarget();
+      UnicodeString RemoteTarget = ChecklistItem->GetRemoteTarget();
+      if (!SamePaths(Data.LocalDirectory, LocalTarget) ||
+          !UnixSamePath(Data.RemoteDirectory, RemoteTarget))
       {
-        if (!SamePaths(Data.LocalDirectory, ChecklistItem->Local.Directory) ||
-            !UnixSamePath(Data.RemoteDirectory, ChecklistItem->Remote.Directory))
-        {
-          Data.LocalDirectory = IncludeTrailingBackslash(ChecklistItem->Local.Directory);
-          Data.RemoteDirectory = UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory);
+        Data.LocalDirectory = LocalTarget;
+        Data.RemoteDirectory = RemoteTarget;
 
-          LogEvent(
-            FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
-            (Data.LocalDirectory, Data.RemoteDirectory, int(Params), SynchronizeParamsStr(Params))));
+        LogEvent(
+          FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
+          (Data.LocalDirectory, Data.RemoteDirectory, int(Params), SynchronizeParamsStr(Params))));
 
-          DoSynchronizeProgress(Data, false);
-        }
+        DoSynchronizeProgress(Data, false);
+      }
 
+      bool Result = true;
+
+      if (FLAGSET(Params, spTimestamp))
+      {
+        // used by SynchronizeLocalTimestamp and SynchronizeRemoteTimestamp
+        TObject * ChecklistItemToken = const_cast<TObject *>(reinterpret_cast<const TObject *>(ChecklistItem));
         std::unique_ptr<TStringList> FileList(new TStringList());
-
-        UnicodeString LocalPath = IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName;
-        UnicodeString RemotePath = UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName;
-        bool Result = true;
-
-        if (FLAGSET(Params, spTimestamp))
+        switch (ChecklistItem->Action)
         {
-          // used by SynchronizeLocalTimestamp and SynchronizeRemoteTimestamp
-          TObject * ChecklistItemToken = const_cast<TObject *>(reinterpret_cast<const TObject *>(ChecklistItem));
-          switch (ChecklistItem->Action)
-          {
-            case TSynchronizeChecklist::saDownloadUpdate:
-              FileList->AddObject(RemotePath, ChecklistItemToken);
-              ProcessFiles(FileList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
-              break;
+          case TSynchronizeChecklist::saDownloadUpdate:
+            FileList->AddObject(ChecklistItem->GetRemotePath(), ChecklistItemToken);
+            ProcessFiles(FileList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
+            break;
 
-            case TSynchronizeChecklist::saUploadUpdate:
-              FileList->AddObject(LocalPath, ChecklistItemToken);
-              ProcessFiles(FileList.get(), foSetProperties, SynchronizeRemoteTimestamp);
-              break;
+          case TSynchronizeChecklist::saUploadUpdate:
+            FileList->AddObject(ChecklistItem->GetLocalPath(), ChecklistItemToken);
+            ProcessFiles(FileList.get(), foSetProperties, SynchronizeRemoteTimestamp);
+            break;
 
-            default:
-              DebugFail();
-              Result = false;
-              break;
-          }
+          default:
+            DebugFail();
+            Result = false;
+            break;
         }
-        else
+      }
+      else
+      {
+        std::unique_ptr<TStrings> FileList(ChecklistItem->GetFileList());
+        TCopyParamType ItemCopyParam = SyncCopyParam;
+        ItemCopyParam.Size = ChecklistItem->HasSize() ? ChecklistItem->GetSize() : -1;
+        switch (ChecklistItem->Action)
         {
-          TCopyParamType ItemCopyParam = SyncCopyParam;
-          ItemCopyParam.Size = ChecklistItem->HasSize() ? ChecklistItem->GetSize() : -1;
-          switch (ChecklistItem->Action)
-          {
-            case TSynchronizeChecklist::saDownloadNew:
-            case TSynchronizeChecklist::saDownloadUpdate:
-              FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
-              Result = CopyToLocal(FileList.get(), Data.LocalDirectory, &ItemCopyParam, CopyParams, NULL);
-              break;
+          case TSynchronizeChecklist::saDownloadNew:
+          case TSynchronizeChecklist::saDownloadUpdate:
+            Result = CopyToLocal(FileList.get(), LocalTarget, &ItemCopyParam, CopyParams, NULL);
+            break;
 
-            case TSynchronizeChecklist::saDeleteRemote:
-              FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
-              Result = DeleteFiles(FileList.get());
-              break;
+          case TSynchronizeChecklist::saDeleteRemote:
+            Result = DeleteFiles(FileList.get());
+            break;
 
-            case TSynchronizeChecklist::saUploadNew:
-            case TSynchronizeChecklist::saUploadUpdate:
-              FileList->Add(LocalPath);
-              Result = CopyToRemote(FileList.get(), Data.RemoteDirectory, &ItemCopyParam, CopyParams, NULL);
-              break;
+          case TSynchronizeChecklist::saUploadNew:
+          case TSynchronizeChecklist::saUploadUpdate:
+            Result = CopyToRemote(FileList.get(), RemoteTarget, &ItemCopyParam, CopyParams, NULL);
+            break;
 
-            case TSynchronizeChecklist::saDeleteLocal:
-              FileList->Add(LocalPath);
-              Result = DeleteLocalFiles(FileList.get());
-              break;
+          case TSynchronizeChecklist::saDeleteLocal:
+            Result = DeleteLocalFiles(FileList.get());
+            break;
 
-            default:
-              DebugFail();
-              Result = false;
-              break;
-          }
-        }
-
-        if (!Result)
-        {
-          Abort();
-        }
-
-        if (OnProcessedItem != NULL)
-        {
-          OnProcessedItem(Token, ChecklistItem);
+          default:
+            DebugFail();
+            Result = false;
+            break;
         }
       }
 
-      Index++;
+      if (!Result)
+      {
+        Abort();
+      }
+
+      if (OnProcessedItem != NULL)
+      {
+        OnProcessedItem(Token, ChecklistItem);
+      }
     }
   }
   __finally
@@ -6734,11 +6802,12 @@ void __fastcall TTerminal::SynchronizeChecklistCalculateSize(
     {
       if (ChecklistItem->IsRemoteOnly())
       {
-        RemoteFileList->AddObject(ChecklistItem->RemoteFile->FullFileName, ChecklistItem->RemoteFile);
+        DebugAssert(UnixSamePath(ChecklistItem->RemoteFile->FullFileName, ChecklistItem->GetRemotePath()));
+        RemoteFileList->AddObject(ChecklistItem->GetRemotePath(), ChecklistItem->RemoteFile);
       }
       else if (ChecklistItem->IsLocalOnly())
       {
-        LocalFileList->Add(IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName);
+        LocalFileList->Add(ChecklistItem->GetLocalPath());
       }
       else
       {
@@ -6837,9 +6906,7 @@ void __fastcall TTerminal::SynchronizeLocalTimestamp(const UnicodeString /*FileN
   const TSynchronizeChecklist::TItem * ChecklistItem =
     reinterpret_cast<const TSynchronizeChecklist::TItem *>(File);
 
-  UnicodeString LocalFile =
-    IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
-      ChecklistItem->Local.FileName;
+  UnicodeString LocalFile = ChecklistItem->GetLocalPath();
 
   FILE_OPERATION_LOOP_BEGIN
   {
@@ -6870,9 +6937,7 @@ void __fastcall TTerminal::SynchronizeRemoteTimestamp(const UnicodeString /*File
   Properties.Modification = ConvertTimestampToUnix(ChecklistItem->FLocalLastWriteTime,
     SessionData->DSTMode);
 
-  ChangeFileProperties(
-    UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
-    NULL, &Properties);
+  ChangeFileProperties(ChecklistItem->GetRemotePath(), NULL, &Properties);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::FileFind(UnicodeString FileName,
@@ -7095,7 +7160,7 @@ TStrings * TTerminal::GetShellChecksumAlgDefs()
       AddToList(ChecksumCommandsDef, Sha256ChecksumAlg + L"=sha256sum", Delimiter);
       AddToList(ChecksumCommandsDef, Sha224ChecksumAlg + L"=sha224sum", Delimiter);
       AddToList(ChecksumCommandsDef, Sha1ChecksumAlg + L"=sha1sum", Delimiter);
-      AddToList(ChecksumCommandsDef, Md5ChecksumAlg + L"=md5sums", Delimiter);
+      AddToList(ChecksumCommandsDef, Md5ChecksumAlg + L"=md5sum", Delimiter);
     }
 
     FShellChecksumAlgDefs.reset(CommaTextToStringList(ChecksumCommandsDef));
@@ -7368,10 +7433,9 @@ bool __fastcall TTerminal::CopyToRemote(
       {
         if (Configuration->Usage->Collect)
         {
-          int CounterSize = TUsage::CalculateCounterSize(Size);
           Configuration->Usage->Inc(L"Uploads");
-          Configuration->Usage->Inc(L"UploadedBytes", CounterSize);
-          Configuration->Usage->SetMax(L"MaxUploadSize", CounterSize);
+          int CounterSize = TUsage::CalculateCounterSize(Size);
+          Configuration->Usage->IncAndSetMax(L"UploadedBytes", L"MaxUploadSize", CounterSize);
           CollectingUsage = true;
         }
 
@@ -7416,9 +7480,7 @@ bool __fastcall TTerminal::CopyToRemote(
     {
       if (CollectingUsage)
       {
-        int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
-        Configuration->Usage->Inc(L"UploadTime", CounterTime);
-        Configuration->Usage->SetMax(L"MaxUploadTime", CounterTime);
+        Configuration->Usage->IncAndSetMax(L"UploadTime", L"MaxUploadTime", TimeToSeconds(OperationProgress.TimeElapsed()));
       }
       OperationStop(OperationProgress);
     }
@@ -7468,7 +7530,7 @@ void __fastcall TTerminal::DoCopyToRemote(
         {
           DirectoryModified(TargetDir, false);
 
-          if (DirectoryExists(ApiPath(FileName)))
+          if (::DirectoryExists(ApiPath(FileName)))
           {
             UnicodeString FileNameOnly = ExtractFileName(FileName);
             DirectoryModified(FullTargetDir + FileNameOnly, true);
@@ -7540,11 +7602,7 @@ void __fastcall TTerminal::SourceRobust(
 bool __fastcall TTerminal::CreateTargetDirectory(
   const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam)
 {
-  std::unique_ptr<TRemoteFile> File(TryReadFile(DirectoryPath));
-  bool DoCreate =
-    (File.get() == NULL) ||
-    !File->IsDirectory; // just try to create and make it fail
-  File.reset(NULL);
+  bool DoCreate = !DirectoryExists(DirectoryPath);
   if (DoCreate)
   {
     TRemoteProperties Properties;
@@ -7840,7 +7898,7 @@ void TTerminal::CheckParallelFileTransfer(
         {
           ParallelFileSize = UltimateFile->Size;
           UnicodeString TargetFileName = CopyParam->ChangeFileName(UnixExtractFileName(ParallelFileName), osRemote, true);
-          UnicodeString DestFullName = TPath::Combine(TargetDir, TargetFileName);
+          UnicodeString DestFullName = CombinePaths(TargetDir, TargetFileName);
 
           if (::FileExists(ApiPath(DestFullName)))
           {
@@ -7952,8 +8010,7 @@ bool __fastcall TTerminal::CopyToLocal(
         {
           int CounterTotalSize = TUsage::CalculateCounterSize(TotalSize);
           Configuration->Usage->Inc(L"Downloads");
-          Configuration->Usage->Inc(L"DownloadedBytes", CounterTotalSize);
-          Configuration->Usage->SetMax(L"MaxDownloadSize", CounterTotalSize);
+          Configuration->Usage->IncAndSetMax(L"DownloadedBytes", L"MaxDownloadSize", CounterTotalSize);
           CollectingUsage = true;
         }
 
@@ -8019,9 +8076,7 @@ bool __fastcall TTerminal::CopyToLocal(
     {
       if (CollectingUsage)
       {
-        int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
-        Configuration->Usage->Inc(L"DownloadTime", CounterTime);
-        Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
+        Configuration->Usage->IncAndSetMax(L"DownloadTime", L"MaxDownloadTime", TimeToSeconds(OperationProgress.TimeElapsed()));
       }
       OperationStop(OperationProgress);
     }
@@ -8502,7 +8557,7 @@ bool  __fastcall TTerminal::VerifyCertificate(
       if (ExpectedKey == L"*")
       {
         UnicodeString Message = LoadStr(ANY_CERTIFICATE);
-        Information(Message, true);
+        Information(Message);
         Log->Add(llException, Message);
         Result = true;
       }
@@ -8699,11 +8754,11 @@ bool __fastcall TTerminal::LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& P
         if (Passphrase.IsEmpty())
         {
           LogEvent(L"Certificate is encrypted, need passphrase");
-          Information(LoadStr(CLIENT_CERTIFICATE_LOADING), false);
+          Information(LoadStr(CLIENT_CERTIFICATE_LOADING));
         }
         else
         {
-          Information(LoadStr(CERTIFICATE_DECODE_ERROR_INFO), false);
+          Information(LoadStr(CERTIFICATE_DECODE_ERROR_INFO));
         }
 
         Passphrase = L"";
@@ -8762,7 +8817,7 @@ TTerminal::TEncryptedFileNames::const_iterator __fastcall TTerminal::GetEncrypte
     {
       delete DoReadDirectoryListing(FileDir, true);
     }
-    catch (Exception & E)
+    catch (Exception &)
     {
       if (!Active)
       {
@@ -8875,14 +8930,25 @@ TRemoteFile * TTerminal::CheckRights(const UnicodeString & EntryType, const Unic
       LogEvent(FORMAT(L"%s \"%s\" exists and has correct permissions %s.", (EntryType, FileName, File->Rights->Octal)));
     }
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
   }
   return File.release();
 }
 //---------------------------------------------------------------------------
+void TTerminal::LogAndInformation(const UnicodeString & S)
+{
+  LogEvent(S);
+  Information(S);
+}
+//---------------------------------------------------------------------------
 UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
 {
+  if (FSProtocol != cfsSFTP)
+  {
+    NotSupported();
+  }
+
   UnicodeString Result;
 
   UnicodeString TemporaryDir;
@@ -8902,7 +8968,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
     bool UnusedHasCertificate;
     UnicodeString Line = GetPublicKeyLine(FileName, Comment, UnusedHasCertificate);
 
-    LogEvent(FORMAT(L"Adding public key line to \"%s\" file:\n%s", (AuthorizedKeysFilePath, Line)));
+    LogAndInformation(FMTLOAD(PUBLIC_KEY_ADDING, (AuthorizedKeysFilePath)) + L"\n" + Line);
 
     UnicodeString SshFolderAbsolutePath = UnixIncludeTrailingBackslash(GetHomeDirectory()) + OpensshFolderName;
     bool WrongRights = false;
@@ -8940,7 +9006,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       AuthorizedKeysFileFile->FullFileName = AuthorizedKeysFileAbsolutePath;
       std::unique_ptr<TStrings> Files(new TStringList());
       Files->AddObject(AuthorizedKeysFileAbsolutePath, AuthorizedKeysFileFile.get());
-      LogEvent(FORMAT(L"Downloading current \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      LogAndInformation(FMTLOAD(PUBLIC_KEY_DOWNLOADING, (OpensshAuthorizedKeysFileName)));
       CopyToLocal(Files.get(), TemporaryDir, &CopyParam, cpNoConfirmation, NULL);
       // Overload with Encoding parameter work incorrectly, when used on a file without BOM
       AuthorizedKeys = TFile::ReadAllText(TemporaryAuthorizedKeysFile);
@@ -8956,14 +9022,14 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       {
         if (StartsStr(Prefix, AuthorizedKeysLines->Strings[Index]))
         {
-          LogEvent(FORMAT(L"\"%s\" file already contains public key line:\n%s", (OpensshAuthorizedKeysFileName, AuthorizedKeysLines->Strings[Index])));
+          LogAndInformation(FMTLOAD(PUBLIC_KEY_CONTAINS, (OpensshAuthorizedKeysFileName)) + L"\n" + AuthorizedKeysLines->Strings[Index]);
           Updated = false;
         }
       }
 
       if (Updated)
       {
-        LogEvent(FORMAT(L"\"%s\" file does not contain the public key line yet.", (OpensshAuthorizedKeysFileName)));
+        LogAndInformation(FMTLOAD(PUBLIC_KEY_NOT_CONTAINS, (OpensshAuthorizedKeysFileName)));
         if (!EndsStr(L"\n", AuthorizedKeys))
         {
           LogEvent(FORMAT(L"Adding missing trailing new line to \"%s\" file...", (OpensshAuthorizedKeysFileName)));
@@ -8973,7 +9039,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
     }
     else
     {
-      LogEvent(FORMAT(L"Creating new \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      LogAndInformation(FMTLOAD(PUBLIC_KEY_NEW, (OpensshAuthorizedKeysFileName)));
       CopyParam.PreserveRights = true;
       CopyParam.Rights.Number = TRights::rfUserRead | TRights::rfUserWrite;
     }
@@ -8985,14 +9051,20 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       TFile::WriteAllText(TemporaryAuthorizedKeysFile, AuthorizedKeys);
       std::unique_ptr<TStrings> Files(new TStringList());
       Files->Add(TemporaryAuthorizedKeysFile);
-      LogEvent(FORMAT(L"Uploading updated \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      LogAndInformation(FMTLOAD(PUBLIC_KEY_UPLOADING, (OpensshAuthorizedKeysFileName)));
       CopyToRemote(Files.get(), SshFolderAbsolutePath, &CopyParam, cpNoConfirmation, NULL);
     }
 
     Result = FMTLOAD(PUBLIC_KEY_UPLOADED, (Comment));
+    if (Updated)
+    {
+      LogAndInformation(ReplaceStr(RemoveMainInstructionsTag(Result), L"\n\n", L"\n"));
+    }
     if (WrongRights)
     {
-      Result += L"\n\n" + FMTLOAD(PUBLIC_KEY_PERMISSIONS, (AuthorizedKeysFilePath));
+      UnicodeString PermissionsInfo = FMTLOAD(PUBLIC_KEY_PERMISSIONS, (AuthorizedKeysFilePath));
+      LogAndInformation(PermissionsInfo);
+      Result += L"\n\n" + PermissionsInfo;
     }
   }
   __finally
@@ -9014,84 +9086,9 @@ bool TTerminal::IsValidFile(TRemoteFile * File)
     (IsUnixRootPath(File->FileName) || UnixExtractFileDir(File->FileName).IsEmpty());
 }
 //---------------------------------------------------------------------------
-UnicodeString TTerminal::CutFeature(UnicodeString & Buf)
-{
-  UnicodeString Result;
-  if (Buf.SubString(1, 1) == L"\"")
-  {
-    Buf.Delete(1, 1);
-    int P = Buf.Pos(L"\",");
-    if (P == 0)
-    {
-      Result = Buf;
-      Buf = UnicodeString();
-      // there should be the ending quote, but if not, just do nothing
-      if (Result.SubString(Result.Length(), 1) == L"\"")
-      {
-        Result.SetLength(Result.Length() - 1);
-      }
-    }
-    else
-    {
-      Result = Buf.SubString(1, P - 1);
-      Buf.Delete(1, P + 1);
-    }
-    Buf = Buf.TrimLeft();
-  }
-  else
-  {
-    Result = CutToChar(Buf, L',', true);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 TStrings * TTerminal::ProcessFeatures(TStrings * Features)
 {
-  std::unique_ptr<TStrings> Result(new TStringList());
-  UnicodeString FeaturesOverride = SessionData->ProtocolFeatures.Trim();
-  if (FeaturesOverride.SubString(1, 1) == L"*")
-  {
-    FeaturesOverride.Delete(1, 1);
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      Result->Add(Feature);
-    }
-  }
-  else
-  {
-    std::unique_ptr<TStrings> DeleteFeatures(CreateSortedStringList());
-    std::unique_ptr<TStrings> AddFeatures(new TStringList());
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      if (Feature.SubString(1, 1) == L"-")
-      {
-        Feature.Delete(1, 1);
-        DeleteFeatures->Add(Feature.LowerCase());
-      }
-      else
-      {
-        if (Feature.SubString(1, 1) == L"+")
-        {
-          Feature.Delete(1, 1);
-        }
-        AddFeatures->Add(Feature);
-      }
-    }
-
-    for (int Index = 0; Index < Features->Count; Index++)
-    {
-      UnicodeString Feature = Features->Strings[Index];
-      if (DeleteFeatures->IndexOf(Feature) < 0)
-      {
-        Result->Add(Feature);
-      }
-    }
-
-    Result->AddStrings(AddFeatures.get());
-  }
-  return Result.release();
+  return ::ProcessFeatures(Features, SessionData->ProtocolFeatures.Trim());
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -9102,7 +9099,7 @@ __fastcall TSecondaryTerminal::TSecondaryTerminal(
   FMainTerminal(MainTerminal)
 {
   Log->SetParent(FMainTerminal->Log, Name);
-  SessionData->NonPersistant();
+  SessionData->NonPersistent();
   DebugAssert(FMainTerminal != NULL);
   FMainTerminal->FSecondaryTerminals++;
   if (SessionData->TunnelLocalPortNumber != 0)

@@ -89,7 +89,6 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner)
   FSynchronizeOptions = NULL;
 
   HotTrackLabel(CopyParamLabel);
-  CopyParamListButton(TransferSettingsButton);
   LoadDialogImage(Image, L"Keep remote directory up to date");
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
@@ -309,14 +308,7 @@ void __fastcall TSynchronizeDialog::CopyParamListPopup(TRect R, int AdditionalOp
 void __fastcall TSynchronizeDialog::TransferSettingsButtonClick(
   TObject * /*Sender*/)
 {
-  if (FLAGCLEAR(FOptions, soDoNotUsePresets) && !SupportsSplitButton())
-  {
-    CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
-  }
-  else
-  {
-    CopyParamGroupClick(NULL);
-  }
+  CopyParamGroupClick(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::DoStartStop(bool Start, bool Synchronize)

@@ -221,7 +221,7 @@ UnicodeString __fastcall TFileMasks::ComposeMaskStr(
   }
 
   // For directories, the above will add slash at the end of masks,
-  // breaking size and time masks and thus circumverting their validation.
+  // breaking size and time masks and thus circumventing their validation.
   // This performs ad hoc validation to cover the scenario.
   // For files this makes no difference, but no harm either
   TFileMasks Temp(Directory ? 1 : 0);
@@ -516,7 +516,7 @@ bool __fastcall TFileMasks::operator ==(const UnicodeString & rhs) const
   return (Masks == rhs);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileMasks::ThrowError(int Start, int End)
+NORETURN void __fastcall TFileMasks::ThrowError(int Start, int End)
 {
   throw EFileMasksException(
     FMTLOAD(MASK_ERROR, (Masks.SubString(Start, End - Start + 1))),
@@ -1258,7 +1258,7 @@ void __fastcall TCustomCommandData::operator=(const TCustomCommandData & Data)
   FSessionData->Assign(Data.SessionData);
 }
 //---------------------------------------------------------------------------
-TSessionData * __fastcall TCustomCommandData::GetSesssionData() const
+TSessionData * __fastcall TCustomCommandData::GetSessionData() const
 {
   return FSessionData.get();
 }

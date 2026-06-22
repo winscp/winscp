@@ -6,19 +6,22 @@ object CopyLocalDialog: TCopyLocalDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CopyLocalDialog'
-  ClientHeight = 121
+  ClientHeight = 126
   ClientWidth = 511
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = False
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     511
-    121)
-  PixelsPerInch = 96
-  TextHeight = 13
+    126)
+  TextHeight = 15
   object Image: TImage
     Left = 8
     Top = 11
@@ -29,16 +32,16 @@ object CopyLocalDialog: TCopyLocalDialog
   object DirectoryLabel: TLabel
     Left = 46
     Top = 8
-    Width = 61
-    Height = 13
+    Width = 63
+    Height = 15
     Caption = '&Target path:'
     FocusControl = DirectoryEdit
   end
   object DirectoryEdit: THistoryComboBox
     Left = 46
-    Top = 25
-    Width = 372
-    Height = 21
+    Top = 26
+    Width = 371
+    Height = 23
     AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
     DropDownCount = 16
@@ -47,9 +50,9 @@ object CopyLocalDialog: TCopyLocalDialog
     OnExit = DirectoryEditExit
   end
   object OkButton: TButton
-    Left = 260
+    Left = 251
     Top = 55
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = 'OK'
@@ -58,9 +61,9 @@ object CopyLocalDialog: TCopyLocalDialog
     TabOrder = 3
   end
   object CancelButton: TButton
-    Left = 343
+    Left = 337
     Top = 55
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Cancel = True
@@ -69,18 +72,18 @@ object CopyLocalDialog: TCopyLocalDialog
     TabOrder = 4
   end
   object LocalDirectoryBrowseButton: TButton
-    Left = 427
-    Top = 23
-    Width = 75
+    Left = 423
+    Top = 25
+    Width = 80
     Height = 25
     Caption = 'B&rowse...'
     TabOrder = 1
     OnClick = LocalDirectoryBrowseButtonClick
   end
   object HelpButton: TButton
-    Left = 427
+    Left = 423
     Top = 55
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Help'
@@ -88,27 +91,31 @@ object CopyLocalDialog: TCopyLocalDialog
     OnClick = HelpButtonClick
   end
   object NeverShowAgainCheck: TCheckBox
-    Left = 12
-    Top = 58
-    Width = 242
+    Left = 10
+    Top = 59
+    Width = 237
     Height = 17
     Caption = '&Do not show this dialog box again'
     TabOrder = 2
   end
   object ShortCutHintPanel: TPanel
     Left = 0
-    Top = 87
+    Top = 88
     Width = 511
-    Height = 34
+    Height = 38
     Align = alBottom
     BevelOuter = bvNone
     ParentBackground = False
     TabOrder = 6
+    DesignSize = (
+      511
+      38)
     object ShortCutHintLabel: TLabel
-      Left = 12
+      Left = 8
       Top = 3
-      Width = 490
-      Height = 28
+      Width = 495
+      Height = 32
+      Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
       Caption = 
         'In Commander interface the keyboard shortcut F5 is used to trans' +

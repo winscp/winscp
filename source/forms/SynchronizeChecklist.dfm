@@ -8,7 +8,11 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   ClientHeight = 521
   ClientWidth = 695
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Icon.Data = {
     000001000700404000000100200028420000760000003030000001002000A825
     00009E4200002828000001002000681A0000466800002020000001002000A810
@@ -1355,27 +1359,26 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     0000C0030000C0030000C0030000C0030000C0030000C0030000C0030000C003
     0000C0030000C0030000C0030000C0030000C0030000C0070000FC7F0000}
   KeyPreview = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Panel: TPanel
-    Left = 571
+    Left = 562
     Top = 0
-    Width = 124
-    Height = 501
+    Width = 133
+    Height = 500
     Align = alRight
     BevelOuter = bvNone
     Constraints.MinHeight = 350
     TabOrder = 1
     DesignSize = (
-      124
-      501)
+      133
+      500)
     object OkButton: TButton
-      Left = 8
+      Left = 6
       Top = 8
-      Width = 108
+      Width = 119
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       Caption = 'OK'
@@ -1383,11 +1386,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       ModalResult = 1
       TabOrder = 0
       OnClick = OkButtonClick
+      OnDropDownClick = OkButtonDropDownClick
     end
     object CancelButton: TButton
-      Left = 8
-      Top = 40
-      Width = 108
+      Left = 6
+      Top = 39
+      Width = 119
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       Cancel = True
@@ -1396,45 +1400,45 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       TabOrder = 1
     end
     object CheckAllButton: TButton
-      Left = 8
-      Top = 182
-      Width = 108
+      Left = 6
+      Top = 179
+      Width = 119
       Height = 25
       Action = CheckAllAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 5
     end
     object UncheckAllButton: TButton
-      Left = 8
-      Top = 214
-      Width = 108
+      Left = 6
+      Top = 210
+      Width = 119
       Height = 25
       Action = UncheckAllAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 6
     end
     object CheckButton: TButton
-      Left = 8
-      Top = 118
-      Width = 108
+      Left = 6
+      Top = 117
+      Width = 119
       Height = 25
       Action = CheckAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 3
     end
     object UncheckButton: TButton
-      Left = 8
-      Top = 150
-      Width = 108
+      Left = 6
+      Top = 148
+      Width = 119
       Height = 25
       Action = UncheckAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 4
     end
     object HelpButton: TButton
-      Left = 8
-      Top = 72
-      Width = 108
+      Left = 6
+      Top = 70
+      Width = 119
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Help'
@@ -1442,9 +1446,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       OnClick = HelpButtonClick
     end
     object CustomCommandsButton2: TButton
-      Left = 8
-      Top = 353
-      Width = 108
+      Left = 6
+      Top = 319
+      Width = 119
       Height = 25
       Action = CustomCommandsAction
       Anchors = [akLeft, akTop, akRight]
@@ -1452,27 +1456,28 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       TabOrder = 9
     end
     object ReverseButton: TButton
-      Left = 8
-      Top = 260
-      Width = 108
+      Left = 6
+      Top = 257
+      Width = 119
       Height = 25
       Action = ReverseAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 7
     end
-    object CalculateSizeButton: TButton
-      Left = 8
-      Top = 322
-      Width = 108
+    object ToolsMenuButton: TButton
+      Left = 6
+      Top = 366
+      Width = 119
       Height = 25
-      Action = CalculateSizeAction
       Anchors = [akLeft, akTop, akRight]
+      Caption = '&Tools'
       TabOrder = 10
+      OnClick = ToolsMenuButtonClick
     end
     object MoveButton: TButton
-      Left = 8
-      Top = 291
-      Width = 108
+      Left = 6
+      Top = 288
+      Width = 119
       Height = 25
       Action = MoveAction
       Anchors = [akLeft, akTop, akRight]
@@ -1482,8 +1487,8 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   object ListView: TIEListView
     Left = 0
     Top = 0
-    Width = 571
-    Height = 501
+    Width = 562
+    Height = 500
     OnRecreate = ListViewRecreate
     Align = alClient
     Checkboxes = True
@@ -1498,7 +1503,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     PopupMenu = ListViewPopupMenu
     ShowHint = True
     TabOrder = 0
-    ViewStyle = vsReport
     OnChange = ListViewChange
     OnChanging = ListViewChanging
     OnClick = ListViewClick
@@ -1552,6 +1556,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
         MinWidth = 20
         Width = 80
       end>
+    ViewStyle = vsReport
     OnAdvancedCustomDrawSubItem = ListViewAdvancedCustomDrawSubItem
     OnCompare = ListViewCompare
     OnContextPopup = ListViewContextPopup
@@ -1560,9 +1565,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 501
+    Top = 500
     Width = 695
-    Height = 20
+    Height = 21
     Hint = 'Click to select all actions of this type'
     Panels = <
       item
@@ -2064,7 +2069,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 48
     Top = 416
-    Bitmap = {}
   end
   object ListViewPopupMenu: TPopupMenu
     Left = 648
@@ -2095,6 +2099,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     end
     object Calculate1: TMenuItem
       Action = CalculateSizeAction
+      object Calculate3: TMenuItem
+        Action = CalculateSizeAction
+      end
+      object CalculateAll1: TMenuItem
+        Action = CalculateSizeAllAction
+      end
     end
     object TMenuItem
       Action = CustomCommandsAction
@@ -2155,10 +2165,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     end
     object CalculateSizeAction: TAction
       Caption = 'C&alculate'
+      ShortCut = 40973
       OnExecute = CalculateSizeActionExecute
     end
     object CalculateSizeAllAction: TAction
-      ShortCut = 49217
+      Caption = 'Calc&ulate All'
+      ShortCut = 57357
       OnExecute = CalculateSizeAllActionExecute
     end
     object MoveAction: TAction
@@ -2181,6 +2193,11 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object BrowseRemoteAction: TAction
       Caption = 'Browse &Remote Directory'
       OnExecute = BrowseRemoteActionExecute
+    end
+    object FindMoveCandidateAction: TAction
+      Caption = '&Find Move Candidate'
+      ShortCut = 49269
+      OnExecute = FindMoveCandidateActionExecute
     end
   end
   object ActionImages120: TPngImageList
@@ -2653,7 +2670,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 136
     Top = 416
-    Bitmap = {}
   end
   object ActionImages144: TPngImageList
     Height = 24
@@ -3150,7 +3166,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 224
     Top = 416
-    Bitmap = {}
   end
   object ActionImages192: TPngImageList
     Height = 32
@@ -3668,6 +3683,34 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 312
     Top = 416
-    Bitmap = {}
+  end
+  object ToolsPopupMenu: TPopupMenu
+    Left = 88
+    Top = 336
+    object Calculate2: TMenuItem
+      Action = CalculateSizeAction
+    end
+    object CalculateAll2: TMenuItem
+      Action = CalculateSizeAllAction
+    end
+    object N4: TMenuItem
+      Caption = '-'
+    end
+    object FindMoveCandidate1: TMenuItem
+      Action = FindMoveCandidateAction
+    end
+  end
+  object OkPopupMenu: TPopupMenu
+    Left = 224
+    Top = 336
+    object StartItem: TMenuItem
+      Caption = '&Start'
+      Default = True
+      OnClick = StartItemClick
+    end
+    object StartQueueItem: TMenuItem
+      Caption = 'Start in &Background'
+      OnClick = StartQueueItemClick
+    end
   end
 end

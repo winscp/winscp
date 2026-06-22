@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -63,7 +63,7 @@ int DH_check_params(const DH *dh, int *ret)
      * validity tests.
      */
     return ossl_ffc_params_FIPS186_4_validate(dh->libctx, &dh->params,
-                                              FFC_PARAM_TYPE_DH, ret, NULL);
+        FFC_PARAM_TYPE_DH, ret, NULL);
 }
 #else
 int DH_check_params(const DH *dh, int *ret)
@@ -97,7 +97,7 @@ int DH_check_params(const DH *dh, int *ret)
         *ret |= DH_MODULUS_TOO_LARGE;
 
     ok = 1;
- err:
+err:
     BN_CTX_end(ctx);
     BN_CTX_free(ctx);
     return ok;
@@ -220,7 +220,7 @@ int DH_check(const DH *dh, int *ret)
             *ret |= DH_CHECK_P_NOT_SAFE_PRIME;
     }
     ok = 1;
- err:
+err:
     BN_CTX_end(ctx);
     BN_CTX_free(ctx);
     return ok;
@@ -272,7 +272,7 @@ int DH_check_pub_key(const DH *dh, const BIGNUM *pub_key, int *ret)
 int ossl_dh_check_pub_key_partial(const DH *dh, const BIGNUM *pub_key, int *ret)
 {
     return ossl_ffc_validate_public_key_partial(&dh->params, pub_key, ret)
-           && *ret == 0;
+        && *ret == 0;
 }
 
 int ossl_dh_check_priv_key(const DH *dh, const BIGNUM *priv_key, int *ret)
@@ -351,7 +351,7 @@ int ossl_dh_check_pairwise(const DH *dh)
     /* recalculate the public key = (g ^ priv) mod p */
     if (!ossl_dh_generate_public_key(ctx, dh, dh->priv_key, pub_key))
         goto err;
-    /* check it matches the existing pubic_key */
+    /* check it matches the existing public_key */
     ret = BN_cmp(pub_key, dh->pub_key) == 0;
 err:
     BN_free(pub_key);

@@ -10,6 +10,10 @@
 
 #include "stdafx.h"
 #include <afxtempl.h>
+// WINSCP
+#include <algorithm>
+#define max std::max
+#define min std::min
 
 #ifdef AFX_AUX_SEG
 #pragma code_seg(AFX_AUX_SEG)

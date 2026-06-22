@@ -17,6 +17,7 @@
 #include "TBX.hpp"
 #include "VCLCommon.h"
 #include <HistoryComboBox.hpp>
+#include "Glyphs.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "TB2Item"
@@ -266,14 +267,19 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteSelectAllAction2, DirView(osRemote)->FilesCount)
 
   //style
-  UPDACT(CurrentCycleStyleAction,
-    CurrentCycleStyleAction->ImageIndex = 8 + (DirView(osCurrent)->ViewStyle + 1) % 4)
-  #define STYLEACTION(Style) UPDACT(Current ## Style ## Action, \
-    Current ## Style ## Action->Checked = (DirView(osCurrent)->ViewStyle == vs ## Style))
-  STYLEACTION(Icon)
-  STYLEACTION(SmallIcon)
-  STYLEACTION(List)
-  STYLEACTION(Report)
+  #define STYLEIMAGE(STYLE) Style == dvs ## STYLE ? Remote ## STYLE ## Action->ImageIndex :
+  UPDACT(RemoteCycleStyleAction, int Style = DirView(osRemote)->DirViewStyle;
+    RemoteCycleStyleAction->ImageIndex = (STYLEIMAGE(Icon) STYLEIMAGE(SmallIcon) STYLEIMAGE(List) STYLEIMAGE(Report) RemoteIconAction->ImageIndex))
+  #undef STYLEIMAGE
+  #define STYLEACTION(SIDE, STYLE) UPDACT(SIDE ## STYLE ## Action, \
+    SIDE ## STYLE ## Action->Checked = (DirView(os ## SIDE)->DirViewStyle == dvs ## STYLE))
+  STYLEACTION(Remote, Icon)
+  STYLEACTION(Remote, SmallIcon)
+  STYLEACTION(Remote, List)
+  STYLEACTION(Remote, Report)
+  STYLEACTION(Remote, Thumbnail)
+  STYLEACTION(Local, Report)
+  STYLEACTION(Local, Thumbnail)
   #undef STYLEACTION
 
   // REMOTE+LOCAL
@@ -349,6 +355,13 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     LockToolbarsAction->Checked = WinConfiguration->LockToolbars, )
   UPDEX(SelectiveToolbarTextAction, true,
     SelectiveToolbarTextAction->Checked = WinConfiguration->SelectiveToolbarText, )
+  UPD(ToolbarIconSizeAction, true)
+  UPDEX1(ToolbarIconSizeNormalAction, true,
+    ToolbarIconSizeNormalAction->Checked = (WinConfiguration->LargerToolbar <= 0))
+  UPDEX1(ToolbarIconSizeLargeAction, GlyphsModule->IsLargerToolbarPossible(1),
+    ToolbarIconSizeLargeAction->Checked = (WinConfiguration->LargerToolbar == 1))
+  UPDEX1(ToolbarIconSizeVeryLargeAction, GlyphsModule->IsLargerToolbarPossible(2),
+    ToolbarIconSizeVeryLargeAction->Checked = (WinConfiguration->LargerToolbar >= 2))
   UPDCOMP(CustomCommandsBand)
   UPD(ColorMenuAction2, HasTerminal)
   UPD(GoToAddressAction, true)
@@ -445,6 +458,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(EditorListCustomizeAction, true)
   UPD(ChangePasswordAction, ScpExplorer->CanChangePassword())
   UPD(PrivateKeyUploadAction, ScpExplorer->CanPrivateKeyUpload())
+  UPD(IncrementalSearchStartAction, true);
 
   // CUSTOM COMMANDS
   UPD(CustomCommandsFileAction, true)
@@ -626,16 +640,20 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(PasteAction3, ScpExplorer->PasteFromClipBoard())
 
     // style
-    EXE(CurrentCycleStyleAction,
-      if (DirView(osCurrent)->ViewStyle == vsReport) DirView(osCurrent)->ViewStyle = vsIcon;
-        else DirView(osCurrent)->ViewStyle = (TViewStyle)(DirView(osCurrent)->ViewStyle + 1);
+    EXE(RemoteCycleStyleAction,
+      if (DirView(osRemote)->DirViewStyle == dvsThumbnail) DirView(osRemote)->DirViewStyle = dvsIcon;
+        else DirView(osRemote)->DirViewStyle = (TDirViewStyle)(DirView(osRemote)->DirViewStyle + 1);
+      ScpExplorer->UpdateControls();
     )
-    #define STYLEACTION(Style) EXE(Current ## Style ## Action, \
-      DirView(osCurrent)->ViewStyle = vs ## Style)
-    STYLEACTION(Icon)
-    STYLEACTION(SmallIcon)
-    STYLEACTION(List)
-    STYLEACTION(Report)
+    #define STYLEACTION(SIDE, STYLE) EXE(SIDE ## STYLE ## Action, \
+      ScpExplorer->ChangeDirViewStyle(os ## SIDE, dvs ## STYLE))
+    STYLEACTION(Remote, Icon)
+    STYLEACTION(Remote, SmallIcon)
+    STYLEACTION(Remote, List)
+    STYLEACTION(Remote, Report)
+    STYLEACTION(Remote, Thumbnail)
+    STYLEACTION(Local, Report)
+    STYLEACTION(Local, Thumbnail)
     #undef STYLEACTION
 
     #define PANEL_ACTIONS(SIDE) \
@@ -695,6 +713,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FileColorsPreferencesAction, PreferencesDialog(pmFileColors) )
     EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
     EXE(SelectiveToolbarTextAction, WinConfiguration->SelectiveToolbarText = !WinConfiguration->SelectiveToolbarText)
+    EXE(ToolbarIconSizeAction, )
+    EXE(ToolbarIconSizeNormalAction, WinConfiguration->LargerToolbar = 0)
+    EXE(ToolbarIconSizeLargeAction, WinConfiguration->LargerToolbar = 1)
+    EXE(ToolbarIconSizeVeryLargeAction, WinConfiguration->LargerToolbar = 2)
     EXECOMP(CustomCommandsBand)
     EXE(ColorMenuAction2, CreateSessionColorMenu(ColorMenuAction2))
     EXE(GoToAddressAction, ScpExplorer->GoToAddress())
@@ -792,6 +814,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(EditorListCustomizeAction, PreferencesDialog(pmEditor))
     EXE(ChangePasswordAction, ScpExplorer->ChangePassword())
     EXE(PrivateKeyUploadAction, ScpExplorer->PrivateKeyUpload())
+    EXE(IncrementalSearchStartAction, ScpExplorer->IncrementalSearchStart())
 
     // CUSTOM COMMANDS
     EXE(CustomCommandsFileAction, CreateCustomCommandsMenu(CustomCommandsFileAction, ccltFile))

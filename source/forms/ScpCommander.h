@@ -468,6 +468,26 @@ __published:
   TTBXItem *TBXItem266;
   TTBXSeparatorItem *TBXSeparatorItem74;
   TTBXItem *TBXItem267;
+  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXItem *TBXItem269;
+  TTBXSeparatorItem *TBXSeparatorItem75;
+  TTBXItem *TBXItem268;
+  TTBXSubmenuItem *TBXSubmenuItem17;
+  TTBXItem *TBXItem270;
+  TTBXSeparatorItem *TBXSeparatorItem76;
+  TTBXItem *TBXItem271;
+  TTBXSubmenuItem *TBXItem272;
+  TTBXItem *TBXItem273;
+  TTBXItem *TBXItem274;
+  TTBXItem *TBXItem275;
+  TTBXSubmenuItem *TBXSubmenuItem19;
+  TTBXItem *TBXItem276;
+  TTBXSeparatorItem *TBXSeparatorItem77;
+  TTBXItem *TBXItem277;
+  TTBXSubmenuItem *TBXSubmenuItem32;
+  TTBXItem *TBXItem278;
+  TTBXSeparatorItem *TBXSeparatorItem78;
+  TTBXItem *TBXItem279;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -592,7 +612,7 @@ protected:
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
   virtual TCustomDirView * GetCurrentLocalBrowser();
-  virtual void __fastcall UpdateControls();
+  virtual void UpdatePanelControls(TCustomDirView * ADirView, TCustomDriveView * ADriveView);
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
@@ -652,7 +672,8 @@ protected:
   virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
   void __fastcall SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action);
   virtual void __fastcall NeedSession(bool Startup);
-  void RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory, TObject * State);
+  void RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory);
+  void AnnounceLocalStates(bool RestoreState, bool LocalBrowser, TObject * State, TObject * OtherState);
   virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
   virtual UnicodeString GetNewTabHintDetails();
 
@@ -695,6 +716,7 @@ public:
   virtual void ResetLayoutColumns(TOperationSide Side);
   virtual void * SaveFocus();
   virtual void RestoreFocus(void * Focus);
+  virtual void __fastcall UpdateControls();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

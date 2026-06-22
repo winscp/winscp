@@ -8,17 +8,18 @@
  */
 
 #ifndef OSSL_QUIC_STATS_H
-# define OSSL_QUIC_STATS_H
+#define OSSL_QUIC_STATS_H
 
-# include <openssl/ssl.h>
-# include "internal/time.h"
+#include <openssl/ssl.h>
+#include "internal/time.h"
+#include "internal/quic_predef.h"
 
-# ifndef OPENSSL_NO_QUIC
+#ifndef OPENSSL_NO_QUIC
 
-typedef struct ossl_statm_st {
+struct ossl_statm_st {
     OSSL_TIME smoothed_rtt, latest_rtt, min_rtt, rtt_variance;
-    char      have_first_sample;
-} OSSL_STATM;
+    char have_first_sample;
+};
 
 typedef struct ossl_rtt_info_st {
     /* As defined in RFC 9002. */
@@ -32,9 +33,9 @@ void ossl_statm_destroy(OSSL_STATM *statm);
 void ossl_statm_get_rtt_info(OSSL_STATM *statm, OSSL_RTT_INFO *rtt_info);
 
 void ossl_statm_update_rtt(OSSL_STATM *statm,
-                           OSSL_TIME ack_delay,
-                           OSSL_TIME override_latest_rtt);
+    OSSL_TIME ack_delay,
+    OSSL_TIME override_latest_rtt);
 
-# endif
+#endif
 
 #endif

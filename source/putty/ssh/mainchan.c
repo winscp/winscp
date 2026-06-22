@@ -187,7 +187,9 @@ static void mainchan_open_confirmation(Channel *chan)
         if (mc->n_req_env)
             ppl_logevent("Sent %d environment variables", mc->n_req_env);
 
-        cmd = conf_get_str(mc->conf, CONF_remote_cmd);
+        /* Ignore encoding of CONF_remote_cmd so as not to disturb
+         * legacy handling of non-UTF-8 commands */
+        cmd = conf_get_str_ambi(mc->conf, CONF_remote_cmd, NULL);
         if (conf_get_bool(mc->conf, CONF_ssh_subsys)) {
             retry_cmd_now = !sshfwd_start_subsystem(mc->sc, true, cmd);
         } else if (*cmd) {
@@ -210,7 +212,9 @@ static void mainchan_open_confirmation(Channel *chan)
 
 static void mainchan_try_fallback_command(mainchan *mc)
 {
-    const char *cmd = conf_get_str(mc->conf, CONF_remote_cmd2);
+    /* Ignore encoding of CONF_remote_cmd2 so as not to disturb legacy
+     * handling of non-UTF-8 commands */
+    const char *cmd = conf_get_str_ambi(mc->conf, CONF_remote_cmd2, NULL);
     if (conf_get_bool(mc->conf, CONF_ssh_subsys2)) {
         sshfwd_start_subsystem(mc->sc, true, cmd);
     } else if (*cmd) {
@@ -295,7 +299,7 @@ static void mainchan_request_response(Channel *chan, bool success)
         if (success) {
             ppl_logevent("Started a shell/command");
             mainchan_ready(mc);
-        } else if (*conf_get_str(mc->conf, CONF_remote_cmd2) || conf_get_bool(mc->conf, CONF_force_remote_cmd2)) { // WINSCP
+        } else if (*conf_get_str_ambi(mc->conf, CONF_remote_cmd2, NULL) || conf_get_bool(mc->conf, CONF_force_remote_cmd2)) { // WINSCP
             ppl_logevent("Primary command failed; attempting fallback");
             mainchan_try_fallback_command(mc);
         } else {

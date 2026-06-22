@@ -29,8 +29,8 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   int SpecialFolder = -1, int IconIndex = SITE_ICON, bool Return = false);
 UnicodeString __fastcall GetListViewStr(TListView * ListView);
 void __fastcall LoadListViewStr(TListView * ListView, UnicodeString LayoutStr);
-void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly = false);
-UnicodeString __fastcall StoreForm(TCustomForm * Form);
+void RestoreForm(const UnicodeString & Data, TForm * Form, bool PositionOnly = false, const UnicodeString & DefaultData = EmptyStr);
+UnicodeString __fastcall StoreForm(TForm * Form);
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form);
 UnicodeString __fastcall StoreFormSize(TForm * Form);
 TFontStyles __fastcall IntToFontStyles(int value);
@@ -66,7 +66,6 @@ bool __fastcall FontDialog(TFont * Font);
 bool __fastcall SaveDialog(UnicodeString Title, UnicodeString Filter,
   UnicodeString DefaultExt, UnicodeString & FileName);
 bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber);
-bool __fastcall IsWin64();
 void __fastcall CopyToClipboard(UnicodeString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();

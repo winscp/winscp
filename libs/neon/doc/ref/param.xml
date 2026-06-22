@@ -65,6 +65,13 @@
         </variablelist></para>
       </refsect1>
 
+      <refsect1>
+	<title>History</title>
+
+        <para><function>ne_strparam</function> is
+        available in &neon; 0.32.0 and later.</para>
+      </refsect1>
+
   <refsect1>
     <title>See also</title>
 

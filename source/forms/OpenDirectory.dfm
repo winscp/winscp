@@ -6,23 +6,25 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Open directory'
-  ClientHeight = 334
-  ClientWidth = 405
+  ClientHeight = 342
+  ClientWidth = 450
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
-    405
-    334)
-  PixelsPerInch = 96
-  TextHeight = 13
+    450
+    342)
+  TextHeight = 15
   object EditLabel: TLabel
     Left = 46
     Top = 8
-    Width = 76
-    Height = 13
+    Width = 82
+    Height = 15
     Caption = '&Open directory:'
   end
   object Image: TImage
@@ -34,9 +36,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   end
   object LocalDirectoryEdit: THistoryComboBox
     Left = 46
-    Top = 25
-    Width = 270
-    Height = 21
+    Top = 26
+    Width = 310
+    Height = 23
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 1
     Text = 'LocalDirectoryEdit'
@@ -45,9 +47,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   end
   object RemoteDirectoryEdit: THistoryComboBox
     Left = 46
-    Top = 25
-    Width = 351
-    Height = 21
+    Top = 26
+    Width = 396
+    Height = 23
     Anchors = [akLeft, akTop, akRight]
     DropDownCount = 16
     MaxLength = 1000
@@ -57,9 +59,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     SaveOn = []
   end
   object OKBtn: TButton
-    Left = 159
-    Top = 300
-    Width = 75
+    Left = 190
+    Top = 309
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -68,9 +70,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     TabOrder = 5
   end
   object CancelBtn: TButton
-    Left = 239
-    Top = 300
-    Width = 75
+    Left = 276
+    Top = 309
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -80,9 +82,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   end
   object PageControl: TPageControl
     Left = 8
-    Top = 56
-    Width = 386
-    Height = 235
+    Top = 55
+    Width = 434
+    Height = 248
     ActivePage = SessionBookmarksSheet
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 3
@@ -91,17 +93,17 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       Tag = 1
       Caption = 'Site bookmarks'
       DesignSize = (
-        378
-        207)
+        426
+        218)
       object SessionBookmarksList: TListBox
         Tag = 1
-        Left = 10
-        Top = 9
-        Width = 268
-        Height = 187
+        Left = 5
+        Top = 5
+        Width = 328
+        Height = 207
         Anchors = [akLeft, akTop, akRight, akBottom]
         DragMode = dmAutomatic
-        ItemHeight = 13
+        ItemHeight = 15
         TabOrder = 0
         OnClick = BookmarksListClick
         OnDblClick = BookmarksListDblClick
@@ -113,9 +115,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       end
       object AddSessionBookmarkButton: TButton
         Tag = 1
-        Left = 285
-        Top = 9
-        Width = 83
+        Left = 339
+        Top = 5
+        Width = 80
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Add'
@@ -124,9 +126,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       end
       object RemoveSessionBookmarkButton: TButton
         Tag = 1
-        Left = 285
-        Top = 41
-        Width = 83
+        Left = 339
+        Top = 36
+        Width = 80
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'Remo&ve'
@@ -135,9 +137,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       end
       object UpSessionBookmarkButton: TButton
         Tag = -1
-        Left = 285
-        Top = 139
-        Width = 83
+        Left = 339
+        Top = 156
+        Width = 80
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Up'
@@ -146,9 +148,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       end
       object DownSessionBookmarkButton: TButton
         Tag = 1
-        Left = 285
-        Top = 171
-        Width = 83
+        Left = 339
+        Top = 187
+        Width = 80
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Down'
@@ -161,17 +163,17 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       Caption = 'Shared bookmarks'
       ImageIndex = 1
       DesignSize = (
-        378
-        207)
+        426
+        218)
       object SharedBookmarksList: TListBox
         Tag = 2
-        Left = 10
-        Top = 9
-        Width = 268
-        Height = 187
+        Left = 5
+        Top = 5
+        Width = 328
+        Height = 207
         Anchors = [akLeft, akTop, akRight, akBottom]
         DragMode = dmAutomatic
-        ItemHeight = 13
+        ItemHeight = 15
         TabOrder = 0
         OnClick = BookmarksListClick
         OnDblClick = BookmarksListDblClick
@@ -183,9 +185,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       end
       object AddSharedBookmarkButton: TButton
         Tag = 2
-        Left = 285
-        Top = 9
-        Width = 83
+        Left = 339
+        Top = 5
+        Width = 80
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Add'
@@ -194,20 +196,20 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       end
       object RemoveSharedBookmarkButton: TButton
         Tag = 2
-        Left = 285
-        Top = 41
-        Width = 83
+        Left = 339
+        Top = 36
+        Width = 80
         Height = 25
         Anchors = [akTop, akRight]
-        Caption = '&Remove'
+        Caption = 'Remo&ve'
         TabOrder = 2
         OnClick = RemoveBookmarkButtonClick
       end
       object UpSharedBookmarkButton: TButton
         Tag = -2
-        Left = 285
-        Top = 139
-        Width = 83
+        Left = 339
+        Top = 156
+        Width = 80
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Up'
@@ -216,9 +218,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       end
       object DownSharedBookmarkButton: TButton
         Tag = 2
-        Left = 285
-        Top = 171
-        Width = 83
+        Left = 339
+        Top = 187
+        Width = 80
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Down'
@@ -227,9 +229,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       end
       object ShortCutSharedBookmarkButton: TButton
         Tag = 2
-        Left = 285
-        Top = 73
-        Width = 83
+        Left = 339
+        Top = 67
+        Width = 80
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Shortcut...'
@@ -239,9 +241,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     end
   end
   object LocalDirectoryBrowseButton: TButton
-    Left = 320
-    Top = 23
-    Width = 75
+    Left = 362
+    Top = 25
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = 'B&rowse...'
@@ -250,8 +252,8 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   end
   object SwitchButton: TButton
     Left = 8
-    Top = 300
-    Width = 121
+    Top = 309
+    Width = 134
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = '&Location Profiles...'
@@ -260,9 +262,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     OnClick = SwitchButtonClick
   end
   object HelpButton: TButton
-    Left = 320
-    Top = 300
-    Width = 75
+    Left = 362
+    Top = 309
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'

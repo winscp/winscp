@@ -101,8 +101,10 @@ void random_save_seed(void)
 void random_ref(void)
 {
     WINSCP_PUTTY_SECTION_ENTER;
-    if (!random_active++)
+    if (!random_active++) {
+        enable_dit(); /* just in case main() forgot */
         random_create(&ssh_sha256);
+    }
     WINSCP_PUTTY_SECTION_LEAVE;
 }
 

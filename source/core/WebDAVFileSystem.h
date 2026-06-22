@@ -103,7 +103,17 @@ protected:
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
     int Params);
   void CheckStatus(int NeonStatus);
-  struct TSessionContext;
+  struct TSessionContext
+  {
+    TSessionContext();
+    ~TSessionContext();
+    TWebDAVFileSystem * FileSystem;
+    ne_session_s * NeonSession; // The main one (there might be aux session for the same context)
+    UnicodeString HostName;
+    int PortNumber;
+    bool NtlmAuthenticationFailed;
+    UnicodeString AuthorizationProtocol;
+  };
   void CheckStatus(TSessionContext * SessionContext, int NeonStatus);
   void __fastcall ClearNeonError();
   static void NeonPropsResult(
@@ -137,7 +147,7 @@ protected:
    const ne_uri * Uri, const ne_status * Status);
   void __fastcall RequireLockStore();
   void InitSslSession(ssl_st * Ssl, ne_session * Session);
-  void __fastcall NeonAddAuthentiation(TSessionContext * SessionContext, bool UseNegotiate);
+  void __fastcall NeonAddAuthentication(TSessionContext * SessionContext, bool UseNegotiate);
   void __fastcall HttpAuthenticationFailed(TSessionContext * SessionContext);
 
 private:
@@ -162,16 +172,6 @@ private:
   RawByteString FPassword;
   UnicodeString FTlsVersionStr;
   unsigned int FCapabilities;
-  struct TSessionContext
-  {
-    ~TSessionContext();
-    TWebDAVFileSystem * FileSystem;
-    ne_session_s * NeonSession; // The main one (there might be aux session for the same context)
-    UnicodeString HostName;
-    int PortNumber;
-    bool NtlmAuthenticationFailed;
-    UnicodeString AuthorizationProtocol;
-  };
   TSessionContext * FSessionContext;
   enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordFailed } FIgnoreAuthenticationFailure;
   UnicodeString FAuthorizationProtocol;
@@ -192,6 +192,7 @@ private:
   int __fastcall ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList);
   int __fastcall RenameFileInternal(const UnicodeString & FileName, const UnicodeString & NewName, bool Overwrite);
   int __fastcall CopyFileInternal(const UnicodeString & FileName, const UnicodeString & NewName, bool Overwrite);
+  bool IsRedirect(int NeonStatus);
   bool __fastcall IsValidRedirect(int NeonStatus, UnicodeString & Path);
   UnicodeString __fastcall DirectoryPath(UnicodeString Path);
   UnicodeString __fastcall FilePath(const TRemoteFile * File);

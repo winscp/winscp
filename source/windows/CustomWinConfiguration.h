@@ -18,6 +18,8 @@
 // WM_USER_SHCHANGENOTIFY + 13 (packages/filemng/DriveView.pas)
 // WM_PASTE_FILES + 14 (forms/CustomScpExplorer.cpp)
 #define WM_IS_HIDDEN (WM_WINSCP_USER + 15)
+// WM_USER_INVALIDATEITEM + 16 (packages/filemng/DirView.pas)
+#define WM_QUEUE_CALLBACK (WM_WINSCP_USER + 17)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration

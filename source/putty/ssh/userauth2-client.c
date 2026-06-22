@@ -336,8 +336,9 @@ static bool ssh2_userauth_signflags(struct ssh2_userauth_state *s,
     } // WINSCP
 }
 
-static void authplugin_plug_log(Plug *plug, PlugLogType type, SockAddr *addr,
-                                int port, const char *err_msg, int err_code)
+static void authplugin_plug_log(Plug *plug, Socket *sock, PlugLogType type,
+                                SockAddr *addr, int port,
+                                const char *err_msg, int err_code)
 {
     struct ssh2_userauth_state *s = container_of(
         plug, struct ssh2_userauth_state, authplugin_plug);
@@ -538,7 +539,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
         char *algname = NULL;
         char *comment = NULL;
 
-        ppl_logevent("Reading certificate file \"%s\"",
+        ppl_logevent(WINSCP_BOM "Reading certificate file \"%s\"",
                      filename_to_str(s->detached_cert_file));
         { // WINSCP
         int keytype = key_type(s->detached_cert_file);
@@ -585,7 +586,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             ppl_logevent("Unable to use this certificate file (%s)",
                          cert_error);
             ppl_printf(
-                "Unable to use certificate file \"%s\" (%s)\r\n",
+                WINSCP_BOM "Unable to use certificate file \"%s\" (%s)\r\n",
                 filename_to_str(s->detached_cert_file), cert_error);
             sfree(cert_error);
         }
@@ -806,6 +807,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
              */
         } else if ((s->username = s->default_username) == NULL) {
             s->cur_prompt = ssh_ppl_new_prompts(&s->ppl);
+            s->cur_prompt->utf8 = true;
             s->cur_prompt->to_server = true;
             s->cur_prompt->from_server = false;
             s->cur_prompt->name = dupstr("SSH login name");
@@ -1431,7 +1433,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 /* Import server name if not cached from KEX */
                 if (s->shgss->srv_name == GSS_C_NO_NAME) {
                     // WINSCP
-                    const char * fullhostname = s->fullhostname;
+                    char * fullhostname = s->fullhostname;
                     if (s->loghost[0] != '\0')
                     {
                         fullhostname = s->loghost;
@@ -1880,6 +1882,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 // no indentation to ease merges
                 // /WINSCP
                 s->cur_prompt = ssh_ppl_new_prompts(&s->ppl);
+                s->cur_prompt->utf8 = true;
                 s->cur_prompt->to_server = true;
                 s->cur_prompt->from_server = false;
                 s->cur_prompt->name = dupstr("SSH password");
@@ -1973,6 +1976,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     prompt = get_string(pktin);
 
                     s->cur_prompt = ssh_ppl_new_prompts(&s->ppl);
+                    s->cur_prompt->utf8 = true;
                     s->cur_prompt->to_server = true;
                     s->cur_prompt->from_server = false;
                     s->cur_prompt->name = dupstr("New SSH password");
@@ -2165,11 +2169,18 @@ static void ssh2_userauth_print_banner(struct ssh2_userauth_state *s)
         { // WINSCP
         bool mid_line = false;
         while (bufchain_size(&s->banner) > 0) {
+            // WINSCP: consume banner buffer before calling seat_banner_pl.
+            // As we might get disconnected, while the banner is displaying,
+            // and ssh_remote_error calls here via ssh2_userauth_final_output,
+            // so we might get into loop
             ptrlen data = bufchain_prefix(&s->banner);
-            seat_banner_pl(ppl_get_iseat(&s->ppl), data);
+            char * buf = smalloc(data.len);
+            bufchain_fetch(&s->banner, buf, data.len);
             mid_line =
                 (((const char *)data.ptr)[data.len-1] != '\n');
             bufchain_consume(&s->banner, data.len);
+            seat_banner_pl(ppl_get_iseat(&s->ppl), make_ptrlen(buf, data.len));
+            sfree(buf);
         }
         bufchain_clear(&s->banner);
 
@@ -2200,6 +2211,7 @@ static bool ssh2_userauth_ki_setup_prompts(
     inst = get_string(src);
     get_string(src); /* skip language tag */
     s->cur_prompt = ssh_ppl_new_prompts(&s->ppl);
+    s->cur_prompt->utf8 = true;
     s->cur_prompt->to_server = true;
     s->cur_prompt->from_server = true;
 
@@ -2471,7 +2483,7 @@ static void ssh2_userauth_add_alg_and_publickey(
          * SHA-512 name rsa-sha2-512-cert-v01@... .)
          */
         if (verbose) {
-            ppl_logevent("Sending public key with certificate from \"%s\"",
+            ppl_logevent(WINSCP_BOM "Sending public key with certificate from \"%s\"",
                          filename_to_str(s->detached_cert_file));
         }
         {
@@ -2506,7 +2518,7 @@ static void ssh2_userauth_add_alg_and_publickey(
          * avoid verbosely logging once for the offer and once for the
          * real auth attempt.) */
 	if (verbose) {
-            ppl_logevent("Not substituting certificate \"%s\" for public "
+            ppl_logevent(WINSCP_BOM "Not substituting certificate \"%s\" for public "
                          "key: %s", filename_to_str(s->detached_cert_file),
                          fail_reason->s);
             if (s->publickey_blob) {
@@ -2516,7 +2528,7 @@ static void ssh2_userauth_add_alg_and_publickey(
                  * send the certificate, so we should make a loud error
                  * message about it as well as just commenting in the
                  * Event Log. */
-                ppl_printf("Unable to use certificate \"%s\" with public "
+                ppl_printf(WINSCP_BOM "Unable to use certificate \"%s\" with public "
                            "key \"%s\": %s\r\n",
                            filename_to_str(s->detached_cert_file),
                            filename_to_str(s->keyfile),

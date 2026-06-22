@@ -1,0 +1,65 @@
+<refentry id="refsslvers">
+
+  <refmeta>
+    <refentrytitle>ne_ssl_set_protovers</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname id="ne_ssl_set_protovers">ne_ssl_set_protovers</refname>
+    <refpurpose>set session SSL/TLS minimum or maximum protocol version</refpurpose>
+  </refnamediv>
+  
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+
+      <funcsynopsisinfo>#include &lt;ne_session.h&gt;</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>int <function>ne_ssl_set_protovers</function></funcdef>
+        <paramdef>ne_session *<parameter>sess</parameter></paramdef>
+        <paramdef>enum ne_ssl_protocol <parameter>min</parameter></paramdef>
+        <paramdef>enum ne_ssl_protocol <parameter>max</parameter></paramdef>
+      </funcprototype>
+
+    </funcsynopsis>
+
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>The <function>ne_ssl_set_protovers</function> function sets
+    the minimum and/or maximum SSL/TLS version. Either minimum and/or
+    maximum may be specified as
+    <constant>NE_SSL_PROTO_UNSPEC</constant>, in which case no limit
+    is imposed.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Return value</title>
+
+    <para>The <function>ne_ssl_set_protovers</function> function
+    returns zero on success or non-zero on error. Errors include an
+    invalid range (minimum above maximum), or if the protocol version
+    is not supported by the SSL/TLS toolkit in use, or if SSL/TLS is
+    not in use for the session.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_ssl_set_protovers</function> is available in
+    &neon; 0.34.0 and later.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+
+    <para><xref linkend="ne_ssl_proto_name"/>, <xref
+    linkend="ne_session_create"/>.</para>
+  </refsect1>
+</refentry>

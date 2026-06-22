@@ -20,10 +20,14 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 const int OpensshIndex = 3;
-const int KnownHostsIndex = 4;
+const int KnownHostsIndex = 5;
+const int IniIndex = 4;
 //---------------------------------------------------------------------
 bool __fastcall DoImportSessionsDialog(TList * Imported)
 {
+  std::unique_ptr<TImportSessionsDialog> ImportSessionsDialog(
+    SafeFormCreate<TImportSessionsDialog>(Application));
+
   std::unique_ptr<TStrings> Errors(new TStringList());
   std::unique_ptr<TList> SessionListsList(new TList());
   UnicodeString Error;
@@ -48,6 +52,11 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
   SessionListsList->Add(OpensshImportSessionList.get());
   Errors->Add(Error);
 
+  std::unique_ptr<TStoredSessionList> IniImportSessionList(ImportSessionsDialog->SelectSessionsForImport(Error));
+  DebugAssert(IniIndex == SessionListsList->Count);
+  SessionListsList->Add(IniImportSessionList.get());
+  Errors->Add(Error);
+
   std::unique_ptr<TStoredSessionList> KnownHostsImportSessionList(
     Configuration->SelectKnownHostsSessionsForImport(StoredSessions, Error));
   DebugAssert(KnownHostsIndex == SessionListsList->Count);
@@ -55,9 +64,6 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
   Errors->Add(Error);
 
   DebugAssert(SessionListsList->Count == Errors->Count);
-
-  std::unique_ptr<TImportSessionsDialog> ImportSessionsDialog(
-    SafeFormCreate<TImportSessionsDialog>(Application));
 
   ImportSessionsDialog->Init(SessionListsList.get(), Errors.get());
 
@@ -69,6 +75,8 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
     TInstantOperationVisualizer Visualizer;
 
     UnicodeString PuttyHostKeysSourceKey = OriginalPuttyRegistryStorageKey;
+    TStoredSessionList * AIniImportSessionList =
+      static_cast<TStoredSessionList *>(SessionListsList->Items[IniIndex]);
     TStoredSessionList * AKnownHostsImportSessionList =
       static_cast<TStoredSessionList *>(SessionListsList->Items[KnownHostsIndex]);
 
@@ -83,9 +91,15 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
     TStoredSessionList::ImportHostKeys(PuttyHostKeysSourceKey, FilezillaImportSessionList.get(), true);
 
     StoredSessions->Import(OpensshImportSessionList.get(), true, Imported);
+
+    if (StoredSessions->Import(AIniImportSessionList, true, Imported))
+    {
+      std::unique_ptr<THierarchicalStorage> IniStorage(TIniFileStorage::CreateFromPath(ImportSessionsDialog->IniFileName));
+      TStoredSessionList::ImportHostKeys(IniStorage.get(), AIniImportSessionList, true);
+    }
+
     // The actual import will be done by ImportSelectedKnownHosts
     TStoredSessionList::SelectKnownHostsForSelectedSessions(AKnownHostsImportSessionList, OpensshImportSessionList.get());
-
     TStoredSessionList::ImportSelectedKnownHosts(AKnownHostsImportSessionList);
   }
   return Result;
@@ -132,6 +146,7 @@ TStoredSessionList * __fastcall TImportSessionsDialog::GetSessionList(int Index)
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::UpdateControls()
 {
+  BrowseButton->Visible = (SourceComboBox->ItemIndex == IniIndex);
   PasteButton->Visible = (SourceComboBox->ItemIndex == KnownHostsIndex);
   EnableControl(PasteButton, IsFormatInClipboard(CF_TEXT));
   EnableControl(OKButton, ListViewAnyChecked(SessionListView2));
@@ -191,11 +206,13 @@ void __fastcall TImportSessionsDialog::LoadSessions()
   if ((SessionList->Count > 0) || Error.IsEmpty())
   {
     ErrorPanel->Visible = false;
+    SessionListView2->TabStop = true;
   }
   else
   {
     ErrorLabel->Caption = Error;
     ErrorPanel->Visible = true;
+    SessionListView2->TabStop = false;
   }
 
   UpdateControls();
@@ -441,5 +458,31 @@ void __fastcall TImportSessionsDialog::PasteButtonClick(TObject * /*Sender*/)
   FSessionListsList->Items[Index] = FPastedKnownHosts.get();
   FErrors->Strings[Index] = Error;
   LoadSessions();
+}
+//---------------------------------------------------------------------------
+TStoredSessionList * TImportSessionsDialog::SelectSessionsForImport(UnicodeString & Error)
+{
+  return Configuration->SelectSessionsForImport(StoredSessions, FIniFileName, Error);
+}
+//---------------------------------------------------------------------------
+void __fastcall TImportSessionsDialog::BrowseButtonClick(TObject *)
+{
+  std::unique_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
+  OpenDialog->Title = LoadStr(IMPORT_INI_TITLE);
+  OpenDialog->Filter = LoadStr(EXPORT_CONF_FILTER);
+  OpenDialog->DefaultExt = L"ini";
+  OpenDialog->FileName = DefaultStr(FIniFileName, Configuration->GetDefaultIniFileExportPath());
+
+  if (OpenDialog->Execute())
+  {
+    SessionListView2->Items->Clear();
+    int Index = SourceComboBox->ItemIndex;
+    FIniFileName = OpenDialog->FileName;
+    UnicodeString Error;
+    FIniImportSessionList.reset(SelectSessionsForImport(Error));
+    FSessionListsList->Items[Index] = FIniImportSessionList.get();
+    FErrors->Strings[Index] = Error;
+    LoadSessions();
+  }
 }
 //---------------------------------------------------------------------------

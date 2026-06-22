@@ -91,6 +91,9 @@
 #define JUMPLIST_ERROR          1210
 #define TOO_MANY_PARAMS_ERROR   1211
 #define UPDATE_MISSING_ADDRESS3 1212
+#define COPYID_IDETITY_MISSING  1213
+#define TAG_NOT_UNIQUE          1214
+#define TAG_INVALID_CHAR        1215
 
 #define WIN_CONFIRMATION_STRINGS 1300
 #define CONFIRM_OVERWRITE_SESSION 1301
@@ -245,7 +248,7 @@
 #define COPY_PARAM_PRESET_HEADER 1532
 #define QUEUE_DONE              1533
 #define MASTER_PASSWORD_RECRYPT_ERRORS 1534
-#define REGISTERED_APP_DESC4    1535
+#define REGISTERED_APP_DESC5    1535
 #define MESSAGE_LOADING         1536
 #define NEW_VERSION_CLICK       1537
 #define DIRECTORY_READING_AND_RESOLVING_PROGRESS 1538
@@ -312,6 +315,7 @@
 #define UPDATE_CURRENT          1599
 #define PATTERNS_HINT_K         7000
 #define PATTERNS_HINT_BACKSLASH 7001
+#define USAGE_COPYID            7002
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605
@@ -674,6 +678,8 @@
 #define KEX_NAME_RSA            6078
 #define KEX_NAME_ECDH           6079
 #define KEX_NAME_NTRU_HYBRID    6080
+#define KEX_NAME_MLKEM_25519_HYBRID 6081
+#define KEX_NAME_MLKEM_NIST_HYBRID 6082
 #define LOGIN_KEY_WITH_CERTIFICATE 6090
 #define CERTIFICATE_ADDED       6091
 #define SSH_HOST_CA_EDIT        6092
@@ -691,6 +697,14 @@
 #define SSH_HOST_CA_NO_HOSTS    6204
 #define SSH_HOST_CA_HOSTS_INVALID 6205
 #define LOGIN_NOT_SHOWING_AGAIN 6206
+#define IMPORT_INI_TITLE        6207
+#define INC_SEARCH_TYPE         6208
+#define SEARCH_EDIT             6209
+#define SEARCH_NO_RESULTS       6210
+#define TAG_EDIT                6211
+#define TAG_ADD                 6212
+#define TAG_KEY                 6213
+#define TAG_VALUE               6214
 
 // 2xxx is reserved for TextsFileZilla.h
 

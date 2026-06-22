@@ -25,9 +25,9 @@
 
 #ifdef WIN32
 
-#define NEON_VERSION "0.33.0"
+#define NEON_VERSION "0.34.2"
 #define NE_VERSION_MAJOR (0)
-#define NE_VERSION_MINOR (33)
+#define NE_VERSION_MINOR (34)
 
 #define HAVE_ERRNO_H
 #define HAVE_LIMITS_H
@@ -40,6 +40,14 @@
 #define HAVE_SSPI
 
 #define NE_HAVE_TS_SSL 1
+
+#define HAVE_INET_NTOP 1
+#define HAVE_INET_PTON 1
+#define HAVE_IF_INDEXTONAME 1
+#define HAVE_IF_NAMETOINDEX 1
+#define USE_GETADDRINFO
+#define USE_GAI_ADDRCONFIG
+#define NE_HAVE_IPV6 // doesn't really have any practival effect
 
 /* Define to enable debugging */
 #define NE_DEBUGGING 1

@@ -15,9 +15,11 @@
 	<funcsynopsis><funcsynopsisinfo>#include &lt;ne_utils.h&gt;
 
 typedef struct {
-    int major_version, minor_version;
-    int code, klass;
-    const char *reason_phrase;
+    int major_version;
+    int minor_version;
+    int code;
+    int klass;
+    char *reason_phrase;
 } <type>ne_status</type>;</funcsynopsisinfo></funcsynopsis>
 	
       </refsynopsisdiv>
@@ -25,22 +27,27 @@ typedef struct {
       <refsect1>
 	<title>Description</title>
 
-	<para>An <type>ne_status</type> type represents an HTTP
-response status; used in response messages giving a result of request.
-The <structfield>major_version</structfield> and
-<structfield>minor_version</structfield> fields give the HTTP version
-supported by the server issuing the response.  The
-<structfield>code</structfield> field gives the status code of the
-result (lying between 100 and 999 inclusive), and the
-<structfield>klass</structfield> field gives the
-class<footnote><para>the field is named <quote>klass</quote> not
-<quote>class</quote> so that the header can be used from a C++
-program, in which <quote>class</quote> is a reserved
-word)</para></footnote>, which is equal to the most significant digit
-of the status.</para>
+	<para>The <type>ne_status</type> type represents an HTTP
+	response status; used in response messages giving a result of
+	request.  The <structfield>major_version</structfield> and
+	<structfield>minor_version</structfield> fields give the
+	protocol version supported by the server issuing the response.
+	The <structfield>code</structfield> field gives the status
+	code of the result (lying between <literal>100</literal> and
+	<literal>599</literal> inclusive), and the
+	<structfield>klass</structfield> field gives the class, which
+	is equal to the most significant digit of the status. The
+	<structfield>reason_phrase</structfield> field gives a
+	human-readable string describing the status, which is purely
+	informational (and optional) - any interpretation of the
+	response status must be done using the
+	<structfield>klass</structfield> and/or
+	<structfield>code</structfield> fields.</para>
 
-	<para>There are five classes of HTTP status code defined by
-	RFC2616:</para>
+	<para>There are five classes of response status code defined
+	for HTTP/1.1 (see <ulink
+	url="https://www.rfc-editor.org/rfc/rfc9110#name-status-codes">RFC
+	9110 ẞ15</ulink>):</para>
 	
 	<variablelist>
 	  <varlistentry>
@@ -71,6 +78,12 @@ of the status.</para>
 	</variablelist>
 
       </refsect1>
+
+      <refsect1> <title>Notes</title> <para>The
+      <structfield>klass</structfield> field is named
+      <quote>klass</quote> not <quote>class</quote> so that the header
+      can be used from a C++ program, in which <quote>class</quote> is
+      a reserved word.</para></refsect1>
 
       <refsect1> <title>See also</title> <para><xref
 linkend="ne_get_status"/>.</para> </refsect1>

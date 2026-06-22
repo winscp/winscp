@@ -6,24 +6,26 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Create folder'
-  ClientHeight = 253
+  ClientHeight = 263
   ClientWidth = 337
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     337
-    253)
-  PixelsPerInch = 96
-  TextHeight = 13
+    263)
+  TextHeight = 15
   object EditLabel: TLabel
     Left = 8
     Top = 8
-    Width = 85
-    Height = 13
+    Width = 94
+    Height = 15
     Caption = 'New &folder name:'
     FocusControl = DirectoryEdit
   end
@@ -31,7 +33,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     Left = 8
     Top = 25
     Width = 321
-    Height = 21
+    Height = 23
     Anchors = [akLeft, akTop, akRight]
     MaxLength = 1000
     TabOrder = 0
@@ -42,34 +44,34 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     Left = 0
     Top = 50
     Width = 337
-    Height = 169
+    Height = 179
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 1
     DesignSize = (
       337
-      169)
+      179)
     object AttributesGroup: TGroupBox
       Left = 8
-      Top = 3
-      Width = 322
-      Height = 157
+      Top = 4
+      Width = 321
+      Height = 170
       Anchors = [akLeft, akTop, akRight, akBottom]
       Caption = 'Attributes'
       TabOrder = 0
       inline RightsFrame: TRightsFrame
-        Left = 7
-        Top = 36
-        Width = 239
-        Height = 87
+        Left = 2
+        Top = 39
+        Width = 258
+        Height = 98
         TabOrder = 1
         inherited DirectoriesXCheck: TCheckBox
           Visible = False
         end
       end
       object SetRightsCheck: TCheckBox
-        Left = 12
-        Top = 16
+        Left = 11
+        Top = 22
         Width = 156
         Height = 17
         Caption = 'Set pe&rmissions'
@@ -79,8 +81,8 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
         OnClick = ControlChange
       end
       object SaveSettingsCheck: TCheckBox
-        Left = 12
-        Top = 129
+        Left = 11
+        Top = 143
         Width = 301
         Height = 17
         Caption = 'Use &same settings next time'
@@ -89,9 +91,9 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     end
   end
   object OKBtn: TButton
-    Left = 91
-    Top = 219
-    Width = 75
+    Left = 77
+    Top = 230
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -100,9 +102,9 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     TabOrder = 2
   end
   object CancelBtn: TButton
-    Left = 171
-    Top = 219
-    Width = 75
+    Left = 163
+    Top = 230
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -111,9 +113,9 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     TabOrder = 3
   end
   object HelpButton: TButton
-    Left = 252
-    Top = 219
-    Width = 75
+    Left = 249
+    Top = 230
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'

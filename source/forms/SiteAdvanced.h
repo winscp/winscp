@@ -21,6 +21,7 @@
 #include <SessionData.h>
 #include <PasTools.hpp>
 #include <GUITools.h>
+#include <System.ImageList.hpp>
 //----------------------------------------------------------------------------
 class TSiteAdvancedDialog : public TForm
 {
@@ -285,6 +286,9 @@ __published:
   TCheckBox *S3RequesterPaysCheck;
   TRadioButton *FtpPingDirectoryListingButton;
   TCheckBox *UsePosixRenameCheck;
+  TLabel *S3RoleArnLabel;
+  TEdit *S3RoleArnEdit;
+  TPanel *NavigationPanel;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

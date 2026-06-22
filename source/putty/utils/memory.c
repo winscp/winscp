@@ -38,7 +38,10 @@ void *safemalloc(size_t factor1, size_t factor2, size_t addend)
 #ifdef MINEFIELD
     p = minefield_c_malloc(size);
 #elif defined ALLOCATION_ALIGNMENT
-    p = aligned_alloc(ALLOCATION_ALIGNMENT, size);
+    /* aligned_alloc requires the allocation size to be rounded up */
+    p = aligned_alloc(
+        ALLOCATION_ALIGNMENT,
+        (size + ALLOCATION_ALIGNMENT - 1) & ~(ALLOCATION_ALIGNMENT-1));
 #else
     p = malloc(size);
 #endif

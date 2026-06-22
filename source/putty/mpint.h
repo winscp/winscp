@@ -95,7 +95,7 @@ static inline mp_int *mp__from_string_literal(const char *lit)
 // WINSCP
 static inline mp_int *mp__from_string_literal_check(const char *lit)
 {
-    // WORKAROUND: C++ Builder seems to limit stringified code to about 256 characters.
+    // WORKAROUND: C++Builder seems to limit stringified code to about 256 characters.
     // So make sure this is not the case.
     // If it is, we need to call mp__from_string_literal directly (MP_LITERAL_WINSCP_STR)
     // with a string (as in dh_group*_construct).

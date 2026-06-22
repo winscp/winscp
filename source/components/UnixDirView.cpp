@@ -1,4 +1,5 @@
 //---------------------------------------------------------------------------
+#pragma warn -pch // WORKAROUND (see My.cpp)
 #include <vcl.h>
 #pragma hdrstop
 
@@ -273,6 +274,22 @@ int __fastcall TUnixDirView::ItemImageIndex(TListItem * Item, bool /*Cache*/)
 #endif
 }
 //---------------------------------------------------------------------------
+TBitmap * __fastcall TUnixDirView::ItemThumbnail(TListItem * Item, const TSize & Size)
+{
+  TBitmap * Result = NULL;
+#ifndef DESIGN_ONLY
+  ASSERT_VALID_ITEM;
+  if (OnThumbnailNeeded != NULL)
+  {
+    OnThumbnailNeeded(this, Item, ITEMFILE, Size, Result);
+  }
+#else
+  DebugUsedParam(Item);
+  DebugUsedParam(Size);
+#endif
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TUnixDirView::ItemMatchesFilter(TListItem * Item,
   const TFileFilter &Filter)
 {
@@ -342,9 +359,9 @@ void __fastcall TUnixDirView::LoadFiles()
       {
         FHiddenCount++;
       }
-      else if (!Mask.IsEmpty() &&
+      else if (!FEffectiveMask.IsEmpty() &&
                IsRealFile(File->FileName) &&
-               !FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, Mask, true))
+               !FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, FEffectiveMask, true))
       {
         FFilteredCount++;
       }
@@ -656,6 +673,10 @@ void __fastcall TUnixDirView::DoStartReadDirectory(TObject * /*Sender*/)
 {
   DebugAssert(!FLoading);
   FLoading = true;
+  if (FOnStartReading != NULL)
+  {
+    FOnStartReading(this);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DoReadDirectory(TObject * Sender, bool ReloadOnly)

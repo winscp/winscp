@@ -33,6 +33,7 @@
 #include "ThemePageControl.h"
 #include "PathLabel.hpp"
 #include <Vcl.AppEvnts.hpp>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TProgressForm;
 class TSynchronizeProgressForm;
@@ -51,6 +52,7 @@ struct TSynchronizeParams;
 class TBookmark;
 class TManagedTerminal;
 class TCalculateSizeOperation;
+class TThumbnailDownloadQueueItem;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4, afCommander = 8 };
@@ -157,7 +159,7 @@ __published:
     int grfKeyState, const TPoint & DetectStart, const TPoint & Point,
     TDragDetectStatus DragStatus);
   void __fastcall RemoteFileControlDDQueryContinueDrag(TObject *Sender,
-          BOOL FEscapePressed, int grfKeyState, HRESULT &Result);
+          LongBool FEscapePressed, int grfKeyState, HRESULT &Result);
   void __fastcall RemoteDirViewEnter(TObject *Sender);
   void __fastcall RemoteDriveViewEnter(TObject *Sender);
   void __fastcall DirViewMatchMask(TObject *Sender, UnicodeString FileName,
@@ -223,6 +225,11 @@ __published:
   void __fastcall SessionsPageControlTabHint(TPageControl *Sender, int Index, UnicodeString &Hint);
   void __fastcall MessageDockRequestDock(TObject *Sender, TTBCustomDockableWindow *Bar, bool &Accept);
   void __fastcall QueueView3EndDrag(TObject *Sender, TObject *Target, int X, int Y);
+  void __fastcall RemoteDirViewThumbnailNeeded(
+    TUnixDirView * Sender, TListItem * Item, TRemoteFile * File, const TSize & Size, TBitmap *& Bitmap);
+  void __fastcall RemoteDirViewStartLoading(TObject *Sender);
+  void __fastcall RemoteDirViewStartReading(TObject *Sender);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 private:
   TManagedTerminal * FManagedSession;
@@ -347,22 +354,22 @@ private:
     TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue, bool Paste);
   void __fastcall SessionsDDDragEnter(_di_IDataObject DataObj, int KeyState,
     const TPoint & Point, int & Effect, bool & Accept);
-  void __fastcall SessionsDDDragLeave();
+  void __fastcall SessionsDDDragLeave(int);
   void __fastcall QueueDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);
   void __fastcall QueueDDDragEnter(_di_IDataObject DataObj, int KeyState,
     const TPoint & Point, int & Effect, bool & Accept);
-  void __fastcall QueueDDDragLeave();
+  void __fastcall QueueDDDragLeave(int);
   void __fastcall EnableDDTransferConfirmation(TObject * Sender);
   void __fastcall CollectItemsWithTextDisplayMode(TWinControl * Control);
   void __fastcall CreateHiddenWindow();
   bool __fastcall IsQueueAutoPopup();
   void __fastcall UpdateSessionsPageControlHeight();
+  void UpdateTabsSize();
   TDragDropFilesEx * __fastcall CreateDragDropFilesEx();
   void __fastcall KeyProcessed(Word & Key, TShiftState Shift);
   void __fastcall CheckCustomCommandShortCut(TCustomCommandList * List, Word & Key, Classes::TShiftState Shift, TShortCut KeyShortCut);
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall WMClose(TMessage & Message);
-  void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall WMDpiChanged(TMessage & Message);
   void __fastcall DoBookmarkClick(TOperationSide Side, TObject * Sender);
   void __fastcall LocalBookmarkClick(TObject * Sender);
@@ -373,6 +380,7 @@ private:
   void __fastcall AdjustQueueLayout();
   void __fastcall StoreTransitionCloseClick(TObject * Sender);
   void __fastcall StoreTransitionLinkClick(TObject * Sender);
+  void InitializeRemoteThumbnailMask();
 
 protected:
   TOperationSide FCurrentSide;
@@ -403,11 +411,11 @@ protected:
   int FDoNotIdleCurrentTerminal;
   UnicodeString FFakeFileDropTarget;
   TFileColorData::TList FFileColors;
-  UnicodeString FIncrementalSearch;
+  TIncrementalSearchState FIncrementalSearchState;
   int FIncrementalSearching;
-  bool FIncrementalSearchHaveNext;
   TOperationSide FProgressSide;
   bool FImmersiveDarkMode;
+  TFileMasks FRemoteThumbnailMask;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -417,7 +425,7 @@ protected:
   virtual bool __fastcall RemoteTransferDialog(TManagedTerminal *& Session,
     TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
     bool NoConfirmation, bool Move);
-  virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall Loaded();
   void __fastcall DeleteFiles(TOperationSide Side, TStrings * FileList, bool Alternative);
   bool __fastcall RemoteTransferFiles(TStrings * FileList, bool NoConfirmation,
     bool Move, TManagedTerminal * Session);
@@ -455,7 +463,7 @@ protected:
   void __fastcall UpdateStatusBar();
   virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
   virtual void __fastcall DoOperationFinished(TFileOperation Operation,
-    TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success,
+    TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
     TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
   void __fastcall CreateProgressForm(TSynchronizeProgress * SynchronizeProgress);
@@ -592,7 +600,7 @@ protected:
     TTBXStatusBar * StatusBar, const TStatusFileInfo & FileInfo);
   void __fastcall FileStatusBarPanelClick(TTBXStatusPanel * Panel, TOperationSide Side);
   virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
-  virtual void __fastcall UpdateControls();
+  virtual void UpdatePanelControls(TCustomDirView * ADirView, TCustomDriveView * ADriveView);
   void __fastcall UpdateTransferList();
   void __fastcall UpdateTransferLabel();
   void __fastcall StartUpdates();
@@ -698,7 +706,6 @@ protected:
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
   void __fastcall RefreshPanel(const UnicodeString & Session, const UnicodeString & Path);
-  DYNAMIC void __fastcall ChangeScale(int M, int D);
   virtual void __fastcall UpdateImages();
   void __fastcall UpdatePixelsPerInchMainWindowCounter();
   void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);
@@ -706,10 +713,11 @@ protected:
   void __fastcall DoFullSynchronize(
     void * Token, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+  void DoQueueSynchronize(void * Token);
   void __fastcall DoSynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
   void __fastcall DoSynchronizeMove(
-    TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
+    TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token);
   void __fastcall DoSynchronizeBrowse(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
   void __fastcall FullSynchronize(
     TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
@@ -755,9 +763,9 @@ protected:
   virtual UnicodeString GetNewTabHintDetails();
   UnicodeString GetTabHintSessionDetails(TManagedTerminal * ASession);
   UnicodeString GetSessionPath(TManagedTerminal * ASession, TOperationSide Side);
-  void __fastcall DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success);
+  void __fastcall DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled);
   TListItem * VisualiseOperationFinished(TOperationSide Side, const UnicodeString & FileName, bool Unselect);
-  void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success);
+  void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled);
   void LoadFilesProperties(TStrings * FileList);
   void PasteFiles();
   bool DoDirectoryExists(void * Session, const UnicodeString & Directory);
@@ -765,6 +773,8 @@ protected:
   bool NeedSecondarySessionForRemoteCopy(TStrings * FileList);
   void ReleaseHiContrastTheme();
   bool CanCalculateChecksum();
+  void RegenerateSessionColorsImageList();
+  void WMQueueCallback(TMessage & Message);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -859,7 +869,7 @@ public:
     UnicodeString HelpKeyword, const TMessageParams * Params = NULL,
     TTerminal * Terminal = NULL);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
+    bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
   UnicodeString __fastcall GetProgressTitle();
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
@@ -919,8 +929,14 @@ public:
   void AutoSizeColumns(TOperationSide Side);
   virtual void ResetLayoutColumns(TOperationSide Side) = 0;
   void QueueResetLayoutColumns();
+  void IncrementalSearchStart();
   virtual void * SaveFocus();
   virtual void RestoreFocus(void * Focus);
+  virtual void __fastcall UpdateControls();
+  TThumbnailDownloadQueueItem * AddThumbnailDownloadQueueItem(TManagedTerminal * ATerminal);
+  void PostThumbnailVisibleQueueQuery(int Index, const UnicodeString & FileName);
+  void PostThumbnailDrawRequest(int Index);
+  void ChangeDirViewStyle(TOperationSide Side, TDirViewStyle DirViewStyle);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

@@ -24,6 +24,7 @@ __published:
   TPanel *ErrorPanel;
   TLabel *ErrorLabel;
   TButton *PasteButton;
+  TButton *BrowseButton;
   void __fastcall SessionListView2InfoTip(TObject *Sender,
     TListItem *Item, UnicodeString &InfoTip);
   void __fastcall SessionListView2MouseDown(TObject *Sender,
@@ -35,12 +36,14 @@ __published:
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall SourceComboBoxSelect(TObject *Sender);
   void __fastcall PasteButtonClick(TObject *Sender);
+  void __fastcall BrowseButtonClick(TObject *Sender);
 
 private:
   TList * FSessionListsList;
   TStrings * FErrors;
   std::unique_ptr<TStoredSessionList> FPastedKnownHosts;
-  int FKnownHostsIndex;
+  std::unique_ptr<TStoredSessionList> FIniImportSessionList;
+  UnicodeString FIniFileName;
   void __fastcall UpdateControls();
   void __fastcall LoadSessions();
   void __fastcall ClearSelections();
@@ -57,7 +60,9 @@ private:
 public:
   virtual __fastcall TImportSessionsDialog(TComponent * AOwner);
   void __fastcall Init(TList * SessionListsList, TStrings * Errors);
+  TStoredSessionList * SelectSessionsForImport(UnicodeString & Error);
   bool __fastcall Execute();
+  __property UnicodeString IniFileName = { read = FIniFileName };
 };
 //----------------------------------------------------------------------------
 #endif

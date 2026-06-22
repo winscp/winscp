@@ -67,7 +67,6 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FDataList = NULL;
   FUpdatePortWithProtocol = true;
   FIncrementalSearching = 0;
-  FSitesIncrementalSearchHaveNext = false;
   FEditing = false;
   FRenaming = false;
   FNewSiteKeepName = false;
@@ -78,7 +77,6 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FLinkedForm = NULL;
   FRestoring = false;
   FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
-  FWasEverS3 = false;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -92,8 +90,8 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FUserNameLabel = UserNameLabel->Caption;
   FPasswordLabel = PasswordLabel->Caption;
 
-  FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
   AutoSizeCheckBox(ShowAgainCheck);
+  SessionTree->Images = TreeViewImageList(SessionImageList);
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -145,11 +143,12 @@ void __fastcall TLoginDialog::InitControls()
   BasicSshPanel->Top = BasicFtpPanel->Top;
   BasicS3Panel->Top = BasicFtpPanel->Top;
 
-  SitesIncrementalSearchLabel->AutoSize = false;
-  SitesIncrementalSearchLabel->Left = SessionTree->Left;
-  SitesIncrementalSearchLabel->Width = SessionTree->Width;
-  SitesIncrementalSearchLabel->Top = SessionTree->BoundsRect.Bottom - SitesIncrementalSearchLabel->Height;
-  SitesIncrementalSearchLabel->Visible = false;
+  SitesIncrementalSearchPanel->Left = SessionTree->Left;
+  SitesIncrementalSearchPanel->Width = SessionTree->Width;
+  SitesIncrementalSearchPanel->Height =
+    (2 * SitesIncrementalSearchLabel->Top) + SitesIncrementalSearchLabel->Height - ScaleByTextHeight(SitesIncrementalSearchPanel, 2);
+  SitesIncrementalSearchPanel->Top = SessionTree->BoundsRect.Bottom - SitesIncrementalSearchPanel->Height;
+  SitesIncrementalSearchPanel->Visible = false;
 
   ReadOnlyControl(TransferProtocolView);
   ReadOnlyControl(EncryptionView);
@@ -676,10 +675,6 @@ void __fastcall TLoginDialog::UpdateControls()
     bool FtpProtocol = (FSProtocol == fsFTP);
     bool WebDavProtocol = (FSProtocol == fsWebDAV);
     bool S3Protocol = (FSProtocol == fsS3);
-    if (S3Protocol)
-    {
-      FWasEverS3 = true;
-    }
 
     // session
     FtpsCombo->Visible = Editable && FtpProtocol;
@@ -729,23 +724,23 @@ void __fastcall TLoginDialog::UpdateControls()
     EnableControl(S3ProfileCombo, S3CredentialsEnv);
 
     // sites
-    if (SitesIncrementalSearchLabel->Visible != !FSitesIncrementalSearch.IsEmpty())
+    if (SitesIncrementalSearchPanel->Visible != FIncrementalSearchState.Searching)
     {
-      if (FSitesIncrementalSearch.IsEmpty())
+      if (!FIncrementalSearchState.Searching)
       {
-        SitesIncrementalSearchLabel->Visible = false;
-        SessionTree->Height = SitesIncrementalSearchLabel->BoundsRect.Bottom - SessionTree->Top;
+        SitesIncrementalSearchPanel->Visible = false;
+        SessionTree->Height = SitesIncrementalSearchPanel->BoundsRect.Bottom - SessionTree->Top;
       }
       else
       {
-        SitesIncrementalSearchLabel->Visible = true;
-        SessionTree->Height = SitesIncrementalSearchLabel->BoundsRect.Top - SessionTree->Top;
+        SitesIncrementalSearchPanel->Visible = true;
+        SessionTree->Height = SitesIncrementalSearchPanel->BoundsRect.Top - SessionTree->Top + 1;
       }
     }
 
-    if (!FSitesIncrementalSearch.IsEmpty())
+    if (FIncrementalSearchState.Searching)
     {
-      SitesIncrementalSearchLabel->Caption = FormatIncrementalSearchStatus(FSitesIncrementalSearch, FSitesIncrementalSearchHaveNext);
+      SitesIncrementalSearchLabel->Caption = FormatIncrementalSearchStatus(FIncrementalSearchState);
     }
 
     EnableControl(ManageButton, !FEditing);
@@ -794,13 +789,6 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   {
     Init();
   }
-
-  // WORKAROUND for a bug in the VCL layout code for bottom aligned controls
-  // This is probably no longer needed after ComponentsPanel was removed
-  int Offset = (SitesPanel->ClientHeight - FSiteButtonsPadding - ToolsMenuButton->Height) - ToolsMenuButton->Top;
-  ToolsMenuButton->Top = ToolsMenuButton->Top + Offset;
-  ManageButton->Top = ManageButton->Top + Offset;
-  SessionTree->Height = SessionTree->Height + Offset;
 
   // Bit of a hack: Assume an auto open, when we are linked to the main form
   ShowAgainPanel->Visible = (FLinkedForm != NULL);
@@ -929,11 +917,11 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
     // filter control sequences
     if (Key >= VK_SPACE)
     {
-      if (FSitesIncrementalSearch.IsEmpty())
+      if (!FIncrementalSearchState.Searching)
       {
         Configuration->Usage->Inc(L"SiteIncrementalSearches");
       }
-      if (!SitesIncrementalSearch(FSitesIncrementalSearch + Key, false, false, false))
+      if (!SitesIncrementalSearch(FIncrementalSearchState.Text + Key, false, false, false))
       {
         MessageBeep(MB_ICONHAND);
       }
@@ -941,16 +929,15 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
     }
     else if (Key == VK_BACK)
     {
-      if (!FSitesIncrementalSearch.IsEmpty())
+      if (FIncrementalSearchState.Searching)
       {
-        if (FSitesIncrementalSearch.Length() == 1)
+        if (FIncrementalSearchState.Text.Length() <= 1)
         {
           ResetSitesIncrementalSearch();
         }
         else
         {
-          UnicodeString NewText =
-            FSitesIncrementalSearch.SubString(1, FSitesIncrementalSearch.Length() - 1);
+          UnicodeString NewText = LeftStr(FIncrementalSearchState.Text, FIncrementalSearchState.Text.Length() - 1);
           SitesIncrementalSearch(NewText, false, false, false);
         }
         Key = 0;
@@ -1326,6 +1313,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
     // without hostname it's pointless
     Action->Enabled = (Data != NULL) && !Data->HostNameExpanded.IsEmpty();
   }
+  else if (Action == SearchSiteStartAction)
+  {
+    Action->Enabled = !SessionTree->IsEditing() && !FEditing;
+  }
   else if (Action == SearchSiteNameStartOnlyAction)
   {
     Action->Checked = (FSiteSearch == isNameStartOnly);
@@ -1682,11 +1673,11 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
 {
   if (Message.CharCode == VK_TAB)
   {
-    if (!FSitesIncrementalSearch.IsEmpty())
+    if (!FIncrementalSearchState.Text.IsEmpty())
     {
       TShiftState Shift = KeyDataToShiftState(Message.KeyData);
       bool Reverse = Shift.Contains(ssShift);
-      if (!SitesIncrementalSearch(FSitesIncrementalSearch, true, Reverse, true))
+      if (!SitesIncrementalSearch(FIncrementalSearchState.Text, true, Reverse, true))
       {
         MessageBeep(MB_ICONHAND);
       }
@@ -1696,7 +1687,7 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
   }
   else if (Message.CharCode == VK_ESCAPE)
   {
-    if (!FSitesIncrementalSearch.IsEmpty())
+    if (FIncrementalSearchState.Searching)
     {
       ResetSitesIncrementalSearch();
       Message.Result = 1;
@@ -1734,14 +1725,6 @@ void __fastcall TLoginDialog::CMVisibleChanged(TMessage & Message)
 {
   TAutoFlag RestoringSwitch(FRestoring);
   TForm::Dispatch(&Message);
-}
-//---------------------------------------------------------------------------
-void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
-{
-  TForm::Dispatch(&Message);
-  GenerateImages();
-  CenterButtonImage(LoginButton);
-  AutoSizeCheckBox(ShowAgainCheck);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void * Message)
@@ -1789,10 +1772,6 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
   else if (M->Msg == CM_VISIBLECHANGED)
   {
     CMVisibleChanged(*M);
-  }
-  else if (M->Msg == CM_DPICHANGED)
-  {
-    CMDpiChanged(*M);
   }
   else
   {
@@ -1957,8 +1936,9 @@ void __fastcall TLoginDialog::SessionTreeEditing(TObject * /*Sender*/,
 {
   DebugAssert(!FRenaming);
   AllowEdit =
-    IsFolderOrWorkspaceNode(Node) ||
-    (DebugAlwaysTrue(IsSiteNode(Node)) && !GetNodeSession(Node)->Special);
+    !FEditing &&
+    (IsFolderOrWorkspaceNode(Node) ||
+     (IsSiteNode(Node) && !GetNodeSession(Node)->Special));
   FRenaming = AllowEdit;
   UpdateControls();
 }
@@ -2219,6 +2199,7 @@ void TLoginDialog::UpdateS3Credentials()
     if (FSessionData != NULL)
     {
       FSessionData->S3SessionToken = S3EnvSessionToken(S3Profile);
+      FSessionData->S3RoleArn = S3EnvRoleArn(S3Profile);
     }
   }
 }
@@ -2243,21 +2224,23 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
         {
           HostNameEdit->Clear();
         }
-        // Optimization to avoid querying AWS metadata service.
-        // Smarter would be to tell S3EnvXXX functions not to do expensive queries.
-        if (FWasEverS3)
+        if (UserNameEdit->Text == S3EnvUserName(S3Profile, NULL, true))
         {
-          if (UserNameEdit->Text == S3EnvUserName(S3Profile))
+          UserNameEdit->Clear();
+        }
+        if (PasswordEdit->Text == S3EnvPassword(S3Profile, NULL, true))
+        {
+          PasswordEdit->Clear();
+        }
+        if (FSessionData != NULL)
+        {
+          if (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile, NULL, true))
           {
-            UserNameEdit->Clear();
+            FSessionData->S3SessionToken = EmptyStr;
           }
-          if (PasswordEdit->Text == S3EnvPassword(S3Profile))
+          if (FSessionData->S3RoleArn == S3EnvRoleArn(S3Profile, NULL, true))
           {
-            PasswordEdit->Clear();
-          }
-          if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile)))
-          {
-            FSessionData->S3SessionToken = UnicodeString();
+            FSessionData->S3RoleArn = EmptyStr;
           }
         }
       }
@@ -2777,7 +2760,7 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ResetSitesIncrementalSearch()
 {
-  FSitesIncrementalSearch = L"";
+  FIncrementalSearchState.Reset();
   // this is to prevent active tree node being set back to Sites tab
   // (from UpdateNavigationTree) when we are called from SessionTreeExit,
   // while tab is changing
@@ -2816,11 +2799,12 @@ bool __fastcall TLoginDialog::SitesIncrementalSearch(
       TAutoNestingCounter Guard(FIncrementalSearching);
       SessionTree->Selected = Node;
     }
-    FSitesIncrementalSearch = Text;
+    FIncrementalSearchState.Searching = true;
+    FIncrementalSearchState.Text = Text;
 
     // Tab always searches even in collapsed nodes
     TTreeNode * NextNode = SearchSite(Text, true, true, Reverse);
-    FSitesIncrementalSearchHaveNext =
+    FIncrementalSearchState.HaveNext =
       (NextNode != NULL) && (NextNode != Node);
 
     UpdateControls();
@@ -3332,27 +3316,40 @@ void __fastcall TLoginDialog::CopyParamRuleActionExecute(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void TLoginDialog::SetSiteSearch(TIncrementalSearch SiteSearch)
+{
+  if (FSiteSearch != SiteSearch)
+  {
+    FSiteSearch = SiteSearch;
+    if (!SitesIncrementalSearch(FIncrementalSearchState.Text, false, false, false))
+    {
+      ResetSitesIncrementalSearch();
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteNameStartOnlyActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = isNameStartOnly;
+  SetSiteSearch(isNameStartOnly);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteNameActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = isName;
+  SetSiteSearch(isName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = isAll;
+  SetSiteSearch(isAll);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ChangeScale(int M, int D)
+void __fastcall TLoginDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TForm::ChangeScale(M, D);
-  FSiteButtonsPadding = MulDiv(FSiteButtonsPadding, M, D);
-  FBasicGroupBaseHeight = MulDiv(FBasicGroupBaseHeight, M, D);
-  FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
+  FBasicGroupBaseHeight = MulDiv(FBasicGroupBaseHeight, NewDPI, OldDPI);
+  FNoteGroupOffset = MulDiv(FNoteGroupOffset, NewDPI, OldDPI);
+  GenerateImages();
+  CenterButtonImage(LoginButton);
+  AutoSizeCheckBox(ShowAgainCheck);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
@@ -3381,5 +3378,22 @@ void __fastcall TLoginDialog::ShowAgainCheckClick(TObject *)
       ShowAgainCheck->Checked = true;
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SearchSiteStartActionExecute(TObject *)
+{
+  SessionTree->SetFocus();
+  if (!FIncrementalSearchState.Searching)
+  {
+    FIncrementalSearchState.Searching = true;
+    FIncrementalSearchState.HaveNext = false;
+    DebugAssert(FIncrementalSearchState.Text.IsEmpty());
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SitesIncrementalSearchPanelContextPopup(TObject * Sender, TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
 }
 //---------------------------------------------------------------------------

@@ -11,14 +11,15 @@
 
 <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"/>
 
-<!-- for sections with id attributes, use the id in the filename.
-  This produces meaningful (and persistent) URLs for the sections. -->
-<xsl:variable name="man.output.quietly" select="1"/>
+<xsl:param name="man.output.quietly" select="1"/>
 
-<!-- suppress the copyright section since the /book/bookinfo stuff isn't
-     getting used -->
-<xsl:variable name="man.output.copyright.info" select="0"/>
+<xsl:param name="man.endnotes.list.enabled">1</xsl:param>
 
-<xsl:variable name="refentry.meta.get.quietly" select="1"/>
+<xsl:param name="man.endnotes.are.numbered">1</xsl:param>
+
+<!-- by convention, only RFC references will be used. -->
+<xsl:param name="man.endnotes.list.heading">References</xsl:param>
+
+<xsl:param name="man.authors.section.enabled">0</xsl:param>
 
 </xsl:stylesheet>

@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -16,7 +16,7 @@
 #include <openssl/crypto.h>
 #include <openssl/core_names.h>
 #ifndef FIPS_MODULE
-# include <openssl/engine.h>
+#include <openssl/engine.h>
 #endif
 #include <openssl/evp.h>
 #include <openssl/param_build.h>
@@ -128,7 +128,7 @@ static RSA *rsa_new_intern(ENGINE *engine, OSSL_LIB_CTX *libctx)
 
     return ret;
 
- err:
+err:
     RSA_free(ret);
     return NULL;
 }
@@ -227,10 +227,10 @@ static const unsigned int scale = 1 << 18;
 static const unsigned int cbrt_scale = 1 << (2 * 18 / 3);
 
 /* Define some constants, none exceed 32 bits */
-static const unsigned int log_2  = 0x02c5c8;    /* scale * log(2) */
-static const unsigned int log_e  = 0x05c551;    /* scale * log2(M_E) */
-static const unsigned int c1_923 = 0x07b126;    /* scale * 1.923 */
-static const unsigned int c4_690 = 0x12c28f;    /* scale * 4.690 */
+static const unsigned int log_2 = 0x02c5c8; /* scale * log(2) */
+static const unsigned int log_e = 0x05c551; /* scale * log2(M_E) */
+static const unsigned int c1_923 = 0x07b126; /* scale * 1.923 */
+static const unsigned int c4_690 = 0x12c28f; /* scale * 4.690 */
 
 /*
  * Multiply two scaled integers together and rescale the result.
@@ -326,19 +326,19 @@ uint16_t ossl_ifc_ffc_compute_security_bits(int n)
      * the standards but are defined to be canonical.
      */
     switch (n) {
-    case 2048:      /* SP 800-56B rev 2 Appendix D and FIPS 140-2 IG 7.5 */
+    case 2048: /* SP 800-56B rev 2 Appendix D and FIPS 140-2 IG 7.5 */
         return 112;
-    case 3072:      /* SP 800-56B rev 2 Appendix D and FIPS 140-2 IG 7.5 */
+    case 3072: /* SP 800-56B rev 2 Appendix D and FIPS 140-2 IG 7.5 */
         return 128;
-    case 4096:      /* SP 800-56B rev 2 Appendix D */
+    case 4096: /* SP 800-56B rev 2 Appendix D */
         return 152;
-    case 6144:      /* SP 800-56B rev 2 Appendix D */
+    case 6144: /* SP 800-56B rev 2 Appendix D */
         return 176;
-    case 7680:      /* FIPS 140-2 IG 7.5 */
+    case 7680: /* FIPS 140-2 IG 7.5 */
         return 192;
-    case 8192:      /* SP 800-56B rev 2 Appendix D */
+    case 8192: /* SP 800-56B rev 2 Appendix D */
         return 200;
-    case 15360:     /* FIPS 140-2 IG 7.5 */
+    case 15360: /* FIPS 140-2 IG 7.5 */
         return 256;
     }
 
@@ -368,14 +368,12 @@ uint16_t ossl_ifc_ffc_compute_security_bits(int n)
     x = n * (uint64_t)log_2;
     lx = ilog_e(x);
     y = (uint16_t)((mul2(c1_923, icbrt64(mul2(mul2(x, lx), lx))) - c4_690)
-                   / log_2);
+        / log_2);
     y = (y + 4) & ~7;
     if (y > cap)
         y = cap;
     return y;
 }
-
-
 
 int RSA_security_bits(const RSA *rsa)
 {
@@ -481,7 +479,7 @@ int RSA_set0_crt_params(RSA *r, BIGNUM *dmp1, BIGNUM *dmq1, BIGNUM *iqmp)
  * and related functions to let user pass a triplet?
  */
 int RSA_set0_multi_prime_params(RSA *r, BIGNUM *primes[], BIGNUM *exps[],
-                                BIGNUM *coeffs[], int pnum)
+    BIGNUM *coeffs[], int pnum)
 {
     STACK_OF(RSA_PRIME_INFO) *prime_infos, *old = NULL;
     RSA_PRIME_INFO *pinfo;
@@ -539,7 +537,7 @@ int RSA_set0_multi_prime_params(RSA *r, BIGNUM *primes[], BIGNUM *exps[],
     r->dirty_cnt++;
 
     return 1;
- err:
+err:
     /* r, d, t should not be freed */
     sk_RSA_PRIME_INFO_pop_free(prime_infos, ossl_rsa_multip_info_free_ex);
     return 0;
@@ -547,7 +545,7 @@ int RSA_set0_multi_prime_params(RSA *r, BIGNUM *primes[], BIGNUM *exps[],
 #endif
 
 void RSA_get0_key(const RSA *r,
-                  const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
+    const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
 {
     if (n != NULL)
         *n = r->n;
@@ -598,8 +596,8 @@ int RSA_get0_multi_prime_factors(const RSA *r, const BIGNUM *primes[])
 #endif
 
 void RSA_get0_crt_params(const RSA *r,
-                         const BIGNUM **dmp1, const BIGNUM **dmq1,
-                         const BIGNUM **iqmp)
+    const BIGNUM **dmp1, const BIGNUM **dmq1,
+    const BIGNUM **iqmp)
 {
     if (dmp1 != NULL)
         *dmp1 = r->dmp1;
@@ -611,7 +609,7 @@ void RSA_get0_crt_params(const RSA *r,
 
 #ifndef FIPS_MODULE
 int RSA_get0_multi_prime_crt_params(const RSA *r, const BIGNUM *exps[],
-                                    const BIGNUM *coeffs[])
+    const BIGNUM *coeffs[])
 {
     int pnum;
 
@@ -738,15 +736,19 @@ int RSA_pkey_ctx_ctrl(EVP_PKEY_CTX *ctx, int optype, int cmd, int p1, void *p2)
         && ctx->pmeth->pkey_id != EVP_PKEY_RSA
         && ctx->pmeth->pkey_id != EVP_PKEY_RSA_PSS)
         return -1;
-     return EVP_PKEY_CTX_ctrl(ctx, -1, optype, cmd, p1, p2);
+    return EVP_PKEY_CTX_ctrl(ctx, -1, optype, cmd, p1, p2);
 }
 #endif
 
 DEFINE_STACK_OF(BIGNUM)
 
-int ossl_rsa_set0_all_params(RSA *r, const STACK_OF(BIGNUM) *primes,
-                             const STACK_OF(BIGNUM) *exps,
-                             const STACK_OF(BIGNUM) *coeffs)
+/*
+ * Note: This function deletes values from the parameter
+ * stack values as they are consumed and set in the RSA key.
+ */
+int ossl_rsa_set0_all_params(RSA *r, STACK_OF(BIGNUM) *primes,
+    STACK_OF(BIGNUM) *exps,
+    STACK_OF(BIGNUM) *coeffs)
 {
 #ifndef FIPS_MODULE
     STACK_OF(RSA_PRIME_INFO) *prime_infos, *old_infos = NULL;
@@ -757,20 +759,38 @@ int ossl_rsa_set0_all_params(RSA *r, const STACK_OF(BIGNUM) *primes,
         return 0;
 
     pnum = sk_BIGNUM_num(primes);
+
+    /* we need at least 2 primes */
     if (pnum < 2)
         return 0;
 
     if (!RSA_set0_factors(r, sk_BIGNUM_value(primes, 0),
-                          sk_BIGNUM_value(primes, 1)))
+            sk_BIGNUM_value(primes, 1)))
         return 0;
+
+    /*
+     * if we managed to set everything above, remove those elements from the
+     * stack
+     * Note, we do this after the above all to ensure that we have taken
+     * ownership of all the elements in the RSA key to avoid memory leaks
+     * we also use delete 0 here as we are grabbing items from the end of the
+     * stack rather than the start, otherwise we could use pop
+     */
+    sk_BIGNUM_delete(primes, 0);
+    sk_BIGNUM_delete(primes, 0);
 
     if (pnum == sk_BIGNUM_num(exps)
         && pnum == sk_BIGNUM_num(coeffs) + 1) {
 
         if (!RSA_set0_crt_params(r, sk_BIGNUM_value(exps, 0),
-                                 sk_BIGNUM_value(exps, 1),
-                                 sk_BIGNUM_value(coeffs, 0)))
-        return 0;
+                sk_BIGNUM_value(exps, 1),
+                sk_BIGNUM_value(coeffs, 0)))
+            return 0;
+
+        /* as above, once we consume the above params, delete them from the list */
+        sk_BIGNUM_delete(exps, 0);
+        sk_BIGNUM_delete(exps, 0);
+        sk_BIGNUM_delete(coeffs, 0);
     }
 
 #ifndef FIPS_MODULE
@@ -786,9 +806,9 @@ int ossl_rsa_set0_all_params(RSA *r, const STACK_OF(BIGNUM) *primes,
             return 0;
 
         for (i = 2; i < pnum; i++) {
-            BIGNUM *prime = sk_BIGNUM_value(primes, i);
-            BIGNUM *exp = sk_BIGNUM_value(exps, i);
-            BIGNUM *coeff = sk_BIGNUM_value(coeffs, i - 1);
+            BIGNUM *prime = sk_BIGNUM_pop(primes);
+            BIGNUM *exp = sk_BIGNUM_pop(exps);
+            BIGNUM *coeff = sk_BIGNUM_pop(coeffs);
             RSA_PRIME_INFO *pinfo = NULL;
 
             if (!ossl_assert(prime != NULL && exp != NULL && coeff != NULL))
@@ -835,7 +855,7 @@ int ossl_rsa_set0_all_params(RSA *r, const STACK_OF(BIGNUM) *primes,
 
     return 1;
 #ifndef FIPS_MODULE
- err:
+err:
     /* r, d, t should not be freed */
     sk_RSA_PRIME_INFO_pop_free(prime_infos, ossl_rsa_multip_info_free_ex);
     return 0;
@@ -845,8 +865,8 @@ int ossl_rsa_set0_all_params(RSA *r, const STACK_OF(BIGNUM) *primes,
 DEFINE_SPECIAL_STACK_OF_CONST(BIGNUM_const, BIGNUM)
 
 int ossl_rsa_get0_all_params(RSA *r, STACK_OF(BIGNUM_const) *primes,
-                             STACK_OF(BIGNUM_const) *exps,
-                             STACK_OF(BIGNUM_const) *coeffs)
+    STACK_OF(BIGNUM_const) *exps,
+    STACK_OF(BIGNUM_const) *coeffs)
 {
 #ifndef FIPS_MODULE
     RSA_PRIME_INFO *pinfo;
@@ -882,11 +902,11 @@ int ossl_rsa_get0_all_params(RSA *r, STACK_OF(BIGNUM_const) *primes,
 #ifndef FIPS_MODULE
 /* Helpers to set or get diverse hash algorithm names */
 static int int_set_rsa_md_name(EVP_PKEY_CTX *ctx,
-                               /* For checks */
-                               int keytype, int optype,
-                               /* For EVP_PKEY_CTX_set_params() */
-                               const char *mdkey, const char *mdname,
-                               const char *propkey, const char *mdprops)
+    /* For checks */
+    int keytype, int optype,
+    /* For EVP_PKEY_CTX_set_params() */
+    const char *mdkey, const char *mdname,
+    const char *propkey, const char *mdprops)
 {
     OSSL_PARAM params[3], *p = params;
 
@@ -922,11 +942,11 @@ static int int_set_rsa_md_name(EVP_PKEY_CTX *ctx,
 
 /* Helpers to set or get diverse hash algorithm names */
 static int int_get_rsa_md_name(EVP_PKEY_CTX *ctx,
-                               /* For checks */
-                               int keytype, int optype,
-                               /* For EVP_PKEY_CTX_get_params() */
-                               const char *mdkey,
-                               char *mdname, size_t mdnamesize)
+    /* For checks */
+    int keytype, int optype,
+    /* For EVP_PKEY_CTX_get_params() */
+    const char *mdkey,
+    char *mdname, size_t mdnamesize)
 {
     OSSL_PARAM params[2], *p = params;
 
@@ -963,7 +983,7 @@ static int int_get_rsa_md_name(EVP_PKEY_CTX *ctx,
 int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode)
 {
     return RSA_pkey_ctx_ctrl(ctx, -1, EVP_PKEY_CTRL_RSA_PADDING,
-                             pad_mode, NULL);
+        pad_mode, NULL);
 }
 
 /*
@@ -973,7 +993,7 @@ int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode)
 int EVP_PKEY_CTX_get_rsa_padding(EVP_PKEY_CTX *ctx, int *pad_mode)
 {
     return RSA_pkey_ctx_ctrl(ctx, -1, EVP_PKEY_CTRL_GET_RSA_PADDING,
-                             0, pad_mode);
+        0, pad_mode);
 }
 
 /*
@@ -983,16 +1003,16 @@ int EVP_PKEY_CTX_get_rsa_padding(EVP_PKEY_CTX *ctx, int *pad_mode)
 int EVP_PKEY_CTX_set_rsa_pss_keygen_md(EVP_PKEY_CTX *ctx, const EVP_MD *md)
 {
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA_PSS, EVP_PKEY_OP_KEYGEN,
-                             EVP_PKEY_CTRL_MD, 0, (void *)(md));
+        EVP_PKEY_CTRL_MD, 0, (void *)(md));
 }
 
 int EVP_PKEY_CTX_set_rsa_pss_keygen_md_name(EVP_PKEY_CTX *ctx,
-                                            const char *mdname,
-                                            const char *mdprops)
+    const char *mdname,
+    const char *mdprops)
 {
     return int_set_rsa_md_name(ctx, EVP_PKEY_RSA_PSS, EVP_PKEY_OP_KEYGEN,
-                               OSSL_PKEY_PARAM_RSA_DIGEST, mdname,
-                               OSSL_PKEY_PARAM_RSA_DIGEST_PROPS, mdprops);
+        OSSL_PKEY_PARAM_RSA_DIGEST, mdname,
+        OSSL_PKEY_PARAM_RSA_DIGEST_PROPS, mdprops);
 }
 
 /*
@@ -1006,24 +1026,23 @@ int EVP_PKEY_CTX_set_rsa_oaep_md(EVP_PKEY_CTX *ctx, const EVP_MD *md)
         return -1;
 
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, EVP_PKEY_OP_TYPE_CRYPT,
-                             EVP_PKEY_CTRL_RSA_OAEP_MD, 0, (void *)(md));
+        EVP_PKEY_CTRL_RSA_OAEP_MD, 0, (void *)(md));
 }
 
 int EVP_PKEY_CTX_set_rsa_oaep_md_name(EVP_PKEY_CTX *ctx, const char *mdname,
-                                      const char *mdprops)
+    const char *mdprops)
 {
-    return
-        int_set_rsa_md_name(ctx, EVP_PKEY_RSA, EVP_PKEY_OP_TYPE_CRYPT,
-                            OSSL_ASYM_CIPHER_PARAM_OAEP_DIGEST, mdname,
-                            OSSL_ASYM_CIPHER_PARAM_OAEP_DIGEST_PROPS, mdprops);
+    return int_set_rsa_md_name(ctx, EVP_PKEY_RSA, EVP_PKEY_OP_TYPE_CRYPT,
+        OSSL_ASYM_CIPHER_PARAM_OAEP_DIGEST, mdname,
+        OSSL_ASYM_CIPHER_PARAM_OAEP_DIGEST_PROPS, mdprops);
 }
 
 int EVP_PKEY_CTX_get_rsa_oaep_md_name(EVP_PKEY_CTX *ctx, char *name,
-                                      size_t namesize)
+    size_t namesize)
 {
     return int_get_rsa_md_name(ctx, EVP_PKEY_RSA, EVP_PKEY_OP_TYPE_CRYPT,
-                               OSSL_ASYM_CIPHER_PARAM_OAEP_DIGEST,
-                               name, namesize);
+        OSSL_ASYM_CIPHER_PARAM_OAEP_DIGEST,
+        name, namesize);
 }
 
 /*
@@ -1037,7 +1056,7 @@ int EVP_PKEY_CTX_get_rsa_oaep_md(EVP_PKEY_CTX *ctx, const EVP_MD **md)
         return -1;
 
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, EVP_PKEY_OP_TYPE_CRYPT,
-                             EVP_PKEY_CTRL_GET_RSA_OAEP_MD, 0, (void *)md);
+        EVP_PKEY_CTRL_GET_RSA_OAEP_MD, 0, (void *)md);
 }
 
 /*
@@ -1047,24 +1066,24 @@ int EVP_PKEY_CTX_get_rsa_oaep_md(EVP_PKEY_CTX *ctx, const EVP_MD **md)
 int EVP_PKEY_CTX_set_rsa_mgf1_md(EVP_PKEY_CTX *ctx, const EVP_MD *md)
 {
     return RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_TYPE_SIG | EVP_PKEY_OP_TYPE_CRYPT,
-                             EVP_PKEY_CTRL_RSA_MGF1_MD, 0, (void *)(md));
+        EVP_PKEY_CTRL_RSA_MGF1_MD, 0, (void *)(md));
 }
 
 int EVP_PKEY_CTX_set_rsa_mgf1_md_name(EVP_PKEY_CTX *ctx, const char *mdname,
-                                      const char *mdprops)
+    const char *mdprops)
 {
     return int_set_rsa_md_name(ctx, -1,
-                               EVP_PKEY_OP_TYPE_CRYPT | EVP_PKEY_OP_TYPE_SIG,
-                               OSSL_PKEY_PARAM_MGF1_DIGEST, mdname,
-                               OSSL_PKEY_PARAM_MGF1_PROPERTIES, mdprops);
+        EVP_PKEY_OP_TYPE_CRYPT | EVP_PKEY_OP_TYPE_SIG,
+        OSSL_PKEY_PARAM_MGF1_DIGEST, mdname,
+        OSSL_PKEY_PARAM_MGF1_PROPERTIES, mdprops);
 }
 
 int EVP_PKEY_CTX_get_rsa_mgf1_md_name(EVP_PKEY_CTX *ctx, char *name,
-                                      size_t namesize)
+    size_t namesize)
 {
     return int_get_rsa_md_name(ctx, -1,
-                               EVP_PKEY_OP_TYPE_CRYPT | EVP_PKEY_OP_TYPE_SIG,
-                               OSSL_PKEY_PARAM_MGF1_DIGEST, name, namesize);
+        EVP_PKEY_OP_TYPE_CRYPT | EVP_PKEY_OP_TYPE_SIG,
+        OSSL_PKEY_PARAM_MGF1_DIGEST, name, namesize);
 }
 
 /*
@@ -1074,15 +1093,15 @@ int EVP_PKEY_CTX_get_rsa_mgf1_md_name(EVP_PKEY_CTX *ctx, char *name,
 int EVP_PKEY_CTX_set_rsa_pss_keygen_mgf1_md(EVP_PKEY_CTX *ctx, const EVP_MD *md)
 {
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA_PSS, EVP_PKEY_OP_KEYGEN,
-                             EVP_PKEY_CTRL_RSA_MGF1_MD, 0, (void *)(md));
+        EVP_PKEY_CTRL_RSA_MGF1_MD, 0, (void *)(md));
 }
 
 int EVP_PKEY_CTX_set_rsa_pss_keygen_mgf1_md_name(EVP_PKEY_CTX *ctx,
-                                                 const char *mdname)
+    const char *mdname)
 {
     return int_set_rsa_md_name(ctx, EVP_PKEY_RSA_PSS, EVP_PKEY_OP_KEYGEN,
-                               OSSL_PKEY_PARAM_MGF1_DIGEST, mdname,
-                               NULL, NULL);
+        OSSL_PKEY_PARAM_MGF1_DIGEST, mdname,
+        NULL, NULL);
 }
 
 /*
@@ -1092,7 +1111,7 @@ int EVP_PKEY_CTX_set_rsa_pss_keygen_mgf1_md_name(EVP_PKEY_CTX *ctx,
 int EVP_PKEY_CTX_get_rsa_mgf1_md(EVP_PKEY_CTX *ctx, const EVP_MD **md)
 {
     return RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_TYPE_SIG | EVP_PKEY_OP_TYPE_CRYPT,
-                             EVP_PKEY_CTRL_GET_RSA_MGF1_MD, 0, (void *)(md));
+        EVP_PKEY_CTRL_GET_RSA_MGF1_MD, 0, (void *)(md));
 }
 
 int EVP_PKEY_CTX_set0_rsa_oaep_label(EVP_PKEY_CTX *ctx, void *label, int llen)
@@ -1122,7 +1141,7 @@ int EVP_PKEY_CTX_set0_rsa_oaep_label(EVP_PKEY_CTX *ctx, void *label, int llen)
 
     /* Cast away the const. This is read only so should be safe */
     *p++ = OSSL_PARAM_construct_octet_string(OSSL_ASYM_CIPHER_PARAM_OAEP_LABEL,
-                                             (void *)plabel, (size_t)llen);
+        (void *)plabel, (size_t)llen);
     *p++ = OSSL_PARAM_construct_end();
 
     ret = evp_pkey_ctx_set_params_strict(ctx, rsa_params);
@@ -1150,7 +1169,7 @@ int EVP_PKEY_CTX_get0_rsa_oaep_label(EVP_PKEY_CTX *ctx, unsigned char **label)
         return -1;
 
     *p++ = OSSL_PARAM_construct_octet_ptr(OSSL_ASYM_CIPHER_PARAM_OAEP_LABEL,
-                                          (void **)label, 0);
+        (void **)label, 0);
     *p++ = OSSL_PARAM_construct_end();
 
     if (!EVP_PKEY_CTX_get_params(ctx, rsa_params))
@@ -1180,7 +1199,7 @@ int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX *ctx, int saltlen)
      * EVP_PKEY_OP_TYPE_SIG
      */
     return RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_TYPE_SIG,
-                             EVP_PKEY_CTRL_RSA_PSS_SALTLEN, saltlen, NULL);
+        EVP_PKEY_CTRL_RSA_PSS_SALTLEN, saltlen, NULL);
 }
 
 /*
@@ -1199,7 +1218,7 @@ int EVP_PKEY_CTX_get_rsa_pss_saltlen(EVP_PKEY_CTX *ctx, int *saltlen)
      * EVP_PKEY_OP_TYPE_SIG
      */
     return RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_TYPE_SIG,
-                             EVP_PKEY_CTRL_GET_RSA_PSS_SALTLEN, 0, saltlen);
+        EVP_PKEY_CTRL_GET_RSA_PSS_SALTLEN, 0, saltlen);
 }
 
 int EVP_PKEY_CTX_set_rsa_pss_keygen_saltlen(EVP_PKEY_CTX *ctx, int saltlen)
@@ -1216,7 +1235,7 @@ int EVP_PKEY_CTX_set_rsa_pss_keygen_saltlen(EVP_PKEY_CTX *ctx, int saltlen)
         return -1;
 
     *p++ = OSSL_PARAM_construct_int(OSSL_SIGNATURE_PARAM_PSS_SALTLEN,
-                                    &saltlen);
+        &saltlen);
     *p++ = OSSL_PARAM_construct_end();
 
     return evp_pkey_ctx_set_params_strict(ctx, pad_params);
@@ -1247,7 +1266,7 @@ int EVP_PKEY_CTX_set_rsa_keygen_bits(EVP_PKEY_CTX *ctx, int bits)
 int EVP_PKEY_CTX_set_rsa_keygen_pubexp(EVP_PKEY_CTX *ctx, BIGNUM *pubexp)
 {
     int ret = RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_KEYGEN,
-                                EVP_PKEY_CTRL_RSA_KEYGEN_PUBEXP, 0, pubexp);
+        EVP_PKEY_CTRL_RSA_KEYGEN_PUBEXP, 0, pubexp);
 
     /*
      * Satisfy memory semantics for pre-3.0 callers of
@@ -1276,7 +1295,7 @@ int EVP_PKEY_CTX_set1_rsa_keygen_pubexp(EVP_PKEY_CTX *ctx, BIGNUM *pubexp)
             return 0;
     }
     ret = EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, EVP_PKEY_OP_KEYGEN,
-                            EVP_PKEY_CTRL_RSA_KEYGEN_PUBEXP, 0, pubexp);
+        EVP_PKEY_CTRL_RSA_KEYGEN_PUBEXP, 0, pubexp);
     if (evp_pkey_ctx_is_legacy(ctx) && ret <= 0)
         BN_free(pubexp);
     return ret;

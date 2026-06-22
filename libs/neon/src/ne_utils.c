@@ -1,6 +1,6 @@
 /* 
    HTTP utility functions
-   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2024, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -189,6 +189,12 @@ int ne_has_support(int feature)
 #ifdef HAVE_SSPI
     case NE_FEATURE_SSPI:
 #endif
+#ifdef NE_HAVE_GSSAPI
+    case NE_FEATURE_GSSAPI:
+#endif
+#ifdef NE_HAVE_LIBPXY
+    case NE_FEATURE_LIBPXY:
+#endif
         return 1;
 #endif /* NE_HAVE_* */
     default:
@@ -196,47 +202,74 @@ int ne_has_support(int feature)
     }
 }
 
+/* Lookup table - digit values=0-9, reason_phrase=0-10. */
+
+/* Generated with 'mktable status_line', do not alter here -- */
+static const unsigned char table_status_line[256] = {
+/* x00 */ 99, 99, 99, 99, 99, 99, 99, 99, 99, 10, 99, 99, 99, 99, 99, 99,
+/* x10 */ 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
+/* x20 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* x30 */ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 10, 10,
+/* x40 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* x50 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* x60 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* x70 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 99,
+/* x80 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* x90 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* xA0 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* xB0 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* xC0 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* xD0 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* xE0 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+/* xF0 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
+}; /* -- Generated code from 'mktable status_line' ends. */
+
+/* Strict parser per RFC9112ẞ4:
+ *
+ *    status-line = HTTP-version SP status-code SP [ reason-phrase ]
+ *  HTTP-version  = HTTP-name "/" DIGIT "." DIGIT
+ * reason-phrase  = 1*( HTAB / SP / VCHAR / obs-text )
+ */
 int ne_parse_statusline(const char *status_line, ne_status *st)
 {
-    const char *part;
-    int major, minor, status_code, klass;
+    const unsigned char *p = (const unsigned char *)status_line, *rp;
+    unsigned int major, minor, status_code, klass;
 
-    /* skip leading garbage if any. */
-    part = strstr(status_line, "HTTP/");
-    if (part == NULL) return -1;
+    /* p => status-line */
+    if (strncmp((const char *)p, "HTTP/", 5) != 0)
+        return -1;
 
     minor = major = 0;
+    p += 5;
 
-    /* Parse version string, skipping leading zeroes. */
-    for (part += 5; *part != '\0' && isdigit(*part); part++)
-	major = major*10 + (*part-'0');
+    /* X.Y */
+    if ((major = table_status_line[*p++]) > 9)
+        return -1;
+    if (*p++ != '.')
+        return -1;
+    if ((minor = table_status_line[*p++]) > 9)
+        return -1;
 
-    if (*part++ != '.') return -1;
+    if (*p++ != ' ') return -1;
 
-    for (;*part != '\0' && isdigit(*part); part++)
-	minor = minor*10 + (*part-'0');
+    if ((klass = table_status_line[p[0]]) > 5 /* note 5xx maximum */
+        || table_status_line[p[1]] > 9 || table_status_line[p[2]] > 9
+        || p[3] != ' ')
+        return -1;
 
-    if (*part != ' ') return -1;
+    status_code = klass * 100 + table_status_line[p[1]] * 10
+        + table_status_line[p[2]];
 
-    /* Skip any spaces */
-    for (; *part == ' '; part++) /* noop */;
-
-    /* Parse the Status-Code; part now points at the first Y in
-     * "HTTP/x.x YYY". */
-    if (!isdigit(part[0]) || !isdigit(part[1]) || !isdigit(part[2]) ||
-	(part[3] != '\0' && part[3] != ' ')) return -1;
-    status_code = 100*(part[0]-'0') + 10*(part[1]-'0') + (part[2]-'0');
-    klass = part[0]-'0';
-
-    /* Skip whitespace between status-code and reason-phrase */
-    for (part+=3; *part == ' ' || *part == '\t'; part++) /* noop */;
-
-    /* part now may be pointing to \0 if reason phrase is blank */
+    rp = p += 4; /* p => [ reason-phrase ] */
+    while (table_status_line[*p] < 11) /* note this terminates for *p == '\0' */
+        p++;
 
     /* Fill in the results */
     st->major_version = major;
     st->minor_version = minor;
-    st->reason_phrase = ne_strclean(ne_strdup(part));
+    st->reason_phrase = ne_malloc(p - rp + 1);
+    ne_strnzcpy(st->reason_phrase, (const char *)rp, p - rp + 1);
+    ne_strclean(st->reason_phrase);
     st->code = status_code;
     st->klass = klass;
     return 0;

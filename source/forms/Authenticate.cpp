@@ -257,10 +257,7 @@ void TAuthenticateForm::ExternalLabel(TLabel * Label)
 TList * __fastcall TAuthenticateForm::GeneratePrompt(
   TPromptKind Kind, const UnicodeString & Instructions, TStrings * Prompts)
 {
-  while (FPromptParent->ControlCount > 0)
-  {
-    delete FPromptParent->Controls[0];
-  }
+  DeleteChildren(FPromptParent);
   TList * Result = new TList;
 
   int Current = FPromptTop;
@@ -626,12 +623,11 @@ void __fastcall TAuthenticateForm::FormResize(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::ChangeScale(int M, int D)
+void __fastcall TAuthenticateForm::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TForm::ChangeScale(M, D);
-
+  DebugUsedParam2(OldDPI, NewDPI);
   // Recreate the list to re-measure the items according to the new font
-  if (DebugAlwaysTrue(LogView->HandleAllocated()) &&
+  if (LogView->HandleAllocated() &&
       (LogView->Items->Count > 0))
   {
     std::unique_ptr<TStrings> Items(new TStringList());

@@ -9,6 +9,7 @@
 class TMessageForm : public TForm
 {
 __published:
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 public:
   static TForm * __fastcall Create(const UnicodeString & Msg, TStrings * MoreMessages,
@@ -41,7 +42,6 @@ protected:
   void __fastcall UpdateForShiftStateTimer(TObject * Sender);
   DYNAMIC void __fastcall SetZOrder(bool TopMost);
   void __fastcall LoadMessageBrowser();
-  virtual void __fastcall ReadState(TReader * Reader);
 
 private:
   typedef std::map<unsigned int, TButton *> TAnswerButtons;
@@ -54,7 +54,6 @@ private:
   UnicodeString MessageBrowserUrl;
   TShiftState FShiftState;
   TTimer * FUpdateForShiftStateTimer;
-  TForm * FDummyForm;
   bool FShowNoActivate;
   std::map<TObject *, TButtonSubmitEvent> FButtonSubmitEvents;
   TCheckBox * NeverAskAgainCheck;

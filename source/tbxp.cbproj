@@ -1,167 +1,167 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<PropertyGroup>
-		<ProjectGuid>{44DD0CE6-BAA9-4655-925A-94E7F438BC93}</ProjectGuid>
-		<ProjectVersion>15.4</ProjectVersion>
-		<MainSource>tbxp.cpp</MainSource>
-		<Config Condition="'$(Config)'==''">Release</Config>
-		<FrameworkType>VCL</FrameworkType>
-		<Base>True</Base>
-		<Platform Condition="'$(Platform)'==''">Win32</Platform>
-		<TargetedPlatforms>1</TargetedPlatforms>
-		<AppType>Package</AppType>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-		<Base_Win32>true</Base_Win32>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
-		<Cfg_1>true</Cfg_1>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
-		<Cfg_2>true</Cfg_2>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base)'!=''">
-		<_TCHARMapping>wchar_t</_TCHARMapping>
-		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
-		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-		<BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
-		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-		<DCC_CVT_ACHAR_TO_WCHAR>true</DCC_CVT_ACHAR_TO_WCHAR>
-		<DCC_CVT_WIDENING_STRING_LOST>true</DCC_CVT_WIDENING_STRING_LOST>
-		<DCC_EXPLICIT_STRING_CAST>true</DCC_EXPLICIT_STRING_CAST>
-		<DCC_EXPLICIT_STRING_CAST_LOSS>true</DCC_EXPLICIT_STRING_CAST_LOSS>
-		<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<DCC_UnitSearchPath>packages\tbx;packages\tb2k;packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
-		<ILINK_Description>Toolbar2000 -- TBX Extensions (Alex Denisov)</ILINK_Description>
-		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
-		<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-		<ILINK_LibraryPath>packages\tbx\;packages\tb2k;packages\my;$(BDS)\lib\obj;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>packages\tbx\;packages\tb2k;packages\my;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
-		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-		<Multithreaded>true</Multithreaded>
-		<OutputExt>bpl</OutputExt>
-		<ProjectType>CppPackage</ProjectType>
-		<SanitizedProjectName>tbxp</SanitizedProjectName>
-		<TLIB_PageSize>32</TLIB_PageSize>
-		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-		<VerInfo_Locale>1033</VerInfo_Locale>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win32)'!=''">
-		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-		<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1)'!=''">
-		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-		<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-		<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
-		<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-		<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-		<BCC_StackFrames>true</BCC_StackFrames>
-		<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-		<DCC_Define>DEBUG</DCC_Define>
-		<DCC_Optimize>false</DCC_Optimize>
-		<Defines>_DEBUG;$(Defines)</Defines>
-		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-		<TASM_Debugging>Full</TASM_Debugging>
-		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-		<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
-		<Defines>NDEBUG;$(Defines)</Defines>
-		<TASM_Debugging>None</TASM_Debugging>
-	</PropertyGroup>
-	<ItemGroup>
-		<DelphiCompile Include="packages\tbx\TBX.pas">
-			<BuildOrder>11</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\tbx\TBXExtItems.pas">
-			<BuildOrder>17</BuildOrder>
-			<BuildOrder>13</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\tbx\TBXLists.pas">
-			<BuildOrder>6</BuildOrder>
-			<BuildOrder>38</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\tbx\TBXOfficeXPTheme.pas">
-			<BuildOrder>8</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\tbx\TBXStatusBars.pas">
-			<BuildOrder>7</BuildOrder>
-			<BuildOrder>23</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\tbx\TBXThemes.pas">
-			<BuildOrder>26</BuildOrder>
-			<BuildOrder>2</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\tbx\TBXToolPals.pas">
-			<BuildOrder>44</BuildOrder>
-			<BuildOrder>4</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\tbx\TBXUtils.pas">
-			<BuildOrder>14</BuildOrder>
-		</DelphiCompile>
-		<CppCompile Include="tbxp.cpp">
-			<BuildOrder>2</BuildOrder>
-			<BuildOrder>10</BuildOrder>
-		</CppCompile>
-		<PackageImport Include="my.bpi">
-			<BuildOrder>14</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="rtl.bpi">
-			<BuildOrder>32</BuildOrder>
-			<BuildOrder>0</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="tb2k.bpi">
-			<BuildOrder>14</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="vcl.bpi">
-			<BuildOrder>29</BuildOrder>
-			<BuildOrder>1</BuildOrder>
-		</PackageImport>
-		<BuildConfiguration Include="Base">
-			<Key>Base</Key>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Debug">
-			<Key>Cfg_1</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Release">
-			<Key>Cfg_2</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-	</ItemGroup>
-	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
-	<ProjectExtensions>
-		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
-		<Borland.ProjectType>CppPackage</Borland.ProjectType>
-		<BorlandProject>
-			<CPlusPlusBuilder.Personality>
-				<Source>
-					<Source Name="MainSource">tbxp.cpp</Source>
-				</Source>
-				<ProjectProperties>
-					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
-					<ProjectProperties Name="ManagePaths">True</ProjectProperties>
-					<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
-					<ProjectProperties Name="IndexFiles">False</ProjectProperties>
-				</ProjectProperties>
-			</CPlusPlusBuilder.Personality>
-			<Platforms>
-				<Platform value="Win32">True</Platform>
-				<Platform value="Win64">False</Platform>
-			</Platforms>
-		</BorlandProject>
-		<ProjectFileVersion>12</ProjectFileVersion>
-	</ProjectExtensions>
-	<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+    <PropertyGroup>
+        <ProjectGuid>{44DD0CE6-BAA9-4655-925A-94E7F438BC93}</ProjectGuid>
+        <ProjectVersion>19.5</ProjectVersion>
+        <MainSource>tbxp.cpp</MainSource>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <FrameworkType>VCL</FrameworkType>
+        <Base>True</Base>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
+        <AppType>Package</AppType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <_TCHARMapping>wchar_t</_TCHARMapping>
+        <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+        <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
+        <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+        <DCC_CVT_ACHAR_TO_WCHAR>true</DCC_CVT_ACHAR_TO_WCHAR>
+        <DCC_CVT_WIDENING_STRING_LOST>true</DCC_CVT_WIDENING_STRING_LOST>
+        <DCC_EXPLICIT_STRING_CAST>true</DCC_EXPLICIT_STRING_CAST>
+        <DCC_EXPLICIT_STRING_CAST_LOSS>true</DCC_EXPLICIT_STRING_CAST_LOSS>
+        <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_UnitSearchPath>packages\tbx;packages\tb2k;packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+        <ILINK_Description>Toolbar2000 -- TBX Extensions (Alex Denisov)</ILINK_Description>
+        <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+        <ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
+        <ILINK_LibraryPath>packages\tbx\;packages\tb2k;packages\my;$(BDS)\lib\obj;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <IncludePath>packages\tbx\;packages\tb2k;packages\my;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+        <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+        <Multithreaded>true</Multithreaded>
+        <OutputExt>bpl</OutputExt>
+        <ProjectType>CppPackage</ProjectType>
+        <SanitizedProjectName>tbxp</SanitizedProjectName>
+        <TLIB_PageSize>32</TLIB_PageSize>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+        <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+        <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+        <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+        <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+        <BCC_StackFrames>true</BCC_StackFrames>
+        <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_Define>DEBUG</DCC_Define>
+        <DCC_Optimize>false</DCC_Optimize>
+        <Defines>_DEBUG;$(Defines)</Defines>
+        <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+        <TASM_Debugging>Full</TASM_Debugging>
+        <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
+        <Defines>NDEBUG;$(Defines)</Defines>
+        <TASM_Debugging>None</TASM_Debugging>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="packages\tbx\TBX.pas">
+            <BuildOrder>11</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\tbx\TBXExtItems.pas">
+            <BuildOrder>17</BuildOrder>
+            <BuildOrder>13</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\tbx\TBXLists.pas">
+            <BuildOrder>6</BuildOrder>
+            <BuildOrder>38</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\tbx\TBXOfficeXPTheme.pas">
+            <BuildOrder>8</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\tbx\TBXStatusBars.pas">
+            <BuildOrder>7</BuildOrder>
+            <BuildOrder>23</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\tbx\TBXThemes.pas">
+            <BuildOrder>26</BuildOrder>
+            <BuildOrder>2</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\tbx\TBXToolPals.pas">
+            <BuildOrder>44</BuildOrder>
+            <BuildOrder>4</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\tbx\TBXUtils.pas">
+            <BuildOrder>14</BuildOrder>
+        </DelphiCompile>
+        <CppCompile Include="tbxp.cpp">
+            <BuildOrder>2</BuildOrder>
+            <BuildOrder>10</BuildOrder>
+        </CppCompile>
+        <PackageImport Include="my.bpi">
+            <BuildOrder>14</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="rtl.bpi">
+            <BuildOrder>32</BuildOrder>
+            <BuildOrder>0</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="tb2k.bpi">
+            <BuildOrder>14</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="vcl.bpi">
+            <BuildOrder>29</BuildOrder>
+            <BuildOrder>1</BuildOrder>
+        </PackageImport>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+    <ProjectExtensions>
+        <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+        <Borland.ProjectType>CppPackage</Borland.ProjectType>
+        <BorlandProject>
+            <CPlusPlusBuilder.Personality>
+                <Source>
+                    <Source Name="MainSource">tbxp.cpp</Source>
+                </Source>
+                <ProjectProperties>
+                    <ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+                    <ProjectProperties Name="ManagePaths">True</ProjectProperties>
+                    <ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+                    <ProjectProperties Name="IndexFiles">False</ProjectProperties>
+                </ProjectProperties>
+            </CPlusPlusBuilder.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

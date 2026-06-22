@@ -35,17 +35,17 @@ NE_BEGIN_DECLS
 char *ne_rfc1123_date(time_t anytime)
     ne_attribute_malloc;
 
-/* Parses a date/time using the the ISO8601 format. Returns -1 on
+/* Parses a date/time using the ISO8601 format. Returns -1 on
  * error. */
 time_t ne_iso8601_parse(const char *date)
     ne_attribute((nonnull));
 
-/* Parses a date/time using the the IMF-fixdate format (historically
+/* Parses a date/time using the IMF-fixdate format (historically
  * known as "RFC1123". Returns -1 on error. */
 time_t ne_rfc1123_parse(const char *date)
     ne_attribute((nonnull));
 
-/* Parses a date/time using the the RFC1036 format. Returns -1 on
+/* Parses a date/time using the RFC1036 format. Returns -1 on
  * error. */
 time_t ne_rfc1036_parse(const char *date)
     ne_attribute((nonnull));

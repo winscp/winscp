@@ -11,7 +11,7 @@ FontSpec *platform_default_fontspec(const char *name)
     if (!strcmp(name, "Font"))
         return fontspec_new("Courier New", false, 10, ANSI_CHARSET);
     else
-        return fontspec_new("", false, 0, 0);
+        return fontspec_new_default();
 }
 
 Filename *platform_default_filename(const char *name)

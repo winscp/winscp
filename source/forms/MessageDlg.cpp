@@ -78,13 +78,10 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner)
   NeverAskAgainCheck = NULL;
   FUpdateForShiftStateTimer = NULL;
   UseSystemSettingsPre(this);
-  FDummyForm = new TForm(this);
-  UseSystemSettings(FDummyForm);
 }
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::~TMessageForm()
 {
-  SAFE_DESTROY(FDummyForm);
   SAFE_DESTROY(FUpdateForShiftStateTimer);
 }
 //---------------------------------------------------------------------------
@@ -356,21 +353,22 @@ void __fastcall TMessageForm::Dispatch(void * Message)
   {
     CMShowingChanged(*M);
   }
-  else if (M->Msg == CM_DPICHANGED)
-  {
-    if (MessageBrowser != NULL)
-    {
-      LoadMessageBrowser();
-    }
-    if (NeverAskAgainCheck != NULL)
-    {
-      AutoSizeCheckBox(NeverAskAgainCheck);
-    }
-    TForm::Dispatch(Message);
-  }
   else
   {
     TForm::Dispatch(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
+{
+  DebugUsedParam2(OldDPI, NewDPI);
+  if (MessageBrowser != NULL)
+  {
+    LoadMessageBrowser();
+  }
+  if (NeverAskAgainCheck != NULL)
+  {
+    AutoSizeCheckBox(NeverAskAgainCheck);
   }
 }
 //---------------------------------------------------------------------------
@@ -453,7 +451,7 @@ const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDl
   &_SMsgDlgConfirm, NULL };
 const wchar_t * ImageNames[] = { L"Warning", L"Error", L"Information",
   L"Help Blue", NULL };
-const int mcHorzMargin = 10;
+const int mcHorzMargin = 8;
 const int mcVertMargin = 13;
 const int mcHorzSpacing = 12;
 const int mcButtonVertMargin = 7;
@@ -500,7 +498,7 @@ TButton * __fastcall TMessageForm::CreateButton(
     &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
     DrawTextBiDiModeFlagsReadingOnly());
   int CurButtonWidth = TextRect.Right - TextRect.Left + ScaleByTextHeightRunTime(this, 16);
-  if (ElevationRequired && IsVista())
+  if (ElevationRequired)
   {
     // Elevation icon
     CurButtonWidth += ScaleByTextHeightRunTime(this, 16);
@@ -512,8 +510,7 @@ TButton * __fastcall TMessageForm::CreateButton(
 
   TButton * Button = NULL;
 
-  if (SupportsSplitButton() &&
-      (GroupWith >= 0) &&
+  if ((GroupWith >= 0) &&
       DebugAlwaysTrue(AnswerButtons.find(GroupWith) != AnswerButtons.end()))
   {
     TButton * GroupWithButton = AnswerButtons[GroupWith];
@@ -595,11 +592,6 @@ TButton * __fastcall TMessageForm::CreateButton(
     Button->Name = Name;
     Button->Parent = this;
     Button->Caption = Caption;
-    // Scale buttons using regular font, so that they are as large as buttons
-    // on other dialogs (note that they are still higher than Windows Task dialog
-    // buttons)
-    Button->Height = ScaleByTextHeightRunTime(FDummyForm, Button->Height);
-    Button->Width = ScaleByTextHeightRunTime(FDummyForm, Button->Width);
 
     if (OnSubmit != NULL)
     {
@@ -616,11 +608,8 @@ TButton * __fastcall TMessageForm::CreateButton(
       Button->Anchors = TAnchors() << akBottom << akLeft;
     }
 
-    // never shrink buttons below their default width
-    if (Button->Width < CurButtonWidth)
-    {
-      Button->Width = CurButtonWidth;
-    }
+    // never shrink buttons below our default UI button with
+    Button->Width = std::max(ScaleByTextHeightRunTime(this, 80), CurButtonWidth);
 
     Button->ElevationRequired = ElevationRequired;
     ButtonWidths += Button->Width;
@@ -641,13 +630,13 @@ void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
     // we currently use this for updates message box only
     TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
 
+    Panel->Parent = ContentsPanel;
     Panel->Width = ContentsControl->Width;
     Panel->Left = ContentsControl->Left;
     int ContentsBottom = ContentsControl->Top + ContentsControl->Height;
     Panel->Top = ContentsBottom + ((ContentsPanel->Height - ContentsBottom) / 2);
     Height = Height + Panel->Height;
     ContentsPanel->Height = ContentsPanel->Height + Panel->Height;
-    Panel->Parent = ContentsPanel;
     // The panel itself does not need this, as the ParentBackground (true by default)
     // has the same effect, but an eventual TStaticText on the panel
     // uses a wrong background color, if panel's ParentColor is not set.
@@ -675,13 +664,6 @@ void __fastcall TMessageForm::NavigateToUrl(const UnicodeString & Url)
     UnicodeString FullUrl = AppendUrlParams(Url, FontSizeParam);
     NavigateBrowserToUrl(MessageBrowser, FullUrl);
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TMessageForm::ReadState(TReader * Reader)
-{
-  TForm::ReadState(Reader);
-  // Before we change form font
-  RecordFormImplicitRescale(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall AnswerNameAndCaption(
@@ -887,7 +869,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         LinkControl->Caption = ActionAlias;
         LinkControl->Alignment = taRightJustify;
         LinkControl->Anchors = TAnchors() << akRight << akTop;
-        LinkActionLabel(LinkControl);
         LinkControl->OnClick = Result->ButtonSubmit;
         Result->FButtonSubmitEvents[LinkControl] = OnSubmit;
       }
@@ -1121,6 +1102,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   if (LinkControl != NULL)
   {
     LinkControl->Parent = Panel;
+    LinkActionLabel(LinkControl);
     LinkControl->Left = Panel->ClientWidth - HorzMargin - LinkControl->Width;
     LinkControl->Top = VertMargin + IconTextHeight + VertMargin;
     IconTextHeight += VertMargin + LinkControl->Height;
@@ -1228,7 +1210,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     TButton * FirstButton = ButtonControls[0];
     int NeverAskAgainHeight = ScaleByTextHeightRunTime(Result, Result->NeverAskAgainCheck->Height);
     int NeverAskAgainTop = FirstButton->Top + ((FirstButton->Height - NeverAskAgainHeight) / 2);
-    int NeverAskAgainLeft = HorzMargin;
+    int NeverAskAgainLeft = HorzMargin + ScaleByTextHeightRunTime(Result, 2); // checkbox indentation
 
     Result->NeverAskAgainCheck->SetBounds(
       NeverAskAgainLeft, NeverAskAgainTop, NeverAskAgainBaseWidth, NeverAskAgainHeight);

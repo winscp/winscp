@@ -450,7 +450,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     UnicodeString Value;
     UnicodeString CodeState;
-    int ResumeThresholdKB = (ResumeThreshold / 1024);
+    int ResumeThresholdKB = static_cast<int>(ResumeThreshold / 1024);
     switch (ResumeSupport)
     {
       case rsOff:
@@ -631,9 +631,10 @@ UnicodeString __fastcall TCopyParamType::RestoreChars(UnicodeString FileName) co
       {
         UnicodeString Hex = FileName.SubString(Index + 1, 2);
         wchar_t Char = static_cast<wchar_t>(HexToByte(Hex));
-        if ((Char != L'\0') &&
+        if ((Char != L'\0') && (Char != L'/') &&
             ((FTokenizibleChars.Pos(Char) > 0) ||
-             (((Char == L' ') || (Char == L'.')) && (Index == FileName.Length() - 2))))
+             // not decoding lone dot
+             (((Char == L' ') || ((Char == L'.') && (Index > 1))) && (Index == FileName.Length() - 2))))
         {
           FileName[Index] = Char;
           FileName.Delete(Index + 1, 2);

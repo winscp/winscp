@@ -7,7 +7,7 @@
 
 #include "putty.h"
 
-void nullplug_log(Plug *plug, PlugLogType type, SockAddr *addr,
+void nullplug_log(Plug *plug, Socket *s, PlugLogType type, SockAddr *addr,
                   int port, const char *err_msg, int err_code)
 {
 }

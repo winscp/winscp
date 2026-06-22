@@ -6,22 +6,24 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Server and protocol information'
-  ClientHeight = 398
-  ClientWidth = 371
+  ClientHeight = 444
+  ClientWidth = 432
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
-    371
-    398)
-  PixelsPerInch = 96
-  TextHeight = 13
+    432
+    444)
+  TextHeight = 15
   object CloseButton: TButton
-    Left = 204
-    Top = 364
-    Width = 75
+    Left = 258
+    Top = 411
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -31,9 +33,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     TabOrder = 2
   end
   object HelpButton: TButton
-    Left = 287
-    Top = 364
-    Width = 75
+    Left = 344
+    Top = 411
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
@@ -43,8 +45,8 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   object PageControl: TPageControl
     Left = 0
     Top = 0
-    Width = 371
-    Height = 352
+    Width = 432
+    Height = 405
     ActivePage = ProtocolSheet
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
@@ -53,47 +55,47 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     object ProtocolSheet: TTabSheet
       Caption = 'Protocol'
       DesignSize = (
-        363
-        324)
+        424
+        375)
       object HostKeyGroup: TGroupBox
-        Left = 6
-        Top = 201
-        Width = 351
-        Height = 87
+        Left = 5
+        Top = 236
+        Width = 411
+        Height = 95
         Anchors = [akLeft, akRight, akBottom]
         Caption = 'Server host key fingerprints'
         TabOrder = 1
         DesignSize = (
-          351
-          87)
+          411
+          95)
         object Label2: TLabel
-          Left = 10
-          Top = 18
-          Width = 49
-          Height = 13
+          Left = 8
+          Top = 22
+          Width = 57
+          Height = 15
           Caption = 'Algorithm:'
           FocusControl = HostKeyAlgorithmEdit
         end
         object Label3: TLabel
-          Left = 10
-          Top = 41
-          Width = 46
-          Height = 13
+          Left = 8
+          Top = 45
+          Width = 49
+          Height = 15
           Caption = 'SHA-256:'
           FocusControl = HostKeyFingerprintSHA256Edit
         end
         object Label4: TLabel
-          Left = 10
-          Top = 64
-          Width = 25
-          Height = 13
+          Left = 8
+          Top = 68
+          Width = 28
+          Height = 15
           Caption = 'MD5:'
           FocusControl = HostKeyFingerprintMD5Edit
         end
         object HostKeyFingerprintSHA256Edit: TEdit
-          Left = 65
-          Top = 41
-          Width = 279
+          Left = 88
+          Top = 45
+          Width = 314
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -106,9 +108,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           OnContextPopup = HostKeyFingerprintSHA256EditContextPopup
         end
         object HostKeyAlgorithmEdit: TEdit
-          Left = 65
-          Top = 18
-          Width = 279
+          Left = 88
+          Top = 22
+          Width = 314
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -119,9 +121,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           Text = 'HostKeyAlgorithmEdit'
         end
         object HostKeyFingerprintMD5Edit: TEdit
-          Left = 65
-          Top = 64
-          Width = 279
+          Left = 88
+          Top = 68
+          Width = 314
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -135,10 +137,10 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         end
       end
       object ServerView: TListView
-        Left = 6
-        Top = 8
-        Width = 351
-        Height = 187
+        Left = 5
+        Top = 5
+        Width = 412
+        Height = 225
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -161,36 +163,36 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         OnContextPopup = ControlContextPopup
       end
       object CertificateGroup: TGroupBox
-        Left = 6
-        Top = 294
-        Width = 351
-        Height = 104
+        Left = 5
+        Top = 337
+        Width = 411
+        Height = 102
         Anchors = [akLeft, akRight, akBottom]
         Caption = 'Certificate fingerprint'
         TabOrder = 2
         DesignSize = (
-          351
-          104)
+          411
+          102)
         object Label5: TLabel
-          Left = 10
-          Top = 20
-          Width = 46
-          Height = 13
+          Left = 8
+          Top = 22
+          Width = 49
+          Height = 15
           Caption = 'SHA-256:'
           FocusControl = CertificateFingerprintSha256Edit
         end
         object Label6: TLabel
-          Left = 10
-          Top = 43
-          Width = 34
-          Height = 13
+          Left = 8
+          Top = 45
+          Width = 37
+          Height = 15
           Caption = 'SHA-1:'
           FocusControl = CertificateFingerprintSha1Edit
         end
         object CertificateFingerprintSha256Edit: TEdit
-          Left = 65
-          Top = 20
-          Width = 279
+          Left = 88
+          Top = 22
+          Width = 314
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -201,18 +203,18 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           Text = 'CertificateFingerprintSha256Edit'
         end
         object CertificateViewButton: TButton
-          Left = 10
-          Top = 66
-          Width = 121
+          Left = 8
+          Top = 68
+          Width = 134
           Height = 25
           Caption = '&Full certificate'
           TabOrder = 2
           OnClick = CertificateViewButtonClick
         end
         object CertificateFingerprintSha1Edit: TEdit
-          Left = 65
-          Top = 43
-          Width = 279
+          Left = 88
+          Top = 45
+          Width = 314
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -230,26 +232,26 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       Caption = 'Capabilities'
       ImageIndex = 1
       DesignSize = (
-        363
-        324)
+        424
+        375)
       object InfoGroup: TGroupBox
-        Left = 6
-        Top = 202
-        Width = 351
-        Height = 114
+        Left = 5
+        Top = 236
+        Width = 412
+        Height = 134
         Anchors = [akLeft, akRight, akBottom]
         Caption = 'Additional information'
         TabOrder = 1
         DesignSize = (
-          351
-          114)
+          412
+          134)
         object InfoMemo: TMemo
           Left = 9
-          Top = 17
-          Width = 333
-          Height = 87
+          Top = 22
+          Width = 394
+          Height = 102
           TabStop = False
-          Anchors = [akLeft, akTop, akRight]
+          Anchors = [akLeft, akTop, akRight, akBottom]
           BevelInner = bvNone
           BevelOuter = bvNone
           BorderStyle = bsNone
@@ -262,10 +264,10 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         end
       end
       object ProtocolView: TListView
-        Left = 6
-        Top = 8
-        Width = 351
-        Height = 187
+        Left = 5
+        Top = 5
+        Width = 412
+        Height = 225
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -292,21 +294,21 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       Caption = 'Space available'
       ImageIndex = 2
       DesignSize = (
-        363
-        324)
+        424
+        375)
       object Label1: TLabel
-        Left = 13
-        Top = 13
-        Width = 26
-        Height = 13
+        Left = 5
+        Top = 8
+        Width = 27
+        Height = 15
         Caption = '&Path:'
         FocusControl = SpaceAvailablePathEdit
       end
       object SpaceAvailableView: TListView
-        Left = 6
-        Top = 40
-        Width = 351
-        Height = 155
+        Left = 5
+        Top = 34
+        Width = 412
+        Height = 196
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -331,9 +333,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       end
       object SpaceAvailablePathEdit: TEdit
         Left = 56
-        Top = 9
-        Width = 193
-        Height = 21
+        Top = 5
+        Width = 246
+        Height = 23
         Anchors = [akLeft, akTop, akRight]
         MaxLength = 250
         TabOrder = 0
@@ -342,9 +344,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         OnExit = SpaceAvailablePathEditExit
       end
       object SpaceAvailableButton: TButton
-        Left = 256
-        Top = 7
-        Width = 99
+        Left = 308
+        Top = 4
+        Width = 109
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'Check &space'
@@ -355,10 +357,10 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   end
   object ClipboardButton: TButton
     Left = 8
-    Top = 364
-    Width = 161
+    Top = 411
+    Width = 179
     Height = 25
-    Anchors = [akRight, akBottom]
+    Anchors = [akLeft, akBottom]
     Caption = '&Copy to Clipboard'
     TabOrder = 1
     OnClick = ClipboardButtonClick

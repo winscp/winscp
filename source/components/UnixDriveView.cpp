@@ -1,4 +1,5 @@
 //---------------------------------------------------------------------------
+#pragma warn -pch // WORKAROUND (see My.cpp)
 #include <vcl.h>
 #pragma hdrstop
 
@@ -392,7 +393,18 @@ void __fastcall TCustomUnixDriveView::LoadDirectory()
   FIgnoreChange = true;
   try
   {
-    Selected = LoadPath(FTerminal->Files->Directory);
+    // WM_SETREDRAW does not prevent re-drawing of the scrollbar (with each added node)
+    LockWindowUpdate(Handle);
+    TTreeNode * NewSelected;
+    try
+    {
+      NewSelected = LoadPath(FTerminal->Files->Directory);
+    }
+    __finally
+    {
+      LockWindowUpdate(NULL);
+    }
+    Selected = NewSelected;
     DebugAssert(Selected != NULL);
     FPrevSelected = Selected;
   }
@@ -523,8 +535,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
           {
             // Prevent further changes while loading the folder.
             // Particularly prevent user from trying to proceed with incremental search.
-            TValueRestorer<bool> ChangingDirectoryRestorer(FChangingDirectory);
-            FChangingDirectory = true;
+            TValueRestorer<bool> ChangingDirectoryRestorer(FChangingDirectory, true);
             Terminal->ChangeDirectory(NodePathName(Node));
           }
           TCustomDriveView::Change(Node);

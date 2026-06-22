@@ -2,14 +2,12 @@ unit PasTools;
 
 interface
 
+{$WARN SYMBOL_PLATFORM OFF}
+
 uses
-  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms, Messages, Graphics;
+  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms, Messages, Graphics, SysUtils;
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
-
-function IsVistaHard: Boolean;
-
-function IsVista: Boolean;
 
 {$EXTERNALSYM IsWin7}
 function IsWin7: Boolean;
@@ -27,14 +25,10 @@ procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
 
 const
   CM_DPICHANGED = WM_USER + $2000 + 10;
-  WM_DPICHANGED_BEFOREPARENT = $02E2;
-  WM_DPICHANGED_AFTERPARENT = $02E3;
 
 function HasSystemParametersInfoForPixelsPerInch: Boolean;
 function SystemParametersInfoForPixelsPerInch(
   uiAction, uiParam: UINT; pvParam: Pointer; fWinIni: UINT; dpi: UINT): BOOL;
-
-procedure GetFormScaleRatio(Form: TForm; var M, D: Integer);
 
 function GetMonitorFromControl(Control: TControl): TMonitor;
 function GetMonitorPixelsPerInch(Monitor: TMonitor): Integer;
@@ -47,11 +41,13 @@ function DimensionToDefaultPixelsPerInch(Dimension: Integer): Integer;
 function ScaleByPixelsPerInch(Dimension: Integer; Monitor: TMonitor): Integer; overload;
 function ScaleByPixelsPerInch(Dimension: Integer; Control: TControl): Integer; overload;
 function ScaleByPixelsPerInchFromSystem(Dimension: Integer; Control: TControl): Integer;
+function ScaleByCurrentPPI(Dimension: Integer; Control: TControl): Integer;
 
 function LoadPixelsPerInch(S: string; Control: TControl): Integer;
 function SavePixelsPerInch(Control: TControl): string;
 function SaveDefaultPixelsPerInch: string;
 
+function CalculateTextHeight(Canvas: TCanvas): Integer;
 function ScaleByTextHeight(Control: TControl; Dimension: Integer): Integer;
 function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
 function ScaleByControlTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
@@ -62,6 +58,7 @@ type
   TImageListSize = (ilsSmall, ilsLarge);
 
 procedure NeedShellImageLists;
+function ShellImageListForSize(Width: Integer): TImageList;
 function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
 
 function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
@@ -76,6 +73,12 @@ procedure ForceColorChange(Control: TWinControl);
 function IsUncPath(Path: string): Boolean;
 function FileExistsFix(Path: string): Boolean;
 function DirectoryExistsFix(Path: string): Boolean;
+
+const
+  FIND_FIRST_EX_LARGE_FETCH_PAS = 2; // VCLCOPY (actually should be part of Winapi)
+function FindFirstEx(
+  const Path: string; Attr: Integer; var F: TSearchRec; AdditionalFlags: DWORD = 0;
+  SearchOp: _FINDEX_SEARCH_OPS = FindExSearchNameMatch): Integer;
 
 function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
@@ -153,7 +156,7 @@ type
 implementation
 
 uses
-  SysUtils, StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
+  StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
 
 const
   DDExpandDelay = 15000000;
@@ -165,18 +168,6 @@ const
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 begin
   Result := ComponentClass.Create(Owner);
-end;
-
-// detects vista, even in compatibility mode
-// (GetLocaleInfoEx is available since Vista only)
-function IsVistaHard: Boolean;
-begin
-  Result := (GetProcAddress(GetModuleHandle(Kernel32), 'GetLocaleInfoEx') <> nil);
-end;
-
-function IsVista: Boolean;
-begin
-  Result := CheckWin32Version(6, 0);
 end;
 
 function IsWin7: Boolean;
@@ -290,6 +281,7 @@ begin
   end;
 end;
 
+// Legacy, switch to TControl.CurrentPPI
 function GetControlPixelsPerInch(Control: TControl): Integer;
 var
   Form: TCustomForm;
@@ -369,6 +361,13 @@ begin
   Result := MulDiv(Dimension, GetControlPixelsPerInch(Control), Screen.PixelsPerInch);
 end;
 
+// Eventually, we should use this everywhere, instead of ScaleByPixelsPerInch.
+// The CurrentPPI is updated already at the beginning of ChangeScale, while PixelsPerInch only at the end.
+function ScaleByCurrentPPI(Dimension: Integer; Control: TControl): Integer;
+begin
+  Result := MulDiv(Dimension, Control.CurrentPPI, USER_DEFAULT_SCREEN_DPI);
+end;
+
 function LoadPixelsPerInch(S: string; Control: TControl): Integer;
 begin
   // for backward compatibility with version that did not save the DPI,
@@ -398,7 +397,7 @@ type
 
 function TFormHelper.RetrieveTextHeight: Integer;
 begin
-  Result := Self.FTextHeight;
+  Result := Self.GetInternalTextHeight;
 end;
 
 function CalculateTextHeight(Canvas: TCanvas): Integer;
@@ -430,7 +429,7 @@ begin
 end;
 
 const
-  OurDesignTimeTextHeight = 13;
+  OurDesignTimeTextHeight = 15;
 
 function ScaleByTextHeight(Control: TControl; Dimension: Integer): Integer;
 var
@@ -463,12 +462,6 @@ begin
   end;
 end;
 
-procedure GetFormScaleRatio(Form: TForm; var M, D: Integer);
-begin
-  M := CalculateTextHeight(Form.Canvas);
-  D := Form.RetrieveTextHeight;
-end;
-
 // this differs from ScaleByTextHeight only by enforcing
 // constant design-time text height
 function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
@@ -496,6 +489,7 @@ end;
 var
   ShellImageLists: TDictionary<Integer, TImageList> = nil;
 
+// This should be replaced with IShellItemImageFactory, as already used for thumbnails
 procedure InitializeShellImageLists;
 type
   TSHGetImageList = function (iImageList: integer; const riid: TGUID; var ppv: Pointer): hResult; stdcall;
@@ -521,7 +515,7 @@ begin
        ImageList_GetIconSize(Handle, Width, Height) then
     begin
 
-      // We could use AddOrSetValue instead, but to be on a safe siz, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
+      // We could use AddOrSetValue instead, but to be on a safe side, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
       // while they actually can be the same
       if not ShellImageLists.ContainsKey(Width) then
       begin
@@ -543,22 +537,14 @@ begin
   end;
 end;
 
-function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
+function ShellImageListForSize(Width: Integer): TImageList;
 var
   ImageListPair: TPair<Integer, TImageList>;
-  Width, ImageListWidth: Integer;
+  ImageListWidth: Integer;
   Diff, BestDiff: Integer;
 begin
   // Delay load image lists, not to waste resources in console/scripting mode
   NeedShellImageLists;
-
-  case Size of
-    ilsSmall: Width := 16;
-    ilsLarge: Width := 32;
-    else Width := 0; Assert(False);
-  end;
-
-  Width := ScaleByPixelsPerInch(Width, Control);
 
   Result := nil;
   BestDiff := -1;
@@ -572,6 +558,7 @@ begin
       else
     begin
       // Prefer smaller images over larger, so for 150%, we use 100% images, not 200%
+      // (a larger icon would make the item row higher)
       Diff := ImageListWidth - Width + 1;
     end;
 
@@ -583,6 +570,22 @@ begin
   end;
 end;
 
+function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
+var
+  Width: Integer;
+begin
+  case Size of
+    ilsSmall: Width := 16;
+    ilsLarge: Width := 32;
+    else Width := 0; Assert(False);
+  end;
+
+  Width := ScaleByCurrentPPI(Width, Control);
+
+  Result := ShellImageListForSize(Width);
+
+end;
+
 type
   TListViewHelper = class helper for TCustomListView
   public
@@ -591,7 +594,8 @@ type
 
 function TListViewHelper.HasMemStream: Boolean;
 begin
-  Result := Assigned(Self.FMemStream);
+  with Self do
+    Result := Assigned(FMemStream);
 end;
 
 type
@@ -602,7 +606,8 @@ type
 
 function TTreeViewHelper.HasMemStream: Boolean;
 begin
-  Result := Assigned(Self.FMemStream);
+  with Self do
+    Result := Assigned(FMemStream);
 end;
 
 type
@@ -613,7 +618,8 @@ type
 
 function TRichEditHelper.HasMemStream: Boolean;
 begin
-  Result := Assigned(Self.FMemStream);
+  with Self do
+    Result := Assigned(FMemStream);
 end;
 
 function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
@@ -637,22 +643,26 @@ type
 
 function TApplicationHelper.IsAppIconic: Boolean;
 begin
-  Result := Self.FAppIconic;
+  with Self do
+    Result := FAppIconic;
 end;
 
 procedure TApplicationHelper.SetAppIconic(Value: Boolean);
 begin
-  Self.FAppIconic := Value;
+  with Self do
+    FAppIconic := Value;
 end;
 
 procedure TApplicationHelper.SetMainForm(Value: TForm);
 begin
-  Self.FMainForm := Value;
+  with Self do
+    FMainForm := Value;
 end;
 
 procedure TApplicationHelper.SetTerminated(Value: Boolean);
 begin
-  Self.FTerminate := Value;
+  with Self do
+    FTerminate := Value;
 end;
 
 function IsAppIconic: Boolean;
@@ -1045,6 +1055,57 @@ begin
   Result := DoExists(DirectoryExists(ApiPath(Path)), Path);
 end;
 
+// VCLCOPY
+function FindMatchingFileEx(var F: TSearchRec): Integer;
+var
+  LocalFileTime: TFileTime;
+begin
+  while F.FindData.dwFileAttributes and F.ExcludeAttr <> 0 do
+    if not FindNextFile(F.FindHandle, F.FindData) then
+    begin
+      Result := GetLastError;
+      Exit;
+    end;
+  FileTimeToLocalFileTime(F.FindData.ftLastWriteTime, LocalFileTime);
+{$WARN SYMBOL_DEPRECATED OFF}
+  FileTimeToDosDateTime(LocalFileTime, LongRec(F.Time).Hi,
+    LongRec(F.Time).Lo);
+{$WARN SYMBOL_DEPRECATED ON}
+  F.Size := F.FindData.nFileSizeLow or Int64(F.FindData.nFileSizeHigh) shl 32;
+  F.Attr := F.FindData.dwFileAttributes;
+  F.Name := F.FindData.cFileName;
+  Result := 0;
+end;
+
+var
+  FindexAdvancedSupport: Boolean = False;
+
+// VCLCOPY (with FindFirstFile replaced by FindFirstFileEx)
+function FindFirstEx(
+  const Path: string; Attr: Integer; var F: TSearchRec; AdditionalFlags: DWORD; SearchOp: _FINDEX_SEARCH_OPS): Integer;
+const
+  faSpecial = faHidden or faSysFile or faDirectory;
+var
+  FindexInfoLevel: TFindexInfoLevels;
+begin
+  F.ExcludeAttr := not Attr and faSpecial;
+  // FindExInfoBasic = do not retrieve cAlternateFileName, which we do not use
+  if FindexAdvancedSupport then FindexInfoLevel := FindExInfoBasic
+    else
+  begin
+    FindexInfoLevel := FindExInfoStandard;
+    AdditionalFlags := AdditionalFlags and (not FIND_FIRST_EX_LARGE_FETCH_PAS);
+  end;
+  F.FindHandle := FindFirstFileEx(PChar(Path), FindexInfoLevel, @F.FindData, SearchOp, nil, AdditionalFlags);
+  if F.FindHandle <> INVALID_HANDLE_VALUE then
+  begin
+    Result := FindMatchingFileEx(F);
+    if Result <> 0 then FindClose(F);
+  end
+  else
+    Result := GetLastError;
+end;
+
 type TPreferredAppMode = (pamDefault, pamAllowDark, pamForceDark, pamForceLight, pamMax);
 
 var
@@ -1139,6 +1200,7 @@ var
   OSVersionInfo: TOSVersionInfoEx;
   SetDefaultDllDirectories: function(DirectoryFlags: DWORD): BOOL; stdcall;
 initialization
+  FindexAdvancedSupport := IsWin7;
   // Translated from PuTTY's dll_hijacking_protection().
   // Inno Setup does not use LOAD_LIBRARY_SEARCH_USER_DIRS and falls back to SetDllDirectory.
   Lib := LoadLibrary(kernel32);

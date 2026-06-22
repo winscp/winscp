@@ -283,7 +283,7 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
 #endif
 
   UnicodeString JclVersion =
-    FormatVersion(JclVersionMajor, JclVersionMinor, JclVersionRelease);
+    FormatVersion(JclVersionMajor, JclVersionMinor, JclVersionRelease) + L" " + JclCommit;
   AddPara(ThirdParty,
     FMTLOAD(ABOUT_JCL, (JclVersion)) + Br +
     CreateLink(LoadStr(ABOUT_JCL_URL)));
@@ -293,11 +293,7 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     LoadStr(ABOUT_PNG_COPYRIGHT) + Br +
     CreateLink(LoadStr(ABOUT_PNG_URL)));
 
-  std::unique_ptr<TFont> DefaultFont(new TFont());
-  DefaultFont->Assign(Application->DefaultFont);
-  DefaultFont->Height = ScaleByPixelsPerInchFromSystem(DefaultFont->Height, this);
-
-  ThirdParty = GenerateAppHtmlPage(DefaultFont.get(), ThirdPartyPanel, ThirdParty, false);
+  ThirdParty = GenerateAppHtmlPage(Font, ThirdPartyPanel, ThirdParty, false);
 
   LoadBrowserDocument(FThirdPartyWebBrowser, ThirdParty);
 }
@@ -380,20 +376,12 @@ void __fastcall TAboutDialog::IconPaintBoxPaint(TObject * /*Sender*/)
     0, 0, FIconHandle, IconPaintBox->Width, IconPaintBox->Height, 0, NULL, DI_NORMAL);
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::Dispatch(void * Message)
+void __fastcall TAboutDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == CM_DPICHANGED)
+  DebugUsedParam2(OldDPI, NewDPI);
+  if (FThirdPartyWebBrowser != NULL)
   {
-    if (FThirdPartyWebBrowser != NULL)
-    {
-      DoLoadThirdParty();
-    }
-    TForm::Dispatch(Message);
-  }
-  else
-  {
-    TForm::Dispatch(Message);
+    DoLoadThirdParty();
   }
 }
 //---------------------------------------------------------------------------

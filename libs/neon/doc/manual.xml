@@ -14,6 +14,7 @@
 <!-- date/version stamp files created as release tarball is rolled -->
 <!ENTITY date SYSTEM "date.xml">
 <!ENTITY version SYSTEM "version.xml">
+<!ENTITY copyright "<copyright><year>2001-2024</year><holder>Joe Orton</holder></copyright>">
 
 <!ENTITY neon "neon">
 
@@ -46,6 +47,8 @@
 <!ENTITY refopts SYSTEM "ref/opts.xml">
 <!ENTITY refproxy SYSTEM "ref/proxy.xml">
 <!ENTITY refsslvfy SYSTEM "ref/sslvfy.xml">
+<!ENTITY refsslvers SYSTEM "ref/sslvers.xml">
+<!ENTITY refsslproto SYSTEM "ref/sslproto.xml">
 <!ENTITY refsslcert SYSTEM "ref/sslcert.xml">
 <!ENTITY refsslcert2 SYSTEM "ref/sslcert2.xml">
 <!ENTITY refsslcertio SYSTEM "ref/sslcertio.xml">
@@ -55,6 +58,8 @@
 <!ENTITY refreqhdr SYSTEM "ref/reqhdr.xml">
 <!ENTITY refresphdr SYSTEM "ref/resphdr.xml">
 <!ENTITY refreqflags SYSTEM "ref/reqflags.xml">
+<!ENTITY refreqtarget SYSTEM "ref/reqtgt.xml">
+<!ENTITY refred SYSTEM "ref/redir.xml">
 <!ENTITY refstatus SYSTEM "ref/status.xml">
 <!ENTITY refgetst SYSTEM "ref/getst.xml">
 <!ENTITY refreqbody SYSTEM "ref/reqbody.xml">
@@ -88,7 +93,7 @@
         <firstname>Joe</firstname><surname>Orton</surname>
       </personname>
     </author>
-    <copyright><year>2001-2022</year><holder>Joe Orton</holder></copyright>
+    &copyright;
 
     <legalnotice>
 
@@ -158,6 +163,7 @@ ignoring the WebDAV support if desired.</para>
       <date>&date;</date>
       <productname>neon</productname>
       <productnumber>&version;</productnumber>
+      &copyright;
     </referenceinfo>
     
     <title>neon API reference</title>
@@ -188,6 +194,8 @@ ignoring the WebDAV support if desired.</para>
     &refopts; <!-- ne_set_useragent -->
     &refreqflags; <!-- ne_set_request_flag -->
     &refreqbody; <!-- ne_set_request_body_buffer -->
+    &refreqtarget; <!-- ne_get_request_target -->
+    &refred; <!-- ne_redirect_register -->
     &refauth; <!-- ne_set_server_auth -->
     &refshave; <!-- ne_shave -->
     &refinit; <!-- ne_sock_init -->
@@ -196,6 +204,8 @@ ignoring the WebDAV support if desired.</para>
     &refsslcertio; <!-- ne_ssl_cert_read -->
     &refssldname; <!-- ne_ssl_dname -->
     &refssltrust; <!-- ne_ssl_load_ca -->
+    &refsslproto; <!-- ne_ssl_proto_name -->
+    &refsslvers; <!-- ne_ssl_set_protovers -->
     &refsslvfy; <!-- ne_ssl_set_verify -->
     &refclicert; <!-- ne_ssl_client_cert -->
     &refstatus; <!-- ne_status -->

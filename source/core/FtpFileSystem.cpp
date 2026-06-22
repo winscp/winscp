@@ -4,7 +4,6 @@
 
 //---------------------------------------------------------------------------
 #include <list>
-#define MPEXT
 #include "FtpFileSystem.h"
 #include "FileZillaIntf.h"
 
@@ -17,6 +16,7 @@
 #include "Security.h"
 #include "NeonIntf.h"
 #include "SessionInfo.h"
+#include "Cryptography.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
@@ -29,7 +29,6 @@
 //---------------------------------------------------------------------------
 const int DummyCodeClass = 8;
 const int DummyTimeoutCode = 801;
-const int DummyCancelCode = 802;
 const int DummyDisconnectCode = 803;
 //---------------------------------------------------------------------------
 class TFileZillaImpl : public TFileZillaIntf
@@ -260,8 +259,9 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FFileZillaIntf(NULL),
   FQueueCriticalSection(new TCriticalSection),
   FTransferStatusCriticalSection(new TCriticalSection),
-  FQueueEvent(CreateEvent(NULL, true, false, NULL)),
   FQueue(new TMessageQueue),
+  FQueueEvent(CreateEvent(NULL, true, false, NULL)),
+  FFileSystemInfoValid(false),
   FReply(0),
   FCommandReply(0),
   FLastCommand(CMD_UNKNOWN),
@@ -269,16 +269,15 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FLastErrorResponse(new TStringList()),
   FLastError(new TStringList()),
   FFeatures(new TStringList()),
+  FReadCurrentDirectory(false),
   FFileList(NULL),
   FFileListCache(NULL),
   FActive(false),
   FWaitingForReply(false),
   FIgnoreFileList(false),
   FOnCaptureOutput(NULL),
-  FFileSystemInfoValid(false),
   FDoListAll(false),
-  FServerCapabilities(NULL),
-  FReadCurrentDirectory(false)
+  FServerCapabilities(NULL)
 {
   ResetReply();
 
@@ -415,30 +414,36 @@ void __fastcall TFTPFileSystem::Open()
   UnicodeString Account = Data->FtpAccount;
   UnicodeString Path = Data->RemoteDirectory;
   int ServerType;
-  switch (Data->Ftps)
+  if (Data->Ftps == ftpsNone)
   {
-    case ftpsNone:
-      ServerType = TFileZillaIntf::SERVER_FTP;
-      break;
+    ServerType = TFileZillaIntf::SERVER_FTP;
+  }
+  else
+  {
+    switch (Data->Ftps)
+    {
+      case ftpsImplicit:
+        ServerType = TFileZillaIntf::SERVER_FTP_SSL_IMPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
+        break;
 
-    case ftpsImplicit:
-      ServerType = TFileZillaIntf::SERVER_FTP_SSL_IMPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
-      break;
+      case ftpsExplicitSsl:
+        ServerType = TFileZillaIntf::SERVER_FTP_SSL_EXPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
+        break;
 
-    case ftpsExplicitSsl:
-      ServerType = TFileZillaIntf::SERVER_FTP_SSL_EXPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
-      break;
+      case ftpsExplicitTls:
+        ServerType = TFileZillaIntf::SERVER_FTP_TLS_EXPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
+        break;
 
-    case ftpsExplicitTls:
-      ServerType = TFileZillaIntf::SERVER_FTP_TLS_EXPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
-      break;
+      default:
+        ServerType = int(); // shutup
+        DebugFail();
+        break;
+    }
 
-    default:
-      DebugFail();
-      break;
+    RequireTls();
   }
 
   int Pasv = (Data->FtpPasvMode ? 1 : 2);
@@ -486,7 +491,7 @@ void __fastcall TFTPFileSystem::Open()
 
       if (!PromptedForCredentials)
       {
-        FTerminal->Information(LoadStr(FTP_CREDENTIAL_PROMPT), false);
+        FTerminal->Information(LoadStr(FTP_CREDENTIAL_PROMPT));
         PromptedForCredentials = true;
       }
 
@@ -552,7 +557,7 @@ void __fastcall TFTPFileSystem::Open()
     {
       if (FPasswordFailed)
       {
-        FTerminal->Information(LoadStr(FTP_ACCESS_DENIED), false);
+        FTerminal->Information(LoadStr(FTP_ACCESS_DENIED));
       }
       else
       {
@@ -1344,7 +1349,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
   bool CanResume =
     !OperationProgress->AsciiTransfer &&
     // when resuming transfer after interrupted connection,
-    // do nothing (dummy resume) when the files has the same size.
+    // do nothing (dummy resume) when the files have the same size.
     // this is workaround for servers that strangely fails just after successful
     // upload.
     (DestIsSmaller || (DestIsSame && CanAutoResume));
@@ -1522,7 +1527,7 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::SetCPSLimit(TFileOperationProgressType * OperationProgress)
 {
-  // Any reason we use separate field intead of directly using OperationProgress->CPSLimit?
+  // Any reason we use separate field instead of directly using OperationProgress->CPSLimit?
   // Maybe thread-safety?
   FFileTransferCPSLimit = OperationProgress->CPSLimit;
   OperationProgress->SetSpeedCounters();
@@ -1990,6 +1995,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcResumeSupport:
     case fcChangePassword:
     case fcParallelFileTransfers:
+    case fcTags:
       return false;
 
     default:
@@ -2053,7 +2059,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 
         if (Result)
         {
-          if ((Path.Length() > 0) && !UnixIsAbsolutePath(Path))
+          if (Path.IsEmpty() || !UnixIsAbsolutePath(Path))
           {
             Path = L"/" + Path;
           }
@@ -2229,7 +2235,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
         {
           ReadFile(File->FullFileName, UtcFile);
         }
-        catch (Exception & E)
+        catch (Exception &)
         {
           FDetectTimeDifference = false;
           if (!FTerminal->Active)
@@ -2266,7 +2272,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           // Time difference between timestamp retrieved using MDTM (UTC converted to local timezone)
           // and using LIST (no conversion, expecting the server uses the same timezone as the client).
           // Note that FormatTimeZone reverses the value.
-          FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
+          FTimeDifference = static_cast<__int64>(SecsPerDay * static_cast<Variant>(UtcModification - File->Modification));
           double Hours = TTimeSpan::FromSeconds(FTimeDifference).TotalHours;
 
           UnicodeString FileLog =
@@ -2284,7 +2290,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           }
           else
           {
-            LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(FTimeDifference), FileLog));
+            LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(static_cast<long>(FTimeDifference)), FileLog));
           }
           FTerminal->LogEvent(LogMessage);
 
@@ -2307,7 +2313,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(
       // do we need FTimeDifference for the operation?
       // (tmAutomatic - AsciiFileMask can theoretically include time constraints, while it is unlikely)
       (!FLAGSET(Params, cpNoConfirmation) ||
-       CopyParam->NewerOnly || (!CopyParam->TransferMode == tmAutomatic) || !CopyParam->IncludeFileMask.Masks.IsEmpty()))
+       CopyParam->NewerOnly || (CopyParam->TransferMode == tmAutomatic) || !CopyParam->IncludeFileMask.Masks.IsEmpty()))
   {
     FTerminal->LogEvent(L"Retrieving listing to detect timezone difference");
     DummyReadDirectory(Directory);
@@ -2364,7 +2370,7 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         // Note that FZAPI ignores this for VMS/MVS.
         FDoListAll = (FListAll == asOn);
       }
-      catch(Exception & E)
+      catch(Exception &)
       {
         FDoListAll = false;
         // reading the first directory has failed,
@@ -2458,7 +2464,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
     {
       UnicodeString Path = RemoteExtractFilePath(FileName);
       UnicodeString NameOnly;
-      int P;
+      int P = 0; // shut up
       bool MVSPath =
         FMVS && Path.IsEmpty() &&
         (FileName.SubString(1, 1) == L"'") && (FileName.SubString(FileName.Length(), 1) == L"'") &&
@@ -3426,8 +3432,6 @@ void __fastcall TFTPFileSystem::StoreLastResponse(const UnicodeString & Text)
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
 {
-  int Code;
-
   if (FOnCaptureOutput != NULL)
   {
     FOnCaptureOutput(Response, cotOutput);
@@ -3469,6 +3473,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
 
   // Partially duplicated in CFtpControlSocket::OnReceive
 
+  int Code = 0; // shut up
   bool HasCodePrefix =
     (Response.Length() >= 3) &&
     TryStrToInt(Response.SubString(1, 3), Code) &&
@@ -3730,7 +3735,7 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
   switch (Type)
   {
     case TFileZillaIntf::LOG_STATUS:
-      FTerminal->Information(Status, true);
+      FTerminal->Information(Status);
       LogType = llMessage;
       break;
 
@@ -4038,7 +4043,7 @@ UnicodeString __fastcall FormatValidityTime(const TFtpsCertificateData::TValidit
 bool __fastcall VerifyNameMask(UnicodeString Name, UnicodeString Mask)
 {
   bool Result = true;
-  int Pos;
+  int Pos CLANG_INITIALIZE(0);
   while (Result && (Pos = Mask.Pos(L"*")) > 0)
   {
     // Pos will typically be 1 here, so not actual comparison is done
@@ -4635,7 +4640,7 @@ bool __fastcall TFTPFileSystem::Unquote(UnicodeString & Str)
   DebugAssert((Str.Length() > 0) && ((Str[1] == L'"') || (Str[1] == L'\'')));
 
   int Index = 1;
-  wchar_t Quote;
+  wchar_t Quote = wchar_t(); // shut up
   while (Index <= Str.Length())
   {
     switch (State)
@@ -4697,7 +4702,7 @@ bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * Fil
   bool Result;
   try
   {
-    // error-handling-free and DST-mode-inaware copy of TTerminal::OpenLocalFile
+    // error-handling-free and DST-mode-unaware copy of TTerminal::OpenLocalFile
     HANDLE Handle = CreateFile(ApiPath(FileName).c_str(), GENERIC_READ,
       FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, 0);
     if (Handle == INVALID_HANDLE_VALUE)

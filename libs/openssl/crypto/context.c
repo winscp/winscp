@@ -29,6 +29,7 @@ struct ossl_lib_ctx_st {
     void *global_properties;
     void *drbg;
     void *drbg_nonce;
+    CRYPTO_THREAD_LOCAL rcu_local_key;
 #ifndef FIPS_MODULE
     void *provider_conf;
     void *bio_core;
@@ -48,7 +49,7 @@ struct ossl_lib_ctx_st {
     void *fips_prov;
 #endif
 
-    unsigned int ischild:1;
+    unsigned int ischild : 1;
 };
 
 int ossl_lib_ctx_write_lock(OSSL_LIB_CTX *ctx)
@@ -87,9 +88,12 @@ static int context_init(OSSL_LIB_CTX *ctx)
 {
     int exdata_done = 0;
 
+    if (!CRYPTO_THREAD_init_local(&ctx->rcu_local_key, NULL))
+        return 0;
+
     ctx->lock = CRYPTO_THREAD_lock_new();
     if (ctx->lock == NULL)
-        return 0;
+        goto err;
 
     ctx->rand_crngt_lock = CRYPTO_THREAD_lock_new();
     if (ctx->rand_crngt_lock == NULL)
@@ -207,7 +211,7 @@ static int context_init(OSSL_LIB_CTX *ctx)
 
     return 1;
 
- err:
+err:
     context_deinit_objs(ctx);
 
     if (exdata_done)
@@ -215,6 +219,7 @@ static int context_init(OSSL_LIB_CTX *ctx)
 
     CRYPTO_THREAD_lock_free(ctx->rand_crngt_lock);
     CRYPTO_THREAD_lock_free(ctx->lock);
+    CRYPTO_THREAD_cleanup_local(&ctx->rcu_local_key);
     memset(ctx, '\0', sizeof(*ctx));
     return 0;
 }
@@ -252,7 +257,6 @@ static void context_deinit_objs(OSSL_LIB_CTX *ctx)
         ossl_decoder_cache_free(ctx->decoder_cache);
         ctx->decoder_cache = NULL;
     }
-
 
     /* P2. We want encoder_store to be cleaned up before the provider store */
     if (ctx->encoder_store != NULL) {
@@ -361,6 +365,7 @@ static int context_deinit(OSSL_LIB_CTX *ctx)
     CRYPTO_THREAD_lock_free(ctx->lock);
     ctx->rand_crngt_lock = NULL;
     ctx->lock = NULL;
+    CRYPTO_THREAD_cleanup_local(&ctx->rcu_local_key);
     return 1;
 }
 
@@ -437,7 +442,7 @@ OSSL_LIB_CTX *OSSL_LIB_CTX_new(void)
 
 #ifndef FIPS_MODULE
 OSSL_LIB_CTX *OSSL_LIB_CTX_new_from_dispatch(const OSSL_CORE_HANDLE *handle,
-                                             const OSSL_DISPATCH *in)
+    const OSSL_DISPATCH *in)
 {
     OSSL_LIB_CTX *ctx = OSSL_LIB_CTX_new();
 
@@ -453,7 +458,7 @@ OSSL_LIB_CTX *OSSL_LIB_CTX_new_from_dispatch(const OSSL_CORE_HANDLE *handle,
 }
 
 OSSL_LIB_CTX *OSSL_LIB_CTX_new_child(const OSSL_CORE_HANDLE *handle,
-                                     const OSSL_DISPATCH *in)
+    const OSSL_DISPATCH *in)
 {
     OSSL_LIB_CTX *ctx = OSSL_LIB_CTX_new_from_dispatch(handle, in);
 
@@ -657,4 +662,12 @@ const char *ossl_lib_ctx_get_descriptor(OSSL_LIB_CTX *libctx)
         return "Thread-local default library context";
     return "Non-default library context";
 #endif
+}
+
+CRYPTO_THREAD_LOCAL *ossl_lib_ctx_get_rcukey(OSSL_LIB_CTX *libctx)
+{
+    libctx = ossl_lib_ctx_get_concrete(libctx);
+    if (libctx == NULL)
+        return NULL;
+    return &libctx->rcu_local_key;
 }

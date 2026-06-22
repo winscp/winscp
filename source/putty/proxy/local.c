@@ -212,7 +212,8 @@ static void local_proxy_opener_coroutine(void *vctx)
         put_datapl(logmsg, PTRLEN_LITERAL("Starting local proxy command: "));
         put_c_string_literal(logmsg, ptrlen_from_asciz(censored_cmd));
 
-        plug_log(lp->plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg->s, 0);
+        plug_log(lp->plug, lp->socket, PLUGLOG_PROXY_MSG, NULL, 0,
+                 logmsg->s, 0);
         strbuf_free(logmsg);
         sfree(censored_cmd);
     }

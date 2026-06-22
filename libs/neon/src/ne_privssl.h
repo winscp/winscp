@@ -67,6 +67,7 @@ struct ne_ssl_context_s {
     int verify; /* non-zero if client cert verification required */
 
     const char *hostname; /* for SNI */
+    char *priority;
 
     /* Session cache. */
     union ne_ssl_scache {

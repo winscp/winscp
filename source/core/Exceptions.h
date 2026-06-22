@@ -35,7 +35,7 @@ public:
     Sysutils::Exception(Msg, Args, Args_Size)
   {
   }
-  inline __fastcall ExtException(int Ident, const TVarRec * Args, const int Args_Size)/* overload */ :
+  inline __fastcall ExtException(NativeUInt Ident, const TVarRec * Args, const int Args_Size)/* overload */ :
     Sysutils::Exception(Ident, Args, Args_Size)
   {
   }
@@ -47,7 +47,7 @@ public:
     Sysutils::Exception(Msg, Args, Args_Size, AHelpContext)
   {
   }
-  inline __fastcall ExtException(int Ident, int AHelpContext)/* overload */ :
+  inline __fastcall ExtException(NativeUInt Ident, int AHelpContext)/* overload */ :
     Exception(Ident, AHelpContext)
   {
   }
@@ -90,7 +90,7 @@ private:
       BASE(Msg, Args, Args_Size) \
     { \
     } \
-    inline __fastcall NAME(int Ident, const TVarRec * Args, const int Args_Size) : \
+    inline __fastcall NAME(NativeUInt Ident, const TVarRec * Args, const int Args_Size) : \
       BASE(Ident, Args, Args_Size) \
     { \
     } \
@@ -102,7 +102,7 @@ private:
       BASE(Msg, Args, Args_Size, AHelpContext) \
     { \
     } \
-    inline __fastcall NAME(int Ident, int AHelpContext) : \
+    inline __fastcall NAME(NativeUInt Ident, int AHelpContext) : \
       BASE(Ident, AHelpContext) \
     { \
     } \

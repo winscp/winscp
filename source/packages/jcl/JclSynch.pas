@@ -87,8 +87,10 @@ function LockedInc(var Target: Int64): Int64; overload;
 function LockedSub(var Target: Int64; Value: Int64): Int64; overload;
 
 {$IFDEF BORLAND}
+{$IFNDEF COMPILER29_UP}
 function LockedDec(var Target: NativeInt): NativeInt; overload;
 function LockedInc(var Target: NativeInt): NativeInt; overload;
+{$ENDIF ~COMPILER29_UP}
 {$ENDIF BORLAND}
 {$ENDIF CPU64}
 
@@ -743,6 +745,8 @@ end;
 
 {$IFDEF BORLAND}
 
+{$IFNDEF COMPILER29_UP}
+
 function LockedDec(var Target: NativeInt): NativeInt;
 asm
         // --> RCX Target
@@ -760,6 +764,8 @@ asm
         LOCK XADD [RCX], RAX
         INC     RAX
 end;
+
+{$ENDIF ~COMPILER29_UP}
 
 {$ENDIF BORLAND}
 
@@ -1087,7 +1093,7 @@ constructor TJclMutex.Create(SecAttr: PSecurityAttributes; InitialOwner: Boolean
 begin
   inherited Create;
   FName := Name;
-  FHandle := JclWin32.CreateMutex(SecAttr, Ord(InitialOwner), PChar(Name));
+  FHandle := JclWin32.CreateMutex(SecAttr, InitialOwner, PChar(Name));
   if FHandle = 0 then
     raise EJclMutexError.CreateRes(@RsSynchCreateMutex);
   FExisted := GetLastError = ERROR_ALREADY_EXISTS;

@@ -40,13 +40,13 @@
 
 // Math precision selection, mutually exclusive
 // FPC does not support EXTENDED when targetting x86_64, MATH_DOUBLE_PRECISION is the default in this situation
-{.$DEFINE MATH_EXTENDED_PRECISION} // default
+{$DEFINE MATH_EXTENDED_PRECISION} // default
 {.$DEFINE MATH_DOUBLE_PRECISION}
 {.$DEFINE MATH_SINGLE_PRECISION}
 
 
 // Math functions takes care of infinites and NaN
-{.$DEFINE MATH_EXT_EXTREMEVALUES}
+{$DEFINE MATH_EXT_EXTREMEVALUES}
 
 
 // JclHookExcept support for hooking exceptions from DLLs
@@ -54,15 +54,15 @@
 
 
 //Threadsafe directive
-{.$DEFINE THREADSAFE}
+{$DEFINE THREADSAFE}
 
 
 // To exclude obsolete code from compilation, remove the point from the line below
-{.$DEFINE DROP_OBSOLETE_CODE}
+{$DEFINE DROP_OBSOLETE_CODE}
 
 
 //Support for JclUnitVersioning.pas, not supported by Delphi 2005 (automatically disabled afterward)
-{.$DEFINE UNITVERSIONING}
+{$DEFINE UNITVERSIONING}
 
 
 // debug sources
@@ -83,7 +83,7 @@
 //   dynamic dll import: PCRE_LINKONREQUEST
 //   RTL's RegularExpressionsAPI: PCRE_RTL
 
-{.$DEFINE PCRE_STATICLINK}
+{$DEFINE PCRE_STATICLINK}
 {.$DEFINE PCRE_LINKDLL}
 {.$DEFINE PCRE_LINKONREQUEST} // default
 {.$DEFINE PCRE_RTL} // DXE and newer
@@ -98,14 +98,14 @@
 
 // BZIP2 options, mutually exclusive
 
-{.$DEFINE BZIP2_STATICLINK} // default
+{$DEFINE BZIP2_STATICLINK} // default
 {.$DEFINE BZIP2_LINKDLL}
 {.$DEFINE BZIP2_LINKONREQUEST}
 
 
 // ZLIB options, mutually exclusive
 
-{.$DEFINE ZLIB_STATICLINK} // default
+{$DEFINE ZLIB_STATICLINK} // default
 {.$DEFINE ZLIB_LINKDLL}
 {.$DEFINE ZLIB_LINKONREQUEST}
 {.$DEFINE ZLIB_RTL} // DXE2 and newer only
@@ -116,10 +116,10 @@
 {.$DEFINE UNICODE_RTL_DATABASE}
 
 // insert a replacement character if sequence is corrupted rather than raising an exception
-{.$DEFINE UNICODE_SILENT_FAILURE}
+{$DEFINE UNICODE_SILENT_FAILURE}
 
 // defines resource compression (uncompressed, compressed with ZLib, compressed with BZip2), mutually exclusive
-{.$DEFINE UNICODE_RAW_DATA} // default
+{$DEFINE UNICODE_RAW_DATA} // default
 {.$DEFINE UNICODE_ZLIB_DATA}
 {.$DEFINE UNICODE_BZIP2_DATA}
 
@@ -128,7 +128,7 @@
 // define mapping of TJclStr* containers to TJclAnsiStr* or TJclWideStr* (mutually exclusive)
 {.$DEFINE CONTAINER_ANSISTR} // default for D2007 and older
 {.$DEFINE CONTAINER_WIDESTR}
-{.$DEFINE CONTAINER_UNICODESTR} // default for D2009 and newer, not supported for Delphi 2007 and older
+{$DEFINE CONTAINER_UNICODESTR} // default for D2009 and newer, not supported for Delphi 2007 and older
 {.$DEFINE CONTAINER_NOSTR}
 
 
@@ -137,4 +137,4 @@
 
 {.$DEFINE 7ZIP_STATICLINK} // not supported yet
 {.$DEFINE 7ZIP_LINKDLL}
-{.$DEFINE 7ZIP_LINKONREQUEST} // default
+{$DEFINE 7ZIP_LINKONREQUEST} // default

@@ -14,6 +14,7 @@ const
   scAltDown = scAlt + vk_Down;
   scCtrlEnter = scCtrl + vk_Return;
   DefEditBtnWidth = 25;
+  DefButtonCaption = '...';
 
 resourcestring
   SBrowse = 'Browse';
@@ -39,9 +40,14 @@ type
     function GetTextHeight: Integer;
     function GetButtonWidth: Integer;
     procedure SetButtonWidth(Value: Integer);
+    function BtnWidthStored: Boolean;
+    function GetButtonCaption: string;
+    function ButtonCaptionStored: Boolean;
+    procedure SetButtonCaption(Value: string);
     function GetButtonHint: string;
     procedure SetButtonHint(const Value: string);
-    function BtnWidthStored: Boolean;
+    function GetButtonTabStop: Boolean;
+    procedure SetButtonTabStop(Value: Boolean);
     procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
     procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
     procedure CNCtlColor(var Message: TMessage); message CN_CTLCOLOREDIT;
@@ -57,7 +63,9 @@ type
       default scAltDown;
     property ButtonWidth: Integer read GetButtonWidth write SetButtonWidth
       stored BtnWidthStored;
+    property ButtonCaption: string read GetButtonCaption write SetButtonCaption stored ButtonCaptionStored;
     property ButtonHint: string read GetButtonHint write SetButtonHint;
+    property ButtonTabStop: Boolean read GetButtonTabStop write SetButtonTabStop default True;
     property OnButtonClick: TNotifyEvent read FOnButtonClick write FOnButtonClick;
   public
     constructor Create(AOwner: TComponent); override;
@@ -70,6 +78,8 @@ type
   published
     property AutoSelect;
     property ButtonHint;
+    property ButtonTabStop;
+    property ButtonCaption;
     property BorderStyle;
     property CharCase;
     property ClickKey;
@@ -404,7 +414,7 @@ begin
     SetBounds(0, 0, FBtnControl.Width, FBtnControl.Height);
     ControlStyle := ControlStyle + [csReplicatable];
     ParentShowHint := True;
-    Caption := '...';
+    Caption := DefButtonCaption;
     Visible := True;
     Parent := FBtnControl;
     OnClick := EditButtonClick;
@@ -462,9 +472,24 @@ begin
       FButton.Width := Value;
       with FButton do
         ControlStyle := ControlStyle - [csFixedWidth];
-      if HandleAllocated then RecreateWnd;
+      if HandleAllocated then UpdateBtnBounds;
     end;
   end;
+end;
+
+function TCustomComboEdit.GetButtonCaption: string;
+begin
+  Result := FButton.Caption;
+end;
+
+procedure TCustomComboEdit.SetButtonCaption(Value: string);
+begin
+  FButton.Caption := Value;
+end;
+
+function TCustomComboEdit.ButtonCaptionStored: Boolean;
+begin
+  Result := (FButton.Caption <> DefButtonCaption);
 end;
 
 function TCustomComboEdit.GetButtonHint: string;
@@ -475,6 +500,16 @@ end;
 procedure TCustomComboEdit.SetButtonHint(const Value: string);
 begin
   FButton.Hint := Value;
+end;
+
+function TCustomComboEdit.GetButtonTabStop: Boolean;
+begin
+  Result := FButton.TabStop;
+end;
+
+procedure TCustomComboEdit.SetButtonTabStop(Value: Boolean);
+begin
+  FButton.TabStop := Value;
 end;
 
 procedure TCustomComboEdit.SetEditRect;

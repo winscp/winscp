@@ -50,6 +50,7 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcAclChangingFiles, fcG
   fcBackgroundTransfers,
   fcTransferOut, fcTransferIn,
   fcMoveOverExistingFile,
+  fcTags,
   fcCount };
 //---------------------------------------------------------------------------
 struct TFileSystemInfo
@@ -66,7 +67,7 @@ struct TFileSystemInfo
 class TSessionUI
 {
 public:
-  virtual void __fastcall Information(const UnicodeString & Str, bool Status) = 0;
+  virtual void __fastcall Information(const UnicodeString & Str) = 0;
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
     TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
     TQueryType QueryType = qtConfirmation) = 0;
@@ -266,6 +267,7 @@ public:
   void __fastcall AddSystemInfo();
   void __fastcall AddStartupInfo();
   void __fastcall AddException(Exception * E);
+  static UnicodeString GetSeparator();
   void __fastcall AddSeparator();
 
   void __fastcall ReflectSettings();
@@ -375,7 +377,12 @@ private:
   UnicodeString FPath;
   void * FFile;
   bool FLogging;
+  TDateTime FLastMemoryCheck;
+  size_t FPeekReservedMemory;
+  size_t FPeekCommittedMemory;
   std::unique_ptr<TCriticalSection> FCriticalSection;
 };
+//---------------------------------------------------------------------------
+UnicodeString __fastcall XmlEscape(UnicodeString Str);
 //---------------------------------------------------------------------------
 #endif

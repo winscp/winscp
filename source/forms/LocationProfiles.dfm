@@ -6,31 +6,33 @@ object LocationProfilesDialog: TLocationProfilesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Location profiles'
-  ClientHeight = 435
-  ClientWidth = 557
+  ClientHeight = 448
+  ClientWidth = 601
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
-    557
-    435)
-  PixelsPerInch = 96
-  TextHeight = 13
+    601
+    448)
+  TextHeight = 15
   object LocalDirectoryLabel: TLabel
     Left = 46
     Top = 8
-    Width = 74
-    Height = 13
+    Width = 81
+    Height = 15
     Caption = '&Local directory:'
     FocusControl = LocalDirectoryEdit
   end
   object RemoteDirectoryLabel: TLabel
     Left = 46
-    Top = 56
-    Width = 87
-    Height = 13
+    Top = 55
+    Width = 94
+    Height = 15
     Caption = '&Remote directory:'
     FocusControl = RemoteDirectoryEdit
   end
@@ -42,9 +44,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
     AutoSize = True
   end
   object OKBtn: TButton
-    Left = 303
-    Top = 401
-    Width = 75
+    Left = 341
+    Top = 415
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -53,9 +55,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
     TabOrder = 5
   end
   object CancelBtn: TButton
-    Left = 387
-    Top = 401
-    Width = 75
+    Left = 427
+    Top = 415
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -65,9 +67,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
   end
   object PageControl: TPageControl
     Left = 8
-    Top = 104
-    Width = 539
-    Height = 288
+    Top = 102
+    Width = 585
+    Height = 307
     ActivePage = SessionProfilesSheet
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 3
@@ -75,19 +77,18 @@ object LocationProfilesDialog: TLocationProfilesDialog
       Tag = 1
       Caption = 'Site Location profiles'
       DesignSize = (
-        531
-        260)
+        577
+        277)
       object SessionProfilesView: TTreeView
         Tag = 1
-        Left = 10
-        Top = 9
-        Width = 421
-        Height = 240
+        Left = 5
+        Top = 5
+        Width = 467
+        Height = 266
         Anchors = [akLeft, akTop, akRight, akBottom]
         DoubleBuffered = True
         DragMode = dmAutomatic
         HideSelection = False
-        Images = BookmarkImageList
         Indent = 19
         ParentDoubleBuffered = False
         TabOrder = 0
@@ -117,9 +118,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object AddSessionBookmarkButton: TButton
         Tag = 1
-        Left = 438
-        Top = 9
-        Width = 83
+        Left = 478
+        Top = 5
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Add...'
@@ -128,9 +129,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object RemoveSessionBookmarkButton: TButton
         Tag = 1
-        Left = 438
-        Top = 41
-        Width = 83
+        Left = 478
+        Top = 36
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'Remo&ve'
@@ -139,9 +140,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object DownSessionBookmarkButton: TButton
         Tag = 1
-        Left = 438
-        Top = 224
-        Width = 83
+        Left = 478
+        Top = 246
+        Width = 92
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Down'
@@ -150,9 +151,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object UpSessionBookmarkButton: TButton
         Tag = -1
-        Left = 438
-        Top = 192
-        Width = 83
+        Left = 478
+        Top = 215
+        Width = 92
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Up'
@@ -161,9 +162,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object RenameSessionBookmarkButton: TButton
         Tag = 1
-        Left = 438
-        Top = 73
-        Width = 83
+        Left = 478
+        Top = 67
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'Re&name'
@@ -172,9 +173,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object SessionBookmarkMoveToButton: TButton
         Tag = 1
-        Left = 438
-        Top = 105
-        Width = 83
+        Left = 478
+        Top = 98
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Move To...'
@@ -187,14 +188,14 @@ object LocationProfilesDialog: TLocationProfilesDialog
       Caption = 'Shared Location profiles'
       ImageIndex = 1
       DesignSize = (
-        531
-        260)
+        577
+        277)
       object SharedProfilesView: TTreeView
         Tag = 2
-        Left = 10
-        Top = 9
-        Width = 421
-        Height = 240
+        Left = 5
+        Top = 5
+        Width = 467
+        Height = 266
         Anchors = [akLeft, akTop, akRight, akBottom]
         DoubleBuffered = True
         DragMode = dmAutomatic
@@ -229,9 +230,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object AddSharedBookmarkButton: TButton
         Tag = 2
-        Left = 438
-        Top = 9
-        Width = 83
+        Left = 478
+        Top = 5
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Add...'
@@ -240,9 +241,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object RemoveSharedBookmarkButton: TButton
         Tag = 2
-        Left = 438
-        Top = 41
-        Width = 83
+        Left = 478
+        Top = 36
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'Remo&ve'
@@ -251,9 +252,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object RenameSharedBookmarkButton: TButton
         Tag = 2
-        Left = 438
-        Top = 73
-        Width = 83
+        Left = 478
+        Top = 67
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'Re&name'
@@ -262,9 +263,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object SharedBookmarkMoveToButton: TButton
         Tag = 2
-        Left = 438
-        Top = 105
-        Width = 83
+        Left = 478
+        Top = 98
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Move To...'
@@ -273,9 +274,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object UpSharedBookmarkButton: TButton
         Tag = -2
-        Left = 438
-        Top = 192
-        Width = 83
+        Left = 478
+        Top = 215
+        Width = 92
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Up'
@@ -284,9 +285,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object DownSharedBookmarkButton: TButton
         Tag = 2
-        Left = 438
-        Top = 224
-        Width = 83
+        Left = 478
+        Top = 246
+        Width = 92
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Down'
@@ -295,9 +296,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
       object ShortCutSharedBookmarkButton: TButton
         Tag = 2
-        Left = 438
-        Top = 137
-        Width = 83
+        Left = 478
+        Top = 129
+        Width = 92
         Height = 25
         Anchors = [akTop, akRight]
         Caption = '&Shortcut...'
@@ -308,9 +309,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
   end
   object LocalDirectoryEdit: THistoryComboBox
     Left = 46
-    Top = 25
-    Width = 419
-    Height = 21
+    Top = 26
+    Width = 461
+    Height = 23
     Anchors = [akLeft, akTop, akRight]
     DropDownCount = 16
     TabOrder = 0
@@ -321,8 +322,8 @@ object LocationProfilesDialog: TLocationProfilesDialog
   object RemoteDirectoryEdit: THistoryComboBox
     Left = 46
     Top = 73
-    Width = 501
-    Height = 21
+    Width = 547
+    Height = 23
     Anchors = [akLeft, akTop, akRight]
     DropDownCount = 16
     MaxLength = 1000
@@ -332,9 +333,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
     SaveOn = []
   end
   object LocalDirectoryBrowseButton: TButton
-    Left = 470
-    Top = 23
-    Width = 75
+    Left = 513
+    Top = 25
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = 'B&rowse...'
@@ -343,19 +344,19 @@ object LocationProfilesDialog: TLocationProfilesDialog
   end
   object SwitchButton: TButton
     Left = 8
-    Top = 401
+    Top = 415
     Width = 97
     Height = 25
-    Anchors = [akRight, akBottom]
+    Anchors = [akLeft, akBottom]
     Caption = '&Bookmarks...'
     ModalResult = 2
     TabOrder = 4
     OnClick = SwitchButtonClick
   end
   object HelpButton: TButton
-    Left = 471
-    Top = 401
-    Width = 75
+    Left = 513
+    Top = 415
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
@@ -570,7 +571,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end>
     Left = 352
     Top = 152
-    Bitmap = {}
   end
   object BookmarkImageList120: TPngImageList
     Height = 20
@@ -790,7 +790,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end>
     Left = 352
     Top = 208
-    Bitmap = {}
   end
   object BookmarkImageList144: TPngImageList
     Height = 24
@@ -1024,7 +1023,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end>
     Left = 352
     Top = 264
-    Bitmap = {}
   end
   object BookmarkImageList192: TPngImageList
     Height = 32
@@ -1268,6 +1266,5 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end>
     Left = 352
     Top = 320
-    Bitmap = {}
   end
 end

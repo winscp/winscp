@@ -11,9 +11,8 @@
 //---------------------------------------------------------------------------
 #include <System.SyncObjs.hpp>
 //---------------------------------------------------------------------------
-extern const UnicodeString EmptyString;
-//---------------------------------------------------------------------------
 UnicodeString NormalizeString(const UnicodeString & S);
+UnicodeString DenormalizeString(const UnicodeString & S);
 //---------------------------------------------------------------------------
 class TGuard
 {
@@ -35,26 +34,42 @@ private:
   TCriticalSection * FCriticalSection;
 };
 //---------------------------------------------------------------------------
+#ifdef __clang__
+#define CLANG_INITIALIZE(V) = (V)
+#define NORETURN [[noreturn]]
+#define UNREACHABLE_AFTER_NORETURN(STATEMENT)
+#define EXCEPT noexcept(false)
+#else
+#define CLANG_INITIALIZE(V)
+#define NORETURN
+#define UNREACHABLE_AFTER_NORETURN(STATEMENT) STATEMENT
+#define EXCEPT
+#endif
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #include <assert.h>
 #define ACCESS_VIOLATION_TEST { (*((int*)NULL)) = 0; }
-#if !defined(_DEBUG) || defined(DESIGN_ONLY)
+#if defined(_DEBUG) && !defined(DESIGN_ONLY)
+#define DODEBUGGING
+#endif
+#ifndef DODEBUGGING
 #define DebugAssert(p)   ((void)0)
 #define DebugCheck(p) (p)
 #define DebugFail()
-#else // if !defined(_DEBUG) || defined(DESIGN_ONLY)
-void __fastcall DoAssert(wchar_t * Message, wchar_t * Filename, int LineNumber);
+#else // ifndef DODEBUGGING
+void __fastcall DoAssert(const wchar_t * Message, const wchar_t * Filename, int LineNumber);
 #define DebugAssert(p) ((p) ? (void)0 : DoAssert(TEXT(#p), TEXT(__FILE__), __LINE__))
 #define DebugCheck(p) { bool __CHECK_RESULT__ = (p); DebugAssert(__CHECK_RESULT__); }
 #define DebugFail() DebugAssert(false)
-#endif // if !defined(_DEBUG) || defined(DESIGN_ONLY)
+#endif // ifndef DODEBUGGING
 //---------------------------------------------------------------------------
 #define DebugAlwaysTrue(p) (p)
 #define DebugAlwaysFalse(p) (p)
 #define DebugNotNull(p) (p)
 #define TraceInitPtr(p) (p)
 #define TraceInitStr(p) (p)
-#define DebugUsedParam(p) ((&p) == (&p))
+#define DebugUsedParam2(p1, p2) (static_cast<const void *>(&p1) == static_cast<const void *>(&p2))
+#define DebugUsedParam(p) DebugUsedParam2(p, p)
 #define DebugUsedArg(p)
 //---------------------------------------------------------------------------
 #endif

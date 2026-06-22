@@ -465,6 +465,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcParallelFileTransfers:
     case fcTransferOut:
     case fcTransferIn:
+    case fcTags:
       return false;
 
     case fcChangePassword:
@@ -492,7 +493,7 @@ void __fastcall TSCPFileSystem::EnsureLocation()
     {
       // when location to cached directory fails, pretend again
       // location in cached directory
-      // here used to be check (CurrentDirectory != Directory), but it is
+      // here used to check (CurrentDirectory != Directory), but it is
       // false always (current directory is already set to cached directory),
       // making the condition below useless. check removed.
       if (FTerminal->Active)
@@ -552,7 +553,7 @@ bool __fastcall TSCPFileSystem::RemoveLastLine(UnicodeString & Line,
   return IsLastLine;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSCPFileSystem::IsLastLine(UnicodeString & Line)
+bool __fastcall TSCPFileSystem::TryRemoveLastLine(UnicodeString & Line)
 {
   bool Result = false;
   try
@@ -564,6 +565,12 @@ bool __fastcall TSCPFileSystem::IsLastLine(UnicodeString & Line)
     FTerminal->TerminalError(&E, LoadStr(CANT_DETECT_RETURN_CODE));
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TSCPFileSystem::IsLastLine(const UnicodeString & ALine)
+{
+  UnicodeString Line = ALine;
+  return TryRemoveLastLine(Line);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SkipFirstLine()
@@ -589,7 +596,7 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
       do
       {
         Line = FSecureShell->ReceiveLine();
-        IsLast = IsLastLine(Line);
+        IsLast = TryRemoveLastLine(Line);
         if (!IsLast || !Line.IsEmpty())
         {
           FOutput->Add(Line);
@@ -662,7 +669,7 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
   }
 }
 //---------------------------------------------------------------------------
-void TSCPFileSystem::InvalidOutputError(const UnicodeString & Command)
+NORETURN void TSCPFileSystem::InvalidOutputError(const UnicodeString & Command)
 {
   FTerminal->TerminalError(FMTLOAD(INVALID_OUTPUT_ERROR, (Command, Output->Text)));
 }
@@ -758,7 +765,7 @@ void __fastcall TSCPFileSystem::DetectUtf()
           FSecureShell->UtfStrings = true;
         }
       }
-      catch (Exception & E)
+      catch (Exception &)
       {
         // ignore non-fatal errors
         if (!FTerminal->Active)
@@ -834,12 +841,12 @@ void __fastcall TSCPFileSystem::DetectReturnVar()
           Abort();
         }
       }
-      catch (EFatal &E)
+      catch (EFatal &)
       {
         // if fatal error occurs, we need to exit ...
         throw;
       }
-      catch (Exception &E)
+      catch (Exception &)
       {
         // ...otherwise, we will try next variable (if any)
         Success = false;
@@ -1204,7 +1211,7 @@ void __fastcall TSCPFileSystem::CopyFile(
   {
     ExecCommand(fsCopyFile, ARRAYOFCONST((AdditionalSwitches, DelimitedFileName, DelimitedNewName)));
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     if (FTerminal->Active)
     {
@@ -1419,7 +1426,7 @@ void __fastcall TSCPFileSystem::CalculateFilesChecksum(
           BatchChecksums->Add(Checksum);
         }
       }
-      catch (Exception & E)
+      catch (Exception &)
       {
         if (!FTerminal->Active)
         {
@@ -1573,6 +1580,7 @@ void __fastcall TSCPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & /*ASpaceAvailable*/)
 {
   DebugFail();
+  DebugUsedParam(Path);
 }
 //---------------------------------------------------------------------------
 // transfer protocol
@@ -1618,7 +1626,7 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
       // pscp adds 'Resp' to 'Msg', why?
       UnicodeString Msg = FSecureShell->ReceiveLine();
       UnicodeString Line = UnicodeString(static_cast<char>(Resp)) + Msg;
-      if (IsLastLine(Line))
+      if (TryRemoveLastLine(Line))
       {
         if (GotLastLine != NULL)
         {
@@ -1790,6 +1798,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
               break;
 
             default:
+              CanProceed = false; // shut up
               DebugFail();
               break;
           }
@@ -1967,8 +1976,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
 
     try
     {
-      TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode);
-      FSecureShell->Mode = ssmUploading;
+      TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode, ssmUploading);
 
       // During ASCII transfer we will load whole file to this buffer
       // than convert EOL and send it at once, because before converting EOL
@@ -2114,13 +2122,13 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         // side already know, that file transfer finished, even if it failed
         // so we don't have to throw EFatal
       }
-      catch (EScp &E)
+      catch (EScp &)
       {
         // SCP protocol fatal error
         OperationProgress->SetTransferringFile(false);
         throw;
       }
-      catch (EScpFileSkipped &E)
+      catch (EScpFileSkipped &)
       {
         // SCP protocol non-fatal error
         OperationProgress->SetTransferringFile(false);
@@ -2356,7 +2364,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
               FTerminal->ExceptionOnFail = false;
             }
           }
-          catch (EFatal &E)
+          catch (EFatal &)
           {
             throw;
           }
@@ -2396,23 +2404,21 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
         (OperationProgress->Cancel == csCancel) ||
         (OperationProgress->Cancel == csCancelTransfer)))
     {
-      bool LastLineRead;
-
       // If we get LastLine, it means that remote side 'scp' is already
       // terminated, so we need not to terminate it. There is also
       // possibility that remote side waits for confirmation, so it will hang.
       // This should not happen (hope)
-      UnicodeString Line = FSecureShell->ReceiveLine();
-      LastLineRead = IsLastLine(Line);
-      if (!LastLineRead)
+      if (!IsLastLine(FSecureShell->ReceiveLine()))
       {
         SCPSendError((OperationProgress->Cancel ? L"Terminated by user." : L"Exception"), true);
+        // Just in case, remote side already sent some more data (it's probable)
+        // but we don't want to raise exception (user asked to terminate, it's not error)
+        ReadCommandOutput(coOnlyReturnCode | coWaitForLastLine);
       }
-      // Just in case, remote side already sent some more data (it's probable)
-      // but we don't want to raise exception (user asked to terminate, it's not error)
-      int ECParams = coOnlyReturnCode;
-      if (!LastLineRead) ECParams |= coWaitForLastLine;
-      ReadCommandOutput(ECParams);
+      else
+      {
+        ReadCommandOutput(coOnlyReturnCode);
+      }
     }
   }
 }
@@ -2434,6 +2440,7 @@ void __fastcall TSCPFileSystem::SCPError(const UnicodeString Message, bool Fatal
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SCPSendError(const UnicodeString Message, bool Fatal)
 {
+  DebugUsedParam(Message);
   unsigned char ErrorLevel = (char)(Fatal ? 2 : 1);
   FTerminal->LogEvent(FORMAT(L"Sending SCP error (%d) to remote side:",
     ((int)ErrorLevel)));
@@ -2463,8 +2470,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
   FileData.SetTime = 0;
 
-  TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode);
-  FSecureShell->Mode = ssmDownloading;
+  TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode, ssmDownloading);
 
   FSecureShell->SendNull();
 
@@ -2486,7 +2492,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
       if (Line.Length() == 0) FTerminal->FatalError(NULL, LoadStr(SCP_EMPTY_LINE));
 
-      if (IsLastLine(Line))
+      if (TryRemoveLastLine(Line))
       {
         // Remote side finished copying, so remote SCP was closed
         // and we don't need to terminate it manually, see CopyToLocal()
@@ -2534,7 +2540,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
           case 2:
             // Fatal error, terminate copying
             FTerminal->TerminalError(Line);
-            return; // Unreachable
+            UNREACHABLE_AFTER_NORETURN(return);
 
           case L'E': // Exit
             FSecureShell->SendNull();
@@ -2617,8 +2623,8 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         if (CopyParam->SkipTransfer(FullFileName, Dir))
         {
           SkipConfirmed = true;
-          SCPError(L"", false);
           OperationProgress->AddSkippedFileSize(MaskParams.Size);
+          SCPError(L"", false);
         }
 
         FTerminal->LogFileDetails(FileName, FileData.Modification, MaskParams.Size);
@@ -2711,7 +2717,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
               {
                 // In this step we can still cancel transfer, so we do it
                 SCPError(E.Message, false);
-                throw;
+                UNREACHABLE_AFTER_NORETURN(throw);
               }
 
               // We succeeded, so we confirm transfer to remote side
@@ -2784,12 +2790,12 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                 // If one of following exception occurs, we still need
                 // to send confirmation to other side
               }
-              catch (EScp &E)
+              catch (EScp &)
               {
                 FSecureShell->SendNull();
                 throw;
               }
-              catch (EScpFileSkipped &E)
+              catch (EScpFileSkipped &)
               {
                 FSecureShell->SendNull();
                 throw;

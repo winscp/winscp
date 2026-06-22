@@ -45,7 +45,7 @@ void __fastcall DoGenerateTransferCodeDialog(
   Dialog->Execute();
 }
 //---------------------------------------------------------------------------
-class TRichEditWithLinks : public TNewRichEdit
+class TRichEditWithLinks : public TRichEdit
 {
 public:
   virtual __fastcall TRichEditWithLinks(TComponent * AOwner);
@@ -56,15 +56,16 @@ protected:
 };
 //---------------------------------------------------------------------------
 __fastcall TRichEditWithLinks::TRichEditWithLinks(TComponent * AOwner) :
-  TNewRichEdit(AOwner)
+  TRichEdit(AOwner)
 {
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEditWithLinks::CreateWnd()
 {
-  TNewRichEdit::CreateWnd();
+  TRichEdit::CreateWnd();
   int Mask = SendMessage(Handle, EM_GETEVENTMASK, 0, 0);
   SendMessage(Handle, EM_SETEVENTMASK, 0, Mask | ENM_LINK);
+  SendMessage(Handle, EM_SETEDITSTYLEEX, 0, SES_EX_HANDLEFRIENDLYURL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEditWithLinks::Dispatch(void * AMessage)
@@ -97,11 +98,11 @@ void __fastcall TRichEditWithLinks::Dispatch(void * AMessage)
         }
       }
     }
-    TNewRichEdit::Dispatch(AMessage);
+    TRichEdit::Dispatch(AMessage);
   }
   else
   {
-    TNewRichEdit::Dispatch(AMessage);
+    TRichEdit::Dispatch(AMessage);
   }
 }
 //---------------------------------------------------------------------------
@@ -891,8 +892,8 @@ void __fastcall TGenerateUrlDialog::Execute()
 
   if (OptionsPageControl->ActivePage != UrlSheet)
   {
-    ClientWidth = ScaleByTextHeightRunTime(this, 700);
-    ClientHeight = ScaleByTextHeightRunTime(this, 600);
+    ClientWidth = ScaleByTextHeightRunTime(this, 777);
+    ClientHeight = ScaleByTextHeightRunTime(this, 666);
   }
 
   ShowModal();

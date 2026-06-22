@@ -45,16 +45,8 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     AppLogFmt(L"Mouse: %s", (BooleanToEngStr(Mouse->MousePresent)));
     AppLogFmt(L"Mouse wheel: %s, msg: %d, scroll lines: %d", (BooleanToEngStr(Mouse->WheelPresent), int(Mouse->RegWheelMessage), Mouse->WheelScrollLines));
     AppLogFmt(L"ACP: %d", (static_cast<int>(GetACP())));
-    AppLogFmt(L"Win32 platform: %d", (Win32Platform));
-    DWORD Type;
-    if (GetWindowsProductType(Type))
-    {
-      AppLogFmt(L"Windows product type: %x", (static_cast<int>(Type)));
-    }
-    else
-    {
-      AppLog(L"No Windows product type");
-    }
+    AppLogFmt(L"Win32 platform: %d", (Win32Platform()));
+    AppLogFmt(L"Windows product type: %x", (static_cast<int>(GetWindowsProductType())));
     AppLogFmt(L"Win64: %s", (BooleanToEngStr(IsWin64())));
     AddStartupSequence(L"T");
 
@@ -62,6 +54,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     Application->Initialize();
     Application->MainFormOnTaskBar = true;
     Application->ModalPopupMode = pmAuto;
+    DebugAssert(SameFont(Application->DefaultFont, std::unique_ptr<TFont>(new TFont()).get()));
     SetEnvironmentVariable(L"WINSCP_PATH",
       ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName)).c_str());
     CoreInitialize();

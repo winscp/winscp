@@ -72,7 +72,7 @@ CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vms
 
   //French month names
   m_MonthNamesMap[L"janv"] = 1;
-  m_MonthNamesMap[L"f\xE9"L"b"] = 1;
+  m_MonthNamesMap[L"f\xE9" L"b"] = 1;
   m_MonthNamesMap[L"f\xE9v"] = 2;
   m_MonthNamesMap[L"fev"] = 2;
   m_MonthNamesMap[L"f\xE9vr"] = 2;
@@ -86,7 +86,7 @@ CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vms
   m_MonthNamesMap[L"ao\xFB"] = 8;
   m_MonthNamesMap[L"ao\xFBt"] = 8;
   m_MonthNamesMap[L"aout"] = 8;
-  m_MonthNamesMap[L"d\xE9"L"c"] = 12;
+  m_MonthNamesMap[L"d\xE9" L"c"] = 12;
   m_MonthNamesMap[L"dec"] = 12;
 
   //Italian month names
@@ -2073,7 +2073,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
         {
           direntry.dir = TRUE;
           tokenlen -= 5;
-          while (tokenlen && str[tokenlen - 1] == ' ' || str[tokenlen - 1] == '\t')
+          while (tokenlen && (str[tokenlen - 1] == ' ' || str[tokenlen - 1] == '\t'))
             tokenlen--;
         }
         if (!tokenlen)

@@ -7,9 +7,12 @@ object MessageForm: TMessageForm
   ClientHeight = 41
   ClientWidth = 326
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
-  PixelsPerInch = 96
-  TextHeight = 13
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
+  TextHeight = 15
 end

@@ -26,6 +26,7 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#include <string.h>
 
 #include "ne_alloc.h"
 #include "ne_utils.h"
@@ -124,9 +125,19 @@ static int cdata_207(void *userdata, int state, const char *buf, size_t len)
 {
     ne_207_parser *p = userdata;
 
-    if ((state == ELM_href || state == ELM_responsedescription ||
-         state == ELM_status) && p->cdata->used + len < 2048)
-        ne_buffer_append(p->cdata, buf, len);
+    if ((state == ELM_href
+         || state == ELM_responsedescription
+         || state == ELM_status) && p->cdata->used + len < 2048) {
+        if (p->cdata->used == 1) {
+            /* Strip leading whitespace only. */
+            while (len && strchr("\r\n\t ", *buf) != NULL) {
+                buf++;
+                len--;
+            }
+        }
+
+        if (len) ne_buffer_append(p->cdata, buf, len);
+    }
 
     return 0;
 }
@@ -149,6 +160,9 @@ static int start_element(void *userdata, int parent,
     if (state == ELM_propstat && p->start_propstat) {
         p->propstat = p->start_propstat(p->userdata, p->response);
         if (p->propstat == NULL) {
+            NE_DEBUG(NE_DBG_XML, "[207] start-propstat callback failed, "
+                     "aborting parse, parser error is: %s.\n",
+                     ne_xml_get_error(p->parser));
             return NE_XML_ABORT;
         }
     }
@@ -166,7 +180,7 @@ static int
 end_element(void *userdata, int state, const char *nspace, const char *name)
 {
     ne_207_parser *p = userdata;
-    const char *cdata = ne_shave(p->cdata->data, "\r\n\t ");
+    char *cdata = p->cdata->data;
 
     switch (state) {
     case ELM_responsedescription:
@@ -181,6 +195,9 @@ end_element(void *userdata, int state, const char *nspace, const char *name)
             ne_uri ref, resolved;
             int ret;
             char *hh = NULL;
+
+            /* Trim any trailing whitespace. */
+            cdata = ne_shave(cdata, "\r\n\t ");
 
             if (p->flags & NE_207_MSSP_ESCAPING) {
                 hh = ne_path_escapef(cdata, NE_PATH_NONURI);
@@ -209,15 +226,20 @@ end_element(void *userdata, int state, const char *nspace, const char *name)
             if (p->status.reason_phrase) ne_free(p->status.reason_phrase);
 	    if (ne_parse_statusline(cdata, &p->status)) {
 		char buf[500];
-		NE_DEBUG(NE_DBG_HTTP, "Status line: %s\n", cdata);
+                NE_DEBUG(NE_DBG_HTTP, "[207] Invalid status-line: [%s]\n", cdata);
 		ne_snprintf(buf, 500, 
 			    _("Invalid HTTP status line in status element "
                               "at line %d of response:\nStatus line was: %s"),
 			    ne_xml_currentline(p->parser), cdata);
 		ne_xml_set_error(p->parser, buf);
 		return -1;
-	    } else {
-		NE_DEBUG(NE_DBG_XML, "Decoded status line: %s\n", cdata);
+	    }
+            else {
+                /* Shave trailing spaces from the reason-phrase; any
+                 * other trailing whitespace will have been
+                 * strclean()ed into spaces. */
+                ne_shave(p->status.reason_phrase, " ");
+                NE_DEBUG(NE_DBG_XML, "[207] valid status-line: %s\n", cdata);
 	    }
 	}
 	break;

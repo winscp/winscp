@@ -160,7 +160,7 @@ type
     procedure ResizeTrackAccept; override;
     procedure ResizeEnd; override;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
-    procedure ChangeScale(M, D: Integer); override;
+    procedure ChangeScale(M, D: Integer; isDpiChange: Boolean); override;
 
     property SystemFont: Boolean read FSystemFont write SetSystemFont default True;
     property OnShortCut: TShortCutEvent read FOnShortCut write FOnShortCut;
@@ -1723,7 +1723,7 @@ begin
     Application.UnhookMainWindow(MainWindowHook);
 end;
 
-procedure TTBCustomToolbar.ChangeScale(M, D: Integer);
+procedure TTBCustomToolbar.ChangeScale(M, D: Integer; isDpiChange: Boolean);
 begin
   inherited;
   Items.ChangeScale(M, D);
