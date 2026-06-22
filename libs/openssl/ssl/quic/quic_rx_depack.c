@@ -351,7 +351,10 @@ static int depack_do_frame_new_token(PACKET *pkt, QUIC_CHANNEL *ch,
         return 0;
     }
 
-    /* TODO(QUIC FUTURE): ADD CODE to send |token| to the session manager */
+    /* store the new token in our token cache */
+    if (!ossl_quic_set_peer_token(ossl_quic_port_get_channel_ctx(ch->port),
+            &ch->cur_peer_addr, token, token_len))
+        return 0;
 
     return 1;
 }
@@ -913,7 +916,7 @@ static int depack_do_frame_retire_conn_id(PACKET *pkt,
      * currently non-conformant and for internal testing use; simply handle it
      * as a no-op in this case.
      *
-     * TODO(QUIC SERVER): Revise and implement correctly for server support.
+     * TODO(QUIC FUTURE): Revise and implement correctly for server support.
      */
     if (!ch->is_server) {
         ossl_quic_channel_raise_protocol_error(ch,
@@ -928,6 +931,22 @@ static int depack_do_frame_retire_conn_id(PACKET *pkt,
 
 static void free_path_response(unsigned char *buf, size_t buf_len, void *arg)
 {
+    QUIC_CHANNEL *ch = (QUIC_CHANNEL *)arg;
+
+    assert(ch->path_response_limit > 0);
+
+    ch->path_response_limit--;
+
+    /*
+     * Assume path response frame is being freed on behalf of
+     * finished TX operation. This is for unit testing purposes
+     * only. The counter is also bumped when channel is being
+     * destroyed and CFQ (control frame queue) is freed.
+     * This currently does not matter for check_pc_flood
+     * in test/radix/quic_tests.c.
+     */
+    ch->path_response_tx++;
+
     OPENSSL_free(buf);
 }
 
@@ -948,33 +967,41 @@ static int depack_do_frame_path_challenge(PACKET *pkt,
         return 0;
     }
 
-    /*
-     * RFC 9000 s. 8.2.2: On receiving a PATH_CHALLENGE frame, an endpoint MUST
-     * respond by echoing the data contained in the PATH_CHALLENGE frame in a
-     * PATH_RESPONSE frame.
-     *
-     * TODO(QUIC FUTURE): We should try to avoid allocation here in the future.
-     */
-    encoded_len = sizeof(uint64_t) + 1;
-    if ((encoded = OPENSSL_malloc(encoded_len)) == NULL)
-        goto err;
+    if (ch->seen_path_challenge == 0
+        && ch->path_response_limit < QUIC_PATH_RESPONSE_QLEN) {
+        /*
+         * RFC 9000 s. 8.2.2: On receiving a PATH_CHALLENGE frame, an endpoint
+         * MUST respond by echoing the data contained in the PATH_CHALLENGE
+         * frame in a PATH_RESPONSE frame.
+         *
+         * TODO(QUIC FUTURE): We should try to avoid allocation here in the
+         * future.
+         */
+        encoded_len = sizeof(uint64_t) + 1;
+        if ((encoded = OPENSSL_malloc(encoded_len)) == NULL)
+            goto err;
 
-    if (!WPACKET_init_static_len(&wpkt, encoded, encoded_len, 0))
-        goto err;
+        if (!WPACKET_init_static_len(&wpkt, encoded, encoded_len, 0))
+            goto err;
 
-    if (!ossl_quic_wire_encode_frame_path_response(&wpkt, frame_data)) {
-        WPACKET_cleanup(&wpkt);
-        goto err;
+        if (!ossl_quic_wire_encode_frame_path_response(&wpkt, frame_data)) {
+            WPACKET_cleanup(&wpkt);
+            goto err;
+        }
+
+        WPACKET_finish(&wpkt);
+
+        if (!ossl_quic_cfq_add_frame(ch->cfq, 0, QUIC_PN_SPACE_APP,
+                OSSL_QUIC_FRAME_TYPE_PATH_RESPONSE,
+                QUIC_CFQ_ITEM_FLAG_UNRELIABLE,
+                encoded, encoded_len,
+                free_path_response, ch))
+            goto err;
+        ch->seen_path_challenge = 1;
+        ch->path_response_limit++;
     }
 
-    WPACKET_finish(&wpkt);
-
-    if (!ossl_quic_cfq_add_frame(ch->cfq, 0, QUIC_PN_SPACE_APP,
-            OSSL_QUIC_FRAME_TYPE_PATH_RESPONSE,
-            QUIC_CFQ_ITEM_FLAG_UNRELIABLE,
-            encoded, encoded_len,
-            free_path_response, NULL))
-        goto err;
+    ch->path_challenge_rx++;
 
     return 1;
 
@@ -1180,6 +1207,19 @@ static int depack_process_frames(QUIC_CHANNEL *ch, PACKET *pkt,
                     "NEW_TOKEN valid only in 1-RTT");
                 return 0;
             }
+
+            /*
+             * RFC 9000 s. 19.7: "A server MUST treat receipt of a NEW_TOKEN
+             * frame as a connection error of type PROTOCOL_VIOLATION."
+             */
+            if (ch->is_server) {
+                ossl_quic_channel_raise_protocol_error(ch,
+                    OSSL_QUIC_ERR_PROTOCOL_VIOLATION,
+                    frame_type,
+                    "NEW_TOKEN can only be sent by a server");
+                return 0;
+            }
+
             if (!depack_do_frame_new_token(pkt, ch, ackm_data))
                 return 0;
             break;
@@ -1411,11 +1451,12 @@ int ossl_quic_handle_frames(QUIC_CHANNEL *ch, OSSL_QRX_PKT *qpacket)
     PACKET pkt;
     OSSL_ACKM_RX_PKT ackm_data;
     uint32_t enc_level;
+    size_t dgram_len = qpacket->datagram_len;
 
     if (ch == NULL)
         return 0;
 
-    ch->did_crypto_frame = 0;
+    ossl_ch_reset_rx_state(ch);
 
     /* Initialize |ackm_data| (and reinitialize |ok|)*/
     memset(&ackm_data, 0, sizeof(ackm_data));
@@ -1434,6 +1475,19 @@ int ossl_quic_handle_frames(QUIC_CHANNEL *ch, OSSL_QRX_PKT *qpacket)
         return 0;
 
     ackm_data.pkt_space = ossl_quic_enc_level_to_pn_space(enc_level);
+
+    /*
+     * RFC 9000 s. 8.1
+     * We can consider the connection to be validated, if we receive a packet
+     * from the client protected via handshake keys, meaning that the
+     * amplification limit no longer applies (i.e. we can set it as validated.
+     * Otherwise, add the size of this packet to the unvalidated credit for
+     * the connection.
+     */
+    if (enc_level == QUIC_ENC_LEVEL_HANDSHAKE)
+        ossl_quic_tx_packetiser_set_validated(ch->txp);
+    else
+        ossl_quic_tx_packetiser_add_unvalidated_credit(ch->txp, dgram_len);
 
     /* Now that special cases are out of the way, parse frames */
     if (!PACKET_buf_init(&pkt, qpacket->hdr->data, qpacket->hdr->len)

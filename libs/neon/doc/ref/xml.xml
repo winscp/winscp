@@ -49,7 +49,7 @@
   <refsect1>
     <title>See also</title>
 
-    <para>XXX</para>
+    <para><xref linkend="ne_xml_parse_response"/></para>
   </refsect1>
 
 </refentry>

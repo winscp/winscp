@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "bio_local.h"
+
 #ifndef OPENSSL_NO_SOCK
 #define SOCKET_PROTOCOL IPPROTO_TCP
 #ifdef SO_MAXCONN
@@ -38,6 +39,7 @@ static int wsa_init_done = 0;
 #include <sys/select.h>
 #endif
 #endif
+#include "internal/sockets.h" /* for openssl_fdset() */
 
 #ifndef OPENSSL_NO_DEPRECATED_1_1_0
 int BIO_get_host_ip(const char *str, unsigned char *ip)
@@ -429,6 +431,7 @@ int BIO_sock_info(int sock,
  */
 int BIO_socket_wait(int fd, int for_read, time_t max_time)
 {
+#if defined(OPENSSL_SYS_WINDOWS) || !defined(POLLIN)
     fd_set confds;
     struct timeval tv;
     time_t now;
@@ -452,5 +455,22 @@ int BIO_socket_wait(int fd, int for_read, time_t max_time)
     tv.tv_sec = (long)(max_time - now); /* might overflow */
     return select(fd + 1, for_read ? &confds : NULL,
         for_read ? NULL : &confds, NULL, &tv);
+#else
+    struct pollfd confds;
+    time_t now;
+
+    if (fd < 0)
+        return -1;
+    if (max_time == 0)
+        return 1;
+
+    now = time(NULL);
+    if (max_time < now)
+        return 0;
+
+    confds.fd = fd;
+    confds.events = for_read ? POLLIN : POLLOUT;
+    return poll(&confds, 1, (int)(max_time - now) * 1000);
+#endif
 }
 #endif /* !defined(OPENSSL_NO_SOCK) */

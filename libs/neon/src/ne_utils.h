@@ -36,12 +36,16 @@
 NE_BEGIN_DECLS
 
 /* Returns a human-readable library version string describing the
- * version and build information; for example: 
+ * version and build information; for example:
  *    "neon 0.2.0: Library build, OpenSSL support" */
 const char *ne_version_string(void);
 
-/* Returns non-zero if neon library version is backwards-compatible
- * with ABI at given (major, minor). */
+/* Returns the library version as a simple version string; for example:
+ *    "0.37.0" */
+const char *ne_version_library(void);
+
+/* Returns non-zero if neon library version is backwards-compatible with
+ * ABI at given (major, minor). */
 int ne_version_match(int major, int minor);
 
 /* Feature codes: */
@@ -55,6 +59,7 @@ int ne_version_match(int major, int minor);
 #define NE_FEATURE_SSPI (8) /* NTLM/Negotiate authentication protocol via SSPI */
 #define NE_FEATURE_GSSAPI (9) /* GSSAPI support. */
 #define NE_FEATURE_LIBPXY (10) /* System proxy support via libproxy. */
+#define NE_FEATURE_NTLM (11) /* NTLM authentication support via Libntlm. */
 
 /* Returns non-zero if library is built with support for the given
  * NE_FEATURE_* feature code 'code'. */

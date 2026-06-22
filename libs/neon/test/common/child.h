@@ -41,16 +41,6 @@ ne_inet_addr *get_lh_inet_addr(void);
 /* Callback for spawn_server. */
 typedef int (*server_fn)(ne_socket *sock, void *userdata);
 
-/* Spawns server child process:
- * - forks child process.
- * - child process listens on localhost at given port.
- * - when you connect to it, 'fn' is run...
- * fn is passed the client/server socket as first argument,
- * and userdata as second.
- * - the socket is closed when 'fn' returns, so don't close in in 'fn'.
- */
-int spawn_server(int port, server_fn fn, void *userdata);
-
 /* Forks a server child process running 'fn(userdata)' on an
  * unspecified port.  Sets test suite error on failure; on success,
  * sets *port to bound port number. */

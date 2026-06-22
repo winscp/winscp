@@ -148,8 +148,10 @@ int TS_RESP_verify_signature(PKCS7 *token, STACK_OF(X509) *certs,
     }
 
     if (signer_out) {
+        if (!X509_up_ref(signer))
+            goto err;
+
         *signer_out = signer;
-        X509_up_ref(signer);
     }
     ret = 1;
 
@@ -445,7 +447,7 @@ static int ts_compute_imprint(BIO *data, TS_TST_INFO *tst_info,
     (void)ERR_pop_to_mark();
 
     length = EVP_MD_get_size(md);
-    if (length < 0)
+    if (length <= 0)
         goto err;
     *imprint_len = length;
     if ((*imprint = OPENSSL_malloc(*imprint_len)) == NULL)

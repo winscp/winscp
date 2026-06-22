@@ -14,6 +14,7 @@
 #include "../ssl_local.h"
 #include "statem_local.h"
 #include "internal/cryptlib.h"
+#include "internal/ssl_unwrap.h"
 #include <openssl/buffer.h>
 #include <openssl/objects.h>
 #include <openssl/evp.h>
@@ -633,6 +634,7 @@ CON_FUNC_RETURN tls_construct_finished(SSL_CONNECTION *s, WPACKET *pkt)
      */
     if (SSL_CONNECTION_IS_TLS13(s)
         && !s->server
+        && !SSL_IS_QUIC_HANDSHAKE(s)
         && (s->early_data_state != SSL_EARLY_DATA_NONE
             || (s->options & SSL_OP_ENABLE_MIDDLEBOX_COMPAT) != 0)
         && s->s3.tmp.cert_req == 0
@@ -937,7 +939,21 @@ MSG_PROCESS_RETURN tls_process_finished(SSL_CONNECTION *s, PACKET *pkt)
                 /* SSLfatal() already called */
                 return MSG_PROCESS_ERROR;
             }
-            if (!ssl->method->ssl3_enc->change_cipher_state(s,
+            if (!tls13_store_server_finished_hash(s)) {
+                /* SSLfatal() already called */
+                return MSG_PROCESS_ERROR;
+            }
+
+            /*
+             * For non-QUIC we set up the client's app data read keys now, so
+             * that we can go straight into reading 0.5RTT data from the server.
+             * For QUIC we don't do that, and instead defer setting up the keys
+             * until after we have set up the write keys in order to ensure that
+             * write keys are always set up before read keys (so that if we read
+             * a message we have the correct keys in place to ack it)
+             */
+            if (!SSL_IS_QUIC_HANDSHAKE(s)
+                && !ssl->method->ssl3_enc->change_cipher_state(s,
                     SSL3_CC_APPLICATION | SSL3_CHANGE_CIPHER_CLIENT_READ)) {
                 /* SSLfatal() already called */
                 return MSG_PROCESS_ERROR;
@@ -1645,9 +1661,25 @@ int tls_get_message_header(SSL_CONNECTION *s, int *mt)
     return 1;
 }
 
+static int grow_init_buf(SSL_CONNECTION *s, size_t size)
+{
+
+    size_t msg_offset = (char *)s->init_msg - s->init_buf->data;
+
+    if (!BUF_MEM_grow_clean(s->init_buf, size))
+        return 0;
+
+    if (size < msg_offset)
+        return 0;
+
+    s->init_msg = s->init_buf->data + msg_offset;
+
+    return 1;
+}
+
 int tls_get_message_body(SSL_CONNECTION *s, size_t *len)
 {
-    size_t n, readbytes;
+    size_t toread, readbytes;
     unsigned char *p;
     int i;
     SSL *ssl = SSL_CONNECTION_GET_SSL(s);
@@ -1659,18 +1691,30 @@ int tls_get_message_body(SSL_CONNECTION *s, size_t *len)
         return 1;
     }
 
-    p = s->init_msg;
-    n = s->s3.tmp.message_size - s->init_num;
-    while (n > 0) {
+    toread = s->s3.tmp.message_size - s->init_num;
+    while (toread > 0) {
+        size_t chunk = toread > SSL3_RT_MAX_PLAIN_LENGTH ? SSL3_RT_MAX_PLAIN_LENGTH : toread;
+
+        /*
+         * We incrementally allocate the buffer to guard against the peer
+         * claiming a very large message size and then not sending it.
+         */
+        if (!grow_init_buf(s, s->init_num + chunk + SSL3_HM_HEADER_LENGTH)) {
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_BUF_LIB);
+            return 0;
+        }
+
+        /* init_msg location can change after grow_init_buf */
+        p = s->init_msg;
         i = ssl->method->ssl_read_bytes(ssl, SSL3_RT_HANDSHAKE, NULL,
-            &p[s->init_num], n, 0, &readbytes);
+            &p[s->init_num], chunk, 0, &readbytes);
         if (i <= 0) {
             s->rwstate = SSL_READING;
             *len = 0;
             return 0;
         }
         s->init_num += readbytes;
-        n -= readbytes;
+        toread -= readbytes;
     }
 
     /*
@@ -2582,10 +2626,11 @@ int ssl_set_client_hello_version(SSL_CONNECTION *s)
  * Checks a list of |groups| to determine if the |group_id| is in it. If it is
  * and |checkallow| is 1 then additionally check if the group is allowed to be
  * used. Returns 1 if the group is in the list (and allowed if |checkallow| is
- * 1) or 0 otherwise.
+ * 1) or 0 otherwise. If provided a pointer it will also return the position
+ * where the group was found.
  */
 int check_in_list(SSL_CONNECTION *s, uint16_t group_id, const uint16_t *groups,
-    size_t num_groups, int checkallow)
+    size_t num_groups, int checkallow, size_t *pos)
 {
     size_t i;
 
@@ -2598,6 +2643,8 @@ int check_in_list(SSL_CONNECTION *s, uint16_t group_id, const uint16_t *groups,
         if (group_id == group
             && (!checkallow
                 || tls_group_allowed(s, group, SSL_SECOP_CURVE_CHECK))) {
+            if (pos != NULL)
+                *pos = i;
             return 1;
         }
     }

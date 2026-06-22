@@ -152,7 +152,7 @@ type
     FThunkData: Pointer;
     function GetCount: Integer;
     function GetFileName: TFileName;
-    function GetItems(Index: Integer): TJclPeImportFuncItem;
+    function GetItems(Index: TJclListSize): TJclPeImportFuncItem;
     function GetName: string;
     function GetThunkData32: PImageThunkData32;
     function GetThunkData64: PImageThunkData64;
@@ -172,7 +172,7 @@ type
     property ImportDescriptor: Pointer read FImportDescriptor;
     property ImportDirectoryIndex: Integer read FImportDirectoryIndex;
     property ImportKind: TJclPeImportKind read FImportKind;
-    property Items[Index: Integer]: TJclPeImportFuncItem read GetItems; default;
+    property Items[Index: TJclListSize]: TJclPeImportFuncItem read GetItems; default;
     property Name: string read GetName;
     property OriginalName: string read FName;
     // use the following properties
@@ -193,7 +193,7 @@ type
     FUniqueNamesList: TStringList;
     function GetAllItemCount: Integer;
     function GetAllItems(Index: Integer): TJclPeImportFuncItem;
-    function GetItems(Index: Integer): TJclPeImportLibItem;
+    function GetItems(Index: TJclListSize): TJclPeImportLibItem;
     function GetUniqueLibItemCount: Integer;
     function GetUniqueLibItems(Index: Integer): TJclPeImportLibItem;
     function GetUniqueLibNames(Index: Integer): string;
@@ -214,7 +214,7 @@ type
     property AllItems[Index: Integer]: TJclPeImportFuncItem read GetAllItems;
     property AllItemCount: Integer read GetAllItemCount;
     property FilterModuleName: string read FFilterModuleName write SetFilterModuleName;
-    property Items[Index: Integer]: TJclPeImportLibItem read GetItems; default;
+    property Items[Index: TJclListSize]: TJclPeImportLibItem read GetItems; default;
     property LinkerProducer: TJclPeLinkerProducer read FLinkerProducer;
     property UniqueLibItemCount: Integer read GetUniqueLibItemCount;
     property UniqueLibItemFromName[const Name: string]: TJclPeImportLibItem read GetUniqueLibItemFromName;
@@ -279,7 +279,7 @@ type
     FSorted: Boolean;
     FTotalResolveCheck: TJclPeResolveCheck;
     function GetForwardedLibsList: TStrings;
-    function GetItems(Index: Integer): TJclPeExportFuncItem;
+    function GetItems(Index: TJclListSize): TJclPeExportFuncItem;
     function GetItemFromAddress(Address: DWORD): TJclPeExportFuncItem;
     function GetItemFromOrdinal(Ordinal: DWORD): TJclPeExportFuncItem;
     function GetItemFromName(const Name: string): TJclPeExportFuncItem;
@@ -304,7 +304,7 @@ type
     property ExportDir: PImageExportDirectory read FExportDir;
     property ForwardedLibsList: TStrings read GetForwardedLibsList;
     property FunctionCount: DWORD read FFunctionCount;
-    property Items[Index: Integer]: TJclPeExportFuncItem read GetItems; default;
+    property Items[Index: TJclListSize]: TJclPeExportFuncItem read GetItems; default;
     property ItemFromAddress[Address: DWORD]: TJclPeExportFuncItem read GetItemFromAddress;
     property ItemFromName[const Name: string]: TJclPeExportFuncItem read GetItemFromName;
     property ItemFromOrdinal[Ordinal: DWORD]: TJclPeExportFuncItem read GetItemFromOrdinal;
@@ -399,7 +399,7 @@ type
   private
     FDirectory: PImageResourceDirectory;
     FParentItem: TJclPeResourceItem;
-    function GetItems(Index: Integer): TJclPeResourceItem;
+    function GetItems(Index: TJclListSize): TJclPeResourceItem;
   protected
     procedure CreateList(AParentItem: TJclPeResourceItem);
   public
@@ -407,7 +407,7 @@ type
       ADirectory: PImageResourceDirectory);
     function FindName(const Name: string): TJclPeResourceItem;
     property Directory: PImageResourceDirectory read FDirectory;
-    property Items[Index: Integer]: TJclPeResourceItem read GetItems; default;
+    property Items[Index: TJclListSize]: TJclPeResourceItem read GetItems; default;
     property ParentItem: TJclPeResourceItem read FParentItem;
   end;
 
@@ -450,7 +450,7 @@ type
   TJclPeRelocList = class(TJclPeImageBaseList)
   private
     FAllItemCount: Integer;
-    function GetItems(Index: Integer): TJclPeRelocEntry;
+    function GetItems(Index: TJclListSize): TJclPeRelocEntry;
     function GetAllItems(Index: Integer): TJclPeRelocation;
   protected
     procedure CreateList;
@@ -458,19 +458,19 @@ type
     constructor Create(AImage: TJclPeImage);
     property AllItems[Index: Integer]: TJclPeRelocation read GetAllItems;
     property AllItemCount: Integer read FAllItemCount;
-    property Items[Index: Integer]: TJclPeRelocEntry read GetItems; default;
+    property Items[Index: TJclListSize]: TJclPeRelocEntry read GetItems; default;
   end;
 
   // Debug section related classes
   TJclPeDebugList = class(TJclPeImageBaseList)
   private
-    function GetItems(Index: Integer): TImageDebugDirectory;
+    function GetItems(Index: TJclListSize): TImageDebugDirectory;
     function IsTD32DebugInfo(DebugDir: PImageDebugDirectory): Boolean;
   protected
     procedure CreateList;
   public
     constructor Create(AImage: TJclPeImage);
-    property Items[Index: Integer]: TImageDebugDirectory read GetItems; default;
+    property Items[Index: TJclListSize]: TImageDebugDirectory read GetItems; default;
   end;
 
   // Certificates section related classes
@@ -486,12 +486,12 @@ type
 
   TJclPeCertificateList = class(TJclPeImageBaseList)
   private
-    function GetItems(Index: Integer): TJclPeCertificate;
+    function GetItems(Index: TJclListSize): TJclPeCertificate;
   protected
     procedure CreateList;
   public
     constructor Create(AImage: TJclPeImage);
-    property Items[Index: Integer]: TJclPeCertificate read GetItems; default;
+    property Items[Index: TJclListSize]: TJclPeCertificate read GetItems; default;
   end;
 
   // Common Language Runtime section related classes
@@ -1045,7 +1045,7 @@ type
 
   TJclPeMapImgHooks = class(TObjectList)
   private
-    function GetItems(Index: Integer): TJclPeMapImgHookItem;
+    function GetItems(Index: TJclListSize): TJclPeMapImgHookItem;
     function GetItemFromOriginalAddress(OriginalAddress: Pointer): TJclPeMapImgHookItem;
     function GetItemFromNewAddress(NewAddress: Pointer): TJclPeMapImgHookItem;
   public
@@ -1057,7 +1057,7 @@ type
     procedure UnhookAll;
     function UnhookByNewAddress(NewAddress: Pointer): Boolean;
     procedure UnhookByBaseAddress(BaseAddress: Pointer);
-    property Items[Index: Integer]: TJclPeMapImgHookItem read GetItems; default;
+    property Items[Index: TJclListSize]: TJclPeMapImgHookItem read GetItems; default;
     property ItemFromOriginalAddress[OriginalAddress: Pointer]: TJclPeMapImgHookItem read GetItemFromOriginalAddress;
     property ItemFromNewAddress[NewAddress: Pointer]: TJclPeMapImgHookItem read GetItemFromNewAddress;
   end;
@@ -1639,7 +1639,7 @@ begin
   Result := Image.ExpandModuleName(Name);
 end;
 
-function TJclPeImportLibItem.GetItems(Index: Integer): TJclPeImportFuncItem;
+function TJclPeImportLibItem.GetItems(Index: TJclListSize): TJclPeImportFuncItem;
 begin
   Result := TJclPeImportFuncItem(Get(Index));
 end;
@@ -1899,7 +1899,7 @@ begin
   Result := TJclPeImportFuncItem(FAllItemsList[Index]);
 end;
 
-function TJclPeImportList.GetItems(Index: Integer): TJclPeImportLibItem;
+function TJclPeImportList.GetItems(Index: TJclListSize): TJclPeImportLibItem;
 begin
   Result := TJclPeImportLibItem(Get(Index));
 end;
@@ -2512,7 +2512,7 @@ begin
     end;
 end;
 
-function TJclPeExportFuncList.GetItems(Index: Integer): TJclPeExportFuncItem;
+function TJclPeExportFuncList.GetItems(Index: TJclListSize): TJclPeExportFuncItem;
 begin
   Result := TJclPeExportFuncItem(Get(Index));
 end;
@@ -2803,7 +2803,7 @@ begin
     end;
 end;
 
-function TJclPeResourceList.GetItems(Index: Integer): TJclPeResourceItem;
+function TJclPeResourceList.GetItems(Index: TJclListSize): TJclPeResourceItem;
 begin
   Result := TJclPeResourceItem(Get(Index));
 end;
@@ -3004,7 +3004,7 @@ begin
   end;
 end;
 
-function TJclPeRelocList.GetItems(Index: Integer): TJclPeRelocEntry;
+function TJclPeRelocList.GetItems(Index: TJclListSize): TJclPeRelocEntry;
 begin
   Result := TJclPeRelocEntry(Get(Index));
 end;
@@ -3060,7 +3060,7 @@ begin
   end;
 end;
 
-function TJclPeDebugList.GetItems(Index: Integer): TImageDebugDirectory;
+function TJclPeDebugList.GetItems(Index: TJclListSize): TImageDebugDirectory;
 begin
   Result := PImageDebugDirectory(Get(Index))^;
 end;
@@ -3102,7 +3102,7 @@ begin
   end;
 end;
 
-function TJclPeCertificateList.GetItems(Index: Integer): TJclPeCertificate;
+function TJclPeCertificateList.GetItems(Index: TJclListSize): TJclPeCertificate;
 begin
   Result := TJclPeCertificate(Get(Index));
 end;
@@ -6480,7 +6480,7 @@ begin
     end;
 end;
 
-function TJclPeMapImgHooks.GetItems(Index: Integer): TJclPeMapImgHookItem;
+function TJclPeMapImgHooks.GetItems(Index: TJclListSize): TJclPeMapImgHookItem;
 begin
   Result := TJclPeMapImgHookItem(Get(Index));
 end;

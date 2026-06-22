@@ -1,0 +1,85 @@
+    <refentry id="refrespbody">
+
+      <refmeta>
+	<refentrytitle>ne_read_response_to_fd</refentrytitle>
+	<manvolnum>3</manvolnum>
+      </refmeta>
+
+      <refnamediv>
+	<refname id="ne_read_response_to_fd">ne_read_response_to_fd</refname>
+	<refname id="ne_read_response_to_buffer">ne_read_response_to_buffer</refname>
+	<refpurpose>read a response body</refpurpose>
+      </refnamediv>
+
+      <refsynopsisdiv>
+	<funcsynopsis>
+	  <funcsynopsisinfo>#include &lt;ne_request.h&gt;</funcsynopsisinfo>
+
+	  <funcprototype>
+	    <funcdef>int <function>ne_read_response_to_fd</function></funcdef>
+	    <paramdef>ne_request *<parameter>req</parameter></paramdef>
+	    <paramdef>int <parameter>fd</parameter></paramdef>
+	  </funcprototype>
+
+	  <funcprototype>
+	    <funcdef>int <function>ne_read_response_to_buffer</function></funcdef>
+	    <paramdef>ne_request *<parameter>req</parameter></paramdef>
+	    <paramdef>char *<parameter>data</parameter></paramdef>
+	    <paramdef>size_t *<parameter>buflen</parameter></paramdef>
+	  </funcprototype>
+	</funcsynopsis>
+      </refsynopsisdiv>
+
+      <refsect1>
+	<title>Description</title>
+
+	<para>To read an HTTP response body the functions
+	<function>ne_read_response_to_fd</function> and
+	<function>ne_read_response_to_buffer</function> can be used.
+	These functions are wrappers for
+	<function>ne_read_response_block</function> and must be called
+	only after <function>ne_begin_request</function> has been
+	called successfully for the request.</para>
+
+	<para>The <function>ne_read_response_to_fd</function> function
+	writes the response body content to the file descriptor passed
+	as the <parameter>fd</parameter> parameter.</para>
+
+	<para>The <function>ne_read_response_to_buffer</function>
+	function writes the response body content to the buffer passed
+	as the <parameter>buf</parameter> parameter, which has length
+	passed via the *<parameter>buflen</parameter> parameter. On
+	success, the *<parameter>buflen</parameter> is updated with
+	the number of bytes written to the buffer.</para>
+
+	<para>After the response body has been read successfully,
+	<function>ne_end_request</function> must be called. If a
+	failure occurs while reading the response body, the connection
+	must be closed using <xref
+	linkend="ne_close_connection"/>.</para>
+      </refsect1>
+
+      <refsect1>
+	<title>Return value</title>
+
+	<para>Both functions return zero on success, or an <xref
+	linkend="error-codes"/> on failure. The
+	<function>ne_read_response_to_buffer</function> function
+	returns <literal>NE_FAILED</literal> if the response message
+	length is larger than the buffer length.</para>
+      </refsect1>
+
+      <refsect1>
+        <title>History</title>
+
+        <para><function>ne_read_response_to_buffer</function> is available
+        in &neon; 0.36.0 and later.</para>
+      </refsect1>
+
+      <refsect1>
+	<title>See also</title>
+
+	<para><xref linkend="ne_request_create"/>, <xref
+	linkend="ne_set_error"/></para>
+      </refsect1>
+    </refentry>

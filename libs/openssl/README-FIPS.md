@@ -169,3 +169,33 @@ Documentation about using the FIPS module is available on the [fips_module(7)]
 manual page.
 
  [fips_module(7)]: https://www.openssl.org/docs/manmaster/man7/fips_module.html
+
+Entropy Source
+==============
+
+The FIPS provider typically relies on an external entropy source,
+specified during OpenSSL build configuration (default: `os`).  However, by
+enabling the `enable-fips-jitter` option during configuration, an internal
+jitter entropy source will be used instead.  Note that this will cause
+the FIPS provider to operate in a non-compliant mode unless an entropy
+assessment [ESV] and validation through the [CMVP] are additionally conducted.
+
+Note that the `enable-fips-jitter` option is only available in OpenSSL
+versions 3.5 and later.
+
+ [CMVP]: https://csrc.nist.gov/projects/cryptographic-module-validation-program
+ [ESV]: https://csrc.nist.gov/Projects/cryptographic-module-validation-program/entropy-validations
+
+3rd-Party Vendor Builds
+=====================================
+
+Some Vendors choose to patch/modify/build their own FIPS provider,
+test it with a Security Laboratory and submit it under their own CMVP
+certificate, instead of using OpenSSL Project submissions. When doing
+so, FIPS provider should uniquely identify its own name and version
+number. The build infrastructure allows to customize FIPS provider
+build information via changes to strings in `VERSION.dat`.
+
+Setting "PRE_RELEASE_TAG" (dashed suffix), "BUILD_METADATA" (plus
+suffix), and "FIPS_VENDOR" allow to control reported FIPS provider
+name and build version as required for CMVP submission.

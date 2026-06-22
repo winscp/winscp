@@ -21,6 +21,7 @@
 #include "crypto/decoder.h"
 #include "crypto/ctype.h" /* ossl_isdigit() */
 #include "prov/implementations.h"
+#include "prov/providercommon.h"
 #include "prov/bio.h"
 #include "file_store_local.h"
 #ifdef __CYGWIN__
@@ -115,7 +116,7 @@ static int winstore_set_ctx_params(void *loaderctx, const OSSL_PARAM params[])
     const OSSL_PARAM *p;
     int do_reset = 0;
 
-    if (params == NULL)
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_STORE_PARAM_PROPERTIES);
@@ -178,6 +179,7 @@ static int setup_decoder(struct winstore_ctx_st *ctx)
 {
     OSSL_LIB_CTX *libctx = ossl_prov_ctx_get0_libctx(ctx->provctx);
     const OSSL_ALGORITHM *to_algo = NULL;
+    const char *input_structure = NULL;
 
     if (ctx->dctx != NULL)
         return 1;
@@ -193,7 +195,8 @@ static int setup_decoder(struct winstore_ctx_st *ctx)
         goto err;
     }
 
-    if (!OSSL_DECODER_CTX_set_input_structure(ctx->dctx, "Certificate")) {
+    input_structure = "Certificate";
+    if (!OSSL_DECODER_CTX_set_input_structure(ctx->dctx, input_structure)) {
         ERR_raise(ERR_LIB_PROV, ERR_R_OSSL_DECODER_LIB);
         goto err;
     }
@@ -203,6 +206,7 @@ static int setup_decoder(struct winstore_ctx_st *ctx)
         to_algo++) {
         OSSL_DECODER *to_obj = NULL;
         OSSL_DECODER_INSTANCE *to_obj_inst = NULL;
+        const char *input_type;
 
         /*
          * Create the internal last resort decoder implementation
@@ -212,11 +216,21 @@ static int setup_decoder(struct winstore_ctx_st *ctx)
          */
         to_obj = ossl_decoder_from_algorithm(0, to_algo, NULL);
         if (to_obj != NULL)
-            to_obj_inst = ossl_decoder_instance_new(to_obj, ctx->provctx);
+            to_obj_inst = ossl_decoder_instance_new_forprov(to_obj, ctx->provctx,
+                input_structure);
 
         OSSL_DECODER_free(to_obj);
         if (to_obj_inst == NULL)
             goto err;
+
+        /*
+         * The input type has to be DER
+         */
+        input_type = OSSL_DECODER_INSTANCE_get_input_type(to_obj_inst);
+        if (OPENSSL_strcasecmp(input_type, "DER") != 0) {
+            ossl_decoder_instance_free(to_obj_inst);
+            continue;
+        }
 
         if (!ossl_decoder_ctx_add_decoder_inst(ctx->dctx,
                 to_obj_inst)) {

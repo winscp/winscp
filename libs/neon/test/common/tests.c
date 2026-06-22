@@ -70,9 +70,11 @@ static int passes = 0, fails = 0, skipped = 0, warnings = 0;
 static int warned, aborted = 0;
 static const char *test_name; /* current test name */
 
-static int use_colour = 0;
+static int use_colour = 0, tty_output = 0;
 
 static int flag_child;
+
+static void print_prefix(int n);
 
 /* resource for ANSI escape codes:
  * http://www.isthe.com/chongo/tech/comp/ansi_escapes.html */
@@ -95,6 +97,7 @@ void t_context(const char *context, ...)
 void t_warning(const char *str, ...)
 {
     va_list ap;
+    if (warned) print_prefix(test_num);
     COL("43;01"); printf("WARNING:"); NOCOL;
     putchar(' ');
     va_start(ap, str);
@@ -148,11 +151,13 @@ static void parent_segv(int signo)
 
 void in_child(void)
 {
-    ne_debug_init(child_debug, TEST_DEBUG);    
-    NE_DEBUG(TEST_DEBUG, "**** Child forked for test %s ****\n", test_name);
-    signal(SIGSEGV, child_segv);
-    signal(SIGABRT, child_segv);
-    flag_child = 1;
+    if (child_debug) {
+        ne_debug_init(child_debug, TEST_DEBUG);
+        NE_DEBUG(TEST_DEBUG, "**** Child forked for test %s ****\n", test_name);
+        signal(SIGSEGV, child_segv);
+        signal(SIGABRT, child_segv);
+        flag_child = 1;
+    }
 }
 #endif
 
@@ -201,26 +206,31 @@ int main(int argc, char *argv[])
     ne_i18n_init(NULL);
 
 #if defined(HAVE_ISATTY) && defined(STDOUT_FILENO)
-    if (isatty(STDOUT_FILENO)) {
-	use_colour = 1;
-    }
+    tty_output = isatty(STDOUT_FILENO);
 #endif
+
+    if ((tmp = getenv("TEST_COLOUR")) != NULL)
+        use_colour = strcmp(tmp, "1") == 0;
+    else
+        use_colour = tty_output;
 
     test_argc = argc;
     test_argv = argv;
 
-    debug = fopen("debug.log", "a");
-    if (debug == NULL) {
-	fprintf(stderr, "%s: Could not open debug.log: %s\n", test_suite,
-		strerror(errno));
-	return -1;
-    }
-    child_debug = fopen("child.log", "a");
-    if (child_debug == NULL) {
-	fprintf(stderr, "%s: Could not open child.log: %s\n", test_suite,
-		strerror(errno));
-	fclose(debug);
-	return -1;
+    if ((tmp = getenv("TEST_NODEBUG")) == NULL) {
+        debug = fopen("debug.log", "a");
+        if (debug == NULL) {
+            fprintf(stderr, "%s: Could not open debug.log: %s\n", test_suite,
+                    strerror(errno));
+            return -1;
+        }
+        child_debug = fopen("child.log", "a");
+        if (child_debug == NULL) {
+            fprintf(stderr, "%s: Could not open child.log: %s\n", test_suite,
+                    strerror(errno));
+            fclose(debug);
+            return -1;
+        }
     }
 
     if (tests[0].fn == NULL) {
@@ -238,11 +248,13 @@ int main(int argc, char *argv[])
     ne_debug_init(NULL, 0);
     NE_DEBUG(TEST_DEBUG, "This message should go to /dev/null");
 
-    /* enable debugging for real. */
-    ne_debug_init(debug, TEST_DEBUG);
-    NE_DEBUG(TEST_DEBUG | NE_DBG_FLUSH, "Version string: %s\n", 
-             ne_version_string());
-    
+    if (debug) {
+        /* enable debugging for real. */
+        ne_debug_init(debug, TEST_DEBUG);
+        NE_DEBUG(TEST_DEBUG | NE_DBG_FLUSH, "Version string: %s\n", 
+                 ne_version_string());
+    }
+
     /* another silly test. */
     NE_DEBUG(0, "This message should also go to /dev/null");
 
@@ -251,8 +263,15 @@ int main(int argc, char *argv[])
 	printf(" Socket library initialization failed.\n");
     }
 
-    if ((tmp = getenv("TEST_QUIET")) != NULL && strcmp(tmp, "1") == 0) {
-        quiet = 1;
+#ifdef NEON_TEST_INIT
+    if (NEON_TEST_INIT(test_argc, (const char *const *)test_argv, &use_colour, &quiet)) {
+	fprintf(stderr, "%s: Failed parsing command-line.\n", test_suite);
+        return -1;
+    }
+#endif
+
+    if ((tmp = getenv("TEST_QUIET")) != NULL) {
+        quiet = strcmp(tmp, "1") == 0;
     }
 
     if (!quiet)
@@ -284,7 +303,8 @@ int main(int argc, char *argv[])
 
 #ifdef NEON_MEMLEAK
         /* issue warnings for memory leaks, if requested */
-        if ((tests[n].flags & T_CHECK_LEAKS) && result == OK &&
+        if ((tests[n].flags & T_CHECK_LEAKS)
+            && (result == OK || result == SKIP) &&
             ne_alloc_used > allocated) {
             t_context("memory leak of %" NE_FMT_SIZE_T " bytes",
                       ne_alloc_used - allocated);
@@ -441,12 +461,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (fclose(debug)) {
+    if (debug && fclose(debug)) {
 	fprintf(stderr, "Error closing debug.log: %s\n", strerror(errno));
 	fails = 1;
     }
        
-    if (fclose(child_debug)) {
+    if (child_debug && fclose(child_debug)) {
 	fprintf(stderr, "Error closing child.log: %s\n", strerror(errno));
 	fails = 1;
     }

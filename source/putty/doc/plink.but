@@ -35,13 +35,13 @@ This section describes the basics of how to use Plink for
 interactive logins and for automated processes.
 
 Once you've got a console window to type into, you can type
-\c{plink --help} to bring up a usage message.  This tells you the
+\c{plink \-\-help} to bring up a usage message.  This tells you the
 version of Plink you're using, and gives you a brief summary of how to
 use Plink:
 
 \c C:\>plink --help
 \c Plink: command-line connection utility
-\c Release 0.83
+\c Release 0.84
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -58,6 +58,8 @@ use Plink:
 \c   -batch    disable all interactive prompts
 \c   -proxycmd command
 \c             use 'command' as local proxy
+\c   -preconnectcommand command
+\c             run 'command' before making network connection
 \c   -sercfg configuration-string (e.g. 19200,8,n,1,X)
 \c             Specify the serial configuration (serial only)
 \c The following options only apply to SSH connections:
@@ -121,8 +123,8 @@ characters appearing in your window. Interactive connections like
 this are not the main point of Plink.
 
 In order to connect with a different protocol, you can give the
-command line options \c{-ssh}, \c{-ssh-connection}, \c{-telnet},
-\c{-rlogin}, or \c{-raw}. To make an SSH connection, for example:
+command line options \c{\-ssh}, \c{\-ssh\-connection}, \c{\-telnet},
+\c{\-rlogin}, or \c{\-raw}. To make an SSH connection, for example:
 
 \c C:\>plink -ssh login.example.com
 \c login as:
@@ -138,8 +140,8 @@ and use most of the other features of PuTTY:
 \c Last login: Thu Dec  6 19:25:33 2001 from :0.0
 \c fred@flunky:~$
 
-(You can also use the \c{-load} command-line option to load a saved
-session; see \k{using-cmdline-load}. If you use \c{-load}, the saved
+(You can also use the \c{\-load} command-line option to load a saved
+session; see \k{using-cmdline-load}. If you use \c{\-load}, the saved
 session exists, and it specifies a hostname, you cannot also specify a
 \c{host} or \c{user@host} argument - it will be treated as part of the
 remote command.)
@@ -151,7 +153,7 @@ talk directly to a program running on the server. To do this you
 have to ensure Plink is \e{using} the SSH protocol. You can do this
 in several ways:
 
-\b Use the \c{-ssh} option as described in
+\b Use the \c{\-ssh} option as described in
 \k{plink-usage-interactive}.
 
 \b Set up a PuTTY saved session that describes the server you are
@@ -181,8 +183,8 @@ use it; see \k{using-cmdline-hostkey}.
 
 To avoid being prompted for a user name, you can:
 
-\b Use the \c{-l} option to specify a user name on the command line.
-For example, \c{plink login.example.com -l fred}.
+\b Use the \c{\-l} option to specify a user name on the command line.
+For example, \c{plink login.example.com \-l fred}.
 
 \b Set up a PuTTY saved session that describes the server you are
 connecting to, and that also specifies the username to log in as
@@ -230,54 +232,32 @@ options.
 Plink also supports some of its own options. The following sections
 describe Plink's specific command-line options.
 
-\S2{plink-option-batch} \I{-batch-plink}\c{-batch}: disable all
+\S2{plink-option-batch} \I{-batch-plink}\c{\-batch}: disable all
 interactive prompts
 
-If you use the \c{-batch} option, Plink will never give an
+If you use the \c{\-batch} option, Plink will never give an
 interactive prompt while establishing the connection. If the
 server's host key is invalid, for example (see \k{gs-hostkey}), then
 the connection will simply be abandoned instead of asking you what
 to do next.
 
 This may help Plink's behaviour when it is used in automated
-scripts: using \c{-batch}, if something goes wrong at connection
+scripts: using \c{\-batch}, if something goes wrong at connection
 time, the batch job will fail rather than hang.
 
 If another program is invoking Plink on your behalf, then you might
-need to arrange that that program passes \c{-batch} to Plink. See
+need to arrange that that program passes \c{\-batch} to Plink. See
 \k{plink-git} for an example involving Git.
 
-\S2{plink-option-s} \I{-s-plink}\c{-s}: remote command is SSH subsystem
+\S2{plink-option-s} \I{-s-plink}\c{\-s}: remote command is SSH subsystem
 
-If you specify the \c{-s} option, Plink passes the specified command
+If you specify the \c{\-s} option, Plink passes the specified command
 as the name of an SSH \q{\i{subsystem}} rather than an ordinary command
 line.
 
 (This option is only meaningful with the SSH-2 protocol.)
 
-\S2{plink-option-share} \I{-share-plink}\c{-share}:
-Test and try to share an existing connection.
-
-This option tries to detect if an existing connection can be shared
-(See \k{config-ssh-sharing} for more information about SSH connection
-sharing.) and reuses that connection.
-
-A Plink invocation of the form:
-
-\c plink -share <session>
-\e              iiiiiiiii
-
-will test whether there is currently a viable \q{upstream} for the
-session in question, which can be specified using any syntax you'd
-normally use with Plink to make an actual connection (a host/port
-number, a bare saved session name, \c{-load}, etc). If no \q{upstream}
-viable session is found and \c{-share} is specified, this connection
-will be become the \q{upstream} connection for subsequent connection
-sharing tries.
-
-(This option is only meaningful with the SSH-2 protocol.)
-
-\S2{plink-option-shareexists} \I{-shareexists-plink}\c{-shareexists}:
+\S2{plink-option-shareexists} \I{-shareexists-plink}\c{\-shareexists}:
 test for connection-sharing upstream
 
 This option does not make a new connection; instead it allows testing
@@ -293,12 +273,12 @@ A Plink invocation of the form:
 will test whether there is currently a viable \q{upstream} for the
 session in question, which can be specified using any syntax you'd
 normally use with Plink to make an actual connection (a host/port
-number, a bare saved session name, \c{-load}, etc). It returns a
+number, a bare saved session name, \c{\-load}, etc). It returns a
 zero exit status if a usable \q{upstream} exists, nonzero otherwise.
 
 (This option is only meaningful with the SSH-2 protocol.)
 
-\S2{plink-option-sanitise} \I{-sanitise-stderr}\I{-sanitise-stdout}\I{-no-sanitise-stderr}\I{-no-sanitise-stdout}\c{-sanitise-}\e{stream}: control output sanitisation
+\S2{plink-option-sanitise} \I{\-sanitise\-stderr}\I{\-sanitise\-stdout}\I{\-no\-sanitise\-stderr}\I{\-no\-sanitise\-stdout}\c{\-sanitise\-}\e{stream}: control output sanitisation
 
 In some situations, Plink applies a sanitisation pass to the output
 received from the server, to strip out control characters such as
@@ -323,26 +303,26 @@ But in case Plink guesses wrong about whether you want this
 sanitisation, you can override it in either direction, using one of
 these options:
 
-\dt \c{-sanitise-stderr}
+\dt \c{\-sanitise\-stderr}
 
 \dd Sanitise server data written to Plink's standard error channel,
 regardless of terminals and consoles and remote ptys.
 
-\dt \c{-no-sanitise-stderr}
+\dt \c{\-no\-sanitise\-stderr}
 
 \dd Do not sanitise server data written to Plink's standard error
 channel.
 
-\dt \c{-sanitise-stdout}
+\dt \c{\-sanitise\-stdout}
 
 \dd Sanitise server data written to Plink's standard output channel.
 
-\dt \c{-no-sanitise-stdout}
+\dt \c{\-no\-sanitise\-stdout}
 
 \dd Do not sanitise server data written to Plink's standard output
 channel.
 
-\S2{plink-option-antispoof} \i{-no-antispoof}: turn off authentication spoofing protection prompt
+\S2{plink-option-antispoof} \I{-no-antispoof-plink}\c{\-no\-antispoof}: turn off authentication spoofing protection prompt
 
 In SSH, some possible server authentication methods require user input
 (for example, password authentication, or entering a private key
@@ -380,7 +360,7 @@ and so Plink omits the anti-spoofing prompt.
 
 But if you still find the protective prompt inconvenient, and you
 trust the server not to try a trick like this, you can turn it off
-using the \cq{-no-antispoof} option.
+using the \cq{\-no\-antispoof} option.
 
 \H{plink-batch} Using Plink in \i{batch files} and \i{scripts}
 
@@ -416,7 +396,7 @@ This environment variable accepts a whole command line, not just an
 executable file name. So you can add Plink options to the end of it if
 you like. For example, if you're using Git in a batch-mode context,
 where your Git jobs are running unattended and nobody is available to
-answer interactive prompts, you might also append the \cq{-batch}
+answer interactive prompts, you might also append the \cq{\-batch}
 option (\k{plink-option-batch}):
 
 \c set GIT_SSH_COMMAND="C:\Program Files\PuTTY\plink.exe" -batch

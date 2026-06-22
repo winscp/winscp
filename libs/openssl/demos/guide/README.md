@@ -51,25 +51,38 @@ The tls-client-non-block demo can be run in exactly the same way. Just replace
 Running the QUIC Demos
 ----------------------
 
-The QUIC demos can be run in a very similar way to the TLS demos. However, a
-different server implementation will need to be used.
+The QUIC demos can be run in a very similar way to the TLS demos.
 
-The OpenSSL source distribution includes a test QUIC server implementation for
-use with the demos. Note that, although this server does get built when building
-OpenSSL from source, it does not get installed via "make install". After
-building OpenSSL from source you will find the "quicserver" utility in the
-"util" sub-directory of the top of the build tree. This server utility is not
-suitable for production use and exists for test purposes only. It will be
-removed from a future version of OpenSSL.
+While in the demos directory the QUIC server can be run like this:
 
-While in the demos directory the quic server can be run like this:
-
-./../util/quicserver localhost 4443 servercert.pem serverkey.pem
+LD_LIBRARY_PATH=../.. ./quic-server-block 4443 ./chain.pem ./pkey.pem
 
 The QUIC demos can then be run in the same was as the TLS demos. For example
 to run the quic-client-block demo:
 
-SSL_CERT_FILE=rootcert.pem LD_LIBRARY_PATH=../.. ./quic-client-block localhost 4443
+SSL_CERT_FILE=chain.pem LD_LIBRARY_PATH=../.. ./quic-client-block localhost 4443
+
+Notes on the quic-hq-interop demo
+---------------------------------
+
+The quic-hq-interop demo is effectively the same as the quic-client-nonblock
+demo, but is specifically constructed to use the hq-interop alpn for the
+purposes of interacting with other demonstration containers found in the
+QUIC working group [interop runner](https://github.com/quic-interop/quic-interop-runner)
+It is run as follows:
+
+SSL_CERT_FILE=ca.pem LD_LIBRARY_PATH=../../ ./quic-hq-interop host port file
+
+The demo will then do the following:
+
+1. Connect to the server at host/port
+2. Negotiates the hq-interop alpn
+3. Issues an HTTP 1.0 GET request of the form "GET /$FILE"
+3. Reads any response from the server and write it verbatim to stdout
+
+This demo can be used for any hq-interop negotiating server, but its use can
+most easily be seen in action in our quic interop container, buildable from
+./test/quic_interop_openssl in this source tree.
 
 <!-- Links  -->
 

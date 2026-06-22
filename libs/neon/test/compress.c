@@ -159,104 +159,59 @@ static int do_fetch(const char *realfn, const char *gzipfn,
     return OK;
 }
 
-static int fetch(const char *realfn, const char *gzipfn, int chunked)
+static int fetching(void)
 {
-    return do_fetch(realfn, gzipfn, chunked, 0);
-}
+    static const struct {
+        const char *realfn;
+        const char *gzipfn;
+        int chunked;
+        int expect_fail;
+    } ts[] = {
+        /* not_compressed */
+        { newsfn, NULL, 0, 0 },
+        /* simple */
+        { newsfn, "file1.gz", 0, 0 },
+        /* hello */
+        { hellofn, "hello.gz", 0, 0 },
+        /* withname */
+        { newsfn, "file2.gz", 0, 0 },
+        /* chunked_1b_wn */
+        { newsfn, "file2.gz", 1, 0 },
+        /* chunked_1b */
+        { newsfn, "file1.gz", 1, 0 },
+        /* chunked_12b */
+        { newsfn, "file2.gz", 12, 0 },
+        /* chunked_20b */
+        { newsfn, "file2.gz", 20, 0 },
+        /* chunked_10b */
+        { newsfn, "file1.gz", 10, 0 },
+        /* chunked_10b_wn */
+        { newsfn, "file2.gz", 10, 0 },
+        /* notcomp_empty */
+        { "empty.gz", NULL, 0, 0 },
+        /* fail_trailing */
+        { newsfn, "trailing.gz", 0, 1 },
+        /* fail_trailing_1b */
+        { newsfn, "trailing.gz", 1, 1 },
+        /* fail_truncate */
+        { newsfn, "truncated.gz", 0, 1 },
+        /* fail_bad_csum */
+        { newsfn, "badcsum.gz", 0, 1 },
+        /* fail_corrupt1 */
+        { newsfn, "corrupt1.gz", 0, 1 },
+        /* fail_corrupt2 */
+        { newsfn, "corrupt2.gz", 0, 1 },
+        /* fail_empty */
+        { newsfn, "empty.gz", 0, 1 },
+        { NULL, NULL, 0, 0 }
+    };
+    unsigned i;
 
-/* Test the no-compression case. */
-static int not_compressed(void)
-{
-    return fetch(newsfn, NULL, 0);
-}
+    for (i = 0; ts[i].realfn != NULL; i++) {
+        CALL(do_fetch(ts[i].realfn, ts[i].gzipfn, ts[i].chunked, ts[i].expect_fail));
+    }
 
-static int simple(void)
-{
-    return fetch(newsfn, "file1.gz", 0);
-}
-
-/* Triggers -fsanitizer=shift. */
-static int hello(void)
-{
-    return fetch(hellofn, "hello.gz", 0);
-}
-
-/* file1.gz has an embedded filename. */
-static int withname(void)
-{
-    return fetch(newsfn, "file2.gz", 0);
-}
-
-/* deliver various different sizes of chunks: tests the various
- * decoding cases. */
-static int chunked_1b_wn(void)
-{
-    return fetch(newsfn, "file2.gz", 1);
-}
-
-static int chunked_1b(void)
-{
-    return fetch(newsfn, "file1.gz", 1);
-}
-
-static int chunked_12b(void)
-{
-    return fetch(newsfn, "file2.gz", 12);
-}
-
-static int chunked_20b(void)
-{
-    return fetch(newsfn, "file2.gz", 20);
-}
-
-static int chunked_10b(void)
-{
-    return fetch(newsfn, "file1.gz", 10);
-}
-
-static int chunked_10b_wn(void)
-{
-    return fetch(newsfn, "file2.gz", 10);
-}
-
-static int fail_trailing(void)
-{
-    return do_fetch(newsfn, "trailing.gz", 0, 1);
-}
-
-static int fail_trailing_1b(void)
-{
-    return do_fetch(newsfn, "trailing.gz", 1, 1);
-}
-
-static int fail_truncate(void)
-{
-    return do_fetch(newsfn, "truncated.gz", 0, 1);
-}
-
-static int fail_bad_csum(void)
-{
-    return do_fetch(newsfn, "badcsum.gz", 0, 1);
-}
-
-static int fail_corrupt1(void)
-{
-    return do_fetch(newsfn, "corrupt1.gz", 0, 1);
-}
-
-static int fail_corrupt2(void)
-{
-    return do_fetch(newsfn, "corrupt2.gz", 0, 1);
-}
-
-static int fail_empty(void)
-{
-    return do_fetch(newsfn, "empty.gz", 0, 1);
-}
-
-static int notcomp_empty(void)
-{
-    return fetch("empty.gz", NULL, 0);
+    return OK;
 }
 
 static int auth_cb(void *userdata, const char *realm, int tries, 
@@ -412,24 +367,7 @@ static int compress_abort(void)
 
 ne_test tests[] = {
     T_LEAKY(init),
-    T(not_compressed),
-    T(simple),
-    T(hello),
-    T(withname),
-    T(fail_trailing),
-    T(fail_trailing_1b),
-    T(fail_bad_csum),
-    T(fail_truncate),
-    T(fail_corrupt1),
-    T(fail_corrupt2),
-    T(fail_empty),
-    T(notcomp_empty),
-    T(chunked_1b), 
-    T(chunked_1b_wn),
-    T(chunked_12b), 
-    T(chunked_20b),
-    T(chunked_10b),
-    T(chunked_10b_wn),
+    T(fetching),
     T(retry_notcompress),
     T(retry_compress),
     T(compress_abort),

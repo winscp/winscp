@@ -242,9 +242,6 @@ int pkcs8_main(int argc, char **argv)
         informat == FORMAT_UNDEF ? FORMAT_PEM : informat);
     if (in == NULL)
         goto end;
-    out = bio_open_owner(outfile, outformat, private);
-    if (out == NULL)
-        goto end;
 
     if (topk8) {
         pkey = load_key(infile, informat, 1, passin, e, "key");
@@ -255,6 +252,8 @@ int pkcs8_main(int argc, char **argv)
             ERR_print_errors(bio_err);
             goto end;
         }
+        if ((out = bio_open_owner(outfile, outformat, private)) == NULL)
+            goto end;
         if (nocrypt) {
             assert(private);
             if (outformat == FORMAT_PEM) {
@@ -375,6 +374,9 @@ int pkcs8_main(int argc, char **argv)
     }
 
     assert(private);
+    out = bio_open_owner(outfile, outformat, private);
+    if (out == NULL)
+        goto end;
     if (outformat == FORMAT_PEM) {
         if (traditional)
             PEM_write_bio_PrivateKey_traditional(out, pkey, NULL, NULL, 0,

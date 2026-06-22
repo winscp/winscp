@@ -51,7 +51,7 @@ The exceptions to that rule are due to the need for Visual Studio
 compatibility:
 
 \b Don't use variable-length arrays. Visual Studio doesn't support
-them even now that it's adopted the rest of C99. We use \cw{-Wvla}
+them even now that it's adopted the rest of C99. We use \cw{\-Wvla}
 when building with gcc and clang, to make it easier to avoid
 accidentally breaking that rule.
 
@@ -507,9 +507,9 @@ file that defined the \cw{MyAbstraction} structure types, like this:
 \c { return vt->new(vt); }
 \c static inline void myabs_free(MyAbstraction *myabs)
 \c { myabs->vt->free(myabs); }
-\c static inline void myimpl_modify(MyAbstraction *myabs, unsigned param)
+\c static inline void myabs_modify(MyAbstraction *myabs, unsigned param)
 \c { myabs->vt->modify(myabs, param); }
-\c static inline unsigned myimpl_query(MyAbstraction *myabs, unsigned param)
+\c static inline unsigned myabs_query(MyAbstraction *myabs, unsigned param)
 \c { return myabs->vt->query(myabs, param); }
 
 And now call sites can use those reasonably clean-looking wrapper

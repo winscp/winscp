@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2026 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -27,6 +27,8 @@
 #include <openssl/core_names.h>
 #include <openssl/param_build.h>
 #include "internal/cryptlib.h"
+#include "internal/comp.h"
+#include "internal/ssl_unwrap.h"
 
 static MSG_PROCESS_RETURN tls_process_as_hello_retry_request(SSL_CONNECTION *s,
     PACKET *pkt);
@@ -487,7 +489,7 @@ static WRITE_TRAN ossl_statem_client13_write_transition(SSL_CONNECTION *s)
         return WRITE_TRAN_CONTINUE;
 
     case TLS_ST_PENDING_EARLY_DATA_END:
-        if (s->ext.early_data == SSL_EARLY_DATA_ACCEPTED) {
+        if (s->ext.early_data == SSL_EARLY_DATA_ACCEPTED && !SSL_NO_EOED(s)) {
             st->hand_state = TLS_ST_CW_END_OF_EARLY_DATA;
             return WRITE_TRAN_CONTINUE;
         }
@@ -569,7 +571,8 @@ WRITE_TRAN ossl_statem_client_write_transition(SSL_CONNECTION *s)
         return WRITE_TRAN_CONTINUE;
 
     case TLS_ST_CW_CLNT_HELLO:
-        if (s->early_data_state == SSL_EARLY_DATA_CONNECTING) {
+        if (s->early_data_state == SSL_EARLY_DATA_CONNECTING
+            && !SSL_IS_QUIC_HANDSHAKE(s)) {
             /*
              * We are assuming this is a TLSv1.3 connection, although we haven't
              * actually selected a version yet.
@@ -903,6 +906,17 @@ WORK_STATE ossl_statem_client_post_work(SSL_CONNECTION *s, WORK_STATE wst)
             if (s->post_handshake_auth != SSL_PHA_REQUESTED) {
                 if (!ssl->method->ssl3_enc->change_cipher_state(s,
                         SSL3_CC_APPLICATION | SSL3_CHANGE_CIPHER_CLIENT_WRITE)) {
+                    /* SSLfatal() already called */
+                    return WORK_ERROR;
+                }
+                /*
+                 * For QUIC we deferred setting up these keys until now so
+                 * that we can ensure write keys are always set up before read
+                 * keys.
+                 */
+                if (SSL_IS_QUIC_HANDSHAKE(s)
+                    && !ssl->method->ssl3_enc->change_cipher_state(s,
+                        SSL3_CC_APPLICATION | SSL3_CHANGE_CIPHER_CLIENT_READ)) {
                     /* SSLfatal() already called */
                     return WORK_ERROR;
                 }
@@ -1784,8 +1798,7 @@ MSG_PROCESS_RETURN tls_process_server_hello(SSL_CONNECTION *s, PACKET *pkt)
      */
     if (SSL_CONNECTION_IS_TLS13(s)) {
         if (!ssl->method->ssl3_enc->setup_key_block(s)
-            || !ssl->method->ssl3_enc->change_cipher_state(s,
-                SSL3_CC_HANDSHAKE | SSL3_CHANGE_CIPHER_CLIENT_READ)) {
+            || !tls13_store_handshake_traffic_hash(s)) {
             /* SSLfatal() already called */
             goto err;
         }
@@ -1798,10 +1811,17 @@ MSG_PROCESS_RETURN tls_process_server_hello(SSL_CONNECTION *s, PACKET *pkt)
          * are changed. Since QUIC doesn't do TLS early data or need middlebox
          * compat this doesn't cause a problem.
          */
-        if (s->early_data_state == SSL_EARLY_DATA_NONE
-            && (s->options & SSL_OP_ENABLE_MIDDLEBOX_COMPAT) == 0
-            && !ssl->method->ssl3_enc->change_cipher_state(s,
-                SSL3_CC_HANDSHAKE | SSL3_CHANGE_CIPHER_CLIENT_WRITE)) {
+        if (SSL_IS_QUIC_HANDSHAKE(s)
+            || (s->early_data_state == SSL_EARLY_DATA_NONE
+                && (s->options & SSL_OP_ENABLE_MIDDLEBOX_COMPAT) == 0)) {
+            if (!ssl->method->ssl3_enc->change_cipher_state(s,
+                    SSL3_CC_HANDSHAKE | SSL3_CHANGE_CIPHER_CLIENT_WRITE)) {
+                /* SSLfatal() already called */
+                goto err;
+            }
+        }
+        if (!ssl->method->ssl3_enc->change_cipher_state(s,
+                SSL3_CC_HANDSHAKE | SSL3_CHANGE_CIPHER_CLIENT_READ)) {
             /* SSLfatal() already called */
             goto err;
         }
@@ -1885,7 +1905,7 @@ err:
 
 MSG_PROCESS_RETURN tls_process_server_rpk(SSL_CONNECTION *sc, PACKET *pkt)
 {
-    EVP_PKEY *peer_rpk;
+    EVP_PKEY *peer_rpk = NULL;
 
     if (!tls_process_rpk(sc, pkt, &peer_rpk)) {
         /* SSLfatal() already called */
@@ -2141,8 +2161,12 @@ WORK_STATE tls_post_process_server_certificate(SSL_CONNECTION *s,
         }
     }
 
+    if (!X509_up_ref(x)) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+        return WORK_ERROR;
+    }
+
     X509_free(s->session->peer);
-    X509_up_ref(x);
     s->session->peer = x;
     s->session->verify_result = s->verify_result;
     /* Ensure there is no RPK */
@@ -2583,8 +2607,10 @@ MSG_PROCESS_RETURN tls_process_certificate_request(SSL_CONNECTION *s,
         s->s3.tmp.valid_flags = OPENSSL_zalloc(s->ssl_pkey_num * sizeof(uint32_t));
 
     /* Give up for good if allocation didn't work */
-    if (s->s3.tmp.valid_flags == NULL)
-        return 0;
+    if (s->s3.tmp.valid_flags == NULL) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_CRYPTO_LIB);
+        return MSG_PROCESS_ERROR;
+    }
 
     if (SSL_CONNECTION_IS_TLS13(s)) {
         PACKET reqctx, extensions;
@@ -2847,7 +2873,7 @@ MSG_PROCESS_RETURN tls_process_new_session_ticket(SSL_CONNECTION *s,
             0x70, 0x74, 0x69, 0x6F, 0x6E };
 
         /* Ensure cast to size_t is safe */
-        if (!ossl_assert(hashleni >= 0)) {
+        if (!ossl_assert(hashleni > 0)) {
             SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
             goto err;
         }
@@ -3818,6 +3844,7 @@ CON_FUNC_RETURN tls_construct_client_certificate(SSL_CONNECTION *s,
      * moment. We need to do it now.
      */
     if (SSL_CONNECTION_IS_TLS13(s)
+        && !SSL_IS_QUIC_HANDSHAKE(s)
         && SSL_IS_FIRST_HANDSHAKE(s)
         && (s->early_data_state != SSL_EARLY_DATA_NONE
             || (s->options & SSL_OP_ENABLE_MIDDLEBOX_COMPAT) != 0)
@@ -3908,6 +3935,7 @@ CON_FUNC_RETURN tls_construct_client_compressed_certificate(SSL_CONNECTION *sc,
      * moment. We need to do it now.
      */
     if (SSL_IS_FIRST_HANDSHAKE(sc)
+        && !SSL_IS_QUIC_HANDSHAKE(sc)
         && (sc->early_data_state != SSL_EARLY_DATA_NONE
             || (sc->options & SSL_OP_ENABLE_MIDDLEBOX_COMPAT) != 0)
         && (!ssl->method->ssl3_enc->change_cipher_state(sc,
@@ -4087,8 +4115,9 @@ int ssl_cipher_list_to_bytes(SSL_CONNECTION *s, STACK_OF(SSL_CIPHER) *sk,
     int i;
     size_t totlen = 0, len, maxlen, maxverok = 0;
     int empty_reneg_info_scsv = !s->renegotiate
-        && (SSL_CONNECTION_IS_DTLS(s)
-            || s->min_proto_version < TLS1_3_VERSION);
+        && !SSL_CONNECTION_IS_DTLS(s)
+        && ssl_security(s, SSL_SECOP_VERSION, 0, TLS1_VERSION, NULL)
+        && s->min_proto_version <= TLS1_VERSION;
     SSL *ssl = SSL_CONNECTION_GET_SSL(s);
 
     /* Set disabled masks for this session */

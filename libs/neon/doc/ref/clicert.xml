@@ -7,6 +7,8 @@
 
   <refnamediv>
     <refname id="ne_ssl_clicert_read">ne_ssl_clicert_read</refname>
+    <refname id="ne_ssl_clicert_import">ne_ssl_clicert_import</refname>
+    <refname id="ne_ssl_clicert_fromuri">ne_ssl_clicert_fromuri</refname>
     <refname id="ne_ssl_clicert_name">ne_ssl_clicert_name</refname>
     <refname id="ne_ssl_clicert_encrypted">ne_ssl_clicert_encrypted</refname>
     <refname id="ne_ssl_clicert_decrypt">ne_ssl_clicert_decrypt</refname>
@@ -24,6 +26,18 @@
       <funcprototype>
         <funcdef>ne_ssl_client_cert *<function>ne_ssl_clicert_read</function></funcdef>
         <paramdef>const char *<parameter>filename</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>ne_ssl_client_cert *<function>ne_ssl_clicert_import</function></funcdef>
+        <paramdef>const unsigned char *<parameter>filename</parameter></paramdef>
+        <paramdef>size_t <parameter>buflen</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>ne_ssl_client_cert *<function>ne_ssl_clicert_fromuri</function></funcdef>
+        <paramdef>const char *<parameter>uri</parameter></paramdef>
+        <paramdef>unsigned <parameter>flags</parameter></paramdef>
       </funcprototype>
 
       <funcprototype>
@@ -62,25 +76,28 @@
     <para>The <function>ne_ssl_clicert_read</function> function reads
     a <firstterm>client certificate</firstterm> from a
     PKCS#12-formatted file, and returns an
-    <type>ne_ssl_client_cert</type> object.  If the client
-    certificate is encrypted, it must be decrypted before it is used.
-    An <type>ne_ssl_client_cert</type> object holds a client
-    certificate and the associated private key, not just a
-    certificate; the term "<glossterm>client certificate</glossterm>"
-    will used to refer to this pair.</para>
+    <type>ne_ssl_client_cert</type> object. The
+    <function>ne_ssl_clicert_import</function> function reads a client
+    certificate from a memory buffer using the PKCS#12 format. The
+    <function>ne_ssl_clicert_fromuri</function> function loads a
+    client certificate from a URI. URI schemes supported are defined
+    by the SSL/TLS toolkit, and may include <ulink url="https://www.rfc-editor.org/rfc/rfc7512.html">PKCS#11 URIs</ulink>.</para>
 
-    <para>A client certificate can be in one of two states:
+    <para>A <type>ne_ssl_client_cert</type> object represents both a
+    client certificate and the associated private key; the term
+    "<glossterm>client certificate</glossterm>" is used here to refer to
+    this pair. A client certificate object loaded by any of the above
+    functions can be in one of two states:
     <emphasis>encrypted</emphasis> or <emphasis>decrypted</emphasis>.
     The <function>ne_ssl_clicert_encrypted</function> function will
     return non-zero if the client certificate is in the
-    <emphasis>encrypted</emphasis> state.  A client certificate object
-    returned by <function>ne_ssl_clicert_read</function> may be
-    initially in either state, depending on whether the file was
-    encrypted or not.</para>
+    <emphasis>encrypted</emphasis> state.</para>
 
-    <para><function>ne_ssl_clicert_decrypt</function> can be used to
-    decrypt a client certificate using the appropriate password.  This
-    function must only be called if the object is in the
+    <para>A client certificate <emphasis>must</emphasis> be in the
+    decrypted state before it is associated with a
+    session. <function>ne_ssl_clicert_decrypt</function> can be used
+    to decrypt a client certificate using the appropriate password.
+    This function must only be called if the object is in the
     <emphasis>encrypted</emphasis> state; if decryption fails, the
     certificate state does not change, so decryption can be attempted
     more than once using different passwords.</para>
@@ -98,7 +115,7 @@
     only be called if the client certificate is in the
     <emphasis>decrypted</emphasis> state.</para>
 
-    <para>When the client certificate is no longer needed, the
+    <para>When the client certificate object is no longer needed, the
     <function>ne_ssl_clicert_free</function> function should be used
     to destroy the object.</para>
 
@@ -107,12 +124,15 @@
   <refsect1>
     <title>Return value</title>
 
-    <para><function>ne_ssl_clicert_read</function> returns a client
-    certificate object, or &null; if the file could not be read.
-    <function>ne_ssl_clicert_encrypted</function> returns zero if the
-    object is in the decrypted state, or non-zero if it is in the
-    encrypted state. <function>ne_ssl_clicert_name</function> returns
-    a &nul;-terminated friendly name string, or &null;.
+    <para><function>ne_ssl_clicert_read</function>,
+    <function>ne_ssl_clicert_import</function> and
+    <function>ne_ssl_clicert_fromuri</function> all return a client
+    certificate object, or &null; if the certificate could not be
+    read/imported.  <function>ne_ssl_clicert_encrypted</function>
+    returns zero if the object is in the decrypted state, or non-zero
+    if it is in the encrypted
+    state. <function>ne_ssl_clicert_name</function> returns a
+    &nul;-terminated friendly name string, or &null;.
     <function>ne_ssl_clicert_owner</function> returns a certificate
     object.</para>
 
@@ -141,6 +161,14 @@ if (ccert == NULL) {
 ne_ssl_set_clicert(sess, ccert);
 </programlisting>
 
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_ssl_clicert_import</function> was added in
+    &neon; 0.30.0. <function>ne_ssl_clicert_fromuri</function> was
+    added in &neon; 0.35.0.</para>
   </refsect1>
 
   <refsect1>

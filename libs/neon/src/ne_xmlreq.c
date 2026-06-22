@@ -31,10 +31,14 @@
 
 /* Handle an XML response parse error, setting session error string
  * and closing the connection. */
-static int parse_error(ne_session *sess, ne_xml_parser *parser)
+static int parse_error(ne_request *req, ne_xml_parser *parser)
 {
+    ne_session *const sess = ne_get_session(req);
+
     ne_set_error(sess, _("Could not parse response: %s"),
                  ne_xml_get_error(parser));
+    NE_DEBUG(NE_DBG_XML, "xmlreq: Parse failed, set error: %s\n",
+             ne_get_error(sess));
     ne_close_connection(sess);
     return NE_ERROR;
 }
@@ -48,7 +52,7 @@ int ne_xml_parse_response(ne_request *req, ne_xml_parser *parser)
     while ((bytes = ne_read_response_block(req, buf, sizeof buf)) > 0) {
         ret = ne_xml_parse(parser, buf, bytes);
         if (ret)
-            return parse_error(ne_get_session(req), parser);
+            return parse_error(req, parser);
     }
 
     if (bytes == 0) {
@@ -56,14 +60,14 @@ int ne_xml_parse_response(ne_request *req, ne_xml_parser *parser)
         if (ne_xml_parse(parser, NULL, 0) == 0)
             return NE_OK;
         else
-            return parse_error(ne_get_session(req), parser);
+            return parse_error(req, parser);
     } else {
         return NE_ERROR;
     }    
 }
 
 /* Returns non-zero if given content-type is an XML media type,
- * following the RFC 3023 rules. */
+ * following the RFC 7303 rules. */
 static int media_type_is_xml(const ne_content_type *ctype)
 {
     size_t stlen;
@@ -79,6 +83,12 @@ static int media_type_is_xml(const ne_content_type *ctype)
 
 int ne_xml_dispatch_request(ne_request *req, ne_xml_parser *parser)
 {
+    return ne_xml_dispatchif_request(req, parser, ne_accept_2xx, NULL);
+}
+
+int ne_xml_dispatchif_request(ne_request *req, ne_xml_parser *parser,
+                              ne_accept_response acpt, void *userdata)
+{
     int ret;
 
     do {
@@ -87,13 +97,26 @@ int ne_xml_dispatch_request(ne_request *req, ne_xml_parser *parser)
         ret = ne_begin_request(req);
         if (ret) break;
         
-        if (ne_get_status(req)->klass == 2) {
+        if (acpt(userdata, req, ne_get_status(req))) {
             ne_content_type ctype;
-            
+
             if (ne_get_content_type(req, &ctype) == 0) {
                 parseit = media_type_is_xml(&ctype);
+
+                if (parseit && ctype.charset) {
+                    NE_DEBUG(NE_DBG_XML, "xmlreq: Using charset '%s'\n",
+                             ctype.charset);
+                    if (ne_xml_set_encoding(parser, ctype.charset)) {
+                        ne_free(ctype.value);
+                        return parse_error(req, parser);
+                    }
+                }
                 ne_free(ctype.value);
             }
+
+            NE_DEBUG(NE_DBG_XML, "xmlreq: Accepted response status %d, "
+                     "will%s parse.\n", ne_get_status(req)->code,
+                     parseit ? "" : " not");
         }
 
         if (parseit)

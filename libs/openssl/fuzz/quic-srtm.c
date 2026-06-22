@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,11 @@ enum {
     CMD_ADD,
     CMD_REMOVE,
     CMD_CULL,
-    CMD_LOOKUP
+    CMD_LOOKUP,
+    CMD_MAX
 };
+
+#define MAX_CMDS 10000
 
 int FuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
@@ -47,6 +50,7 @@ int FuzzerTestOneInput(const uint8_t *buf, size_t len)
     unsigned int cmd;
     uint64_t arg_opaque, arg_seq_num, arg_idx;
     QUIC_STATELESS_RESET_TOKEN arg_token;
+    size_t limit = 0;
 
     if ((srtm = ossl_quic_srtm_new(NULL, NULL)) == NULL) {
         rc = -1;
@@ -60,7 +64,12 @@ int FuzzerTestOneInput(const uint8_t *buf, size_t len)
         if (!PACKET_get_1(&pkt, &cmd))
             goto err;
 
-        switch (cmd) {
+        if (++limit > MAX_CMDS) {
+            rc = 0;
+            goto err;
+        }
+
+        switch (cmd % CMD_MAX) {
         case CMD_ADD:
             if (!PACKET_get_net_8(&pkt, &arg_opaque)
                 || !PACKET_get_net_8(&pkt, &arg_seq_num)
@@ -108,6 +117,7 @@ int FuzzerTestOneInput(const uint8_t *buf, size_t len)
         }
     }
 
+    rc = 0;
 err:
     ossl_quic_srtm_free(srtm);
     return rc;

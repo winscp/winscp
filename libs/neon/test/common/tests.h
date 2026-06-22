@@ -63,6 +63,16 @@ extern ne_test tests[];
 #define T_LEAKY(fn) { fn, #fn, 0 }
 /* define a test function which is expected to fail memory leak checks */
 #define T_XLEAKY(fn) { fn, #fn, T_EXPECT_LEAKS }
+/* named test function. */
+#define T_NAMED(fn, name) { fn, name, T_CHECK_LEAKS }
+
+#ifdef NEON_TEST_INIT
+/* If the NEON_TEST_INIT macro is defined, it defines a function which
+ * will be called to parse the argv array, and can optionally disable
+ * use of colour or enable quiet output.  The main() function will
+ * bail out if the function returns non-zero. */
+int NEON_TEST_INIT(int argc, const char *const *argv, int *use_colour, int *quiet);
+#endif
 
 /* current test number */
 extern int test_num;

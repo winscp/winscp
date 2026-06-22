@@ -1,6 +1,6 @@
 /* 
    HTTP Request Handling
-   Copyright (C) 1999-2024, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2026, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -144,6 +144,14 @@ void ne_add_response_body_reader(ne_request *req, ne_accept_response accpt,
 const char *ne_get_response_header(ne_request *req, const char *name)
     ne_attribute((nonnull));
 
+/* Retrieve the value of the response header field from any chunked
+ * trailer with given name; returns NULL if no response header with
+ * the given name was found.  The return value is valid only until the
+ * next call to either ne_request_destroy or ne_begin_request for this
+ * request. */
+const char *ne_get_response_trailer(ne_request *req, const char *name)
+    ne_attribute((nonnull));
+
 /* Iterator interface for response headers: if passed a NULL cursor,
  * returns the first header; if passed a non-NULL cursor pointer,
  * returns the next header.  The return value is a cursor pointer: if
@@ -157,6 +165,13 @@ const char *ne_get_response_header(ne_request *req, const char *name)
  * request. */
 void *ne_response_header_iterate(ne_request *req, void *cursor,
                                  const char **name, const char **value);
+
+/* Iterator interface for response trailers; this has exactly the same
+ * semantics as ne_response_header_iterate() except it operates on
+ * fields in the trailer section (sent after a chunked response body)
+ * rather than the header section (sent before any response body). */
+void *ne_response_trailer_iterate(ne_request *req, void *cursor,
+                                  const char **name, const char **value);
 
 /* Adds a header to the request with given name and value. */
 void ne_add_request_header(ne_request *req, const char *name, 
@@ -181,6 +196,14 @@ const ne_uri *ne_get_request_target(ne_request *req)
  * header could not be parsed, or the Location header was not
  * present. */
 ne_uri *ne_get_response_location(ne_request *req, const char *fragment)
+    ne_attribute((nonnull (1)));
+
+/* If the response includes a Retry-After header, this function parses
+ * the time given in the header value and returns it. If a relative
+ * time is sent by the server, it will be handled relative to the time
+ * when this function is called. If no header is present, or the
+ * header value cannot be parsed, 0 is returned. */
+time_t ne_get_response_retry_after(ne_request *req)
     ne_attribute((nonnull (1)));
 
 /* ne_request_dispatch: Sends the given request, and reads the
@@ -236,7 +259,15 @@ int ne_discard_response(ne_request *req);
 
 /* Read response blocks until end of response, writing content to the
  * given file descriptor.  Returns NE_ERROR on error. */
-int ne_read_response_to_fd(ne_request *req, int fd);
+int ne_read_response_to_fd(ne_request *req, int fd)
+    ne_attribute((nonnull));
+
+/* Read response blocks until the end of the response, writing content
+ * to the buffer of length *buflen. On success, *buflen is updated
+ * with the number of bytes read. If the buffer is too small to
+ * contain the response, NE_FAILED is returned. */
+int ne_read_response_to_buffer(ne_request *req, char *buf, size_t *buflen)
+    ne_attribute((nonnull));
 
 /* Defined request flags: */
 typedef enum ne_request_flag_e {

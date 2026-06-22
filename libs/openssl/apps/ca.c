@@ -1,11 +1,13 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
+#include "internal/e_os.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -181,6 +183,8 @@ typedef enum OPTION_choice {
     OPT_CRLDAYS,
     OPT_CRLHOURS,
     OPT_CRLSEC,
+    OPT_NOT_BEFORE,
+    OPT_NOT_AFTER,
     OPT_INFILES,
     OPT_SS_CERT,
     OPT_SPKAC,
@@ -242,10 +246,13 @@ const OPTIONS ca_options[] = {
         "Always create a random serial; do not store it" },
     { "multivalue-rdn", OPT_MULTIVALUE_RDN, '-',
         "Deprecated; multi-valued RDNs support is always on." },
-    { "startdate", OPT_STARTDATE, 's', "Cert notBefore, YYMMDDHHMMSSZ" },
+    { "startdate", OPT_STARTDATE, 's',
+        "[CC]YYMMDDHHMMSSZ value for notBefore certificate field" },
+    { "not_before", OPT_NOT_BEFORE, 's', "An alias for -startdate" },
     { "enddate", OPT_ENDDATE, 's',
-        "YYMMDDHHMMSSZ cert notAfter (overrides -days)" },
-    { "days", OPT_DAYS, 'p', "Number of days to certify the cert for" },
+        "[CC]YYMMDDHHMMSSZ value for notAfter certificate field, overrides -days" },
+    { "not_after", OPT_NOT_AFTER, 's', "An alias for -enddate" },
+    { "days", OPT_DAYS, 'p', "Number of days from today to certify the cert for" },
     { "extensions", OPT_EXTENSIONS, 's',
         "Extension section (override value in config file)" },
     { "extfile", OPT_EXTFILE, '<',
@@ -402,9 +409,11 @@ int ca_main(int argc, char **argv)
             /* obsolete */
             break;
         case OPT_STARTDATE:
+        case OPT_NOT_BEFORE:
             startdate = opt_arg();
             break;
         case OPT_ENDDATE:
+        case OPT_NOT_AFTER:
             enddate = opt_arg();
             break;
         case OPT_DAYS:
@@ -913,22 +922,8 @@ end_of_options:
 
         if (startdate == NULL)
             startdate = app_conf_try_string(conf, section, ENV_DEFAULT_STARTDATE);
-        if (startdate != NULL && !ASN1_TIME_set_string_X509(NULL, startdate)) {
-            BIO_printf(bio_err,
-                "start date is invalid, it should be YYMMDDHHMMSSZ or YYYYMMDDHHMMSSZ\n");
-            goto end;
-        }
-        if (startdate == NULL)
-            startdate = "today";
-
         if (enddate == NULL)
             enddate = app_conf_try_string(conf, section, ENV_DEFAULT_ENDDATE);
-        if (enddate != NULL && !ASN1_TIME_set_string_X509(NULL, enddate)) {
-            BIO_printf(bio_err,
-                "end date is invalid, it should be YYMMDDHHMMSSZ or YYYYMMDDHHMMSSZ\n");
-            goto end;
-        }
-
         if (days == 0) {
             if (!app_conf_try_number(conf, section, ENV_DEFAULT_DAYS, &days))
                 days = 0;
@@ -937,6 +932,9 @@ end_of_options:
             BIO_printf(bio_err, "cannot lookup how many days to certify for\n");
             goto end;
         }
+        if (days != 0 && enddate != NULL)
+            BIO_printf(bio_err,
+                "Warning: -enddate or -not_after option overriding -days option\n");
 
         if (rand_ser) {
             if ((serial = BN_new()) == NULL || !rand_serial(serial, NULL)) {
@@ -1708,7 +1706,7 @@ static int do_body(X509 **xret, EVP_PKEY *pkey, X509 *x509,
             goto end;
     }
 
-    if (!set_cert_times(ret, startdate, enddate, days))
+    if (!set_cert_times(ret, startdate, enddate, days, 0))
         goto end;
 
     if (enddate != NULL) {

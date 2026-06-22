@@ -11,6 +11,7 @@
     <refname id="ne_addr_first">ne_addr_first</refname>
     <refname id="ne_addr_next">ne_addr_next</refname>
     <refname id="ne_addr_error">ne_addr_error</refname>
+    <refname id="ne_addr_canonical">ne_addr_canonical</refname>
     <refname id="ne_addr_destroy">ne_addr_destroy</refname>
     <refpurpose>functions to resolve hostnames to addresses</refpurpose>
   </refnamediv>
@@ -50,6 +51,11 @@
       </funcprototype>
 
       <funcprototype>
+        <funcdef>const char *<function>ne_addr_canonical</function></funcdef>
+        <paramdef>const ne_sock_addr *<parameter>addr</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
         <funcdef>void <function>ne_addr_destroy</function></funcdef>
         <paramdef>ne_sock_addr *<parameter>addr</parameter></paramdef>
       </funcprototype>
@@ -65,8 +71,9 @@
     the given <parameter>hostname</parameter>, returning an
     <type>ne_sock_addr</type> object representing the address (or
     addresses) associated with the hostname.  The
-    <parameter>flags</parameter> parameter is currently unused, and
-    must be passed as 0.</para>
+    <parameter>flags</parameter> parameter should be zero, or if
+    <literal>NE_ADDR_CANON</literal> used, the canonical name for
+    the hostname will be determined.</para>
 
     <para>The <parameter>hostname</parameter> passed to
     <function>ne_addr_resolve</function> can be a DNS hostname
@@ -95,6 +102,10 @@
     these functions can be passed to
     <function>ne_sock_connect</function> to connect a socket.</para>
 
+    <para>If the <literal>NE_ADDR_CANON</literal> flag was used with
+    <function>ne_addr_resolve</function>, the canonical hostname can
+    be retrieved using <function>ne_addr_canonical</function>.</para>
+
     <para>After the address object has been used, it should be
     destroyed using <function>ne_addr_destroy</function>.</para>
 
@@ -106,7 +117,7 @@
     <para><function>ne_addr_resolve</function> returns a pointer to an
     address object, and never &null;.
     <function>ne_addr_error</function> returns the
-    <parameter>buffer</parameter> parameter .</para>
+    <parameter>buffer</parameter> parameter.</para>
 
   </refsect1>
 
@@ -133,6 +144,12 @@ if (ne_addr_result(addr)) {
 }
 ne_addr_destroy(addr);
 </programlisting>
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_addr_canonical</function> was added in &neon; 0.30.0.</para>
   </refsect1>
 
   <refsect1>

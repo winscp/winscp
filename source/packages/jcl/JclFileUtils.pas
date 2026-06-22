@@ -4298,7 +4298,9 @@ var
   FileAttributesEx: WIN32_FILE_ATTRIBUTE_DATA;
   Size: TJclULargeInteger;
 begin
+  {$IFNDEF SUPPORTS_NORETURN}
   Result := 0;
+  {$ENDIF ~SUPPORTS_NORETURN}
   if GetFileAttributesEx(PChar(FileName), GetFileExInfoStandard, @FileAttributesEx) then
   begin
     Size.LowPart := FileAttributesEx.nFileSizeLow;

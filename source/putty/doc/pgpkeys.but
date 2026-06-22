@@ -9,7 +9,7 @@ This description is provided as both a web page on the PuTTY site, and
 an appendix in the PuTTY manual.
 
 As of release 0.58, all of the PuTTY executables contain fingerprint
-material (usually accessed via the \i\c{-pgpfp} command-line
+material (usually accessed via the \i\c{\-pgpfp} command-line
 option), such that if you have an executable you trust, you can use
 it to establish a trust path, for instance to a newer version
 downloaded from the Internet.

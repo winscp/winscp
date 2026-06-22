@@ -73,18 +73,23 @@ void ossl_synchronize_rcu(CRYPTO_RCU_LOCK *lock)
     }
 }
 
-int ossl_rcu_call(CRYPTO_RCU_LOCK *lock, rcu_cb_fn cb, void *data)
+CRYPTO_RCU_CB_ITEM *ossl_rcu_cb_item_new(void)
 {
-    struct rcu_cb_item *new = OPENSSL_zalloc(sizeof(*new));
+    return OPENSSL_zalloc(sizeof(CRYPTO_RCU_CB_ITEM));
+}
 
-    if (new == NULL)
-        return 0;
+void ossl_rcu_cb_item_free(CRYPTO_RCU_CB_ITEM *item)
+{
+    OPENSSL_free(item);
+}
 
-    new->fn = cb;
-    new->data = data;
-    new->next = lock->cb_items;
-    lock->cb_items = new;
-    return 1;
+void ossl_rcu_call(CRYPTO_RCU_LOCK *lock, CRYPTO_RCU_CB_ITEM *item,
+    rcu_cb_fn cb, void *data)
+{
+    item->fn = cb;
+    item->data = data;
+    item->next = lock->cb_items;
+    lock->cb_items = item;
 }
 
 void *ossl_rcu_uptr_deref(void **p)
@@ -162,14 +167,9 @@ struct thread_local_storage_entry {
 
 static struct thread_local_storage_entry thread_local_storage[OPENSSL_CRYPTO_THREAD_LOCAL_KEY_MAX];
 
-int CRYPTO_THREAD_init_local(CRYPTO_THREAD_LOCAL *key, void (*cleanup)(void *))
+int ossl_thread_init_local(CRYPTO_THREAD_LOCAL *key, void (*cleanup)(void *))
 {
     int entry_idx = 0;
-
-#ifndef FIPS_MODULE
-    if (!ossl_init_thread())
-        return 0;
-#endif
 
     for (entry_idx = 0; entry_idx < OPENSSL_CRYPTO_THREAD_LOCAL_KEY_MAX; entry_idx++) {
         if (!thread_local_storage[entry_idx].used)
@@ -233,6 +233,24 @@ int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock)
     return 1;
 }
 
+int CRYPTO_atomic_add64(uint64_t *val, uint64_t op, uint64_t *ret,
+    CRYPTO_RWLOCK *lock)
+{
+    *val += op;
+    *ret = *val;
+
+    return 1;
+}
+
+int CRYPTO_atomic_and(uint64_t *val, uint64_t op, uint64_t *ret,
+    CRYPTO_RWLOCK *lock)
+{
+    *val &= op;
+    *ret = *val;
+
+    return 1;
+}
+
 int CRYPTO_atomic_or(uint64_t *val, uint64_t op, uint64_t *ret,
     CRYPTO_RWLOCK *lock)
 {
@@ -245,6 +263,13 @@ int CRYPTO_atomic_or(uint64_t *val, uint64_t op, uint64_t *ret,
 int CRYPTO_atomic_load(uint64_t *val, uint64_t *ret, CRYPTO_RWLOCK *lock)
 {
     *ret = *val;
+
+    return 1;
+}
+
+int CRYPTO_atomic_store(uint64_t *dst, uint64_t val, CRYPTO_RWLOCK *lock)
+{
+    *dst = val;
 
     return 1;
 }

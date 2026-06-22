@@ -354,7 +354,7 @@ static int aes_ocb_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     const OSSL_PARAM *p;
     size_t sz;
 
-    if (params == NULL)
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_AEAD_TAG);
@@ -511,6 +511,19 @@ static int aes_ocb_cipher(void *vctx, unsigned char *out, size_t *outl,
 
     if (outsize < inl) {
         ERR_raise(ERR_LIB_PROV, PROV_R_OUTPUT_BUFFER_TOO_SMALL);
+        return 0;
+    }
+
+    /*
+     * Mirror the streaming handler: refuse if the key has not been set,
+     * and push the buffered IV into the OCB context before any data is
+     * processed.  Without this, CRYPTO_ocb128_encrypt/decrypt runs with
+     * Offset_0 = 0 regardless of the caller's IV -- catastrophic
+     * (key, nonce) reuse, and a subsequent EVP_*Final_ex() emits a tag
+     * that is a function of (key, iv) only.
+     */
+    if (!ctx->key_set || !update_iv(ctx)) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_CIPHER_OPERATION_FAILED);
         return 0;
     }
 

@@ -563,7 +563,7 @@ int SSL_shutdown_ex(SSL *ssl,
 are read only on the first call to `SSL_shutdown_ex` for a given SSL object and
 subsequent calls to `SSL_shutdown_ex` ignore the `args` argument. `args_len`
 should be set to `sizeof(*args)`. This function is idempotent; once the shutdown
-process for a SSL object is complete, further calls are a no-op and return 1.
+process for an SSL object is complete, further calls are a no-op and return 1.
 
 Calling `SSL_shutdown_ex` on a QUIC connection SSL object causes the immediate
 close of the QUIC connection. “Immediate close” is as defined by RFC 9000.
@@ -744,7 +744,7 @@ no-ops. This is considered a success case.
  *
  * For SSL_get_stream_read_state, this means that there is no more data to read,
  * and that any future SSL_read calls will return any residual data waiting to
- * be read followed by a SSL_ERROR_ZERO_RETURN condition.
+ * be read followed by an SSL_ERROR_ZERO_RETURN condition.
  *
  * For SSL_get_stream_write_state, this means that the local application has
  * already indicated the end of the stream by calling SSL_stream_conclude,
@@ -949,7 +949,7 @@ int SSL_is_connection(SSL *ssl);
 
 ```c
 /*
- * If the object represents a stream, returns a SSL_STREAM_TYPE value
+ * If the object represents a stream, returns an SSL_STREAM_TYPE value
  * designating whether the stream can be used for transmission, reception,
  * or both.
  *
@@ -1480,7 +1480,7 @@ network BIO.)
 There are only really two ways to handle this:
 
 - **RFC conformant mode.** `SSL_shutdown` only indicates that shutdown is
-  complete once the the entire connection closure process is complete.
+  complete once the entire connection closure process is complete.
 
   This process consists of the Closing and Draining states. In some cases the
   Closing state may last only briefly, namely if the peer chooses to respond to

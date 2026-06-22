@@ -1436,7 +1436,7 @@ err:
 /*
  * This is a variant of modular exponentiation optimization that does
  * parallel 2-primes exponentiation using 256-bit (AVX512VL) AVX512_IFMA ISA
- * in 52-bit binary redundant representation.
+ * or AVX_IFMA ISA in 52-bit binary redundant representation.
  * If such instructions are not available, or input data size is not supported,
  * it falls back to two BN_mod_exp_mont_consttime() calls.
  */
@@ -1452,7 +1452,7 @@ int BN_mod_exp_mont_consttime_x2(BIGNUM *rr1, const BIGNUM *a1, const BIGNUM *p1
     BN_MONT_CTX *mont1 = NULL;
     BN_MONT_CTX *mont2 = NULL;
 
-    if (ossl_rsaz_avx512ifma_eligible() && (((a1->top == 16) && (p1->top == 16) && (BN_num_bits(m1) == 1024) && (a2->top == 16) && (p2->top == 16) && (BN_num_bits(m2) == 1024)) || ((a1->top == 24) && (p1->top == 24) && (BN_num_bits(m1) == 1536) && (a2->top == 24) && (p2->top == 24) && (BN_num_bits(m2) == 1536)) || ((a1->top == 32) && (p1->top == 32) && (BN_num_bits(m1) == 2048) && (a2->top == 32) && (p2->top == 32) && (BN_num_bits(m2) == 2048)))) {
+    if ((ossl_rsaz_avx512ifma_eligible() || ossl_rsaz_avxifma_eligible()) && (((a1->top == 16) && (p1->top == 16) && (BN_num_bits(m1) == 1024) && (a2->top == 16) && (p2->top == 16) && (BN_num_bits(m2) == 1024)) || ((a1->top == 24) && (p1->top == 24) && (BN_num_bits(m1) == 1536) && (a2->top == 24) && (p2->top == 24) && (BN_num_bits(m2) == 1536)) || ((a1->top == 32) && (p1->top == 32) && (BN_num_bits(m1) == 2048) && (a2->top == 32) && (p2->top == 32) && (BN_num_bits(m2) == 2048)))) {
 
         int topn = a1->top;
         /* Modulus bits of |m1| and |m2| are equal */

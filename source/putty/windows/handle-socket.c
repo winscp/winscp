@@ -118,11 +118,17 @@ static void handle_sentdata(struct handle *h, size_t new_backlog, int err,
     HandleSocket *hs = (HandleSocket *)handle_get_privdata(h);
 
     if (close) {
-        if (hs->send_H != INVALID_HANDLE_VALUE)
+        /* This is acknowledging, after we did handle_write_eof, that
+         * all the data pending on the outgoing handle send_H is done.
+         * So we can close it. We don't necessarily want to close
+         * recv_H yet, but if they're the same bidirectional handle
+         * like a named pipe, we have no choice. */
+        if (hs->send_H != INVALID_HANDLE_VALUE) {
             CloseHandle(hs->send_H);
-        if (hs->recv_H != INVALID_HANDLE_VALUE && hs->recv_H != hs->send_H)
-            CloseHandle(hs->recv_H);
-        hs->send_H = hs->recv_H = INVALID_HANDLE_VALUE;
+            if (hs->recv_H == hs->send_H)
+                hs->recv_H = INVALID_HANDLE_VALUE;
+            hs->send_H = INVALID_HANDLE_VALUE;
+        }
     }
 
     if (err) {

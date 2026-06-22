@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2026 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright Siemens AG 2022
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -113,8 +113,7 @@ static OSSL_CMP_ITAV *get_genm_itav(OSSL_CMP_CTX *ctx,
     for (i = 0; i < n; i++) {
         OSSL_CMP_ITAV *itav = sk_OSSL_CMP_ITAV_shift(itavs);
         ASN1_OBJECT *obj = OSSL_CMP_ITAV_get0_type(itav);
-        char name[128] = "genp contains InfoType '";
-        size_t offset = strlen(name);
+        char name[128];
 
         if (OBJ_obj2nid(obj) == expected) {
             for (i++; i < n; i++)
@@ -123,9 +122,11 @@ static OSSL_CMP_ITAV *get_genm_itav(OSSL_CMP_CTX *ctx,
             return itav;
         }
 
-        if (OBJ_obj2txt(name + offset, sizeof(name) - offset, obj, 0) < 0)
-            strcat(name, "<unknown>");
-        ossl_cmp_log2(WARN, ctx, "%s' while expecting 'id-it-%s'", name, desc);
+        if (OBJ_obj2txt(name, sizeof(name), obj, 0) < 0)
+            name[0] = '\0';
+        ossl_cmp_log2(WARN, ctx,
+            "genp contains InfoType '%s' while expecting 'id-it-%s'",
+            name[0] == '\0' ? "<unknown>" : name, desc);
         OSSL_CMP_ITAV_free(itav);
     }
     ERR_raise_data(ERR_LIB_CMP, CMP_R_INVALID_GENP,
@@ -202,7 +203,7 @@ static int selfsigned_verify_cb(int ok, X509_STORE_CTX *store_ctx)
         for (i = 0; i < sk_X509_num(trust); i++) {
             issuer = sk_X509_value(trust, i);
             if ((*check_issued)(store_ctx, cert, issuer)) {
-                if (X509_add_cert(chain, cert, X509_ADD_FLAG_UP_REF))
+                if (X509_add_cert(chain, issuer, X509_ADD_FLAG_UP_REF))
                     ok = 1;
                 break;
             }
@@ -235,6 +236,7 @@ static int verify_ss_cert(OSSL_LIB_CTX *libctx, const char *propq,
     if ((csc = X509_STORE_CTX_new_ex(libctx, propq)) == NULL
         || !X509_STORE_CTX_init(csc, ts, target, untrusted))
         goto err;
+    X509_STORE_CTX_set_flags(csc, X509_V_FLAG_CHECK_SS_SIGNATURE);
     X509_STORE_CTX_set_verify_cb(csc, selfsigned_verify_cb);
     ok = X509_verify_cert(csc) > 0;
 
@@ -253,7 +255,8 @@ verify_ss_cert_trans(OSSL_CMP_CTX *ctx, X509 *trusted /* may be NULL */,
     int res = 0;
 
     if (trusted != NULL) {
-        X509_VERIFY_PARAM *vpm = X509_STORE_get0_param(ts);
+        X509_VERIFY_PARAM *vpm = (ts == NULL) ? NULL
+                                              : X509_STORE_get0_param(ts);
 
         if ((ts = X509_STORE_new()) == NULL)
             return 0;
@@ -339,5 +342,99 @@ free:
 end:
     OSSL_CMP_ITAV_free(itav);
     X509_free(oldWithOld_copy);
+    return res;
+}
+
+int OSSL_CMP_get1_crlUpdate(OSSL_CMP_CTX *ctx, const X509 *crlcert,
+    const X509_CRL *last_crl,
+    X509_CRL **crl)
+{
+    OSSL_CMP_CRLSTATUS *status = NULL;
+    STACK_OF(OSSL_CMP_CRLSTATUS) *list = NULL;
+    OSSL_CMP_ITAV *req = NULL, *itav = NULL;
+    STACK_OF(X509_CRL) *crls = NULL;
+    int res = 0;
+
+    if (crl == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+        return 0;
+    }
+    *crl = NULL;
+
+    if ((status = OSSL_CMP_CRLSTATUS_create(last_crl, crlcert, 1)) == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_GENERATE_CRLSTATUS);
+        goto end;
+    }
+    if ((list = sk_OSSL_CMP_CRLSTATUS_new_reserve(NULL, 1)) == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_GENERATE_CRLSTATUS);
+        goto end;
+    }
+    (void)sk_OSSL_CMP_CRLSTATUS_push(list, status); /* cannot fail */
+
+    if ((req = OSSL_CMP_ITAV_new0_crlStatusList(list)) == NULL)
+        goto end;
+    status = NULL;
+    list = NULL;
+
+    if ((itav = get_genm_itav(ctx, req, NID_id_it_crls, "crl")) == NULL)
+        goto end;
+
+    if (!OSSL_CMP_ITAV_get0_crls(itav, &crls))
+        goto end;
+
+    if (crls == NULL) { /* no CRL update available */
+        res = 1;
+        goto end;
+    }
+    if (sk_X509_CRL_num(crls) != 1) {
+        ERR_raise_data(ERR_LIB_CMP, CMP_R_INVALID_GENP,
+            "Unexpected number of CRLs in genp: %d",
+            sk_X509_CRL_num(crls));
+        goto end;
+    }
+
+    if ((*crl = sk_X509_CRL_value(crls, 0)) == NULL || !X509_CRL_up_ref(*crl)) {
+        *crl = NULL;
+        goto end;
+    }
+    res = 1;
+end:
+    OSSL_CMP_CRLSTATUS_free(status);
+    sk_OSSL_CMP_CRLSTATUS_free(list);
+    OSSL_CMP_ITAV_free(itav);
+    return res;
+}
+
+int OSSL_CMP_get1_certReqTemplate(OSSL_CMP_CTX *ctx,
+    OSSL_CRMF_CERTTEMPLATE **certTemplate,
+    OSSL_CMP_ATAVS **keySpec)
+{
+    OSSL_CMP_ITAV *req, *itav = NULL;
+    int res = 0;
+
+    if (keySpec != NULL)
+        *keySpec = NULL;
+    if (certTemplate == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+        return 0;
+    }
+    *certTemplate = NULL;
+
+    if ((req = OSSL_CMP_ITAV_new0_certReqTemplate(NULL, NULL)) == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_GENERATE_CERTREQTEMPLATE);
+        return 0;
+    }
+
+    if ((itav = get_genm_itav(ctx, req, NID_id_it_certReqTemplate,
+             "certReqTemplate"))
+        == NULL)
+        return 0;
+
+    if (!OSSL_CMP_ITAV_get1_certReqTemplate(itav, certTemplate, keySpec))
+        goto end;
+
+    res = 1;
+end:
+    OSSL_CMP_ITAV_free(itav);
     return res;
 }

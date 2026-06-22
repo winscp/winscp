@@ -186,6 +186,12 @@ and backslash-delimited tokens, although most of them are probably not
 very useful in this context.)
 }
 
+\dt \cw{\-preconnectcommand} \e{command}
+
+\dd Specify an external command to run just before making the main
+network connection. The syntax of \e{command} is similar to that
+for \cw{-proxycmd}.
+
 \dt \cw{\-l} \e{username}
 
 \dd Specify the username to use when logging in to the server.

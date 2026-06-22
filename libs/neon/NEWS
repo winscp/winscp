@@ -1,3 +1,71 @@
+Changes in release 0.37.1:
+* Bug fixes:
+ - fix compile warnings with OpenSSL 4.0.0-alpha1
+ - fix NTLM test case failures on big-endian systems
+ - fix test suite with SSL enabled in VPATH builds
+
+Changes in release 0.37.0:
+* Interface changes:
+ - API and ABI backwards-compatible with 0.27.x and later
+* New interfaces and feaures:
+ - ne_socket.h: add ne_sock_handshake(); deprecate ne_ssl_connect_ssl();
+   add ne_sock_getcert(), ne_iaddr_put()
+ - ne_ssl.h: add ne_ssl_clicert_copy(), ne_ssl_context_trustdefca(),
+   ne_ssl_check_certificate(), ne_ssl_context_set_clicert(),
+   ne_ssl_context_set_ccprovide()
+ - ne_request.h: add ne_get_response_trailer(), ne_response_trailer_iterate()
+   headers from the chunked trailer section are no longer merged with
+   response headers to conform with RFC 9110 section 6.5
+ - ne_string.h: add ne_strlower(), ne_strupper(), ne_mknonce(), NE_HASH_SHA1
+ - dropped bundled NTLM code; Libntlm <https://gitlab.com/gsasl/libntlm>
+   is now required for NTLM authentication support
+ - ne_utils.h: ne_version_match() description fixed to match code;
+   add ne_version_library()
+* Bug fixes:
+ - fix ne_xml_set_encoding() failure case with libxml 2.13+.
+ - ne_session_create() passed-in scheme now always lower-cased
+
+Changes in release 0.36.0:
+* Interface changes:
+ - API and ABI backwards-compatible with 0.27.x and later
+* New interfaces and features:
+ - ne_xml.h: add ne_xml_set_encoding()
+ - ne_xmlreq.h: add ne_xml_dispatchif_request(); this and
+   ne_xml_dispatch_request() both invoke ne_xml_set_encoding()
+   with the charset= from the Content-Type, if present
+ - ne_request.h: add ne_read_response_to_buffer()
+ - ne_basic.h: add ne_getbuf()
+* Bug fixes:
+ - fix ne_simple_request() failures on non-207 XML responses (#208)
+ - invoke the notifier callback again at the end of a chunked response
+ - fix a failure case where a proxy connection could get reused after
+   SSL proxy tunnel setup failed at the proxy
+ - fix ne_sock_* OpenSSL 3.4 error handling on Windows (#213)
+ - ne_get_content_type() updated for RFC 7303: default charset
+   for text/ media types is removed
+* Various documentation updates.
+
+Changes in release 0.35.0:
+* Interface changes:
+ - API and ABI backwards-compatible with 0.27.x and later
+ - pakchois-based PKCS#11 support is now deprecated
+* Interface clarifications:
+ - ne_md5_read_ctx() may return NULL
+* New interfaces and features:
+ - ne_request.h: add ne_get_response_retry_after()
+ - ne_uri.h: add NE_PATH_NONPC escaping rule
+ - ne_string.h: add ne_strhextoul()
+ - ne_ssl.h: add ne_ssl_clicert_fromuri(), a simpler API
+   to retrieve client certs based on (e.g.) PKCS#11 URIs;
+   only supported with OpenSSL currently.
+ - ne_session.h: add ne_status_handshake to notifier API
+* Bug fixes:
+ - ne_path_escape() now follows NE_PATH_NONPC pct-encoding
+   rule by default (fixes #181)
+ - ne_md5_*(): for OpenSSL, now uses the EVP* API
+ - session caching fixes for OpenSSL
+* "BUGS" document removed, use https://github.com/notroj/neon/issues
+
 Changes in release 0.34.2:
 * Fix regression in NTLM auth in 0.34.0 (issue #190).
 * Add docs for ne_ssl_proto_name, ne_ssl_protovers, ne_get_request_target.

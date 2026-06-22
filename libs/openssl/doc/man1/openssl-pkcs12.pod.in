@@ -7,6 +7,8 @@ openssl-pkcs12 - PKCS#12 file command
 
 =head1 SYNOPSIS
 
+=for openssl duplicate options
+
 B<openssl> B<pkcs12>
 [B<-help>]
 [B<-passin> I<arg>]
@@ -62,6 +64,8 @@ PKCS#12 output (export) options:
 [B<-certpbe> I<cipher>]
 [B<-descert>]
 [B<-macalg> I<digest>]
+[B<-pbmac1_pbkdf2>]
+[B<-pbmac1_pbkdf2_md> I<digest>]
 [B<-iter> I<count>]
 [B<-noiter>]
 [B<-nomaciter>]
@@ -172,7 +176,7 @@ see the L</PKCS#12 output (export) options> section.
 =item B<-out> I<filename>
 
 The filename to write certificates and private keys to, standard output by
-default.  They are all written in PEM format.
+default. They are all written in PEM format.
 
 =item B<-info>
 
@@ -345,6 +349,15 @@ then both, the private key and the certificates are encrypted using triple DES.
 
 Specify the MAC digest algorithm. If not included SHA256 will be used.
 
+=item B<-pbmac1_pbkdf2>
+
+Use PBMAC1 with PBKDF2 for MAC protection of the PKCS#12 file.
+
+=item B<-pbmac1_pbkdf2_md> I<digest>
+
+Specify the PBKDF2 KDF digest algorithm. If not specified, SHA256 will be used.
+Unless C<-pbmac1_pbkdf2> is specified, this parameter is ignored.
+
 =item B<-iter> I<count>
 
 This option specifies the iteration count for the encryption key and MAC. The
@@ -477,7 +490,7 @@ The B<-nodes> option was deprecated in OpenSSL 3.0, too; use B<-noenc> instead.
 
 =head1 COPYRIGHT
 
-Copyright 2000-2021 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2000-2025 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

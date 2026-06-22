@@ -99,7 +99,7 @@ type
     FDynamicBuild: Boolean;
     FSystemModulesOnly: Boolean;
     FRefCount: Integer;
-    function GetItems(Index: Integer): TJclModuleInfo;
+    function GetItems(Index: TJclListSize): TJclModuleInfo;
     function GetModuleFromAddress(Addr: Pointer): TJclModuleInfo;
   protected
     procedure BuildModulesList;
@@ -110,7 +110,7 @@ type
     function IsSystemModuleAddress(Addr: Pointer): Boolean;
     function IsValidModuleAddress(Addr: Pointer): Boolean;
     property DynamicBuild: Boolean read FDynamicBuild;
-    property Items[Index: Integer]: TJclModuleInfo read GetItems;
+    property Items[Index: TJclListSize]: TJclModuleInfo read GetItems;
     property ModuleFromAddress[Addr: Pointer]: TJclModuleInfo read GetModuleFromAddress;
   end;
 
@@ -495,7 +495,7 @@ type
   TJclDebugInfoList = class(TObjectList)
   private
     function GetItemFromModule(const Module: HMODULE): TJclDebugInfoSource;
-    function GetItems(Index: Integer): TJclDebugInfoSource;
+    function GetItems(Index: TJclListSize): TJclDebugInfoSource;
   protected
     function CreateDebugInfo(const Module: HMODULE): TJclDebugInfoSource;
   public
@@ -508,7 +508,7 @@ type
     class procedure NeedInfoSourceClassList;
     function GetLocationInfo(const Addr: Pointer; out Info: TJclLocationInfo): Boolean;
     property ItemFromModule[const Module: HMODULE]: TJclDebugInfoSource read GetItemFromModule;
-    property Items[Index: Integer]: TJclDebugInfoSource read GetItems;
+    property Items[Index: TJclListSize]: TJclDebugInfoSource read GetItems;
   end;
 
   // Various source location implementations
@@ -688,7 +688,7 @@ type
     {$IFDEF CPU64}
     procedure CaptureBackTrace;
     {$ENDIF CPU64}
-    function GetItems(Index: Integer): TJclStackInfoItem;
+    function GetItems(Index: TJclListSize): TJclStackInfoItem;
     function NextStackFrame(var StackFrame: PStackFrame; var StackInfo: TStackInfo): Boolean;
     procedure StoreToList(const StackInfo: TStackInfo);
     procedure TraceStackFrames;
@@ -715,7 +715,7 @@ type
       IncludeAddressOffset: Boolean = False; IncludeStartProcLineOffset: Boolean = False;
       IncludeVAddress: Boolean = False);
     property DelayedTrace: Boolean read FDelayedTrace;
-    property Items[Index: Integer]: TJclStackInfoItem read GetItems; default;
+    property Items[Index: TJclListSize]: TJclStackInfoItem read GetItems; default;
     property IgnoreLevels: Integer read FIgnoreLevels;
     property Count: Integer read GetCount;
     property Raw: Boolean read FRaw;
@@ -812,13 +812,13 @@ type
   TJclExceptFrameList = class(TJclStackBaseList)
   private
     FIgnoreLevels: Integer;
-    function GetItems(Index: Integer): TJclExceptFrame;
+    function GetItems(Index: TJclListSize): TJclExceptFrame;
   protected
     function AddFrame(AFrame: PExcFrame): TJclExceptFrame;
   public
     constructor Create(AIgnoreLevels: Integer);
     procedure TraceExceptionFrames;
-    property Items[Index: Integer]: TJclExceptFrame read GetItems;
+    property Items[Index: TJclListSize]: TJclExceptFrame read GetItems;
     property IgnoreLevels: Integer read FIgnoreLevels write FIgnoreLevels;
   end;
 
@@ -1303,7 +1303,7 @@ begin
     Add(Result);
 end;
 
-function TJclModuleInfoList.GetItems(Index: Integer): TJclModuleInfo;
+function TJclModuleInfoList.GetItems(Index: TJclListSize): TJclModuleInfo;
 begin
   Result := TJclModuleInfo(Get(Index));
 end;
@@ -3987,7 +3987,7 @@ begin
   end;
 end;
 
-function TJclDebugInfoList.GetItems(Index: Integer): TJclDebugInfoSource;
+function TJclDebugInfoList.GetItems(Index: TJclListSize): TJclDebugInfoSource;
 begin
   Result := TJclDebugInfoSource(Get(Index));
 end;
@@ -5577,7 +5577,9 @@ var
   TBI: THREAD_BASIC_INFORMATION;
   ReturnedLength: ULONG;
 begin
+  {$IFNDEF SUPPORTS_NORETURN}
   Result := 0;
+  {$ENDIF ~SUPPORTS_NORETURN}
   ReturnedLength := 0;
   if (NtQueryInformationThread(ThreadHandle, ThreadBasicInformation, @TBI, SizeOf(TBI), @ReturnedLength) < $80000000) and
      (ReturnedLength = SizeOf(TBI)) then
@@ -5816,7 +5818,7 @@ begin
   end;
 end;
 
-function TJclStackInfoList.GetItems(Index: Integer): TJclStackInfoItem;
+function TJclStackInfoList.GetItems(Index: TJclListSize): TJclStackInfoItem;
 begin
   ForceStackTracing;
   Result := TJclStackInfoItem(Get(Index));
@@ -6613,10 +6615,12 @@ begin
           // 7 bytes, "CALL NEAR [EAX+EAX+$1234567]" (FF /2) where Reg = 010, Mod = 10 and RM = 100
           CallInstructionSize := 7
         else
+{$IFNDEF CPUX64} //The 9A cp call opcode is not valid in 64-bit mode
         if ((CodeDWORD8 and $0000FF00) = $00009A00) then
           // 7 bytes, "CALL FAR $1234:12345678" (9A ptr16:32)
           CallInstructionSize := 7
         else
+{$ENDIF}
           Result := False;
         // Because we're not doing a complete disassembly, we will potentially report
         // false positives. If there is odd code that uses the CALL 16:32 format, we
@@ -6833,7 +6837,7 @@ begin
   Add(Result);
 end;
 
-function TJclExceptFrameList.GetItems(Index: Integer): TJclExceptFrame;
+function TJclExceptFrameList.GetItems(Index: TJclListSize): TJclExceptFrame;
 begin
   Result := TJclExceptFrame(Get(Index));
 end;

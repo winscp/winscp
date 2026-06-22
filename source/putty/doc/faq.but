@@ -7,8 +7,10 @@ appendix in the manual.
 
 \S{faq-what}{Question} What is PuTTY?
 
-PuTTY is a client program for the SSH, Telnet, Rlogin, and SUPDUP
-network protocols.
+PuTTY is a client program for the SSH network protocol, usually used
+to run terminal sessions over a network. It also supports running
+terminal sessions over a serial port, and a variety of older legacy
+network protocols such as Telnet, Rlogin, and SUPDUP.
 
 These protocols are all used to run a remote session on a computer,
 over a network. PuTTY implements the client end of that session: the
@@ -22,6 +24,63 @@ Unix machine, and everything the Unix machine sends back is
 displayed in the window. So you can work on the Unix machine as if
 you were sitting at its console, while actually sitting somewhere
 else.
+
+\S{faq-why}{Question} Why use PuTTY when I could use OpenSSH?
+
+These days, Windows comes with a version of OpenSSH as an optional
+component of the operating system, and its command prompt windows are
+much more like Unix terminals than they used to be. So it's true that
+if you want SSH on Windows, you can use OpenSSH in a Windows terminal,
+and not have to install PuTTY at all.
+
+We're not going to try to persuade you that you \e{shouldn't} use
+OpenSSH in preference to PuTTY. PuTTY is free software, in the \q{no
+cost} sense as well as the \q{freedom} sense \dash we don't get more
+money by having more users. PuTTY and OpenSSH have different feature
+sets, and different ways of doing things, and it's entirely up to you
+which you prefer.
+
+A few examples of things you might like about PuTTY:
+
+\b a range of built-in options to log your session to a file
+
+\b a range of configurable tweaks to the terminal emulation
+
+\b a unified saved-session system that lets you customise your
+settings for a particular destination host, including the SSH-specific
+settings (like authentication) \e{and} terminal and logging setup
+
+\b access to mid-session configuration via the GUI, instead of
+stealing a key sequence from your remote terminal session. With the
+OpenSSH [Return][\cw{~}][thing] system, you always have to remember
+it's there even when you're not using it, to avoid triggering it with
+input you meant to send to the server. In PuTTY, the corresponding
+facilities (like reconfiguring port forwardings) are done using the
+GUI menus, and \e{all} keystrokes typed into the window consistently
+go to the server.
+
+\b simply, \e{different} terminal emulation from Windows's one, which
+you might find works better for some remote applications. Or you might
+not, of course; it will depend on what kind of machine you're
+connecting to, and maybe your personal preferences. And many people
+will have no opinion either way.
+
+\b and, of course, support for things that aren't SSH. In particular,
+talking to serial ports instead of the network.
+
+But if none of this impresses you, and you'd rather use Windows's
+version of OpenSSH, that's up to you.
+
+Unix, of course, has always had OpenSSH, even before the Unix version
+of PuTTY existed. So this question has been relevant for much longer!
+When we first wrote the Unix port of PuTTY, people asked us why it was
+necessary. Partly the answer was that having the PuTTY code run on
+Unix too made it easier to develop in general (Unix had a wider range
+of better development and debugging facilities, and in my opinion,
+still does). But the same considerations as above also apply: on Unix
+too I use GUI PuTTY for my SSH connections, so that I never have to
+deal with that \cw{~} business, and I use the Unix \cw{pterm} for my
+local terminal sessions too.
 
 \H{faq-support} Features supported in PuTTY
 
@@ -43,67 +102,11 @@ page}, and see if you can find the feature there. If it's on there,
 and not in the \q{Recently fixed} section, it probably \e{hasn't} been
 implemented.
 
-\S{faq-ssh2}{Question} Does PuTTY support SSH-2?
-
-Yes. SSH-2 support has been available in PuTTY since version 0.50 in
-2000.
-
-Public key authentication (both RSA and DSA) in SSH-2 was new in
-version 0.52 in 2002.
-
-\S{faq-ssh2-keyfmt}{Question} Does PuTTY support reading OpenSSH or
-\cw{ssh.com} SSH-2 private key files?
-
-PuTTY doesn't support this natively (see
-\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/key-formats-natively.html}{the wishlist entry}
-for reasons why not), but as of 0.53
-PuTTYgen can convert both OpenSSH and \cw{ssh.com} private key
-files into PuTTY's format.
-
-\S{faq-ssh1}{Question} Does PuTTY support SSH-1?
-
-Yes. SSH-1 support has always been available in PuTTY.
-
-However, the SSH-1 protocol has many weaknesses and is no longer
-considered secure; you should use SSH-2 instead if at all possible.
-
-As of 0.68, PuTTY will no longer fall back to SSH-1 if the server
-doesn't appear to support SSH-2; you must explicitly ask for SSH-1.
-
-\S{faq-localecho}{Question} Does PuTTY support \i{local echo}?
-
-Yes. Version 0.52 has proper support for local echo.
-
-In version 0.51 and before, local echo could not be separated from
-local line editing (where you type a line of text locally, and it is
-not sent to the server until you press Return, so you have the
-chance to edit it and correct mistakes \e{before} the server sees
-it). New in version 0.52, local echo and local line editing are
-separate options, and by default PuTTY will try to determine
-automatically whether to enable them or not, based on which protocol
-you have selected and also based on hints from the server. If you
-have a problem with PuTTY's default choice, you can force each
-option to be enabled or disabled as you choose. The controls are in
-the Terminal panel, in the section marked \q{Line discipline
-options}.
-
-\S{faq-savedsettings}{Question} Does PuTTY support storing settings,
-so I don't have to change them every time?
-
-Yes, all of PuTTY's settings can be saved in named session profiles.
-You can also change the default settings that are used for new sessions.
-See \k{config-saving} in the documentation for how to do this.
-
 \S{faq-disksettings}{Question} Does PuTTY support storing its
 settings in a disk file?
 
 Not at present, although \k{config-file} in the documentation gives
 a method of achieving the same effect.
-
-\S{faq-fullscreen}{Question} Does PuTTY support full-screen mode,
-like a DOS box?
-
-Yes; this was added in version 0.52, in 2002.
 
 \S{faq-password-remember}{Question} Does PuTTY have the ability to
 \i{remember my password} so I don't have to type it every time?
@@ -155,21 +158,27 @@ attacker must now perform a brute-force attack against at least one
 military-strength cipher. That insignificant host key prompt really
 does make \e{that} much difference.
 
-If you're having a specific problem with host key checking - perhaps
+If you're having a specific problem with host key checking \dash perhaps
 you want an automated batch job to make use of PSCP or Plink, and the
-interactive host key prompt is hanging the batch process - then the
+interactive host key prompt is hanging the batch process \dash then the
 right way to fix it is to add the correct host key to the Registry in
-advance, or if the Registry is not available, to use the \cw{-hostkey}
-command-line option. That way, you retain the \e{important} feature of
-host key checking: the right key will be accepted and the wrong ones
-will not. Adding an option to turn host key checking off completely is
-the wrong solution and we will not do it.
+advance, or if the Registry is not available, to use the \cw{\-hostkey}
+command-line option (see \k{using-cmdline-hostkey}). That way, you
+retain the \e{important} feature of host key checking: the right key
+will be accepted and the wrong ones will not. Adding an option to turn
+host key checking off completely is the wrong solution and we will not
+do it.
 
 If you have host keys available in the common \i\c{known_hosts} format,
 we have a script called
 \W{https://git.tartarus.org/?p=simon/putty.git;a=blob;f=contrib/kh2reg.py;hb=HEAD}\c{kh2reg.py}
 to convert them to a Windows .REG file, which can be installed ahead of
 time by double-clicking or using \c{REGEDIT}.
+
+If you just manage and connect to a lot of servers with different host
+keys, you could consider using a \q{certification authority}, so that
+you only have to configure PuTTY once on each client machine to accept
+host keys from any of your servers in future. See \k{config-ssh-kex-cert}.
 
 \S{faq-server}{Question} Will you write an SSH server for the PuTTY
 suite, to go with the client?
@@ -182,59 +191,35 @@ server requires all sorts of fiddly new code like interacting with OS
 authentication databases and the like.
 
 A special-purpose SSH server (called \i{Uppity}) can now be built from
-the PuTTY source code, and indeed it is not usable as a
-general-purpose server; it exists mainly as a test harness.
+the PuTTY source code. But it's not usable as a general-purpose
+server. Its purpose is to be a test harness.
 
 If someone else wants to use this as a basis for writing a
-general-purpose SSH server, they'd be perfectly welcome to of course;
-but we don't have time, and we don't have motivation. The code is
-available if anyone else wants to try it.
-
-\S{faq-pscp-ascii}{Question} Can PSCP or PSFTP transfer files in
-\i{ASCII} mode?
-
-Unfortunately not.
-
-This was a limitation of the file transfer protocols as originally
-specified: the SCP and SFTP protocols had no notion of transferring
-a file in anything other than binary mode. (This is still true of SCP.)
-
-The current draft protocol spec of SFTP proposes a means of
-implementing ASCII transfer. At some point PSCP/PSFTP may implement
-this proposal.
+general-purpose SSH server, they'd be perfectly welcome to, of course.
+But they would have to take responsibility for all of the security
+hardening that hasn't been done; we don't have time for that, and we
+don't have motivation. The code is available if anyone else wants to
+try it.
 
 \H{faq-ports} Ports to other operating systems
 
-The eventual goal is for PuTTY to be a multi-platform program, able
-to run on at least Windows, Mac OS and Unix.
-
-PuTTY has been gaining a generalised porting layer, drawing a clear
-line between platform-dependent and platform-independent code. The
-general intention was for this porting layer to evolve naturally as
-part of the process of doing the first port; a Unix port has now been
-released and the plan seems to be working so far.
+PuTTY is best known as a Windows tool, but it has an internal
+abstraction layer that permits it to run on other systems too. Here we
+discuss current, past and future possible ports.
 
 \S{faq-ports-general}{Question} What ports of PuTTY exist?
 
-Currently, release versions of PuTTY tools only run on Windows
-systems and Unix.
+Currently, release versions of PuTTY tools only run on Windows systems
+and Unix. The Windows version is provided in the form of executables,
+for both x86 and Arm based Windows systems. The Unix version is
+provided as source code (although at least some Linux distributions
+provide it pre-built).
 
-As of 0.68, the supplied PuTTY executables run on versions of Windows
-from XP onwards, up to and including Windows 11; and we know of no
-reason why PuTTY should not continue to work on future versions of
-Windows. We provide 32-bit and 64-bit Windows executables for the
-common x86 processor family; see \k{faq-32bit-64bit} for discussion
-of the compatibility issues around that. The 32-bit executables
-require a \i{Pentium 4} or newer processor. We also provide
-executables for Windows on Arm processors.
-
-(We used to also provide executables for Windows for the Alpha
-processor, but stopped after 0.58 due to lack of interest.)
-
-In the development code, a partial port to Mac OS exists (see
-\k{faq-mac-port}).
-
-Currently PuTTY does \e{not} run on Windows CE (see \k{faq-wince}).
+Our standard Windows executable builds aim to run on all versions of
+Windows still in security support. Earlier versions might be supported
+if it's easy, but we don't promise to test them reliably. (For
+example, PuTTY 0.83 still runs on Windows XP \dash but the previous
+release 0.82 didn't.)
 
 We do not have release-quality ports for any other systems at the
 present time. If anyone told you we had an Android port, or an iOS
@@ -244,111 +229,39 @@ There are some third-party ports to various platforms, mentioned
 on the
 \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/links.html}{Links page of our website}.
 
-\S{faq-unix}{Question} \I{Unix version}Is there a port to Unix?
+\S{faq-mac-port}{Question} Will there ever be a \I{Mac OS}Mac version of PuTTY?
 
-There are Unix ports of most of the traditional PuTTY tools, and also
-one entirely new application.
+As of 2026, I doubt that the core PuTTY team will ever finish one.
 
-If you look at the source release, you should find a \c{unix}
-subdirectory. You need \c{cmake} to build it; see the file \c{README}
-in the source distribution. This should build you:
-
-\b Unix ports of PuTTY, Plink, PSCP, and PSFTP, which work pretty much
-the same as their Windows counterparts;
-
-\b Command-line versions of PuTTYgen and Pageant, whose user interface
-is quite different to the Windows GUI versions;
-
-\b \i\c{pterm} - an \cw{xterm}-type program which supports the same
-terminal emulation as PuTTY.
-
-If you don't have \i{Gtk}, you should still be able to build the
-command-line tools.
-
-\S{faq-unix-why}{Question} What's the point of the Unix port? Unix
-has OpenSSH.
-
-All sorts of little things. \c{pterm} is directly useful to anyone
-who prefers PuTTY's terminal emulation to \c{xterm}'s, which at
-least some people do. Unix Plink has apparently found a niche among
-people who find the complexity of OpenSSL makes OpenSSH hard to
-install (and who don't mind Plink not having as many features). Some
-users want to generate a large number of SSH keys on Unix and then
-copy them all into PuTTY, and the Unix PuTTYgen should allow them to
-automate that conversion process.
-
-There were development advantages as well; porting PuTTY to Unix was
-a valuable path-finding effort for other future ports, and also
-allowed us to use the excellent Linux tool
-\W{http://valgrind.kde.org/}{Valgrind} to help with debugging, which
-has already improved PuTTY's stability on \e{all} platforms.
-
-However, if you're a Unix user and you can see no reason to switch
-from OpenSSH to PuTTY/Plink, then you're probably right. We don't
-expect our Unix port to be the right thing for everybody.
-
-\S{faq-wince}{Question} Will there be a port to Windows CE or PocketPC?
-
-We once did some work on such a port, but it only reached an early
-stage, and certainly not a useful one. It's no longer being actively
-worked on.
-
-\S{faq-win31}{Question} Is there a port to \i{Windows 3.1}?
-
-PuTTY is a 32-bit application from the ground up, so it won't run on
-Windows 3.1 as a native 16-bit program; and it would be \e{very}
-hard to port it to do so, because of Windows 3.1's vile memory
-allocation mechanisms.
-
-However, it is possible in theory to compile the existing PuTTY
-source in such a way that it will run under \i{Win32s} (an extension to
-Windows 3.1 to let you run 32-bit programs). In order to do this
-you'll need the right kind of C compiler - modern versions of Visual
-C at least have stopped being backwards compatible to Win32s. Also,
-the last time we tried this it didn't work very well.
-
-\S{faq-mac-port}{Question} Will there be a port to the \I{Mac OS}Mac?
-
-We hope so!
-
-We attempted one around 2005, written as a native Cocoa application,
-but it turned out to be very slow to redraw its window for some reason
-we never got to the bottom of.
+We've tried more than once. Around 2005 we attempted one in the form
+of a native Cocoa application, but it turned out to be very slow to
+redraw its window for some reason we never got to the bottom of.
 
 In 2015, after porting the GTK front end to work with GTK 3, we began
-another attempt based on making small changes to the GTK code and
-building it against the OS X Quartz version of GTK 3. This doesn't
-seem to have the window redrawing problem any more, so it's already
-got further than the last effort, but it is still substantially
-unfinished.
+another attempt, based on making small changes to the GTK code and
+building it against the OS X Quartz version of GTK 3. This didn't have
+the speed issue, and came much closer to being finished. But
+unfortunately the Quartz GTK port seems to have bit-rotted: the last
+time I tried to build the Mac port, I couldn't even figure out how to
+install a GTK it would build with.
 
-If any OS X and/or GTK programming experts are keen to have a finished
-version of this, we urge them to help out with some of the remaining
-problems! See the TODO list in \c{unix/main-gtk-application.c} in the
-source code.
+If anyone were interested in picking this up and finishing it, the
+TODO list in \c{unix/main-gtk-application.c} in the source code is a
+good place to start, and I'd be happy to provide advice and
+discussion.
 
-\S{faq-epoc}{Question} Will there be a port to EPOC?
+\S{faq-iphone}{Question} Is there a version of PuTTY for mobile operating systems?
 
-I hope so, but given that ports aren't really progressing very fast
-even on systems the developers \e{do} already know how to program
-for, it might be a long time before any of us get round to learning
-a new system and doing the port for that.
+We don't have one ourselves, for either Android or iOS.
 
-However, some of the work has been done by other people; see the
-\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/links.html}{Links page of our website}
-for various third-party ports.
+The last time we checked, there was a third-party SSH client for the
+iPhone and iPod\_Touch called
+\W{http://www.instantcocoa.com/products/pTerm/}{pTerm}, which is
+apparently based on PuTTY. (This is nothing to do with our
+similarly-named \c{pterm}, which is a standalone terminal emulator.)
 
-\S{faq-iphone}{Question} Will there be a port to the iPhone?
-
-We have no plans to write such a port ourselves; none of us has an
-iPhone, and developing and publishing applications for it looks
-awkward and expensive.
-
-However, there is a third-party SSH client for the iPhone and
-iPod\_Touch called \W{http://www.instantcocoa.com/products/pTerm/}{pTerm},
-which is apparently based on PuTTY. (This is nothing to do with our
-similarly-named \c{pterm}, which is a standalone terminal emulator for
-Unix systems; see \k{faq-unix}.)
+We don't know of any Android SSH application based on the PuTTY code.
+(There are Android SSH applications based on other implementations.)
 
 \H{faq-embedding} Embedding PuTTY in other programs
 
@@ -365,19 +278,6 @@ general, so if anyone feels like helping, we wouldn't say no.
 See also
 \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/dll-frontend.html}{the wishlist entry}.
 
-\S{faq-vb}{Question} Is the SSH or Telnet code available as a Visual
-Basic component?
-
-No, it isn't. None of the PuTTY team uses Visual Basic, and none of
-us has any particular need to make SSH connections from a Visual
-Basic application. In addition, all the preliminary work to turn it
-into a DLL would be necessary first; and furthermore, we don't even
-know how to write VB components.
-
-If someone offers to do some of this work for us, we might consider
-it, but unless that happens I can't see VB integration being
-anywhere other than the very bottom of our priority list.
-
 \S{faq-ipc}{Question} How can I use PuTTY to make an SSH connection
 from within another program?
 
@@ -387,14 +287,13 @@ arrange for your primary process to be able to send data to the
 Plink process, and receive data from it, through pipes, then you
 should be able to make SSH connections from your program.
 
-This is what CVS for Windows does, for example.
-
 \H{faq-details} Details of PuTTY's operation
 
 \S{faq-term}{Question} What \i{terminal type} does PuTTY use?
 
-For most purposes, PuTTY can be considered to be an \cw{xterm}
-terminal.
+By default, PuTTY has always announced its terminal type to SSH (and
+Telnet) servers as \c{xterm}, and tried to behave close enough to
+\c{xterm} itself that this works well enough.
 
 PuTTY also supports some terminal \i{control sequences} not supported by
 the real \cw{xterm}: notably the Linux console sequences that
@@ -402,9 +301,21 @@ reconfigure the colour palette, and the title bar control sequences
 used by \i\cw{DECterm} (which are different from the \cw{xterm} ones;
 PuTTY supports both).
 
-By default, PuTTY announces its terminal type to the server as
-\c{xterm}. If you have a problem with this, you can reconfigure it
-to say something else; \c{vt220} might help if you have trouble.
+Since PuTTY was new, the \c{xterm} terminal type has split into many
+subtypes, so you may find that you benefit from upgrading to a
+terminal type such as \c{xterm-256color} to enable more features.
+
+In modern versions of Linux, the terminal type database also includes
+a terminal type for PuTTY itself, so you could try setting the
+terminal type to \cq{putty}! We didn't write that database entry, and
+don't know in detail what it includes or which version of PuTTY it was
+based on.
+
+(We are sometimes asked why PuTTY doesn't use the \cq{putty} terminal
+type as default. Part of the reason is inertia. Another is that all
+the world's not Linux: I still worry that some servers will be
+confused by that terminal type. But perhaps one day we should switch
+over.)
 
 \S{faq-settings}{Question} Where does PuTTY store its data?
 
@@ -538,8 +449,8 @@ and cannot help you with questions of this type.
 
 \S{faq-startmax}{Question} How can I make PuTTY start up \i{maximise}d?
 
-Create a Windows shortcut to start PuTTY from, and set it as \q{Run
-Maximized}.
+There's no setting built in to PuTTY for this. But you can create a
+Windows shortcut to start PuTTY from, and set it as \q{Run Maximized}.
 
 \S{faq-startsess}{Question} How can I create a \i{Windows shortcut} to
 start a particular saved session directly?
@@ -556,21 +467,32 @@ deprecated and may be removed at some point.)
 \S{faq-startssh}{Question} How can I start an SSH session straight
 from the command line?
 
-Use the command line \c{putty -ssh host.name}. Alternatively, create
+Use the command line \c{putty \-ssh host.name}. Alternatively, create
 a saved session that specifies the SSH protocol, and start the saved
 session as shown in \k{faq-startsess}.
 
 \S{faq-cutpaste}{Question} How do I \i{copy and paste} between PuTTY and
 other Windows applications?
 
-Copy and paste works similarly to the X Window System. You use the
-left mouse button to select text in the PuTTY window. The act of
-selection \e{automatically} copies the text to the clipboard: there
+By default, copy and paste works similarly to the X Window System. You
+use the left mouse button to select text in the PuTTY window. The act
+of selection \e{automatically} copies the text to the clipboard: there
 is no need to press Ctrl-Ins or Ctrl-C or anything else. In fact,
-pressing Ctrl-C will send a Ctrl-C character to the other end of
-your connection (just like it does the rest of the time), which may
-have unpleasant effects. The \e{only} thing you need to do, to copy
-text to the clipboard, is to select it.
+pressing Ctrl-C will send a Ctrl-C character to the other end of your
+connection (just like it does the rest of the time), which may have
+unpleasant effects. The \e{only} thing you need to do, to copy text to
+the clipboard, is to select it.
+
+This default dates from the days when PuTTY was new, and its main
+target audience was \q{Unix expatriates} \dash people who mostly used
+Unix desktop systems and were used to the X copy/paste mechanism,
+having to use Windows instead. The aim was \q{closest thing you can
+get to an xterm on Windows}.
+
+If you prefer a more \q{Windows native} interface for copy and paste,
+via keystrokes or menu actions, with nothing happening automatically
+on select, then you can reconfigure the behaviour flexibly in PuTTY's
+configuration. See \k{config-selection} for details.
 
 To paste the clipboard contents into a PuTTY window, by default you
 click the right mouse button. If you have a three-button mouse and
@@ -628,7 +550,7 @@ have to use backslashes and two sets of quotes:
 
 Worse still, in a remote-to-local copy you have to specify the local
 file name explicitly, otherwise PSCP will complain that they don't
-match (unless you specified the \c{-unsafe} option). The following
+match (unless you specified the \c{\-unsafe} option). The following
 command will give an error message:
 
 \c c:\>pscp user@host:"\"oo er\"" .
@@ -639,46 +561,7 @@ Instead, you need to specify the local file name in full:
 
 \c c:\>pscp user@host:"\"oo er\"" "oo er"
 
-\S{faq-32bit-64bit}{Question} Should I run the 32-bit or the
-64-bit version?
-
-If you're not sure, the \I{32-bit Windows}32-bit version is generally
-the safe option. It will run perfectly well on all processors and on
-all versions of Windows that PuTTY supports. PuTTY doesn't require to
-run as a 64-bit application to work well, and having a 32-bit PuTTY on
-a 64-bit system isn't likely to cause you any trouble.
-
-The 64-bit version (first released in 0.68) will only run if you have
-a 64-bit processor \e{and} a \I{64-bit Windows}64-bit edition of
-Windows (both of these things are likely to be true of any recent
-Windows PC). It will run somewhat faster (in particular, the
-cryptography will be faster, especially during link setup), but it
-will consume slightly more memory.
-
-If you need to use an external \i{DLL} for GSSAPI authentication, that
-DLL may only be available in a 32-bit or 64-bit form, and that will
-dictate the version of PuTTY you need to use. (You will probably know
-if you're doing this; see \k{config-ssh-auth-gssapi-libraries} in the
-documentation.)
-
 \H{faq-trouble} Troubleshooting
-
-\S{faq-pscp-protocol}{Question} Why do I see \q{Fatal: Protocol
-error: Expected control record} in PSCP?
-
-This happens because PSCP was expecting to see data from the server
-that was part of the PSCP protocol exchange, and instead it saw data
-that it couldn't make any sense of at all.
-
-This almost always happens because the \i{startup scripts} in your
-account on the server machine are generating output. This is
-impossible for PSCP, or any other SCP client, to work around. You
-should never use startup files (\c{.bashrc}, \c{.cshrc} and so on)
-which generate output in non-interactive sessions.
-
-This is not actually a PuTTY problem. If PSCP fails in this way,
-then all other SCP clients are likely to fail in exactly the same
-way. The problem is at the server end.
 
 \S{faq-colours}{Question} I clicked on a colour in the \ii{Colours}
 panel, and the colour didn't change in my terminal.
@@ -698,58 +581,6 @@ Clicking on \q{ANSI Green} won't turn your session green; it will
 only allow you to adjust the \e{shade} of green used when PuTTY is
 instructed by the server to display green text.
 
-\S{faq-outofmem}{Question} After trying to establish an SSH-2
-connection, PuTTY says \q{\ii{Out of memory}} and dies.
-
-If this happens just while the connection is starting up, this often
-indicates that for some reason the client and server have failed to
-establish a session encryption key. Somehow, they have performed
-calculations that should have given each of them the same key, but
-have ended up with different keys; so data encrypted by one and
-decrypted by the other looks like random garbage.
-
-This causes an \q{out of memory} error because the first encrypted
-data PuTTY expects to see is the length of an SSH message. Normally
-this will be something well under 100 bytes. If the decryption has
-failed, PuTTY will see a completely random length in the region of
-two \e{gigabytes}, and will try to allocate enough memory to store
-this non-existent message. This will immediately lead to it thinking
-it doesn't have enough memory, and panicking.
-
-If this happens to you, it is quite likely to still be a PuTTY bug
-and you should report it (although it might be a bug in your SSH
-server instead); but it doesn't necessarily mean you've actually run
-out of memory.
-
-\S{faq-outofmem2}{Question} When attempting a file transfer, either
-PSCP or PSFTP says \q{\ii{Out of memory}} and dies.
-
-This is almost always caused by your \i{login scripts} on the server
-generating output. PSCP or PSFTP will receive that output when they
-were expecting to see the start of a file transfer protocol, and
-they will attempt to interpret the output as file-transfer protocol.
-This will usually lead to an \q{out of memory} error for much the
-same reasons as given in \k{faq-outofmem}.
-
-This is a setup problem in your account on your server, \e{not} a
-PSCP/PSFTP bug. Your login scripts should \e{never} generate output
-during non-interactive sessions; secure file transfer is not the
-only form of remote access that will break if they do.
-
-On Unix, a simple fix is to ensure that all the parts of your login
-script that might generate output are in \c{.profile} (if you use a
-Bourne shell derivative) or \c{.login} (if you use a C shell).
-Putting them in more general files such as \c{.bashrc} or \c{.cshrc}
-is liable to lead to problems.
-
-\S{faq-psftp-slow}{Question} PSFTP transfers files much slower than PSCP.
-
-The throughput of PSFTP 0.54 should be much better than 0.53b and
-prior; we've added code to the SFTP backend to queue several blocks
-of data rather than waiting for an acknowledgement for each. (The
-SCP backend did not suffer from this performance issue because SCP
-is a much simpler protocol.)
-
 \S{faq-bce}{Question} When I run full-colour applications, I see
 areas of black space where colour ought to be, or vice versa.
 
@@ -757,29 +588,6 @@ You almost certainly need to change the \q{Use \i{background colour} to
 erase screen} setting in the Terminal panel. If there is too much
 black space (the commoner situation), you should enable it, while if
 there is too much colour, you should disable it. (See \k{config-erase}.)
-
-In old versions of PuTTY, this was disabled by default, and would not
-take effect until you reset the terminal (see \k{faq-resetterm}).
-Since 0.54, it is enabled by default, and changes take effect
-immediately.
-
-\S{faq-resetterm}{Question} When I change some terminal settings,
-nothing happens.
-
-Some of the terminal options (notably \ii{Auto Wrap} and
-background-colour screen erase) actually represent the \e{default}
-setting, rather than the currently active setting. The server can
-send sequences that modify these options in mid-session, but when
-the terminal is reset (by server action, or by you choosing \q{Reset
-Terminal} from the System menu) the defaults are restored.
-
-In versions 0.53b and prior, if you change one of these options in
-the middle of a session, you will find that the change does not
-immediately take effect. It will only take effect once you reset
-the terminal.
-
-In version 0.54, the behaviour has changed - changes to these
-settings take effect immediately.
 
 \S{faq-idleout}{Question} My PuTTY sessions unexpectedly close after
 they are \I{idle connections}idle for a while.
@@ -914,176 +722,6 @@ You should still read the
 page} on the PuTTY website (also provided as \k{feedback} in the
 manual), and follow the guidelines contained in that.
 
-\S{faq-ssh2key-ssh1conn}{Question} Why do I see \q{Couldn't load
-private key from ...}? Why can PuTTYgen load my key but not PuTTY?
-
-It's likely that you've generated an SSH protocol 2 key with PuTTYgen,
-but you're trying to use it in an SSH-1 connection. SSH-1 and SSH-2 keys
-have different formats, and (at least in 0.52) PuTTY's reporting of a
-key in the wrong format isn't optimal.
-
-To connect using SSH-2 to a server that supports both versions, you
-need to change the configuration from the default (see \k{faq-ssh2}).
-
-\S{faq-rh8-utf8}{Question} When I'm connected to a \i{Red Hat Linux} 8.0
-system, some characters don't display properly.
-
-A common complaint is that hyphens in man pages show up as a-acute.
-
-With release 8.0, Red Hat appear to have made \i{UTF-8} the default
-character set. There appears to be no way for terminal emulators such
-as PuTTY to know this (as far as we know, the appropriate escape
-sequence to switch into UTF-8 mode isn't sent).
-
-A fix is to configure sessions to RH8 systems to use UTF-8
-translation - see \k{config-charset} in the documentation. (Note that
-if you use \q{Change Settings}, changes may not take place immediately
-- see \k{faq-resetterm}.)
-
-If you really want to change the character set used by the server, the
-right place is \c{/etc/sysconfig/i18n}, but this shouldn't be
-necessary.
-
-\S{faq-screen}{Question} Since I upgraded to PuTTY 0.54, the
-scrollback has stopped working when I run \c{screen}.
-
-PuTTY's terminal emulator has always had the policy that when the
-\q{\i{alternate screen}} is in use, nothing is added to the scrollback.
-This is because the usual sorts of programs which use the alternate
-screen are things like text editors, which tend to scroll back and
-forth in the same document a lot; so (a) they would fill up the
-scrollback with a large amount of unhelpfully disordered text, and
-(b) they contain their \e{own} method for the user to scroll back to
-the bit they were interested in. We have generally found this policy
-to do the Right Thing in almost all situations.
-
-Unfortunately, \c{screen} is one exception: it uses the alternate
-screen, but it's still usually helpful to have PuTTY's scrollback
-continue working. The simplest solution is to go to the Features
-control panel and tick \q{Disable switching to alternate terminal
-screen}. (See \k{config-features-altscreen} for more details.)
-Alternatively, you can tell \c{screen} itself not to use the
-alternate screen: the
-\W{http://www4.informatik.uni-erlangen.de/~jnweiger/screen-faq.html}{\c{screen}
-FAQ} suggests adding the line \cq{termcapinfo xterm ti@:te@} to your
-\cw{.screenrc} file.
-
-The reason why this only started to be a problem in 0.54 is because
-\c{screen} typically uses an unusual control sequence to switch to
-the alternate screen, and previous versions of PuTTY did not support
-this sequence.
-
-\S{faq-alternate-localhost}{Question} Since I upgraded \i{Windows XP}
-to Service Pack 2, I can't use addresses like \cw{127.0.0.2}.
-
-Some people who ask PuTTY to listen on \i{localhost} addresses other
-than \cw{127.0.0.1} to forward services such as \i{SMB} and \i{Windows
-Terminal Services} have found that doing so no longer works since
-they upgraded to WinXP SP2.
-
-This is apparently an issue with SP2 that is acknowledged by Microsoft
-in MS Knowledge Base article
-\W{http://support.microsoft.com/default.aspx?scid=kb;en-us;884020}{884020}.
-The article links to a fix you can download.
-
-(\e{However}, we've been told that SP2 \e{also} fixes the bug that
-means you need to use non-\cw{127.0.0.1} addresses to forward
-Terminal Services in the first place.)
-
-\S{faq-missing-slash}{Question} PSFTP commands seem to be missing a
-directory separator (slash).
-
-Some people have reported the following incorrect behaviour with
-PSFTP:
-
-\c psftp> pwd
-\e        iii
-\c Remote directory is /dir1/dir2
-\c psftp> get filename.ext
-\e        iiiiiiiiiiiiiiii
-\c /dir1/dir2filename.ext: no such file or directory
-
-This is not a bug in PSFTP. There is a known bug in some versions of
-portable \i{OpenSSH}
-(\W{http://bugzilla.mindrot.org/show_bug.cgi?id=697}{bug 697}) that
-causes these symptoms; it appears to have been introduced around
-3.7.x. It manifests only on certain platforms (AIX is what has been
-reported to us).
-
-There is a patch for OpenSSH attached to that bug; it's also fixed in
-recent versions of portable OpenSSH (from around 3.8).
-
-\S{faq-connaborted}{Question} Do you want to hear about \q{Software
-caused connection abort}?
-
-In the documentation for PuTTY 0.53 and 0.53b, we mentioned that we'd
-like to hear about any occurrences of this error.  Since the release
-of PuTTY 0.54, however, we've been convinced that this error doesn't
-indicate that PuTTY's doing anything wrong, and we don't need to hear
-about further occurrences.  See \k{errors-connaborted} for our current
-documentation of this error.
-
-\S{faq-rekey}{Question} My SSH-2 session \I{locking up, SSH-2
-sessions}locks up for a few seconds every so often.
-
-Recent versions of PuTTY automatically initiate \i{repeat key
-exchange} once per hour, to improve session security. If your client
-or server machine is slow, you may experience this as a delay of
-anything up to thirty seconds or so.
-
-These \I{delays, in SSH-2 sessions}delays are inconvenient, but they
-are there for your protection. If they really cause you a problem,
-you can choose to turn off periodic rekeying using the \q{Kex}
-configuration panel (see \k{config-ssh-kex}), but be aware that you
-will be sacrificing security for this. (Falling back to SSH-1 would
-also remove the delays, but would lose a \e{lot} more security
-still. We do not recommend it.)
-
-\S{faq-xpwontrun}{Question} PuTTY fails to start up.  Windows claims that
-\q{the application configuration is incorrect}.
-
-This is caused by a bug in certain versions of \i{Windows XP} which
-is triggered by PuTTY 0.58. This was fixed in 0.59. The
-\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/xp-wont-run}{\q{xp-wont-run}}
-entry in PuTTY's wishlist has more details.
-
-\S{faq-system32}{Question} When I put 32-bit PuTTY in
-\cw{C:\\WINDOWS\\\i{SYSTEM32}} on my \i{64-bit Windows} system,
-\i{\q{Duplicate Session}} doesn't work.
-
-The short answer is not to put the PuTTY executables in that location.
-
-On 64-bit systems, \cw{C:\\WINDOWS\\SYSTEM32} is intended to contain
-only 64-bit binaries; Windows' 32-bit binaries live in
-\cw{C:\\WINDOWS\\SYSWOW64}. When a 32-bit PuTTY executable runs
-on a 64-bit system, it cannot by default see the \q{real}
-\cw{C:\\WINDOWS\\SYSTEM32} at all, because the
-\W{http://msdn.microsoft.com/en-us/library/aa384187(v=vs.85).aspx}{File
-System Redirector} arranges that the running program sees the
-appropriate kind of binaries in \cw{SYSTEM32}. Thus, operations in
-the PuTTY suite that involve it accessing its own executables, such as
-\i{\q{New Session}} and \q{Duplicate Session}, will not work.
-
-\S{faq-iutf8}{Question} After I upgraded PuTTY to 0.68, I can no longer
-connect to my embedded device or appliance.
-
-If your SSH server has started unexpectedly closing SSH connections
-after you enter your password, and it worked before 0.68, you may have
-a buggy server that objects to certain SSH protocol extensions.
-
-The SSH protocol recently gained a new \q{terminal mode}, \cw{IUTF8},
-which PuTTY sends by default; see \k{config-ttymodes}. This is the
-first new terminal mode since the SSH-2 protocol was defined. While
-servers are supposed to ignore modes they don't know about, some buggy
-servers will unceremoniously close the connection if they see anything
-they don't recognise. SSH servers in embedded devices, network
-appliances, and the like seem to disproportionately have this bug.
-
-If you think you have such a server, from 0.69 onwards you can disable
-sending of the \cw{IUTF8} mode: on the SSH / TTY panel, select
-\cw{IUTF8} on the list, select \q{Nothing}, and press \q{Set}. (It's
-not possible to disable sending this mode in 0.68.)
-
 \S{faq-privkey-control-moved}{Question} Since 0.78, I can't find where
 to configure my SSH private key.
 
@@ -1129,7 +767,7 @@ feature.
 
 If you are using PuTTY on a public PC, or somebody else's PC, you
 might want to clean this information up when you leave. You can do
-that automatically, by running the command \c{putty -cleanup}. See
+that automatically, by running the command \c{putty \-cleanup}. See
 \k{using-cleanup} in the documentation for more detail. (Note that
 this only removes settings for the currently logged-in user on
 \i{multi-user systems}.)
@@ -1137,28 +775,7 @@ this only removes settings for the currently logged-in user on
 If PuTTY was installed from the installer package, it will also
 appear in \q{Add/Remove Programs}. Current versions of the installer
 do not offer to remove the above-mentioned items, so if you want them
-removed you should run \c{putty -cleanup} before uninstalling.
-
-\S{faq-dsa}{Question} How come PuTTY now supports \i{DSA}, when the
-website used to say how insecure it was?
-
-DSA has a major weakness \e{if badly implemented}: it relies on a
-random number generator to far too great an extent. If the random
-number generator produces a number an attacker can predict, the DSA
-private key is exposed - meaning that the attacker can log in as you
-on all systems that accept that key.
-
-The PuTTY policy changed because the developers were informed of
-ways to implement DSA which do not suffer nearly as badly from this
-weakness, and indeed which don't need to rely on random numbers at
-all. For this reason we now believe PuTTY's DSA implementation is
-probably OK.
-
-The recently added elliptic-curve signature methods are also DSA-style
-algorithms, so they have this same weakness in principle. Our ECDSA
-implementation uses the same defence as DSA, while our Ed25519
-implementation uses the similar system (but different in details) that
-the Ed25519 spec mandates.
+removed you should run \c{putty \-cleanup} before uninstalling.
 
 \S{faq-virtuallock}{Question} Couldn't Pageant use
 \cw{VirtualLock()} to stop private keys being written to disk?
@@ -1190,13 +807,62 @@ time after its initial release on our website).
 
 \S{faq-putty-org}{Question} Is \cw{putty.org} your website?
 
-No, it isn't. \cw{putty.org} is run by an opportunist who uses it to
-advertise their own commercial SSH implementation to people looking
-for our free one. We don't own that site, we can't control it, and we
-don't advise anyone to use it in preference to our own site.
+No, it isn't, and it never has been. We don't own it; we can't control
+it; we have no responsibility for anything it does.
 
-The real PuTTY web site, run by the PuTTY team, has always been at
+\cw{putty.org} was set up by an opportunist selling a competing SSH
+client for money, who initially used it to interpose adverts for their
+own commercial SSH implementation in the course of providing a link to
+our free one. Then in July 2025 it changed its content to host
+anti-vaccine propaganda. We have no idea what it might do next.
+
+Since the start of PuTTY, the real PuTTY web site, run by the PuTTY
+team, has always been at
 \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/}\cw{https://www.chiark.greenend.org.uk/~sgtatham/putty/}.
+
+We don't recommend that anyone use \cw{putty.org} as a convenient
+redirector, or indeed any \e{other} convenient landing page that is
+not ours. There are a few others, some set up in entirely good faith,
+but you never know.
+
+As of August 2025, we have registered
+\W{https://putty.software/}\cw{putty.software} and made that into an
+\e{official} landing page. If you'd like a short easy URL, that's the
+one to use, especially if we move the main website there in future.
+
+\S{faq-putty-org-pivot}{Question} When \cw{putty.org} replaced its
+content with anti-vaccine propaganda in July 2025, was that because
+you were hacked or vandalised or taken over?
+
+No, because \cw{putty.org} was never ours in the first place (see
+\k{faq-putty-org}). It wasn't stolen from us, or bought from us. The
+same person who owned it all along decided to change its content.
+
+\S{faq-real-website}{Question} With all these landing pages and
+imitators, how can I be sure where the \e{real} PuTTY website is?
+
+Every release of PuTTY embeds a URL to the web site, via the \q{Visit
+web site} button in the About box.
+
+The real website is where \e{PuTTY itself} says it is.
+
+If you download a cryptographically signed version of PuTTY \dash
+either a Windows binary signed with Simon Tatham's Authenticode key,
+or anything signed with the PuTTY team's GPG key \dash then you can
+confirm that the URL embedded in that copy is the one that the
+developers themselves endorse as the true web site.
+
+As of August 2025, \W{https://putty.software/}\cw{putty.software} is a
+second web location owned by us, the PuTTY developers. That too is
+endorsed by signed copies of PuTTY, via being mentioned in this FAQ
+section of the help file.
+
+If we move the web site later \dash as of August 2025, our plan is to
+move it from the chiark domain name to once the latter is generally
+recognised as legitimate \dash then we will keep a redirection of some
+kind at the old location, so that it continues to work. Both URLs will
+continue to be legitimate places to find PuTTY, whichever is currently
+preferred.
 
 \S{faq-the}{Question} Why do the download links point to
 \cw{the.earth.li} and not chiark? Has your website been hacked?
@@ -1212,19 +878,20 @@ grateful to them!
 \S{faq-domain}{Question} Would you like me to register you a nicer
 domain name?
 
-No, thank you. Even if you can find one (most of them seem to have
-been registered already, by people who didn't ask whether we
-actually wanted it before they applied), we're happy with the PuTTY
-web site being exactly where it is. It's not hard to find (just type
-\q{putty} into \W{http://www.google.com/}{google.com} and we're the
-first link returned), and we don't believe the administrative hassle
-of moving the site would be worth the benefit.
+No, thank you. We've got one: \W{https://putty.software/}\cw{putty.software}.
 
-In addition, if we \e{did} want a custom domain name, we would want
-to run it ourselves, so we knew for certain that it would continue
-to point where we wanted it, and wouldn't suddenly change or do
-strange things. Having it registered for us by a third party who we
-don't even know is not the best way to achieve this.
+For a long time, this FAQ entry said that we were happy with the site
+where it is. However, in 2025, as a result of some media attention to
+\cw{putty.org}, it became clear that search engines these days seem to
+prefer short whole domain names over user subdirectories on a larger
+server.
+
+So we registered a domain name ourselves. As of August 2025,
+\W{https://putty.software/}\cw{putty.software} is a small landing
+page, similar to third-party redirectors except not run by a third
+party. After we've got the word out and built some trust, the plan is
+to move the whole PuTTY site there and turn the old chiark site into a
+redirection.
 
 \S{faq-webhosting}{Question} Would you like free web hosting for the
 PuTTY web site?
@@ -1239,28 +906,10 @@ to PuTTY users. If your content is unrelated, or only tangentially
 related, to PuTTY, then the link would simply be advertising for
 you.
 
-One very nice effect of the Google ranking mechanism is that by and
-large, the most popular web sites get the highest rankings. This
-means that when an ordinary person does a search, the top item in
-the search is very likely to be a high-quality site or the site they
-actually wanted, rather than the site which paid the most money for
-its ranking.
-
-The PuTTY web site is held in high esteem by Google, for precisely
-this reason: lots of people have linked to it simply because they
-like PuTTY, without us ever having to ask anyone to link to us. We
-feel that it would be an abuse of this esteem to use it to boost the
-ranking of random advertisers' web sites. If you want your web site
-to have a high Google ranking, we'd prefer that you achieve this the
-way we did - by being good enough at what you do that people will
-link to you simply because they like you.
-
-In particular, we aren't interested in trading links for money (see
-above), and we \e{certainly} aren't interested in trading links for
-other links (since we have no advertising on our web site, our
-Google ranking is not even directly worth anything to us). If we
-don't want to link to you for free, then we probably won't want to
-link to you at all.
+This is still true even if you offer to pay us. We aren't interested
+in trading links for money, and we \e{certainly} aren't interested in
+trading links for other links. If we don't want to link to you for
+free, then we probably won't want to link to you at all.
 
 If you have software based on PuTTY, or specifically designed to
 interoperate with PuTTY, or in some other way of genuine interest to
@@ -1269,24 +918,35 @@ our Links page. And if you're running a particularly valuable mirror
 of the PuTTY web site, we might be interested in linking to you from
 our Mirrors page.
 
-\S{faq-sourceforge}{Question} Why don't you move PuTTY to
-SourceForge?
+\S{faq-forge}{Question} Why don't you move PuTTY to Github (or some
+other well known forge site)?
 
-Partly, because we don't want to move the web site location (see
-\k{faq-domain}).
-
-Also, security reasons. PuTTY is a security product, and as such it
-is particularly important to guard the code and the web site against
+Primarily, trust. PuTTY is a security product, and as such it is
+particularly important to guard the code and the web site against
 unauthorised modifications which might introduce subtle security
-flaws. Therefore, we prefer that the Git repository, web site and
-FTP site remain where they are, under the direct control of system
-administrators we know and trust personally, rather than being run
-by a large organisation full of people we've never met and which is
-known to have had breakins in the past.
+flaws. Therefore, we prefer that the Git repository, web site and FTP
+site remain where they are, under the direct control of system
+administrators we know and trust personally.
 
-No offence to SourceForge; I think they do a wonderful job. But
-they're not ideal for everyone, and in particular they're not ideal
-for us.
+Large organisations seem less trustworthy to us because they have a
+lot of employees, any of whom could attempt an insider attack; because
+management can change or companies can be bought out, and a benign
+company today could become a malicious one tomorrow.
+
+Github in particular already seems like a dangerously large single
+point of failure. I'd rather contribute to the Internet being
+distributed than contribute to it being centralised. In addition, the
+Github software isn't itself free, so although you can export the
+actual source repository itself at any time (every \cq{git clone} does
+that), you're locked in once all your other metadata (issues, pull
+requests etc) is stored in Github's format on Github's systems.
+
+I know that if you have a Github presence already, it would be most
+convenient \e{for you} if everyone else was on Github too so that you
+could interact with them all in the same easy way. Sorry about that.
+But that seductive ease of use is how large companies attract a large
+user base to monetise or exploit later, and we don't want to
+participate in that any more than we have to.
 
 \S{faq-mailinglist1}{Question} Why can't I subscribe to the
 putty-bugs mailing list?
@@ -1621,20 +1281,37 @@ relevant:
 \S{faq-openssh}{Question} Is PuTTY a port of \i{OpenSSH}, or based on
 OpenSSH or OpenSSL?
 
-No, it isn't. PuTTY is almost completely composed of code written
-from scratch for PuTTY. The only code we share with OpenSSH is the
-detector for SSH-1 CRC compensation attacks, written by CORE SDI
-S.A; we share no code at all with OpenSSL.
+No, it isn't. PuTTY is almost completely composed of code written from
+scratch for PuTTY. As of 2026, PuTTY and OpenSSH have no code in
+common as far as I know.
 
-\S{faq-sillyputty}{Question} Where can I buy silly putty?
+(In the past, there has been at least one case of both tools sharing
+the same piece of third-party code, but not in up-to-date versions.)
 
-You're looking at the wrong web site; the only PuTTY we know about
-here is the name of a computer program.
+\S{faq-ai}{Question} Does PuTTY contain or use any artificial
+intelligence (AI) or large language model (LLM)?
 
-If you want the kind of putty you can buy as an executive toy, the
-PuTTY team can personally recommend Thinking Putty, which you can
-buy from Crazy Aaron's Putty World, at
-\W{http://www.puttyworld.com}\cw{www.puttyworld.com}.
+No, it does not. PuTTY does not use any AI or LLM during its
+operation. No code implementing an AI or LLM system is included in
+PuTTY itself, and also, no AI or LLM system elsewhere on the Internet
+is consulted by PuTTY when it runs.
+
+PuTTY aims to be reliable, predictable and efficient in its operation.
+The 2020s style of AI is bad at all of these things, \e{especially}
+\q{efficient}.
+
+PuTTY does not collect any data from its users to communicate to any
+host run by the PuTTY developers, for LLM training or for any other
+purpose. (See \k{privacy} for more detailed information about what
+information PuTTY \e{does} store and transmit, but the short answer
+is, it only stores information necessary to do its job, and only
+talks over the network to the servers you told it to connect to.)
+
+Of course, after you use PuTTY to connect to a server, \e{that server}
+may choose to do AI-related operations, or to collect the data from
+your session. PuTTY can do nothing about that (or even detect it
+happening), and if you're concerned about it, you'll have to consult
+whoever runs your server.
 
 \S{faq-meaning}{Question} What does \q{PuTTY} mean?
 

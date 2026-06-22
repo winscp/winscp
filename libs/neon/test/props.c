@@ -56,7 +56,7 @@ static int patch_simple(void)
     return destroy_and_wait(sess);
 }
 
-#define RESP207 "HTTP/1.0 207 Stuff\r\n" "Server: foo\r\n\r\n"
+#define RESP207 "HTTP/1.0 207 Stuff\r\n" "Content-Type: text/xml\r\n" "Server: foo\r\n\r\n"
 
 static void dummy_results(void *ud, const ne_uri *uri,
 			  const ne_prop_result_set *rset)
@@ -96,8 +96,7 @@ static int regress(void)
     for (n = 0; bodies[n] != NULL; n++) {
 	CALL(make_session(&sess, single_serve_string, (void *)bodies[n]));
 	ne_simple_propfind(sess, "/", 0, NULL, dummy_results, NULL);
-	ne_session_destroy(sess);
-	CALL(await_server());
+	CALL(destroy_and_wait(sess));
     }
 
     return OK;
@@ -130,8 +129,7 @@ static int patch_regress(void)
     for (n = 0; bodies[n] != NULL; n++) {
 	CALL(make_session(&sess, single_serve_string, (void *)bodies[n]));
 	ne_proppatch(sess, "/", pops);
-	ne_session_destroy(sess);
-	CALL(await_server());
+	CALL(destroy_and_wait(sess));
     }
 
     return OK;
@@ -260,13 +258,10 @@ static int run_propfind(const ne_propname *props, char *resp,
         ne_propfind_destroy(hdl);
     }
 
-    ne_session_destroy(sess);
-    CALL(await_server());
-
     CALL(diffcmp(expected, buf->data));
-
     ne_buffer_destroy(buf);
-    return OK;
+
+    return destroy_and_wait(sess);
 }
 
 /* a PROPFIND response body for the {DAV:}fishbone property, using

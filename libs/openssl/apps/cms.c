@@ -93,6 +93,7 @@ typedef enum OPTION_choice {
     OPT_NOATTR,
     OPT_NODETACH,
     OPT_NOSMIMECAP,
+    OPT_NO_SIGNING_TIME,
     OPT_BINARY,
     OPT_KEYID,
     OPT_NOSIGS,
@@ -235,7 +236,10 @@ const OPTIONS cms_options[] = {
     OPT_SECTION("Signing"),
     { "md", OPT_MD, 's', "Digest algorithm to use" },
     { "signer", OPT_SIGNER, 's', "Signer certificate input file" },
-    { "certfile", OPT_CERTFILE, '<', "Other certificates file" },
+    { "certfile", OPT_CERTFILE, '<',
+        "Extra signer and intermediate CA certificates to include when signing" },
+    { OPT_MORE_STR, 0, 0,
+        "or to use as preferred signer certs and for chain building when verifying" },
     { "cades", OPT_CADES, '-',
         "Include signingCertificate attribute (CAdES-BES)" },
     { "nodetach", OPT_NODETACH, '-', "Use opaque signing" },
@@ -243,6 +247,8 @@ const OPTIONS cms_options[] = {
         "Don't include signer's certificate when signing" },
     { "noattr", OPT_NOATTR, '-', "Don't include any signed attributes" },
     { "nosmimecap", OPT_NOSMIMECAP, '-', "Omit the SMIMECapabilities attribute" },
+    { "no_signing_time", OPT_NO_SIGNING_TIME, '-',
+        "Omit the signing time attribute" },
     { "receipt_request_all", OPT_RR_ALL, '-',
         "When signing, create a receipt request for all recipients" },
     { "receipt_request_first", OPT_RR_FIRST, '-',
@@ -485,6 +491,9 @@ int cms_main(int argc, char **argv)
             break;
         case OPT_NOSMIMECAP:
             flags |= CMS_NOSMIMECAP;
+            break;
+        case OPT_NO_SIGNING_TIME:
+            flags |= CMS_NO_SIGNING_TIME;
             break;
         case OPT_BINARY:
             flags |= CMS_BINARY;
@@ -781,7 +790,6 @@ int cms_main(int argc, char **argv)
     }
 
     /* Remaining args are files to process. */
-    argc = opt_num_rest();
     argv = opt_rest();
 
     if ((rr_allorfirst != -1 || rr_from != NULL) && rr_to == NULL) {
@@ -888,15 +896,8 @@ int cms_main(int argc, char **argv)
     }
 
     if (operation == SMIME_ENCRYPT) {
-        if (!cipher) {
-#ifndef OPENSSL_NO_DES
-            cipher = (EVP_CIPHER *)EVP_des_ede3_cbc();
-#else
-            BIO_printf(bio_err, "No cipher selected\n");
-            goto end;
-#endif
-        }
-
+        if (!cipher)
+            cipher = (EVP_CIPHER *)EVP_aes_256_cbc();
         if (secret_key && !secret_keyid) {
             BIO_printf(bio_err, "No secret key id\n");
             goto end;

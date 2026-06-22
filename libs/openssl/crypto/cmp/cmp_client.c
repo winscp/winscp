@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2007-2026 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright Nokia 2007-2019
  * Copyright Siemens AG 2015-2019
  *
@@ -149,6 +149,7 @@ static int send_receive_check(OSSL_CMP_CTX *ctx, const OSSL_CMP_MSG *req,
     int time_left;
     OSSL_CMP_transfer_cb_t transfer_cb = ctx->transfer_cb;
 
+    ctx->status = OSSL_CMP_PKISTATUS_trans;
 #ifndef OPENSSL_NO_HTTP
     if (transfer_cb == NULL)
         transfer_cb = OSSL_CMP_MSG_http_perform;
@@ -175,7 +176,7 @@ static int send_receive_check(OSSL_CMP_CTX *ctx, const OSSL_CMP_MSG *req,
     /* should print error queue since transfer_cb may call ERR_clear_error() */
     OSSL_CMP_CTX_print_errors(ctx);
 
-    if (ctx->server != NULL)
+    if (ctx->server != NULL || ctx->transfer_cb != NULL)
         ossl_cmp_log1(INFO, ctx, "sending %s", req_type_str);
 
     *rep = (*transfer_cb)(ctx, req);
@@ -189,6 +190,7 @@ static int send_receive_check(OSSL_CMP_CTX *ctx, const OSSL_CMP_MSG *req,
         return 0;
     }
 
+    ctx->status = OSSL_CMP_PKISTATUS_checking_response;
     bt = OSSL_CMP_MSG_get_bodytype(*rep);
     /*
      * The body type in the 'bt' variable is not yet verified.
@@ -284,11 +286,15 @@ static int poll_for_response(OSSL_CMP_CTX *ctx, int sleep, int rid,
         "received 'waiting' PKIStatus, starting to poll for response");
     *rep = NULL;
     for (;;) {
+        int bak = ctx->status;
+
+        ctx->status = OSSL_CMP_PKISTATUS_request;
         if ((preq = ossl_cmp_pollReq_new(ctx, rid)) == NULL)
             goto err;
 
         if (!send_receive_check(ctx, preq, &prep, OSSL_CMP_PKIBODY_POLLREP))
             goto err;
+        ctx->status = bak;
 
         /* handle potential pollRep */
         if (OSSL_CMP_MSG_get_bodytype(prep) == OSSL_CMP_PKIBODY_POLLREP) {
@@ -344,6 +350,7 @@ static int poll_for_response(OSSL_CMP_CTX *ctx, int sleep, int rid,
                 int64_t time_left = (int64_t)(ctx->end_time - exp - time(NULL));
 
                 if (time_left <= 0) {
+                    ctx->status = OSSL_CMP_PKISTATUS_trans;
                     ERR_raise(ERR_LIB_CMP, CMP_R_TOTAL_TIMEOUT);
                     goto err;
                 }
@@ -455,7 +462,9 @@ int ossl_cmp_exchange_certConf(OSSL_CMP_CTX *ctx, int certReqId,
     OSSL_CMP_MSG *certConf;
     OSSL_CMP_MSG *PKIconf = NULL;
     int res = 0;
+    int bak = ctx->status;
 
+    ctx->status = OSSL_CMP_PKISTATUS_request;
     /* OSSL_CMP_certConf_new() also checks if all necessary options are set */
     certConf = ossl_cmp_certConf_new(ctx, certReqId, fail_info, txt);
     if (certConf == NULL)
@@ -463,6 +472,9 @@ int ossl_cmp_exchange_certConf(OSSL_CMP_CTX *ctx, int certReqId,
 
     res = send_receive_also_delayed(ctx, certConf, &PKIconf,
         OSSL_CMP_PKIBODY_PKICONF);
+
+    if (res)
+        ctx->status = bak;
 
 err:
     OSSL_CMP_MSG_free(certConf);
@@ -479,6 +491,7 @@ int ossl_cmp_exchange_error(OSSL_CMP_CTX *ctx, int status, int fail_info,
     OSSL_CMP_MSG *PKIconf = NULL;
     int res = 0;
 
+    ctx->status = OSSL_CMP_PKISTATUS_request;
     /* not overwriting ctx->status on error exchange */
     if ((si = OSSL_CMP_STATUSINFO_new(status, fail_info, txt)) == NULL)
         goto err;
@@ -488,6 +501,7 @@ int ossl_cmp_exchange_error(OSSL_CMP_CTX *ctx, int status, int fail_info,
 
     res = send_receive_also_delayed(ctx, error,
         &PKIconf, OSSL_CMP_PKIBODY_PKICONF);
+    ctx->status = OSSL_CMP_PKISTATUS_rejected_by_client;
 
 err:
     OSSL_CMP_MSG_free(error);
@@ -564,11 +578,11 @@ err:
  * ctx->certConf_cb_arg, which has been initialized using opt_out_trusted, and
  * ctx->untrusted, which at this point already contains msg->extraCerts.
  * Returns 0 on acceptance, else a bit field reflecting PKIFailureInfo.
- * Quoting from RFC 4210 section 5.1. Overall PKI Message:
+ * Quoting from RFC 9810 section 5.1. Overall PKI Message:
  *     The extraCerts field can contain certificates that may be useful to
  *     the recipient.  For example, this can be used by a CA or RA to
  *     present an end entity with certificates that it needs to verify its
- *     own new certificate (if, for example, the CA that issued the end
+ *     own new certificate (for example, if the CA that issued the end
  *     entity's certificate is not a root CA for the end entity).  Note that
  *     this field does not necessarily contain a certification path; the
  *     recipient may have to sort, select from, or otherwise process the
@@ -654,7 +668,7 @@ static int cert_response(OSSL_CMP_CTX *ctx, int sleep, int rid,
     ossl_unused int req_type,
     ossl_unused int expected_type)
 {
-    EVP_PKEY *rkey = ossl_cmp_ctx_get0_newPubkey(ctx);
+    EVP_PKEY *rkey = NULL;
     int fail_info = 0; /* no failure */
     const char *txt = NULL;
     OSSL_CMP_CERTREPMESSAGE *crepmsg = NULL;
@@ -748,6 +762,7 @@ retry:
         return 0;
 
     subj = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
+    rkey = ossl_cmp_ctx_get0_newPubkey(ctx);
     if (rkey != NULL
         /* X509_check_private_key() also works if rkey is just public key */
         && !(X509_check_private_key(ctx->newCert, rkey))) {
@@ -789,7 +804,7 @@ retry:
         ERR_raise_data(ERR_LIB_CMP, CMP_R_CERTIFICATE_NOT_ACCEPTED,
             "rejecting newly enrolled cert with subject: %s; %s",
             subj, txt);
-        ctx->status = OSSL_CMP_PKISTATUS_rejection;
+        ctx->status = OSSL_CMP_PKISTATUS_rejected_by_client;
         ret = 0;
     }
     OPENSSL_free(subj);
@@ -811,7 +826,6 @@ static int initial_certreq(OSSL_CMP_CTX *ctx,
     if ((req = ossl_cmp_certreq_new(ctx, req_type, crm)) == NULL)
         return 0;
 
-    ctx->status = OSSL_CMP_PKISTATUS_trans;
     res = send_receive_check(ctx, req, p_rep, rep_type);
     OSSL_CMP_MSG_free(req);
     return res;
@@ -917,7 +931,6 @@ int OSSL_CMP_exec_RR_ses(OSSL_CMP_CTX *ctx)
     if ((rr = ossl_cmp_rr_new(ctx)) == NULL)
         goto end;
 
-    ctx->status = OSSL_CMP_PKISTATUS_trans;
     if (!send_receive_also_delayed(ctx, rr, &rp, OSSL_CMP_PKIBODY_RP))
         goto end;
 
@@ -1037,7 +1050,6 @@ STACK_OF(OSSL_CMP_ITAV) *OSSL_CMP_exec_GENM_ses(OSSL_CMP_CTX *ctx)
     if ((genm = ossl_cmp_genm_new(ctx)) == NULL)
         goto err;
 
-    ctx->status = OSSL_CMP_PKISTATUS_trans;
     if (!send_receive_also_delayed(ctx, genm, &genp, OSSL_CMP_PKIBODY_GENP))
         goto err;
     ctx->status = OSSL_CMP_PKISTATUS_accepted;

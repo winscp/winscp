@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -319,12 +319,19 @@ static void writer_fn(int id, int *iterations)
     int count;
     OSSL_TIME t1, t2;
     uint64_t *old, *new;
+    CRYPTO_RCU_CB_ITEM *cbi = NULL;
 
     t1 = ossl_time_now();
 
     for (count = 0;; count++) {
         new = CRYPTO_malloc(sizeof(uint64_t), NULL, 0);
         *new = (uint64_t)0xBAD;
+
+        if (contention == 0) {
+            cbi = ossl_rcu_cb_item_new();
+            OPENSSL_assert(cbi != NULL);
+        }
+
         if (contention == 0)
             OSSL_sleep(1000);
         ossl_rcu_write_lock(rcu_lock);
@@ -333,7 +340,7 @@ static void writer_fn(int id, int *iterations)
         *new = global_ctr++;
         ossl_rcu_assign_ptr(&writer_ptr, &new);
         if (contention == 0)
-            ossl_rcu_call(rcu_lock, free_old_rcu_data, old);
+            ossl_rcu_call(rcu_lock, cbi, free_old_rcu_data, old);
         ossl_rcu_write_unlock(rcu_lock);
         if (contention != 0) {
             ossl_synchronize_rcu(rcu_lock);
@@ -681,6 +688,52 @@ static int test_atomic(void)
 
     ret64 = 0;
     if (!TEST_true(CRYPTO_atomic_load(&val64, &ret64, lock)))
+        goto err;
+
+    if (!TEST_uint_eq((unsigned int)val64, 3)
+        || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
+        goto err;
+
+    ret64 = 0;
+
+    if (CRYPTO_atomic_and(&val64, 5, &ret64, NULL)) {
+        /* This succeeds therefore we're on a platform with lockless atomics */
+        if (!TEST_uint_eq((unsigned int)val64, 1)
+            || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
+            goto err;
+    } else {
+        /* This failed therefore we're on a platform without lockless atomics */
+        if (!TEST_uint_eq((unsigned int)val64, 3)
+            || !TEST_int_eq((unsigned int)ret64, 0))
+            goto err;
+    }
+    val64 = 3;
+    ret64 = 0;
+
+    if (!TEST_true(CRYPTO_atomic_and(&val64, 5, &ret64, lock)))
+        goto err;
+
+    if (!TEST_uint_eq((unsigned int)val64, 1)
+        || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
+        goto err;
+
+    ret64 = 0;
+
+    if (CRYPTO_atomic_add64(&val64, 2, &ret64, NULL)) {
+        /* This succeeds therefore we're on a platform with lockless atomics */
+        if (!TEST_uint_eq((unsigned int)val64, 3)
+            || !TEST_uint_eq((unsigned int)val64, (unsigned int)ret64))
+            goto err;
+    } else {
+        /* This failed therefore we're on a platform without lockless atomics */
+        if (!TEST_uint_eq((unsigned int)val64, 1)
+            || !TEST_int_eq((unsigned int)ret64, 0))
+            goto err;
+    }
+    val64 = 1;
+    ret64 = 0;
+
+    if (!TEST_true(CRYPTO_atomic_add64(&val64, 2, &ret64, lock)))
         goto err;
 
     if (!TEST_uint_eq((unsigned int)val64, 3)
@@ -1146,19 +1199,6 @@ static int test_obj_add(void)
         1, default_provider);
 }
 
-static void test_lib_ctx_load_config_worker(void)
-{
-    if (!TEST_int_eq(OSSL_LIB_CTX_load_config(multi_libctx, config_file), 1))
-        multi_set_success(0);
-}
-
-static int test_lib_ctx_load_config(void)
-{
-    return thread_run_test(&test_lib_ctx_load_config_worker,
-        MAXIMUM_THREADS, &test_lib_ctx_load_config_worker,
-        1, default_provider);
-}
-
 #if !defined(OPENSSL_NO_DGRAM) && !defined(OPENSSL_NO_SOCK)
 static BIO *multi_bio1, *multi_bio2;
 
@@ -1407,7 +1447,6 @@ int setup_tests(void)
     ADD_TEST(test_multi_shared_pkey_release);
     ADD_TEST(test_multi_load_unload_provider);
     ADD_TEST(test_obj_add);
-    ADD_TEST(test_lib_ctx_load_config);
 #if !defined(OPENSSL_NO_DGRAM) && !defined(OPENSSL_NO_SOCK)
     ADD_TEST(test_bio_dgram_pair);
 #endif

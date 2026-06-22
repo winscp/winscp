@@ -30,22 +30,40 @@
 #endif
 
 #include "ne_session.h"
+#include "ne_alloc.h"
 
 #include "tests.h"
 
 static int fill_uri(void)
 {
-    ne_uri uri = {0};
-    ne_session *sess = ne_session_create("http", "localhost", 1234);
-    
-    ne_fill_server_uri(sess, &uri);
+    static const struct {
+        const char *scheme;
+        const char *host;
+        unsigned int port;
+        const char *uri;
+    } ts[] = {
+        { "http", "localhost", 1234, "http://localhost:1234" },
+        { "HTTPS", "localhost", 999, "https://localhost:999" },
+        { "ftp", "[::1]", 42, "ftp://[::1]:42" },
+        { NULL, NULL, 0 }
+    };
+    unsigned int i;
 
-    ONCMP("localhost", uri.host, "fill_uri", "host");
-    ONN("port mis-match", uri.port != 1234);
-    ONCMP("http", uri.scheme, "fill_uri", "scheme");
+    for (i = 0; ts[i].scheme != NULL; i++) {
+        ne_session *sess = ne_session_create(ts[i].scheme, ts[i].host, ts[i].port);
+        ne_uri uri = {0};
+        char *unp;
 
-    ne_session_destroy(sess);
-    ne_uri_free(&uri);
+        ne_fill_server_uri(sess, &uri);
+        uri.path = ne_strdup("");
+
+        unp = ne_uri_unparse(&uri);
+        ONCMPN(ts[i].uri, unp, "expanded URI", "session");
+
+        ne_free(unp);
+        ne_session_destroy(sess);
+        ne_uri_free(&uri);
+    }
 
     return OK;
 }

@@ -108,11 +108,11 @@ prompts_t *proxy_new_prompts(ProxySocket *ps);
 void proxy_spr_abort(ProxyNegotiator *pn, SeatPromptResult spr);
 
 /*
- * This may be reused by local-command proxies on individual
+ * This is a wrapper on format_connection_setup_command which gets the
+ * format string from CONF_proxy_telnet_command. Despite the name, it
+ * may also be reused by local-command proxies on individual
  * platforms.
  */
-#define TELNET_CMD_MISSING_USERNAME 0x0001
-#define TELNET_CMD_MISSING_PASSWORD 0x0002
 char *format_telnet_command(SockAddr *addr, int port, Conf *conf,
                             unsigned *flags_out);
 

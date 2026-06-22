@@ -1,0 +1,119 @@
+<refentry id="refxmlreq">
+
+  <refmeta>
+    <refentrytitle>ne_xml_parse_response</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname id="ne_xml_parse_response">ne_xml_parse_response</refname>
+    <refname id="ne_xml_dispatch_request">ne_xml_dispatch_request</refname>
+    <refname id="ne_xml_dispatchif_request">ne_xml_dispatchif_request</refname>
+    <refpurpose>helper functions for parsing XML responses</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+
+      <funcsynopsisinfo>#include &lt;ne_xmlreq.h&gt;</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>int <function>ne_xml_parse_response</function></funcdef>
+        <paramdef>ne_request *<parameter>req</parameter></paramdef>
+        <paramdef>ne_xml_parser *<parameter>parser</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>int <function>ne_xml_dispatch_request</function></funcdef>
+        <paramdef>ne_request *<parameter>req</parameter></paramdef>
+        <paramdef>ne_xml_parser *<parameter>parser</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>int <function>ne_xml_dispatchif_request</function></funcdef>
+        <paramdef>ne_request *<parameter>req</parameter></paramdef>
+        <paramdef>ne_xml_parser *<parameter>parser</parameter></paramdef>
+        <paramdef>ne_accept_response <parameter>acceptor</parameter></paramdef>
+        <paramdef>void *<parameter>userdata</parameter></paramdef>
+      </funcprototype>
+
+    </funcsynopsis>
+
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>The <function>ne_xml_parse_response</function> function
+    reads an HTTP response body and processes it using the given XML
+    parser. The function must be called
+    <function>ne_begin_request</function> has returned successfully
+    for the request, and then invokes
+    <function>ne_read_response_block</function> until the entire
+    response body has been read. On successful return,
+    <function>ne_end_request</function> must be called to finalise
+    response processing.</para>
+
+    <para>The <function>ne_xml_dispatch_request</function> and
+    <function>ne_xml_dispatchif_request</function> functions is
+    equivalent to calling <xref linkend="ne_request_dispatch"/> to
+    dispatch an HTTP request and process the response, parsing the
+    response body using the given XML parser under certain conditions:
+
+    <itemizedlist>
+      <listitem><simpara>For
+      <function>ne_xml_dispatch_request</function>, any
+      <literal>2xx</literal> class response with an XML
+      content-type.</simpara></listitem>
+
+      <listitem><simpara>For
+      <function>ne_xml_dispatchif_request</function>, if the
+      <parameter>acceptor</parameter> callback returns non-zero,
+      and the response uses an XML content-type.</simpara></listitem>
+    </itemizedlist>
+
+    In both cases, the rules in <ulink
+    url="https://www.rfc-editor.org/rfc/rfc7303">RFC 7303</ulink> are
+    followed to identify XML content-types, that is
+    <literal>text/xml</literal>, <literal>application/xml</literal>,
+    or any other content-type ending in a <literal>+xml</literal>
+    suffix. The <parameter>userdata</parameter> parameter is passed to
+    the <parameter>acceptor</parameter> function.</para>
+
+    <para>For all three functions:
+
+    <itemizedlist>
+      <listitem><simpara>the XML parser is invoked repeatedly until
+      the end of the document is reached.</simpara></listitem>
+
+      <listitem><simpara>if an error occurs during XML parsing, the
+      session error string is set to describe the parse error, and the
+      connection is terminated without continuing to process the
+      response..</simpara></listitem>
+    </itemizedlist>
+
+    </para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Return value</title>
+
+    <para>All functions documented here return zero on success, or an
+    <xref linkend="error-codes"/> on failure.</para></refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_xml_dispatchif_request</function> is available
+    in &neon; 0.36.0 and later.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+
+    <para><xref linkend="ne_xml_create"/>, <xref linkend="ne_request_dispatch"/></para>
+  </refsect1>
+
+</refentry>

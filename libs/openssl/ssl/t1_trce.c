@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2012-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -13,6 +13,8 @@
 
 /* Packet trace support for OpenSSL */
 #include "internal/nelem.h"
+#include "internal/ssl_unwrap.h"
+#include "internal/quic_trace.h"
 
 typedef struct {
     int num;
@@ -446,6 +448,8 @@ static const ssl_trace_tbl ssl_ciphers_tbl[] = {
     { 0xFEFF, "SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA" },
     { 0xFF85, "LEGACY-GOST2012-GOST8912-GOST8912" },
     { 0xFF87, "GOST2012-NULL-GOST12" },
+    { 0xC0B4, "TLS_SHA256_SHA256" },
+    { 0xC0B5, "TLS_SHA384_SHA384" },
     { 0xC100, "GOST2012-KUZNYECHIK-KUZNYECHIKOMAC" },
     { 0xC101, "GOST2012-MAGMA-MAGMAOMAC" },
     { 0xC102, "GOST2012-GOST8912-IANA" },
@@ -545,6 +549,12 @@ static const ssl_trace_tbl ssl_groups_tbl[] = {
     { 258, "ffdhe4096" },
     { 259, "ffdhe6144" },
     { 260, "ffdhe8192" },
+    { 512, "MLKEM512" },
+    { 513, "MLKEM768" },
+    { 514, "MLKEM1024" },
+    { 4587, "SecP256r1MLKEM768" },
+    { 4588, "X25519MLKEM768" },
+    { 4589, "SecP384r1MLKEM1024" },
     { 25497, "X25519Kyber768Draft00" },
     { 25498, "SecP256r1Kyber768Draft00" },
     { 0xFF01, "arbitrary_explicit_prime_curves" },
@@ -566,37 +576,45 @@ static const ssl_trace_tbl ssl_mfl_tbl[] = {
 };
 
 static const ssl_trace_tbl ssl_sigalg_tbl[] = {
-    { TLSEXT_SIGALG_ecdsa_secp256r1_sha256, "ecdsa_secp256r1_sha256" },
-    { TLSEXT_SIGALG_ecdsa_secp384r1_sha384, "ecdsa_secp384r1_sha384" },
-    { TLSEXT_SIGALG_ecdsa_secp521r1_sha512, "ecdsa_secp521r1_sha512" },
-    { TLSEXT_SIGALG_ecdsa_sha224, "ecdsa_sha224" },
-    { TLSEXT_SIGALG_ed25519, "ed25519" },
-    { TLSEXT_SIGALG_ed448, "ed448" },
-    { TLSEXT_SIGALG_ecdsa_sha1, "ecdsa_sha1" },
-    { TLSEXT_SIGALG_rsa_pss_rsae_sha256, "rsa_pss_rsae_sha256" },
-    { TLSEXT_SIGALG_rsa_pss_rsae_sha384, "rsa_pss_rsae_sha384" },
-    { TLSEXT_SIGALG_rsa_pss_rsae_sha512, "rsa_pss_rsae_sha512" },
-    { TLSEXT_SIGALG_rsa_pss_pss_sha256, "rsa_pss_pss_sha256" },
-    { TLSEXT_SIGALG_rsa_pss_pss_sha384, "rsa_pss_pss_sha384" },
-    { TLSEXT_SIGALG_rsa_pss_pss_sha512, "rsa_pss_pss_sha512" },
-    { TLSEXT_SIGALG_rsa_pkcs1_sha256, "rsa_pkcs1_sha256" },
-    { TLSEXT_SIGALG_rsa_pkcs1_sha384, "rsa_pkcs1_sha384" },
-    { TLSEXT_SIGALG_rsa_pkcs1_sha512, "rsa_pkcs1_sha512" },
-    { TLSEXT_SIGALG_rsa_pkcs1_sha224, "rsa_pkcs1_sha224" },
-    { TLSEXT_SIGALG_rsa_pkcs1_sha1, "rsa_pkcs1_sha1" },
-    { TLSEXT_SIGALG_dsa_sha256, "dsa_sha256" },
-    { TLSEXT_SIGALG_dsa_sha384, "dsa_sha384" },
-    { TLSEXT_SIGALG_dsa_sha512, "dsa_sha512" },
-    { TLSEXT_SIGALG_dsa_sha224, "dsa_sha224" },
-    { TLSEXT_SIGALG_dsa_sha1, "dsa_sha1" },
-    { TLSEXT_SIGALG_gostr34102012_256_intrinsic, "gost2012_256" },
-    { TLSEXT_SIGALG_gostr34102012_512_intrinsic, "gost2012_512" },
-    { TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256, "gost2012_256" },
-    { TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512, "gost2012_512" },
-    { TLSEXT_SIGALG_gostr34102001_gostr3411, "gost2001_gost94" },
-    { TLSEXT_SIGALG_ecdsa_brainpoolP256r1_sha256, "ecdsa_brainpoolP256r1_sha256" },
-    { TLSEXT_SIGALG_ecdsa_brainpoolP384r1_sha384, "ecdsa_brainpoolP384r1_sha384" },
-    { TLSEXT_SIGALG_ecdsa_brainpoolP512r1_sha512, "ecdsa_brainpoolP512r1_sha512" },
+    { TLSEXT_SIGALG_ecdsa_secp256r1_sha256, TLSEXT_SIGALG_ecdsa_secp256r1_sha256_name },
+    { TLSEXT_SIGALG_ecdsa_secp384r1_sha384, TLSEXT_SIGALG_ecdsa_secp384r1_sha384_name },
+    { TLSEXT_SIGALG_ecdsa_secp521r1_sha512, TLSEXT_SIGALG_ecdsa_secp521r1_sha512_name },
+    { TLSEXT_SIGALG_ecdsa_sha224, TLSEXT_SIGALG_ecdsa_sha224_name },
+    { TLSEXT_SIGALG_ed25519, TLSEXT_SIGALG_ed25519_name },
+    { TLSEXT_SIGALG_ed448, TLSEXT_SIGALG_ed448_name },
+    { TLSEXT_SIGALG_ecdsa_sha1, TLSEXT_SIGALG_ecdsa_sha1_name },
+    { TLSEXT_SIGALG_rsa_pss_rsae_sha256, TLSEXT_SIGALG_rsa_pss_rsae_sha256_name },
+    { TLSEXT_SIGALG_rsa_pss_rsae_sha384, TLSEXT_SIGALG_rsa_pss_rsae_sha384_name },
+    { TLSEXT_SIGALG_rsa_pss_rsae_sha512, TLSEXT_SIGALG_rsa_pss_rsae_sha512_name },
+    { TLSEXT_SIGALG_rsa_pss_pss_sha256, TLSEXT_SIGALG_rsa_pss_pss_sha256_name },
+    { TLSEXT_SIGALG_rsa_pss_pss_sha384, TLSEXT_SIGALG_rsa_pss_pss_sha384_name },
+    { TLSEXT_SIGALG_rsa_pss_pss_sha512, TLSEXT_SIGALG_rsa_pss_pss_sha512_name },
+    { TLSEXT_SIGALG_rsa_pkcs1_sha256, TLSEXT_SIGALG_rsa_pkcs1_sha256_name },
+    { TLSEXT_SIGALG_rsa_pkcs1_sha384, TLSEXT_SIGALG_rsa_pkcs1_sha384_name },
+    { TLSEXT_SIGALG_rsa_pkcs1_sha512, TLSEXT_SIGALG_rsa_pkcs1_sha512_name },
+    { TLSEXT_SIGALG_rsa_pkcs1_sha224, TLSEXT_SIGALG_rsa_pkcs1_sha224_name },
+    { TLSEXT_SIGALG_rsa_pkcs1_sha1, TLSEXT_SIGALG_rsa_pkcs1_sha1_name },
+    { TLSEXT_SIGALG_dsa_sha256, TLSEXT_SIGALG_dsa_sha256_name },
+    { TLSEXT_SIGALG_dsa_sha384, TLSEXT_SIGALG_dsa_sha384_name },
+    { TLSEXT_SIGALG_dsa_sha512, TLSEXT_SIGALG_dsa_sha512_name },
+    { TLSEXT_SIGALG_dsa_sha224, TLSEXT_SIGALG_dsa_sha224_name },
+    { TLSEXT_SIGALG_dsa_sha1, TLSEXT_SIGALG_dsa_sha1_name },
+    { TLSEXT_SIGALG_gostr34102012_256_intrinsic, TLSEXT_SIGALG_gostr34102012_256_intrinsic_name },
+    { TLSEXT_SIGALG_gostr34102012_512_intrinsic, TLSEXT_SIGALG_gostr34102012_512_intrinsic_name },
+    { TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256, TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256_name },
+    { TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512, TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512_name },
+    { TLSEXT_SIGALG_gostr34102001_gostr3411, TLSEXT_SIGALG_gostr34102001_gostr3411_name },
+    { TLSEXT_SIGALG_ecdsa_brainpoolP256r1_sha256, TLSEXT_SIGALG_ecdsa_brainpoolP256r1_sha256_name },
+    { TLSEXT_SIGALG_ecdsa_brainpoolP384r1_sha384, TLSEXT_SIGALG_ecdsa_brainpoolP384r1_sha384_name },
+    { TLSEXT_SIGALG_ecdsa_brainpoolP512r1_sha512, TLSEXT_SIGALG_ecdsa_brainpoolP512r1_sha512_name },
+    /*
+     * Well known groups that we happen to know about, but only come from
+     * provider capability declarations (hence no macros for the
+     * codepoints/names)
+     */
+    { 0x0904, "mldsa44" },
+    { 0x0905, "mldsa65" },
+    { 0x0906, "mldsa87" }
 };
 
 static const ssl_trace_tbl ssl_ctype_tbl[] = {
@@ -1310,33 +1328,46 @@ static int ssl_print_certificate(BIO *bio, const SSL_CONNECTION *sc, int indent,
     return 1;
 }
 
-static int ssl_print_raw_public_key(BIO *bio, const SSL *ssl, int server,
-    int indent, const unsigned char **pmsg,
-    size_t *pmsglen)
+static int ssl_print_raw_public_key(BIO *bio, const SSL_CONNECTION *sc,
+    int server, int indent, const unsigned char **pmsg, size_t *pmsglen)
 {
     EVP_PKEY *pkey;
+    SSL_CTX *ctx = SSL_CONNECTION_GET_CTX(sc);
     size_t clen;
     const unsigned char *msg = *pmsg;
     size_t msglen = *pmsglen;
+    int has_spki_len;
 
-    if (msglen < 3)
-        return 0;
-    clen = (msg[0] << 16) | (msg[1] << 8) | msg[2];
-    if (msglen < clen + 3)
-        return 0;
-
-    msg += 3;
+    /*
+     * In TLS 1.2 and prior the SPKI is the entire payload of the extension,
+     * and does not have a separate length prefix
+     */
+    has_spki_len = SSL_CONNECTION_IS_DTLS(sc)
+        ? DTLS_VERSION_GT(sc->version, DTLS1_2_VERSION)
+        : sc->version > TLS1_2_VERSION;
+    if (has_spki_len) {
+        if (msglen < 3)
+            return 0;
+        clen = (msg[0] << 16) | (msg[1] << 8) | msg[2];
+        if (msglen < clen + 3)
+            return 0;
+        msg += 3;
+        *pmsg += clen + 3;
+        *pmsglen -= clen + 3;
+    } else {
+        clen = msglen;
+        *pmsg += msglen;
+        *pmsglen -= msglen;
+    }
 
     BIO_indent(bio, indent, 80);
     BIO_printf(bio, "raw_public_key, length=%d\n", (int)clen);
 
-    pkey = d2i_PUBKEY_ex(NULL, &msg, clen, ssl->ctx->libctx, ssl->ctx->propq);
+    pkey = d2i_PUBKEY_ex(NULL, &msg, (long)clen, ctx->libctx, ctx->propq);
     if (pkey == NULL)
         return 0;
     EVP_PKEY_print_public(bio, pkey, indent + 2, NULL);
     EVP_PKEY_free(pkey);
-    *pmsg += clen + 3;
-    *pmsglen -= clen + 3;
     return 1;
 }
 
@@ -1358,7 +1389,7 @@ static int ssl_print_certificates(BIO *bio, const SSL_CONNECTION *sc, int server
     msg += 3;
     if ((server && sc->ext.server_cert_type == TLSEXT_cert_type_rpk)
         || (!server && sc->ext.client_cert_type == TLSEXT_cert_type_rpk)) {
-        if (!ssl_print_raw_public_key(bio, &sc->ssl, server, indent, &msg, &clen))
+        if (!ssl_print_raw_public_key(bio, sc, server, indent, &msg, &clen))
             return 0;
         if (SSL_CONNECTION_IS_TLS13(sc)
             && !ssl_print_extensions(bio, indent + 2, server,
@@ -1667,6 +1698,7 @@ static int ssl_print_handshake(BIO *bio, const SSL_CONNECTION *sc, int server,
         ssl_print_hex(bio, indent + 2, "verify_data", msg, msglen);
         break;
 
+    case SSL3_MT_END_OF_EARLY_DATA:
     case SSL3_MT_SERVER_DONE:
         if (msglen != 0)
             ssl_print_hex(bio, indent + 2, "unexpected value", msg, msglen);

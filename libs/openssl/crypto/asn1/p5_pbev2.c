@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1999-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -34,6 +34,13 @@ ASN1_SEQUENCE(PBKDF2PARAM) = {
 } ASN1_SEQUENCE_END(PBKDF2PARAM)
 
 IMPLEMENT_ASN1_FUNCTIONS(PBKDF2PARAM)
+
+ASN1_SEQUENCE(PBMAC1PARAM) = {
+    ASN1_SIMPLE(PBMAC1PARAM, keyDerivationFunc, X509_ALGOR),
+    ASN1_SIMPLE(PBMAC1PARAM, messageAuthScheme, X509_ALGOR)
+} ASN1_SEQUENCE_END(PBMAC1PARAM)
+
+IMPLEMENT_ASN1_FUNCTIONS(PBMAC1PARAM)
 
 /*
  * Return an algorithm identifier for a PKCS#5 v2.0 PBE algorithm: yes I know

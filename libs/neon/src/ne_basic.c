@@ -142,6 +142,35 @@ int ne_putbuf(ne_session *sess, const char *path,
     return ret;
 }
 
+int ne_getbuf(ne_session *sess, const char *path,
+              char *buf, size_t *buflen)
+{
+    ne_request *req = ne_request_create(sess, "GET", path);
+    int ret, is_2xx;
+
+    do {
+        ret = ne_begin_request(req);
+        if (ret != NE_OK) break;
+
+        is_2xx = ne_get_status(req)->klass == 2;
+        if (is_2xx)
+            ret = ne_read_response_to_buffer(req, buf, buflen);
+        else
+            ret = ne_discard_response(req);
+
+        if (ret == NE_OK) ret = ne_end_request(req);
+    } while (ret == NE_RETRY);
+
+    if (ret != NE_OK)
+        ne_close_connection(sess);
+    else if (!is_2xx)
+        ret = NE_ERROR;
+
+    ne_request_destroy(req);
+
+    return ret;
+}
+
 /* Dispatch a GET request REQ, writing the response body to FD fd.  If
  * RANGE is non-NULL, then it is the value of the Range request
  * header, e.g. "bytes=1-5".  Returns an NE_* error code. */
@@ -292,42 +321,35 @@ int ne_get_content_type(ne_request *req, ne_content_type *ct)
     ct->value = ne_strdup(value);
     
     stype = strchr(ct->value, '/');
-
     *stype++ = '\0';
-    ct->type = ct->value;
+
+    ct->type = ne_strlower(ct->value);
     ct->charset = NULL;
     
     sep = strchr(stype, ';');
 
     if (sep) {
-	char *tok;
-	/* look for the charset parameter. TODO; probably better to
-	 * hand-carve a parser than use ne_token/strstr/shave here. */
+	char *tok, *eq;
+
+        /* NUL-terminate at the ; and iterate through each parameter
+         * (each is ;-separated). Follow grammar at
+         * https://www.rfc-editor.org/rfc/rfc9110#parameter allowing
+         * for OWS */
 	*sep++ = '\0';
 	do {
 	    tok = ne_qtoken(&sep, ';', "\"\'");
-	    if (tok) {
-		tok = strstr(tok, "charset=");
-		if (tok)
-		    ct->charset = ne_shave(tok+8, "\"\'");
+	    if (tok && (eq = strchr(tok, '=')) != NULL) {
+                /* NUL-terminate to split parameter-name (tok) from
+                 * parameter-value (eq). */
+                *eq++ = '\0';
+                if (ne_strcasecmp(ne_shave(tok, " "), "charset") == 0)
+		    ct->charset = ne_shave(eq, "\"\' ");
 	    }
-            else {
-		break;
-	    }
-	} while (sep != NULL);
+	} while (sep && tok);
     }
 
     /* set subtype, losing any trailing whitespace */
-    ct->subtype = ne_shave(stype, " \t");
-    
-    if (ct->charset == NULL && ne_strcasecmp(ct->type, "text") == 0) {
-        /* 3280§3.1: text/xml without charset implies us-ascii. */
-        if (ne_strcasecmp(ct->subtype, "xml") == 0)
-            ct->charset = "us-ascii";
-        /* 2616§3.7.1: subtypes of text/ default to charset ISO-8859-1. */
-        else
-            ct->charset = "ISO-8859-1";
-    }
+    ct->subtype = ne_strlower(ne_shave(stype, " \t"));
     
     return 0;
 }
@@ -436,7 +458,7 @@ static int copy_or_move(ne_session *sess, int is_move, int overwrite,
 {
     ne_request *req = ne_request_create( sess, is_move?"MOVE":"COPY", src );
 
-    /* RFC4918ẞ9.9.2 - "Depth: infinity" is implicit for MOVE. */
+    /* RFC4918§9.9.2 - "Depth: infinity" is implicit for MOVE. */
     if (!is_move) {
 	ne_add_depth_header(req, depth);
     }
@@ -489,7 +511,7 @@ int ne_delete(ne_session *sess, const char *path)
     ne_lock_using_parent(req, path);
 #endif
     
-    /* Per RFC4918ẞ9.6.1 DELETE can get a 207 response. */
+    /* Per RFC4918§9.6.1 DELETE can get a 207 response. */
     return ne_simple_request(sess, req);
 }
 

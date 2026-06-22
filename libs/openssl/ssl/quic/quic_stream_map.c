@@ -437,6 +437,13 @@ int ossl_quic_stream_map_notify_totally_acked(QUIC_STREAM_MAP *qsm,
 
     case QUIC_SSTREAM_STATE_DATA_SENT:
         qs->send_state = QUIC_SSTREAM_STATE_DATA_RECVD;
+        /*
+         * Remember final size in case  SSL_get_stream_write_state()
+         * gets called.
+         */
+        qs->have_final_size = ossl_quic_sstream_get_final_size(qs->sstream,
+            NULL);
+
         /* We no longer need a QUIC_SSTREAM in this state. */
         ossl_quic_sstream_free(qs->sstream);
         qs->sstream = NULL;
@@ -762,7 +769,7 @@ void ossl_quic_stream_map_remove_from_accept_queue(QUIC_STREAM_MAP *qsm,
         --qsm->num_accept_uni;
 
     if ((max_streams_rxfc = qsm_get_max_streams_rxfc(qsm, s)) != NULL)
-        ossl_quic_rxfc_on_retire(max_streams_rxfc, 1, rtt);
+        (void)ossl_quic_rxfc_on_retire(max_streams_rxfc, 1, rtt);
 }
 
 size_t ossl_quic_stream_map_get_accept_queue_len(QUIC_STREAM_MAP *qsm, int is_uni)

@@ -292,6 +292,9 @@ struct ossl_record_layer_st {
     /* cryptographic state */
     EVP_CIPHER_CTX *enc_ctx;
 
+    /* TLSv1.3 MAC ctx, only used with integrity-only cipher */
+    EVP_MAC_CTX *mac_ctx;
+
     /* Explicit IV length */
     size_t eivlen;
 
@@ -318,6 +321,7 @@ struct ossl_record_layer_st {
 
     /* TLSv1.3 record padding */
     size_t block_padding;
+    size_t hs_padding;
 
     /* Only used by SSLv3 */
     unsigned char mac_secret[EVP_MAX_MD_SIZE];
@@ -330,8 +334,8 @@ struct ossl_record_layer_st {
     int tlstree;
 
     /* TLSv1.3 fields */
-    /* static IV */
-    unsigned char iv[EVP_MAX_IV_LENGTH];
+    unsigned char *iv; /* static IV */
+    unsigned char *nonce; /* part of static IV followed by sequence number */
     int allow_plain_alerts;
 
     /* TLS "any" fields */

@@ -10,6 +10,29 @@
 #include "internal/quic_predef.h"
 #include "internal/quic_fc.h"
 #include "internal/quic_stream_map.h"
+#include "internal/quic_tls.h"
+
+/*
+ * This is a part of PATH_CHALLENGE flood [1] mitigation. This limits the
+ * number of PATH_CHALLENGE frames  QUIC stack is willing to process for
+ * connection. Local QUIC stack creates PATH_RESPONSE frame for PATH_CHALLENGE
+ * frame it receives from remote peer. The response frame is put Control Frame
+ * Queue waiting to be dispatched. The PATH_RESPONSE frame is removed from CFQ
+ * after it is dispatched. The QUIC_PATH_RESPONSE_QLEN limits the number of
+ * PATH_RESPONSE frames waiting to be dispatched. No new PATH_RESPONSE frames
+ * are inserted into CFQ if queue limit is exceeded.
+ *
+ * QUIC implementations use different limits for PATH_RESPONSE queue lengths:
+ *    quic-go defines maxPathResponses as 256
+ *    quiche from cloadflare sets DEFAULT_MAX_PATH_CHALLENGE_RX_QUEUE_LEN to 3
+ *    t-quic from tencent chooses MAX_PATH_CHALS_RECV to be 8
+ *
+ * OpenSSL here introduces QUIC_PATH_RESPONSE_QLEN as 32.
+ *
+ * [1] https://www.ietf.org/archive/id/draft-chen-quic-logical-vuln-mitigations-00.txt
+ *     (section 4.2)
+ */
+#define QUIC_PATH_RESPONSE_QLEN 32
 
 /*
  * QUIC Channel Structure
@@ -34,12 +57,16 @@ struct quic_channel_st {
      * QUIC_PORT keeps the channels which belong to it on a list for bookkeeping
      * purposes.
      */
-    OSSL_LIST_MEMBER(ch, struct quic_channel_st);
+    OSSL_LIST_MEMBER(ch, QUIC_CHANNEL);
+    OSSL_LIST_MEMBER(incoming_ch, QUIC_CHANNEL);
 
     /*
      * The associated TLS 1.3 connection data. Used to provide the handshake
      * layer; its 'network' side is plugged into the crypto stream for each EL
-     * (other than the 0-RTT EL).
+     * (other than the 0-RTT EL). Note that the `tls` SSL object is not "owned"
+     * by this channel. It is created and managed elsewhere and is guaranteed
+     * to be valid for the lifetime of the channel. Therefore we do not free it
+     * when we free the channel.
      */
     QUIC_TLS *qtls;
     SSL *tls;
@@ -57,6 +84,12 @@ struct quic_channel_st {
      * Freed after sending or when connection is freed.
      */
     unsigned char *local_transport_params;
+
+    /*
+     * Pending new token to send once handshake is complete
+     */
+    uint8_t *pending_new_token;
+    size_t pending_new_token_len;
 
     /* Our current L4 peer address, if any. */
     BIO_ADDR cur_peer_addr;
@@ -105,6 +138,13 @@ struct quic_channel_st {
      * Randomly generated and required by RFC to be at least 8 bytes.
      */
     QUIC_CONN_ID init_dcid;
+
+    /*
+     * Server: If this channel is created in response to an init packet sent
+     * after the server has sent a retry packet to do address validation, this
+     * field stores the original connection id from the first init packet sent
+     */
+    QUIC_CONN_ID odcid;
 
     /*
      * Client: The SCID found in the first Initial packet from the server.
@@ -437,6 +477,21 @@ struct quic_channel_st {
     /* Has qlog been requested? */
     unsigned int use_qlog : 1;
 
+    /* Has qlog been requested? */
+    unsigned int is_tserver_ch : 1;
+    /*
+     * RFC 9000 Section 9.2.1 says:
+     *      However, an endpoint SHOULD NOT send multiple
+     *      PATH_CHALLENGE frames in a single packet.
+     * The counter here allows us to detect multiple presence
+     * of PATH_CHALLENGE frame in packet. We process only the
+     * first PATH_CHALLENGE frame found in packet. Remaining PATH_CHALLENGE
+     * frames are ignored.
+     * seen_path_challenge flag is always reset before
+     * ossl_quic_handle_frames() gets called.
+     */
+    unsigned int seen_path_challenge : 1;
+
     /* Saved error stack in case permanent error was encountered */
     ERR_STATE *err_state;
 
@@ -446,6 +501,15 @@ struct quic_channel_st {
 
     /* Title for qlog purposes. We own this copy. */
     char *qlog_title;
+    /*
+     * number of path responses waiting to be dispatched
+     * from control frame queue (CFQ)
+     */
+    unsigned int path_response_limit;
+    /* number of path challenge frames received */
+    unsigned int path_challenge_rx;
+    /* number of path response frames sent */
+    unsigned int path_response_tx;
 };
 
 #endif

@@ -149,10 +149,10 @@ static bool tempseat_is_utf8(Seat *seat)
     return seat_is_utf8(ts->realseat);
 }
 
-static const char *tempseat_get_x_display(Seat *seat)
+static const char *tempseat_get_display(Seat *seat, SeatDisplayType dtype)
 {
     TempSeat *ts = container_of(seat, TempSeat, seat);
-    return seat_get_x_display(ts->realseat);
+    return seat_get_display(ts->realseat, dtype);
 }
 
 static bool tempseat_get_windowid(Seat *seat, long *id_out)
@@ -348,7 +348,7 @@ static const struct SeatVtable tempseat_vt = {
     .prompt_descriptions = tempseat_prompt_descriptions,
     .is_utf8 = tempseat_is_utf8,
     .echoedit_update = tempseat_echoedit_update,
-    .get_x_display = tempseat_get_x_display,
+    .get_display = tempseat_get_display,
     .get_windowid = tempseat_get_windowid,
     .get_window_pixel_size = tempseat_get_window_pixel_size,
     .stripctrl_new = tempseat_stripctrl_new,

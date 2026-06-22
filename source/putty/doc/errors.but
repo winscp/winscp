@@ -100,7 +100,7 @@ protocol.
 
 If the server genuinely only supports SSH-1, then you need to either
 change the \q{SSH protocol version} setting (see \k{config-ssh-prot}),
-or use the \c{-1} command-line option; in any case, you should not
+or use the \c{\-1} command-line option; in any case, you should not
 treat the resulting connection as secure.
 
 You might start seeing this message with new versions of PuTTY (from
@@ -140,33 +140,6 @@ authentication, so that you don't have to type your passphrase.
 On the server, this can be worked around by disabling public-key
 authentication or (for Sun SSH only) by increasing \c{MaxAuthTries} in
 \c{sshd_config}.
-
-\H{errors-memory} \q{\ii{Out of memory}}
-
-This occurs when PuTTY tries to allocate more memory than the system
-can give it. This \e{may} happen for genuine reasons: if the
-computer really has run out of memory, or if you have configured an
-extremely large number of lines of scrollback in your terminal.
-PuTTY is not able to recover from running out of memory; it will
-terminate immediately after giving this error.
-
-However, this error can also occur when memory is not running out at
-all, because PuTTY receives data in the wrong format. In SSH-2 and
-also in SFTP, the server sends the length of each message before the
-message itself; so PuTTY will receive the length, try to allocate
-space for the message, and then receive the rest of the message. If
-the length PuTTY receives is garbage, it will try to allocate a
-ridiculous amount of memory, and will terminate with an \q{Out of
-memory} error.
-
-This can happen in SSH-2, if PuTTY and the server have not enabled
-encryption in the same way (see \k{faq-outofmem} in the FAQ).
-
-This can also happen in PSCP or PSFTP, if your \i{login scripts} on the
-server generate output: the client program will be expecting an SFTP
-message starting with a length, and if it receives some text from
-your login scripts instead it will try to interpret them as a
-message length. See \k{faq-outofmem2} for details of this.
 
 \H{errors-internal} \q{\ii{Internal error}}, \q{\ii{Internal fault}},
 \q{\ii{Assertion failed}}

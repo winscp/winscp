@@ -77,6 +77,10 @@ static int escapes(void)
         { "/a\xb9\xb2\xb3\xbc\xbd/", "/a%b9%b2%b3%bc%bd/", 0 },
         { "/foo%20\xb9\xb2\xb3\xbc\xbd/", "/foo%20%b9%b2%b3%bc%bd/", NE_PATH_NONURI },
         { "/foo bar/", "/foo%20bar/", NE_PATH_NONURI },
+        { "/foo:bar", "/foo:bar", NE_PATH_NONPC },
+        { "/a#b:2", "/a%23b:2", NE_PATH_NONPC },
+        { "/a#b:2", "/a%23b:2", 0 },
+        { "/a?b:c$d", "/a%3fb:c$d", NE_PATH_NONPC },
         { NULL, NULL}
     };
     size_t n;
@@ -89,7 +93,7 @@ static int escapes(void)
         else
             esc = ne_path_escape(paths[n].plain);
 
-        ONCMP(paths[n].escaped, esc, paths[n].plain, "escape");
+        ONCMP(paths[n].escaped, esc, paths[n].plain, "escaped form");
 
         if (!paths[n].flags) {
             char *un = ne_path_unescape(esc);

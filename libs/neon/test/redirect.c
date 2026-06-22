@@ -63,7 +63,7 @@ static int check_redir(int status_code, const char *location,
 		"Location: %s\r\n\n",
 		status_code, location);
 
-    CALL(multi_session_server(&sess, "http", "localhost", 2,
+    CALL(multi_session_server(&sess, "http", 2,
                               single_serve_string, response));
 
     if (expect[0] == '/') {
@@ -190,10 +190,11 @@ static int no_redirect(void)
     ONN("initial redirect non-NULL", ne_redirect_location(sess));
 
     ONREQ(any_request(sess, "/noredir"));
-
     ONN("redirect non-NULL after non-redir req", ne_redirect_location(sess));
 
     CALL(process_redir(sess, "/foo", &loc));
+    ONV(loc == NULL || strcmp(loc->path, "/blah"),
+        ("redirect returned was '%s' not /blah", loc ? loc->path : "(null)"));
 
     return destroy_and_wait(sess);
 }

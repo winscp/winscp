@@ -27,7 +27,7 @@
 </xsl:attribute-set>
 
 <!-- use sane ANSI C function prototypes -->
-<xsl:variable name="funcsynopsis.style" select="'ansi'"/>
+<xsl:variable name="funcsynopsis.style" select="'ansi-table'"/>
 
 <!-- split each sect1 into a separate chunk -->
 <xsl:variable name="chunk.first.sections" select="1"/>

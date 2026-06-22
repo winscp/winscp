@@ -49,6 +49,10 @@
 #include <expat.h>
 #endif
 
+#ifdef NE_HAVE_NTLM
+#include <ntlm.h>
+#endif
+
 #include "ne_utils.h"
 #include "ne_string.h" /* for ne_strdup */
 #include "ne_dates.h"
@@ -133,6 +137,9 @@ static const char version_string[] = "neon " NEON_VERSION ": "
 #ifdef NE_HAVE_LIBPXY
     ", libproxy"
 #endif
+#ifdef NE_HAVE_NTLM
+    ", libntlm " NTLM_VERSION
+#endif
    "."
 ;
 
@@ -141,13 +148,22 @@ const char *ne_version_string(void)
     return version_string;
 }
 
+const char *ne_version_library(void)
+{
+    return NEON_VERSION;
+}
+
 #define LAST_COMPAT_ZERO_MINOR (27)
+
+#if NE_VERSION_MAJOR > 0
+#error update ne_version_match for 1.x compatibility
+#endif
 
 int ne_version_match(int major, int minor)
 {
     return !
-        (NE_VERSION_MAJOR == 0 &&
-         (minor <= NE_VERSION_MINOR && minor >= LAST_COMPAT_ZERO_MINOR));
+        (major == 0
+         && (minor >= LAST_COMPAT_ZERO_MINOR && minor <= NE_VERSION_MINOR));
 }
 
 int ne_has_support(int feature)
@@ -155,7 +171,8 @@ int ne_has_support(int feature)
     switch (feature) {
 #if defined(NE_HAVE_SSL) || defined(NE_HAVE_ZLIB) || defined(NE_HAVE_IPV6) \
     || defined(NE_HAVE_SOCKS) || defined(NE_HAVE_LFS) \
-    || defined(NE_HAVE_TS_SSL) || defined(NE_HAVE_I18N) || defined(HAVE_SSPI)
+    || defined(NE_HAVE_TS_SSL) || defined(NE_HAVE_I18N) || defined(HAVE_SSPI) \
+    || defined(NE_HAVE_GSSAPI) || defined(NE_HAVE_LIBPXY) || defined(NE_HAVE_NTLM)
 #ifdef NE_HAVE_SSL
     case NE_FEATURE_SSL:
 #endif
@@ -186,6 +203,9 @@ int ne_has_support(int feature)
 #ifdef NE_HAVE_LIBPXY
     case NE_FEATURE_LIBPXY:
 #endif
+#ifdef NE_HAVE_NTLM
+    case NE_FEATURE_NTLM:
+#endif
         return 1;
 #endif /* NE_HAVE_* */
     default:
@@ -215,7 +235,7 @@ static const unsigned char table_status_line[256] = {
 /* xF0 */ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
 }; /* -- Generated code from 'mktable status_line' ends. */
 
-/* Strict parser per RFC9112ẞ4:
+/* Strict parser per RFC9112§4:
  *
  *    status-line = HTTP-version SP status-code SP [ reason-phrase ]
  *  HTTP-version  = HTTP-name "/" DIGIT "." DIGIT

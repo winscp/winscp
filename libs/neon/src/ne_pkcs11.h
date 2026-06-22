@@ -27,6 +27,10 @@
 
 NE_BEGIN_DECLS
 
+/*
+ * DEPRECATED PKCS#11 interface. Use ne_ssl_clicert_fromuri() instead.
+ */
+
 typedef struct ne_ssl_pkcs11_provider_s ne_ssl_pkcs11_provider;
 
 #define NE_PK11_OK (0)

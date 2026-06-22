@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -10,10 +10,8 @@
 #ifndef OSSL_APPS_H
 #define OSSL_APPS_H
 
-#include "internal/e_os.h" /* struct timeval for DTLS */
 #include "internal/common.h" /* for HAS_PREFIX */
 #include "internal/nelem.h"
-#include "internal/sockets.h" /* for openssl_fdset() */
 #include <assert.h>
 
 #include <stdarg.h>
@@ -65,6 +63,7 @@ BIO *dup_bio_err(int format);
 BIO *bio_open_owner(const char *filename, int format, int private);
 BIO *bio_open_default(const char *filename, char mode, int format);
 BIO *bio_open_default_quiet(const char *filename, char mode, int format);
+int mem_bio_to_file(BIO *in, const char *filename, int format, int private);
 char *app_conf_try_string(const CONF *cnf, const char *group, const char *name);
 int app_conf_try_number(const CONF *conf, const char *group, const char *name,
     long *result);
@@ -82,8 +81,12 @@ int has_stdin_waiting(void);
 #endif
 
 void corrupt_signature(const ASN1_STRING *signature);
+
+/* Helpers for setting X509v3 certificate fields notBefore and notAfter */
+int check_cert_time_string(const char *time, const char *desc);
 int set_cert_times(X509 *x, const char *startdate, const char *enddate,
-    int days);
+    int days, int strict_compare_times);
+
 int set_crl_lastupdate(X509_CRL *crl, const char *lastupdate);
 int set_crl_nextupdate(X509_CRL *crl, const char *nextupdate,
     long days, long hours, long secs);
@@ -250,7 +253,7 @@ int parse_yesno(const char *str, int def);
 X509_NAME *parse_name(const char *str, int chtype, int multirdn,
     const char *desc);
 void policies_print(X509_STORE_CTX *ctx);
-int bio_to_mem(unsigned char **out, int maxlen, BIO *in);
+int bio_to_mem(unsigned char **out, size_t *outlen, size_t maxlen, BIO *in);
 int pkey_ctrl_string(EVP_PKEY_CTX *ctx, const char *value);
 int x509_ctrl_string(X509 *x, const char *value);
 int x509_req_ctrl_string(X509_REQ *x, const char *value);

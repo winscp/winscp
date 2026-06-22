@@ -61,9 +61,9 @@ uses
 // Version
 const
   JclVersionMajor   = 2;    // 0=pre-release|beta/1, 2, ...=final
-  JclVersionMinor   = 8;    // Fifth minor release since JCL 1.90
+  JclVersionMinor   = 9;    // Fifth minor release since JCL 1.90
   JclVersionRelease = 0;    // 0: pre-release|beta/ 1: release
-  JclVersionBuild   = 5677; // build number, days since march 1, 2000
+  JclVersionBuild   = 9331; // build number, days since march 1, 2000
   JclVersion = (JclVersionMajor shl 24) or (JclVersionMinor shl 16) or
     (JclVersionRelease shl 15) or (JclVersionBuild shl 0);
 
@@ -136,6 +136,13 @@ type
 type
   TBytes = array of Byte;
 {$ENDIF ~COMPILER11_UP}
+
+type
+  {$IFDEF RTL360_UP}
+  TJclListSize = NativeInt;
+  {$ELSE}
+  TJclListSize = Integer;
+  {$ENDIF ~RTL360_UP}
 
 // Redefinition of PByteArray to avoid range check exceptions.
 type

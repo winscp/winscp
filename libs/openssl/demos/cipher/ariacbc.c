@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2012-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -27,22 +27,8 @@ static const unsigned char cbc_key[] = {
 
 /* Unique initialisation vector */
 static const unsigned char cbc_iv[] = {
-    0x99,
-    0xaa,
-    0x3e,
-    0x68,
-    0xed,
-    0x81,
-    0x73,
-    0xa0,
-    0xee,
-    0xd0,
-    0x66,
-    0x84,
-    0x99,
-    0xaa,
-    0x3e,
-    0x68,
+    0x99, 0xaa, 0x3e, 0x68, 0xed, 0x81, 0x73, 0xa0, 0xee, 0xd0,
+    0x66, 0x84, 0x99, 0xaa, 0x3e, 0x68
 };
 
 /* Example plaintext to encrypt */
@@ -63,10 +49,10 @@ static const unsigned char cbc_ct[] = {
  * algorithm implementations. If they are NULL then the default library
  * context and properties are used.
  */
-OSSL_LIB_CTX *libctx = NULL;
-const char *propq = NULL;
+static OSSL_LIB_CTX *libctx = NULL;
+static const char *propq = NULL;
 
-int aria_cbc_encrypt(void)
+static int aria_cbc_encrypt(void)
 {
     int ret = 0;
     EVP_CIPHER_CTX *ctx;
@@ -122,7 +108,7 @@ err:
     return ret;
 }
 
-int aria_cbc_decrypt(void)
+static int aria_cbc_decrypt(void)
 {
     int ret = 0;
     EVP_CIPHER_CTX *ctx;

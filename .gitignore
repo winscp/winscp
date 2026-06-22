@@ -1,3 +1,9 @@
-*.suo
-/tools
 /packages/
+source/Profiling/
+*.suo
+WinSCPnet.csproj.nuget.g.targets
+buildtools/winscp/WinSCP.com
+buildtools/winscp/WinSCP.exe
+tools/**/bin
+tools/**/obj
+tools/**/*.running

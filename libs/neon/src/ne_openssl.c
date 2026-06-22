@@ -1,6 +1,6 @@
 /* 
    neon SSL/TLS support using OpenSSL
-   Copyright (C) 2002-2021, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2002-2025, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -52,9 +52,8 @@
 
 #include "ne_ssl.h"
 #include "ne_string.h"
-#include "ne_session.h"
 #include "ne_internal.h"
-#include "ne_private.h"
+#include "ne_utils.h"
 #include "ne_privssl.h"
 
 /* OpenSSL 0.9.6 compatibility */
@@ -72,6 +71,9 @@ typedef unsigned char ne_d2i_uchar;
 typedef const unsigned char ne_d2i_uchar;
 #endif
 
+/* Convert a ASCII decimal pair into an integer. */
+#define FROM_DEC(p_) (10*((p_)[0]-'0') + (p_)[1]-'0')
+
 #ifndef HAVE_OPENSSL110
 #define X509_get0_notBefore X509_get_notBefore
 #define X509_get0_notAfter X509_get_notAfter
@@ -81,10 +83,24 @@ typedef const unsigned char ne_d2i_uchar;
 #define EVP_MD_CTX_free(ctx) ne_free(ctx)
 #define EVP_MD_CTX_reset EVP_MD_CTX_cleanup
 #define EVP_PKEY_get0_RSA(evp) (evp->pkey.rsa)
+#define ASN1_STRING_get0_data(as_) ((as_)->data)
+#define ASN1_STRING_length(as_) ((as_)->length)
+#define ASN1_STRING_type(as_) ((as_)->type)
+#endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10101000
+/* OpenSSL 1.1.1 has STORE. */
+#define HAVE_OPENSSL111
+#include <openssl/store.h>
+#include <openssl/ui.h>
+#else
+/* Backwards compatibility for <1.1.1. */
+#define TLS_client_method SSLv23_client_method
+#define TLS_server_method SSLv23_server_method
 #endif
 
 struct ne_ssl_dname_s {
-    X509_NAME *dn;
+    const X509_NAME *dn;
 };
 
 struct ne_ssl_certificate_s {
@@ -95,34 +111,41 @@ struct ne_ssl_certificate_s {
 };
 
 struct ne_ssl_client_cert_s {
-    PKCS12 *p12;
-    int decrypted; /* non-zero if successfully decrypted. */
     ne_ssl_certificate cert;
+    /* .decrypt is non-NULL if the clicert is in the encrypted state,
+     * and NULL in the decrypted state. */
+    int (*decrypt)(ne_ssl_client_cert *cc, const char *password);
+    PKCS12 *p12;
+    char *uri;
     EVP_PKEY *pkey;
     char *friendly_name;
 };
+
+static void free_cert(ne_ssl_certificate *cert);
 
 #define NE_SSL_UNHANDLED (0x20) /* failure bit for unhandled case. */
 
 /* Append an ASN.1 DirectoryString STR to buffer BUF as UTF-8.
  * Returns zero on success or non-zero on error. */
-static int append_dirstring(ne_buffer *buf, ASN1_STRING *str)
+static int append_dirstring(ne_buffer *buf, const ASN1_STRING *str)
 {
     unsigned char *tmp = (unsigned char *)""; /* initialize to workaround 0.9.6 bug */
-    int len;
+    const unsigned char *data = ASN1_STRING_get0_data(str);
+    int len = ASN1_STRING_length(str);
+    int type = ASN1_STRING_type(str);
 
-    switch (str->type) {
+    switch (type) {
     case V_ASN1_IA5STRING: /* definitely ASCII */
     case V_ASN1_VISIBLESTRING: /* probably ASCII */
     case V_ASN1_PRINTABLESTRING: /* subset of ASCII */
-        ne_buffer_qappend(buf, str->data, str->length);
+        ne_buffer_qappend(buf, data, len);
         break;
     case V_ASN1_UTF8STRING:
         /* Fail for embedded NUL bytes. */
-        if (strlen((char *)str->data) != (size_t)str->length) {
+        if (strlen((const char *)data) != (size_t)len) {
             return -1;
         }
-        ne_buffer_append(buf, (char *)str->data, str->length);
+        ne_buffer_append(buf, (char *)data, len);
         break;
     case V_ASN1_UNIVERSALSTRING:
     case V_ASN1_T61STRING: /* let OpenSSL convert it as ISO-8859-1 */
@@ -146,7 +169,7 @@ static int append_dirstring(ne_buffer *buf, ASN1_STRING *str)
         break;
     default:
         NE_DEBUG(NE_DBG_SSL, "Could not convert DirectoryString type %d\n",
-                 str->type);
+                 type);
         return -1;
     }
     return 0;
@@ -156,7 +179,10 @@ static int append_dirstring(ne_buffer *buf, ASN1_STRING *str)
  * safety. */
 static char *dup_ia5string(const ASN1_IA5STRING *as)
 {
-    return ne_strnqdup(as->data, as->length);
+    const unsigned char *data = ASN1_STRING_get0_data(as);
+    int length = ASN1_STRING_length(as);
+
+    return ne_strnqdup(data, length);
 }
 
 char *ne_ssl_readable_dname(const ne_ssl_dname *name)
@@ -167,8 +193,8 @@ char *ne_ssl_readable_dname(const ne_ssl_dname *name)
 	* const email = OBJ_nid2obj(NID_pkcs9_emailAddress);
 
     for (n = X509_NAME_entry_count(name->dn); n > 0; n--) {
-	X509_NAME_ENTRY *ent = X509_NAME_get_entry(name->dn, n-1);
-	ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(ent);
+	const X509_NAME_ENTRY *ent = X509_NAME_get_entry(name->dn, n-1);
+	const ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(ent);
 	
         /* Skip commonName or emailAddress except if there is no other
          * attribute in dname. */
@@ -192,41 +218,46 @@ int ne_ssl_dname_cmp(const ne_ssl_dname *dn1, const ne_ssl_dname *dn2)
 
 void ne_ssl_clicert_free(ne_ssl_client_cert *cc)
 {
-    if (cc->p12)
-        PKCS12_free(cc->p12);
-    if (cc->decrypted) {
-        if (cc->cert.identity) ne_free(cc->cert.identity);
-        EVP_PKEY_free(cc->pkey);
-        X509_free(cc->cert.subject);
-    }
+    if (cc->p12) PKCS12_free(cc->p12);
+    if (cc->uri) ne_free(cc->uri);
+    if (cc->pkey) EVP_PKEY_free(cc->pkey);
     if (cc->friendly_name) ne_free(cc->friendly_name);
+    free_cert(&cc->cert);
     ne_free(cc);
 }
 
-/* Format an ASN1 time to a string. 'buf' must be at least of size
- * 'NE_SSL_VDATELEN'. */
+/* Convert an ASN1 time to time_t. */
 static time_t asn1time_to_timet(const ASN1_TIME *atm)
 {
     struct tm tm = {0};
-    int i = atm->length;
-    
-    if (i < 10)
+
+#ifdef HAVE_ASN1_TIME_TO_TM
+    if (ASN1_TIME_to_tm(atm, &tm) != 1)
+        return (time_t)-1;
+#else
+    if (atm->length < 10)
         return (time_t )-1;
 
-    tm.tm_year = (atm->data[0]-'0') * 10 + (atm->data[1]-'0');
+    tm.tm_year = FROM_DEC(atm->data);
 
     /* Deal with Year 2000 */
     if (tm.tm_year < 70)
         tm.tm_year += 100;
 
-    tm.tm_mon = (atm->data[2]-'0') * 10 + (atm->data[3]-'0') - 1;
-    tm.tm_mday = (atm->data[4]-'0') * 10 + (atm->data[5]-'0');
-    tm.tm_hour = (atm->data[6]-'0') * 10 + (atm->data[7]-'0');
-    tm.tm_min = (atm->data[8]-'0') * 10 + (atm->data[9]-'0');
-    tm.tm_sec = (atm->data[10]-'0') * 10 + (atm->data[11]-'0');
+    tm.tm_mon = FROM_DEC(atm->data + 2) - 1;
+    tm.tm_mday = FROM_DEC(atm->data + 4);
+    tm.tm_hour = FROM_DEC(atm->data + 6);
+    tm.tm_min = FROM_DEC(atm->data + 8);
+    if (atm->length > 12)
+        tm.tm_sec = FROM_DEC(atm->data + 10);
+#endif
 
-#ifdef HAVE_TIMEZONE
-    /* ANSI C time handling is... interesting. */
+#ifdef HAVE_TIMEGM
+    /* BSD/GNU; convert directly to GMT */
+    return timegm(&tm);
+#elif defined(HAVE_TIMEZONE) && !defined(HAVE_ASN1_TIME_TO_TM)
+    /* ASN1_TIME_to_tm already converts to GMT, otherwise
+     * use the timezone global offset to do so. */
     return mktime(&tm) - timezone;
 #else
     return mktime(&tm);
@@ -244,18 +275,16 @@ void ne_ssl_cert_validity_time(const ne_ssl_certificate *cert,
     }
 }
 
-/* Check certificate identity.  Returns zero if identity matches; 1 if
- * identity does not match, or <0 if the certificate had no identity.
- * If 'identity' is non-NULL, store the malloc-allocated identity in
- * *identity.  Logic specified by RFC 2818 and RFC 3280. */
-static int check_identity(const struct host_info *server, X509 *cert,
+/* Check certificate identity per RFC 2818 and RFC 3280. */
+static int check_identity(const ne_ssl_certificate *server_cert,
+                          const char *hostname, const ne_inet_addr *address,
                           char **identity)
 {
     STACK_OF(GENERAL_NAME) *names;
     int match = 0, found = 0;
-    const char *hostname;
-    
-    hostname = server ? server->hostname : "";
+    X509 *cert = server_cert->subject;
+
+    if (!hostname) hostname = "";
 
     names = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
     if (names) {
@@ -272,29 +301,32 @@ static int check_identity(const struct host_info *server, X509 *cert,
 
                 /* Only match if the server was not identified by a
                  * literal IP address; avoiding wildcard matches. */
-                if (server && !server->literal)
+                if (!address)
                     match = ne__ssl_match_hostname(name, strlen(name), hostname);
 		ne_free(name);
 		found = 1;
             } 
-            else if (nm->type == GEN_IPADD && server && server->literal) {
-                /* compare IP addfress with server literal IP address. */
+            else if (nm->type == GEN_IPADD && address) {
+                /* compare IP address with server literal IP address. */
+                const unsigned char *data = ASN1_STRING_get0_data(nm->d.ip);
+                int len = ASN1_STRING_length(nm->d.ip);
                 ne_inet_addr *ia;
-                if (nm->d.ip->length == 4)
-                    ia = ne_iaddr_make(ne_iaddr_ipv4, nm->d.ip->data);
-                else if (nm->d.ip->length == 16)
-                    ia = ne_iaddr_make(ne_iaddr_ipv6, nm->d.ip->data);
+
+                if (len == 4)
+                    ia = ne_iaddr_make(ne_iaddr_ipv4, data);
+                else if (len == 16)
+                    ia = ne_iaddr_make(ne_iaddr_ipv6, data);
                 else
                     ia = NULL;
                 /* ne_iaddr_make returns NULL if address type is unsupported */
                 if (ia != NULL) { /* address type was supported. */
-                    match = ne_iaddr_cmp(ia, server->literal) == 0;
+                    match = ne_iaddr_cmp(ia, address) == 0;
                     found = 1;
                     ne_iaddr_free(ia);
-                } else {
-                    NE_DEBUG(NE_DBG_SSL, "iPAddress name with unsupported "
-                             "address type (length %d), skipped.\n",
-                             nm->d.ip->length);
+                }
+                else {
+                    NE_DEBUG(NE_DBG_SSL, "ssl: iPAddress name with unsupported "
+                             "address type (length %d), skipped.\n", len);
                 }
             }
         }
@@ -305,8 +337,8 @@ static int check_identity(const struct host_info *server, X509 *cert,
     /* Check against the commonName if no DNS alt. names were found,
      * as per RFC3280. */
     if (!found) {
-	X509_NAME *subj = X509_get_subject_name(cert);
-	X509_NAME_ENTRY *entry;
+	const X509_NAME *subj = X509_get_subject_name(cert);
+	const X509_NAME_ENTRY *entry;
 	ne_buffer *cname = ne_buffer_ncreate(30);
 	int idx = -1, lastidx;
 
@@ -329,12 +361,13 @@ static int check_identity(const struct host_info *server, X509 *cert,
             return -1;
         }
         if (identity) *identity = ne_strdup(cname->data);
-        if (server && !server->literal)
+        if (!address)
             match = ne__ssl_match_hostname(cname->data, cname->used-1, hostname);
         ne_buffer_destroy(cname);
     }
 
-    NE_DEBUG(NE_DBG_SSL, "Identity match for '%s': %s\n", hostname, 
+    NE_DEBUG(NE_DBG_SSL, "ssl: Identity match for '%s': %s\n",
+             hostname && *hostname ? hostname : "(no host)",
              match ? "good" : "bad");
     return match ? 0 : 1;
 }
@@ -348,7 +381,7 @@ static ne_ssl_certificate *populate_cert(ne_ssl_certificate *cert, X509 *x5)
     cert->subject = x5;
     /* Retrieve the cert identity; pass a dummy hostname to match. */
     cert->identity = NULL;
-    check_identity(NULL, x5, &cert->identity);
+    check_identity(cert, NULL, NULL, &cert->identity);
     return cert;
 }
 
@@ -362,7 +395,7 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
      * yet to be born.  Or... "Seriously, wtf?"  */
     SSL *ssl = X509_STORE_CTX_get_ex_data(ctx, 
                                           SSL_get_ex_data_X509_STORE_CTX_idx());
-    ne_session *sess = SSL_get_app_data(ssl);
+    ne_ssl_socket *sslsock = SSL_get_app_data(ssl);
     int depth = X509_STORE_CTX_get_error_depth(ctx);
     int err = X509_STORE_CTX_get_error(ctx);
     int failures = 0;
@@ -394,22 +427,22 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
     default:
         /* Clear the failures bitmask so check_certificate knows this
          * is a bailout. */
-        sess->ssl_context->failures |= NE_SSL_UNHANDLED;
+        sslsock->failures |= NE_SSL_UNHANDLED;
         NE_DEBUG(NE_DBG_SSL, "ssl: Unhandled verification error %d -> %s\n", 
                  err, X509_verify_cert_error_string(err));
         return 0;
     }
 
-    sess->ssl_context->failures |= failures;
+    sslsock->failures |= failures;
 
     NE_DEBUG(NE_DBG_SSL, "ssl: Verify failures |= %d => %d\n", failures,
-             sess->ssl_context->failures);
+             sslsock->failures);
     
     return 1;
 }
 
 /* Return a linked list of certificate objects from an OpenSSL chain. */
-static ne_ssl_certificate *make_chain(STACK_OF(X509) *chain)
+ne_ssl_certificate *ne__ssl_make_chain(STACK_OF(X509) *chain)
 {
     int n, count = sk_X509_num(chain);
     ne_ssl_certificate *top = NULL, *current = NULL;
@@ -437,58 +470,53 @@ static ne_ssl_certificate *make_chain(STACK_OF(X509) *chain)
 }
 
 /* Verifies an SSL server certificate. */
-static int check_certificate(ne_session *sess, SSL *ssl, ne_ssl_certificate *chain)
+int ne_ssl_check_certificate(ne_ssl_context *ctx, ne_socket *sock,
+                             const char *hostname, const ne_inet_addr *address,
+                             const ne_ssl_certificate *cert,
+                             unsigned int flags, int *failures_out)
 {
-    X509 *cert = chain->subject;
-    int ret, failures = sess->ssl_context->failures;
+    ne_ssl_socket *sslsock = ne__sock_sslsock(sock);
+    int ret, failures = sslsock->failures;
 
     /* If the verification callback hit a case which can't be mapped
      * to one of the exported error bits, it's treated as a hard
      * failure rather than invoking the callback, which can't present
      * a useful error to the user.  "Um, something is wrong.  OK?" */
     if (failures & NE_SSL_UNHANDLED) {
-        long result = SSL_get_verify_result(ssl);
-
-        ne_set_error(sess, _("Certificate verification error: %s"),
-                    X509_verify_cert_error_string(result));
-
-        return NE_ERROR;
+        long result = SSL_get_verify_result(sslsock->ssl);
+        ne_sock_set_error(sock, _("Certificate verification error: %s"),
+                          X509_verify_cert_error_string(result));
+        return NE_SOCK_ERROR;
     }
 
     /* Check certificate was issued to this server; pass URI of
      * server. */
-    ret = check_identity(&sess->server, cert, NULL);
+    ret = check_identity(cert, hostname, address, NULL);
     if (ret < 0) {
-        ne_set_error(sess, _("Server certificate was missing commonName "
-                             "attribute in subject name"));
-        return NE_ERROR;
+        ne_sock_set_error(sock, _("Server certificate was missing commonName "
+                                  "attribute in subject name"));
+        return NE_SOCK_ERROR;
     } else if (ret > 0) failures |= NE_SSL_IDMISMATCH;
 
-    if (failures == 0) {
-        /* verified OK! */
-        ret = NE_OK;
-    } else {
-        /* Set up the error string. */
-        ne__ssl_set_verify_err(sess, failures);
-        ret = NE_ERROR;
-        /* Allow manual override */
-        if (sess->ssl_verify_fn && 
-            sess->ssl_verify_fn(sess->ssl_verify_ud, failures, chain) == 0)
-            ret = NE_OK;
+    if (failures) {
+        /* Pass up the failures for possible override. */
+        ne__sock_set_verify_err(sock, failures);
+        *failures_out = failures;
+        ret = NE_SOCK_ERROR;
     }
 
     return ret;
 }
 
-/* Duplicate a client certificate, which must be in the decrypted state. */
-static ne_ssl_client_cert *dup_client_cert(const ne_ssl_client_cert *cc)
+ne_ssl_client_cert *ne_ssl_clicert_copy(const ne_ssl_client_cert *cc)
 {
     ne_ssl_client_cert *newcc = ne_calloc(sizeof *newcc);
     
-    newcc->decrypted = 1;
     newcc->pkey = cc->pkey;
     if (cc->friendly_name)
         newcc->friendly_name = ne_strdup(cc->friendly_name);
+    if (cc->uri)
+        newcc->uri = ne_strdup(cc->uri);
 
     populate_cert(&newcc->cert, cc->cert.subject);
 
@@ -500,9 +528,11 @@ static ne_ssl_client_cert *dup_client_cert(const ne_ssl_client_cert *cc)
 /* Callback invoked when the SSL server requests a client certificate.  */
 static int provide_client_cert(SSL *ssl, X509 **cert, EVP_PKEY **pkey)
 {
-    ne_session *const sess = SSL_get_app_data(ssl);
+    ne_ssl_socket *sslsock = SSL_get_app_data(ssl);
+    SSL_CTX *const sslctx = SSL_get_SSL_CTX(ssl);
+    ne_ssl_context *const ctx = SSL_CTX_get_app_data(sslctx);
 
-    if (!sess->client_cert && sess->ssl_provide_fn) {
+    if (!ctx->client_cert && ctx->provider) {
 	ne_ssl_dname **dnames = NULL, *dnarray = NULL;
         int n, count = 0;
 	STACK_OF(X509_NAME) *ca_list = SSL_get_client_CA_list(ssl);
@@ -520,37 +550,55 @@ static int provide_client_cert(SSL *ssl, X509 **cert, EVP_PKEY **pkey)
         }
 
 	NE_DEBUG(NE_DBG_SSL, "Calling client certificate provider...\n");
-	sess->ssl_provide_fn(sess->ssl_provide_ud, sess, 
-                             (const ne_ssl_dname *const *)dnames, count);
+	ctx->provider(ctx->provider_ud,
+                      (const ne_ssl_dname *const *)dnames, count);
         if (count) {
             ne_free(dnarray);
             ne_free(dnames);
         }
     }
 
-    if (sess->client_cert) {
-        ne_ssl_client_cert *const cc = sess->client_cert;
-	NE_DEBUG(NE_DBG_SSL, "Supplying client certificate.\n");
-	EVP_PKEY_up_ref(cc->pkey);
-	X509_up_ref(cc->cert.subject);
-	*cert = cc->cert.subject;
-	*pkey = cc->pkey;
-	return 1;
-    } else {
-        sess->ssl_cc_requested = 1;
-	NE_DEBUG(NE_DBG_SSL, "No client certificate supplied.\n");
-	return 0;
+    if (ctx->client_cert) {
+        ne_ssl_client_cert *cc = ctx->client_cert;
+        NE_DEBUG(NE_DBG_SSL, "ssl: Supplying client certificate.\n");
+        EVP_PKEY_up_ref(cc->pkey);
+        X509_up_ref(cc->cert.subject);
+        *cert = cc->cert.subject;
+        *pkey = cc->pkey;
+        return 1;
+    }
+    else {
+        sslsock->cc_requested = 1;
+        NE_DEBUG(NE_DBG_SSL, "ssl: No client certificate supplied.\n");
+        return 0;
     }
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10101000L
-#define TLS_client_method SSLv23_client_method
-#define TLS_server_method SSLv23_server_method
-#endif
-
-void ne_ssl_set_clicert(ne_session *sess, const ne_ssl_client_cert *cc)
+static int new_ssl_session(SSL *ssl, SSL_SESSION *sslsess)
 {
-    sess->client_cert = dup_client_cert(cc);
+    SSL_CTX *sslctx = SSL_get_SSL_CTX(ssl);
+    ne_ssl_context *sctx = SSL_CTX_get_app_data(sslctx);
+
+    if (sctx->sess)
+        SSL_SESSION_free(sctx->sess);
+
+    NE_DEBUG(NE_DBG_SSL, "sslsess: New session callback: %s.\n",
+             SSL_SESSION_is_resumable(sslsess) ? "resumable" : "not resumable");
+
+    sctx->sess = SSL_SESSION_dup(sslsess);
+    return 1;
+}
+
+static void remove_ssl_session(SSL_CTX *sslctx, SSL_SESSION *sess)
+{
+    ne_ssl_context *ctx = SSL_CTX_get_app_data(sslctx);
+
+    NE_DEBUG(NE_DBG_SSL, "sslsess: Remove session callback.\n");
+
+    if (ctx->sess && sess == ctx->sess) {
+        SSL_SESSION_free(ctx->sess);
+        ctx->sess = NULL;
+    }
 }
 
 ne_ssl_context *ne_ssl_context_create(int mode)
@@ -568,15 +616,22 @@ ne_ssl_context *ne_ssl_context_create(int mode)
 #if defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER >= 0x3040000fL || (!defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10101000L)
         SSL_CTX_set_post_handshake_auth(ctx->ctx, 1);
 #endif
+        SSL_CTX_set_app_data(ctx->ctx, ctx);
+        SSL_CTX_sess_set_new_cb(ctx->ctx, new_ssl_session);
+        SSL_CTX_sess_set_remove_cb(ctx->ctx, remove_ssl_session);
+        SSL_CTX_set_session_cache_mode(ctx->ctx, SSL_SESS_CACHE_CLIENT|SSL_SESS_CACHE_NO_INTERNAL);
     }
     else /* mode == NE_SSL_CTX_SERVER */ {
+        char sidctx[128];
         ctx->ctx = SSL_CTX_new(TLS_server_method());
-        SSL_CTX_set_session_cache_mode(ctx->ctx, SSL_SESS_CACHE_CLIENT);
 #ifdef SSL_OP_NO_TICKET
         /* disable ticket support since it inhibits testing of session
          * caching. */
         SSL_CTX_set_options(ctx->ctx, SSL_OP_NO_TICKET);
 #endif
+        ne_snprintf(sidctx, sizeof sidctx, "%s-%p", PACKAGE_NAME, ctx);
+        SSL_CTX_set_session_id_context(ctx->ctx, (unsigned char *)sidctx,
+                                       strlen(sidctx));
     }
     return ctx;
 }
@@ -670,114 +725,9 @@ void ne_ssl_context_destroy(ne_ssl_context *ctx)
     SSL_CTX_free(ctx->ctx);
     if (ctx->sess)
         SSL_SESSION_free(ctx->sess);
+    if (ctx->client_cert)
+        ne_ssl_clicert_free(ctx->client_cert);
     ne_free(ctx);
-}
-
-#if !defined(HAVE_SSL_SESSION_CMP) && !defined(SSL_SESSION_cmp) \
-    && defined(OPENSSL_VERSION_NUMBER) \
-    && OPENSSL_VERSION_NUMBER > 0x10000000L
-/* OpenSSL 1.0 removed SSL_SESSION_cmp for no apparent reason - hoping
- * it is reasonable to assume that comparing the session IDs is
- * sufficient. */
-static int SSL_SESSION_cmp(SSL_SESSION *a, SSL_SESSION *b)
-{
-    const unsigned char *session1_buf, *session2_buf;
-    unsigned int session1_len, session2_len;
-
-    session1_buf = SSL_SESSION_get_id(a, &session1_len);
-    session2_buf = SSL_SESSION_get_id(b, &session2_len);
-
-    return session1_len == session2_len
-        && memcmp(session1_buf, session2_buf, session1_len) == 0;
-}
-#endif
-
-/* For internal use only. */
-int ne__negotiate_ssl(ne_session *sess)
-{
-    ne_ssl_context *ctx = sess->ssl_context;
-    SSL *ssl;
-    STACK_OF(X509) *chain;
-    int freechain = 0; /* non-zero if chain should be free'd. */
-
-    NE_DEBUG(NE_DBG_SSL, "Doing SSL negotiation.\n");
-    
-    /* Pass through the hostname if SNI is enabled. */
-    ctx->hostname = 
-        sess->flags[NE_SESSFLAG_TLS_SNI] ? sess->server.hostname : NULL;
-
-    sess->ssl_cc_requested = 0;
-    ctx->failures = 0;
-
-    if (ne_sock_connect_ssl(sess->socket, ctx, sess)) {
-	if (ctx->sess) {
-	    /* remove cached session. */
-	    SSL_SESSION_free(ctx->sess);
-	    ctx->sess = NULL;
-	}
-        if (sess->ssl_cc_requested) {
-            ne_set_error(sess, _("SSL handshake failed, "
-                                 "client certificate was requested: %s"),
-                         ne_sock_error(sess->socket));
-        }
-        else {
-            ne_set_error(sess, _("SSL handshake failed: %s"),
-                         ne_sock_error(sess->socket));
-        }
-        return NE_ERROR;
-    }	
-    
-    ssl = ne__sock_sslsock(sess->socket);
-
-    chain = SSL_get_peer_cert_chain(ssl);
-    /* For an SSLv2 connection, the cert chain will always be NULL. */
-    if (chain == NULL) {
-        X509 *cert = SSL_get_peer_certificate(ssl);
-        if (cert) {
-            chain = sk_X509_new_null();
-            sk_X509_push(chain, cert);
-            freechain = 1;
-        }
-    }
-
-    if (chain == NULL || sk_X509_num(chain) == 0) {
-	ne_set_error(sess, _("SSL server did not present certificate"));
-	return NE_ERROR;
-    }
-
-    if (sess->server_cert 
-        && X509_cmp(sk_X509_value(chain, 0), sess->server_cert->subject) == 0) {
-        /* Same leaf cert used as last time - no need to reverify. */
-        if (freechain) sk_X509_free(chain); /* no longer need the chain */
-    } else {
-	/* new connection: create the chain. */
-        ne_ssl_certificate *cert = make_chain(chain);
-
-        if (freechain) sk_X509_free(chain); /* no longer need the chain */
-
-	if (check_certificate(sess, ssl, cert)) {
-	    NE_DEBUG(NE_DBG_SSL, "SSL certificate checks failed: %s\n",
-		     sess->error);
-	    ne_ssl_cert_free(cert);
-	    return NE_ERROR;
-	}
-	/* remember the chain. */
-        sess->server_cert = cert;
-    }
-    
-    if (ctx->sess) {
-        SSL_SESSION *newsess = SSL_get0_session(ssl);
-        /* Replace the session if it has changed. */ 
-        if (newsess != ctx->sess || SSL_SESSION_cmp(ctx->sess, newsess)) {
-            SSL_SESSION_free(ctx->sess);
-            ctx->sess = SSL_get1_session(ssl); /* bumping the refcount */
-        }
-    } else {
-	/* Store the session. */
-	ctx->sess = SSL_get1_session(ssl);
-    }
-
-    return NE_OK;
 }
 
 const ne_ssl_dname *ne_ssl_cert_issuer(const ne_ssl_certificate *cert)
@@ -807,17 +757,21 @@ void ne_ssl_context_trustcert(ne_ssl_context *ctx, const ne_ssl_certificate *cer
     X509_STORE_add_cert(store, cert->subject);
 }
 
-void ne_ssl_trust_default_ca(ne_session *sess)
+void ne_ssl_context_set_clicert(ne_ssl_context *ctx, const ne_ssl_client_cert *cc)
 {
-    if (sess->ssl_context) {
-        X509_STORE *store = SSL_CTX_get_cert_store(sess->ssl_context->ctx);
+    if (ctx->client_cert) ne_ssl_clicert_free(ctx->client_cert);
+    ctx->client_cert = ne_ssl_clicert_copy(cc);
+}
+
+void ne_ssl_context_trustdefca(ne_ssl_context *ctx)
+{
+    X509_STORE *store = SSL_CTX_get_cert_store(ctx->ctx);
     
 #ifdef NE_SSL_CA_BUNDLE
-        X509_STORE_load_locations(store, NE_SSL_CA_BUNDLE, NULL);
+    X509_STORE_load_locations(store, NE_SSL_CA_BUNDLE, NULL);
 #else
-        X509_STORE_set_default_paths(store);
+    X509_STORE_set_default_paths(store);
 #endif
-    }
 }
 
 /* Find a friendly name in a PKCS12 structure the hard way, without
@@ -854,6 +808,8 @@ static char *find_friendly_name(PKCS12 *p12)
     return name;
 }
 
+static int pkcs12_decrypt(ne_ssl_client_cert *cc, const char *password);
+
 static ne_ssl_client_cert *parse_client_cert(PKCS12 *p12)
 {
     X509 *cert;
@@ -869,7 +825,7 @@ static ne_ssl_client_cert *parse_client_cert(PKCS12 *p12)
     if (PKCS12_parse(p12, NULL, &pkey, &cert, NULL) == 1) {
         /* Success - no password needed for decryption. */
         int len = 0;
-        unsigned char *name;
+        const unsigned char *name;
 
         if (!cert || !pkey) {
             PKCS12_free(p12);
@@ -880,7 +836,6 @@ static ne_ssl_client_cert *parse_client_cert(PKCS12 *p12)
         
         cc = ne_calloc(sizeof *cc);
         cc->pkey = pkey;
-        cc->decrypted = 1;
         if (name && len > 0)
             cc->friendly_name = ne_strndup((char *)name, len);
         populate_cert(&cc->cert, cert);
@@ -896,6 +851,7 @@ static ne_ssl_client_cert *parse_client_cert(PKCS12 *p12)
             cc = ne_calloc(sizeof *cc);
             cc->friendly_name = find_friendly_name(p12);
             cc->p12 = p12;
+            cc->decrypt = pkcs12_decrypt;
             return cc;
         } else {
             /* Some parse error, give up. */
@@ -933,12 +889,166 @@ ne_ssl_client_cert *ne_ssl_clicert_read(const char *filename)
     return parse_client_cert(p12);
 }
 
+#ifdef HAVE_OPENSSL111
+
+static int ui_reader(UI *ui, UI_STRING *uis)
+{
+    const char *password = UI_get0_user_data(ui);
+    enum UI_string_types uit = UI_get_string_type(uis);
+    int ret = 0;
+
+    if (uit != UIT_PROMPT) return -1;
+
+    if (UI_set_result(ui, uis, password) != 0) {
+        unsigned long err = ERR_get_error();
+        NE_DEBUG(NE_DBG_SSL, "pk11: Result set failed: %s.\n",
+                 ERR_reason_error_string(err));
+    }
+    else {
+        NE_DEBUG(NE_DBG_SSL, "pk11: Result set successfully.\n");
+        ret = 1;
+    }
+
+    return ret;
+}
+
+/* Iterate through an OSSL_STORE - possibly supplying decryption
+ * password if non-NULL. */
+static int store_iterate(ne_ssl_client_cert *cc, const char *password)
+{
+    X509 *cert = NULL;
+    EVP_PKEY *pkey = NULL;
+    OSSL_STORE_CTX *store;
+    UI_METHOD *ui;
+
+    if (password) {
+        ui = UI_create_method("neon");
+        UI_method_set_reader(ui, ui_reader);
+    }
+    else {
+        ui = NULL;
+    }
+
+    /* Clear any existing cert data to ensure each iteration fetches a
+     * matching cert/key pair. */
+    free_cert(&cc->cert);
+
+    NE_DEBUG(NE_DBG_SSL, "ssl: Opening store for %s...\n", cc->uri);
+    store = OSSL_STORE_open(cc->uri, ui, (char *)password, NULL, NULL);
+    if (!store) {
+        NE_DEBUG(NE_DBG_SSL, "ssl: Failed to open store.\n");
+        return ENODEV;
+    }
+
+    while (!OSSL_STORE_eof(store)) {
+        OSSL_STORE_INFO *info = OSSL_STORE_load(store);
+
+        if (!info) {
+            /* OSSL_STORE_load() returns NULL once reaching EOF, or on
+             * error - e.g. for an encrypted PKEY. Log but ignore any
+             * errors. */
+#ifdef NE_DEBUGGING
+            unsigned long err = ERR_get_error();
+            NE_DEBUG(NE_DBG_SSL, "ssl: Store load failed (eof: %s): %s\n",
+                     OSSL_STORE_eof(store) ? "yes" : "no",
+                     err ? ERR_reason_error_string(err) : "(no error)");
+#endif
+            ERR_clear_error();
+            continue;
+        }
+
+        switch (OSSL_STORE_INFO_get_type(info)) {
+        case OSSL_STORE_INFO_CERT:
+            if (!cert) {
+                NE_DEBUG(NE_DBG_SSL, "ssl: STORE got CERT.\n");
+                cert = OSSL_STORE_INFO_get1_CERT(info);
+            }
+            break;
+        case OSSL_STORE_INFO_PKEY:
+            if (!pkey) {
+                NE_DEBUG(NE_DBG_SSL, "ssl: STORE got PKEY.\n");
+                pkey = OSSL_STORE_INFO_get1_PKEY(info);
+            }
+            break;
+        }
+
+        OSSL_STORE_INFO_free(info);
+    }
+
+    OSSL_STORE_close(store);
+    NE_DEBUG(NE_DBG_SSL, "ssl: End of store.\n");
+    if (ui) UI_destroy_method(ui);
+
+    if (!cert) {
+        if (pkey) EVP_PKEY_free(pkey);
+        return ENOENT;
+    }
+
+    /* Fail early if both a cert&pkey are found but don't match. */
+    if (pkey && X509_check_private_key(cert, pkey) != 1) {
+        ERR_clear_error();
+        X509_free(cert);
+        EVP_PKEY_free(pkey);
+        NE_DEBUG(NE_DBG_SSL, "ssl: Decrypted private key/cert are not matched.");
+        return EINVAL;
+    }
+
+    /* Store/extract the X509 in the cc object. */
+    populate_cert(&cc->cert, cert);
+
+    if (pkey) {
+        /* Successfully extracted both a cert & pkey. */
+        cc->pkey = pkey;
+        cc->decrypt = NULL;
+        return 0;
+    }
+
+    /* If this was a _decrypt() call (password must be non-NULL),
+     * return an error if a privkey wasn't available. Otherwise (NULL
+     * password), this is the first iteration through the STORE for
+     * the clicert object, succeed and set up for future decryption */
+    if (password) {
+        return EAGAIN;
+    }
+    else {
+        cc->decrypt = store_iterate;
+        return 0;
+    }
+}
+
+ne_ssl_client_cert *ne_ssl_clicert_fromuri(const char *uri,
+                                           unsigned int flags)
+{
+    ne_ssl_client_cert *cc = ne_calloc(sizeof *cc);
+    int errnum;
+
+    cc->uri = ne_strdup(uri);
+    if ((errnum = store_iterate(cc, NULL)) != 0) {
+        ne_free(cc->uri);
+        ne_free(cc);
+        errno = errnum;
+        return NULL;
+    }
+    return cc;
+}
+
+#endif
+
 #ifdef HAVE_PAKCHOIS
+static ne_ssl_client_cert *clicert_from_keypair(X509 *cert, EVP_PKEY *key)
+{
+    ne_ssl_client_cert *cc = ne_calloc(sizeof *cc);
+
+    cc->pkey = key;
+    populate_cert(&cc->cert, cert);
+
+    return cc;
+}
+
 ne_ssl_client_cert *ne__ssl_clicert_exkey_import(const unsigned char *der,
                                                  size_t der_len,
                                                  const RSA_METHOD *method)
 {
-    ne_ssl_client_cert *cc;
     ne_d2i_uchar *p;
     X509 *x5;
     EVP_PKEY *pubkey, *privkey;
@@ -968,46 +1078,46 @@ ne_ssl_client_cert *ne__ssl_clicert_exkey_import(const unsigned char *der,
     /* Set up new EVP_PKEY. */
     privkey = EVP_PKEY_new();
     EVP_PKEY_assign_RSA(privkey, rsa);
-    
-    cc = ne_calloc(sizeof *cc);
-    cc->decrypted = 1;
-    cc->pkey = privkey;
 
-    populate_cert(&cc->cert, x5);
-
-    return cc;    
+    return clicert_from_keypair(x5, privkey);
 }
 #endif
 
 int ne_ssl_clicert_encrypted(const ne_ssl_client_cert *cc)
 {
-    return !cc->decrypted;
+    return cc->decrypt != NULL;
 }
 
-int ne_ssl_clicert_decrypt(ne_ssl_client_cert *cc, const char *password)
+static int pkcs12_decrypt(ne_ssl_client_cert *cc, const char *password)
 {
     X509 *cert;
     EVP_PKEY *pkey;
 
     if (PKCS12_parse(cc->p12, password, &pkey, &cert, NULL) != 1) {
         ERR_clear_error();
-        return -1;
+        return EACCES;
     }
     
     if (X509_check_private_key(cert, pkey) != 1) {
         ERR_clear_error();
         X509_free(cert);
         EVP_PKEY_free(pkey);
-        NE_DEBUG(NE_DBG_SSL, "Decrypted private key/cert are not matched.");
-        return -1;
+        NE_DEBUG(NE_DBG_SSL, "ssl: Decrypted private key/cert are not matched.");
+        return EINVAL;
     }
 
     PKCS12_free(cc->p12);
     populate_cert(&cc->cert, cert);
     cc->pkey = pkey;
-    cc->decrypted = 1;
+    cc->decrypt = NULL;
     cc->p12 = NULL;
     return 0;
+}
+
+int ne_ssl_clicert_decrypt(ne_ssl_client_cert *cc, const char *password)
+{
+    int errnum = cc->decrypt ? cc->decrypt(cc, password) : EINVAL;
+    return errnum != 0;
 }
 
 const ne_ssl_certificate *ne_ssl_clicert_owner(const ne_ssl_client_cert *cc)
@@ -1015,9 +1125,9 @@ const ne_ssl_certificate *ne_ssl_clicert_owner(const ne_ssl_client_cert *cc)
     return &cc->cert;
 }
 
-const char *ne_ssl_clicert_name(const ne_ssl_client_cert *ccert)
+const char *ne_ssl_clicert_name(const ne_ssl_client_cert *cc)
 {
-    return ccert->friendly_name;
+    return cc->friendly_name ? cc->friendly_name : cc->uri;
 }
 
 ne_ssl_certificate *ne_ssl_cert_read(const char *filename)
@@ -1059,13 +1169,18 @@ int ne_ssl_cert_write(const ne_ssl_certificate *cert, const char *filename)
     return 0;
 }
 
-void ne_ssl_cert_free(ne_ssl_certificate *cert)
+static void free_cert(ne_ssl_certificate *cert)
 {
     X509_free(cert->subject);
     if (cert->issuer)
         ne_ssl_cert_free(cert->issuer);
     if (cert->identity)
         ne_free(cert->identity);
+}
+
+void ne_ssl_cert_free(ne_ssl_certificate *cert)
+{
+    free_cert(cert);
     ne_free(cert);
 }
 
@@ -1120,6 +1235,7 @@ static const EVP_MD *hash_to_md(unsigned int flags)
 {
     switch (flags & NE_HASH_ALGMASK) {
     case NE_HASH_MD5: return EVP_md5();
+    case NE_HASH_SHA1: return EVP_sha1();
     case NE_HASH_SHA256: return EVP_sha256();
 #ifdef HAVE_OPENSSL11
     case NE_HASH_SHA512: return EVP_sha512();
@@ -1196,6 +1312,14 @@ char *ne_vstrhash(unsigned int flags, va_list ap)
     EVP_MD_CTX_free(ctx);
 
     return ne__strhash2hex(v, vlen, flags);
+}
+
+int ne_mknonce(unsigned char *nonce, size_t len, unsigned int flags)
+{
+    if (RAND_status() == 1 && RAND_bytes(nonce, len) == 1)
+        return 0;
+    else
+        return EAGAIN;
 }
 
 #ifdef WITH_OPENSSL_LOCKING

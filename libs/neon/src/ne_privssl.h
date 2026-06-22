@@ -40,10 +40,20 @@ struct ne_ssl_context_s {
     SSL_CTX *ctx;
     SSL_SESSION *sess;
     const char *hostname; /* for SNI */
-    int failures; /* bitmask of exposed failure bits. */
+    ne_ssl_client_cert *client_cert;
+    ne_ssl_ccprovide_fn provider;
+    void *provider_ud;
 };
 
-typedef SSL *ne_ssl_socket;
+typedef struct ne_ssl_socket_s {
+    SSL *ssl;
+    int failures;
+    /* set to non-zero if a client cert was requested during initial
+     * handshake, but none could be provided. */
+    int cc_requested;
+} ne_ssl_socket;
+
+NE_PRIVATE ne_ssl_socket *ne__sock_sslsock(ne_socket *sock);
 
 /* Create a clicert object from cert DER {der, der_len}, using given
  * RSA_METHOD for the RSA object. */
@@ -51,6 +61,8 @@ NE_PRIVATE ne_ssl_client_cert *
 ne__ssl_clicert_exkey_import(const unsigned char *der,
                              size_t der_len,
                              const RSA_METHOD *method);
+
+NE_PRIVATE ne_ssl_certificate *ne__ssl_make_chain(STACK_OF(X509) *chain);
 
 #endif /* HAVE_OPENSSL */
 
@@ -65,9 +77,12 @@ ne__ssl_clicert_exkey_import(const unsigned char *der,
 struct ne_ssl_context_s {
     gnutls_certificate_credentials_t cred;
     int verify; /* non-zero if client cert verification required */
-
+    ne_ssl_client_cert *client_cert;
     const char *hostname; /* for SNI */
     char *priority;
+
+    ne_ssl_ccprovide_fn provider;
+    void *provider_ud;
 
     /* Session cache. */
     union ne_ssl_scache {
@@ -85,16 +100,28 @@ struct ne_ssl_context_s {
     } cache;
 };
 
-typedef gnutls_session_t ne_ssl_socket;
+typedef struct ne_ssl_socket_s {
+    gnutls_session_t sess;
+    ne_ssl_context *context;
+    /* set to non-zero if a client cert was requested during initial
+     * handshake, but none could be provided. */
+    int cc_requested;
+} ne_ssl_socket;
 
+#ifdef HAVE_GNUTLS_PRIVKEY_IMPORT_EXT
 NE_PRIVATE ne_ssl_client_cert *
 ne__ssl_clicert_exkey_import(const unsigned char *der, size_t der_len,
                              gnutls_privkey_sign_func sign_func, void *userdata);
+#endif
+
+NE_PRIVATE ne_ssl_certificate *ne__ssl_make_chain(gnutls_session_t sock,
+                                                  gnutls_certificate_credentials_t crd);
 
 #endif /* HAVE_GNUTLS */
 
 #ifdef NE_HAVE_SSL
-NE_PRIVATE ne_ssl_socket ne__sock_sslsock(ne_socket *sock);
+/* Set the socket error appropriate for SSL verification failures. */
+NE_PRIVATE void ne__sock_set_verify_err(ne_socket *sock, int failures);
 
 /* Process-global initialization of the SSL library; returns non-zero
  * on error. */
@@ -102,6 +129,13 @@ NE_PRIVATE int ne__ssl_init(void);
 
 /* Process-global de-initialization of the SSL library. */
 NE_PRIVATE void ne__ssl_exit(void);
+
+NE_PRIVATE ne_ssl_socket *ne__sock_sslsock(ne_socket *sock);
+
+/* Return non-zero if hostname from certificate (cn) matches hostname
+ * used for session (hostname); follows RFC2818 logic. */
+NE_PRIVATE int ne__ssl_match_hostname(const char *cn, size_t cnlen, 
+                                      const char *hostname);
 #endif
 
 #endif /* NE_PRIVSSL_H */

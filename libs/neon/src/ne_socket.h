@@ -112,6 +112,13 @@ typedef enum {
  * address type is not supported. */
 ne_inet_addr *ne_iaddr_make(ne_iaddr_type type, const unsigned char *raw);
 
+/* Change an existing network address object to a new raw byte
+ * representation of given 'type'. The raw data must be of length 4
+ * bytes for an IPv4 address, or 16 bytes for an IPv6 address. Returns
+ * NULL if the address type is not supported, or else 'ia'. */
+ne_inet_addr *ne_iaddr_put(ne_inet_addr *ia, ne_iaddr_type type,
+                           const unsigned char *raw);
+
 /* Compare two network address objects i1 and i2; returns zero if they
  * are equivalent or non-zero otherwise. For an IPv6 literal, the
  * scope is ignored by this function if set, so must be compared
@@ -285,12 +292,15 @@ void ne_sock_connect_timeout(ne_socket *sock, int timeout);
  * SSL context. */
 int ne_sock_accept_ssl(ne_socket *sock, ne_ssl_context *ctx);
 
-/* Negotiate an SSL connection on socket as an SSL client, using given
- * SSL context.  The 'userdata' parameter is associated with the
- * underlying SSL library's socket structure for use in callbacks.
- * Returns zero on success, or non-zero on error. */
+/* Deprecated interface for initiating an SSL handshake, use
+ * ne_sock_handshake() instead. */
 int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx,
                         void *userdata);
+
+/* Initiate an SSL handshake with SSL context 'ctx', using SNI hint
+ * 'hostname' (which may be NULL). 'flags' must be 0. */
+int ne_sock_handshake(ne_socket *sock, ne_ssl_context *ctx,
+                      const char *hostname, unsigned int flags);
 
 /* Retrieve the session ID of the current SSL session.  If 'buf' is
  * non-NULL, on success, copies at most *buflen bytes to 'buf' and
@@ -309,6 +319,25 @@ char *ne_sock_cipher(ne_socket *sock);
 /* Return the SSL/TLS protocol version used for socket 'sock', or
  * NE_SSL_PROTO_UNSPEC if SSL/TLS is not in use for the socket. */
 enum ne_ssl_protocol ne_sock_getproto(ne_socket *sock);
+
+/* Return the server certificate for the socket. */
+ne_ssl_certificate *ne_sock_getcert(ne_socket *sock, ne_ssl_context *ctx);
+
+/* Check the identity of a server certificate against the hostname or
+ * address used to establish the connection, following rules specified
+ * by RFC 2818 and RFC 3280.  Either hostname or address can be
+ * non-NULL; whichever was used to identify the server when
+ * establishing the SSL connection. If both are NULL, matching
+ * will fail but the *identity output parameter will still be set.
+ *
+ * Returns zero if identity matches; 1 if identity does not match, or
+ * <0 if the certificate had no identity.  If 'identity' is non-NULL,
+ * the malloc-allocated identity is stored in *identity. */
+int ne_ssl_check_certificate(ne_ssl_context *ctx, ne_socket *sock,
+                             const char *hostname,
+                             const ne_inet_addr *address,
+                             const ne_ssl_certificate *cert,
+                             unsigned int flags, int *failures);
 
 /* SOCKS proxy protocol version: */
 enum ne_sock_sversion {

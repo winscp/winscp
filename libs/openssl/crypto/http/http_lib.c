@@ -194,6 +194,8 @@ err:
     return 0;
 }
 
+#ifndef OPENSSL_NO_HTTP
+
 int OSSL_HTTP_parse_url(const char *url, int *pssl, char **puser, char **phost,
     char **pport, int *pport_num,
     char **ppath, char **pquery, char **pfrag)
@@ -269,6 +271,9 @@ static int use_proxy(const char *no_proxy, const char *server)
         server = host;
     }
 
+    if (sl == 0)
+        return 1;
+
     /*
      * using environment variable names, both lowercase and uppercase variants,
      * compatible with other HTTP client implementations like wget, curl and git
@@ -304,3 +309,5 @@ const char *OSSL_HTTP_adapt_proxy(const char *proxy, const char *no_proxy,
         return NULL;
     return proxy;
 }
+
+#endif /* !defined(OPENSSL_NO_HTTP) */

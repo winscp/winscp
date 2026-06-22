@@ -46,6 +46,19 @@ int ne_xml_parse_response(ne_request *req, ne_xml_parser *parser);
  * NE_ERROR is returned. */
 int ne_xml_dispatch_request(ne_request *req, ne_xml_parser *parser);
 
+/* Dispatch the HTTP request, conditionally parsing the response body
+ * as an XML document using the given parser, if both the acceptor
+ * callback 'acpt' returns non-zero, and an XML media type is
+ * specified for the response entity.  If the acceptor callback
+ * returns zero, or a non-XML media type is specified, then the
+ * response body will be silently discarded.
+ *
+ * Returns NE_* error codes. If the response body is parsed and an XML
+ * parse error occurs, the session error string is set to the XML
+ * parser's error string, and NE_ERROR is returned. */
+int ne_xml_dispatchif_request(ne_request *req, ne_xml_parser *parser,
+                              ne_accept_response acpt, void *userdata);
+
 NE_END_DECLS
 
 #endif /* NE_XMLREQ_H */

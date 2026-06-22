@@ -194,7 +194,7 @@ enum match_type {
 };
 
 static int parse_match(const char *doc, const char *result, 
-                       enum match_type t)
+                       enum match_type t, const char *encoding)
 {
     const char *origdoc = doc;
     ne_xml_parser *p = ne_xml_create();
@@ -202,6 +202,11 @@ static int parse_match(const char *doc, const char *result,
     int ret;
     struct context ctx;
     
+    if (encoding) {
+        ret = ne_xml_set_encoding(p, encoding);
+        ONV(ret, ("ne_xml_set_encoding for %s failed with %d", encoding, ret));
+    }
+
     ctx.buf = buf;
     ctx.parser = p;
 
@@ -237,7 +242,8 @@ static int parse_match(const char *doc, const char *result,
     
     if (t == match_encoding) {
         const char *enc = ne_xml_doc_encoding(p);
-        ONV(strcmp(enc, result), 
+
+        ONV(enc == NULL || strcmp(enc, result),
             ("for '%s': encoding was `%s' not `%s'", origdoc, enc, result));
     }
     else if (t == match_valid || t == match_chunked) {
@@ -252,6 +258,8 @@ static int parse_match(const char *doc, const char *result,
     return OK;
 }
 
+#define ISO_FOOBAR "f\xd8\xd8" "b\xe1" "r"
+
 static int matches(void)
 {
 #define PFX "<?xml version='1.0' encoding='utf-8'?>\r\n"
@@ -259,6 +267,7 @@ static int matches(void)
     static const struct {
 	const char *in, *out;
         enum match_type invalid;
+        const char *encoding;
     } ms[] = {
         
         /*** Simplest tests ***/
@@ -341,7 +350,6 @@ static int matches(void)
           "<{}hello><{}merry><{}abort-end>ABORT", match_invalid },
         { PFX "<hello>!ABORT!</hello>", "<{}hello>!ABORT!", match_invalid },
         { PFX "<hello>!ABORT!<foo/></hello>", "<{}hello>!ABORT!", match_invalid },
-        { PFX "<hello>!ABORT!</fish>", "<{}hello>!ABORT!", match_invalid },
 
         /* tests for encodings */
         { "<?xml version='1.0' encoding='ISO-8859-1'?><hello/>",
@@ -349,6 +357,9 @@ static int matches(void)
 
         { "<?xml version='1.0' encoding='UTF-8'?><hello/>",
           "UTF-8", match_encoding },
+
+        { "<?xml version='1.0'?><hello>" ISO_FOOBAR "</hello>",
+          "<{}hello>fØØbár</{}hello>", match_valid, "ISO-8859-1" },
 
         /* test that parse is valid even with no handlers registered. */
         { PFX "<hello><old>world</old></hello>", "", match_nohands },
@@ -363,7 +374,7 @@ static int matches(void)
     int n;
 
     for (n = 0; ms[n].in != NULL; n++) {
-	CALL(parse_match(ms[n].in, ms[n].out, ms[n].invalid));
+	CALL(parse_match(ms[n].in, ms[n].out, ms[n].invalid, ms[n].encoding));
     }
 
     return OK;
@@ -585,7 +596,7 @@ static int errors(void)
     ONV(strcmp(err, "Fish food"), ("wrong error %s!", err));
 
     ne_xml_destroy(p);
-    return 0;        
+    return 0;
 }
 
 ne_test tests[] = {

@@ -1,5 +1,5 @@
 /*
- * Copyright 1998-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1998-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -8,26 +8,27 @@
  */
 
 #include "internal/cryptlib.h"
+#include "internal/nelem.h"
 #include "bn_local.h"
 
-int BN_nnmod(BIGNUM *r, const BIGNUM *m, const BIGNUM *d, BN_CTX *ctx)
+int BN_nnmod(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx)
 {
     /*
-     * like BN_mod, but returns non-negative remainder (i.e., 0 <= r < |d|
+     * like BN_mod, but returns non-negative remainder (i.e., 0 <= r < |m|
      * always holds)
      */
 
-    if (r == d) {
+    if (r == m) {
         ERR_raise(ERR_LIB_BN, ERR_R_PASSED_INVALID_ARGUMENT);
         return 0;
     }
 
-    if (!(BN_mod(r, m, d, ctx)))
+    if (!(BN_mod(r, a, m, ctx)))
         return 0;
     if (!r->neg)
         return 1;
-    /* now   -|d| < r < 0,  so we have to set  r := r + |d| */
-    return (d->neg ? BN_sub : BN_add)(r, r, d);
+    /* now   -|m| < r < 0,  so we have to set  r := r + |m| */
+    return (m->neg ? BN_sub : BN_add)(r, r, m);
 }
 
 int BN_mod_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m,
@@ -61,7 +62,7 @@ int bn_mod_add_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
     if (bn_wexpand(r, mtop) == NULL)
         return 0;
 
-    if (mtop > sizeof(storage) / sizeof(storage[0])) {
+    if (mtop > OSSL_NELEM(storage)) {
         tp = OPENSSL_malloc(mtop * sizeof(BN_ULONG));
         if (tp == NULL)
             return 0;

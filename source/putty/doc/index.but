@@ -231,37 +231,65 @@ saved sessions from
 \IM{QUIT special character} \cw{QUIT}, special character
 \IM{QUIT special character} \cw{VQUIT}, special character
 
-\IM{-telnet} \c{-telnet} command-line option
-\IM{-raw} \c{-raw} command-line option
-\IM{-rlogin} \c{-rlogin} command-line option
-\IM{-supdup} \c{-supdup} command-line option
-\IM{-ssh} \c{-ssh} command-line option
-\IM{-ssh-connection} \c{-ssh-connection} command-line option
-\IM{-serial} \c{-serial} command-line option
-\IM{-cleanup} \c{-cleanup} command-line option
-\IM{-load} \c{-load} command-line option
-\IM{-v} \c{-v} command-line option
-\IM{-l} \c{-l} command-line option
-\IM{-L-upper} \c{-L} command-line option
-\IM{-R-upper} \c{-R} command-line option
-\IM{-D-upper} \c{-D} command-line option
-\IM{-m} \c{-m} command-line option
-\IM{-P-upper} \c{-P} command-line option
-\IM{-pw} \c{-pw} command-line option
-\IM{-pwfile} \c{-pwfile} command-line option
-\IM{-A-upper} \c{-A} command-line option
-\IM{-a} \c{-a} command-line option
-\IM{-X-upper} \c{-X} command-line option
-\IM{-x} \c{-x} command-line option
-\IM{-T-upper} \c{-T} command-line option
-\IM{-t} \c{-t} command-line option
-\IM{-C-upper} \c{-C} command-line option
-\IM{-N-upper} \c{-N} command-line option
-\IM{-1} \c{-1} command-line option
-\IM{-2} \c{-2} command-line option
-\IM{-i} \c{-i} command-line option
-\IM{-pgpfp} \c{-pgpfp} command-line option
-\IM{-sercfg} \c{-sercfg} command-line option
+\IM{\-telnet} \c{\-telnet} command-line option
+\IM{\-raw} \c{\-raw} command-line option
+\IM{\-rlogin} \c{\-rlogin} command-line option
+\IM{\-supdup} \c{\-supdup} command-line option
+\IM{\-ssh} \c{\-ssh} command-line option
+\IM{\-ssh\-connection} \c{\-ssh\-connection} command-line option
+\IM{\-serial} \c{\-serial} command-line option
+\IM{\-cleanup} \c{\-cleanup} command-line option
+\IM{\-load} \c{\-load} command-line option
+\IM{\-v} \c{\-v} command-line option
+\IM{\-l} \c{\-l} command-line option
+\IM{-L-upper} \c{\-L} command-line option
+\IM{-R-upper} \c{\-R} command-line option
+\IM{-D-upper} \c{\-D} command-line option
+\IM{\-m} \c{\-m} command-line option
+\IM{-P-upper} \c{\-P} command-line option
+\IM{\-pw} \c{\-pw} command-line option
+\IM{\-pwfile} \c{\-pwfile} command-line option
+\IM{-A-upper} \c{\-A} command-line option
+\IM{\-a} \c{\-a} command-line option
+\IM{-X-upper} \c{\-X} command-line option
+\IM{\-x} \c{\-x} command-line option
+\IM{-T-upper} \c{\-T} command-line option
+\IM{\-t} \c{\-t} command-line option
+\IM{-C-upper} \c{\-C} command-line option
+\IM{-N-upper} \c{\-N} command-line option
+\IM{\-1} \c{\-1} command-line option
+\IM{\-2} \c{\-2} command-line option
+\IM{\-4} \c{\-4} command-line option
+\IM{\-6} \c{\-6} command-line option
+\IM{\-i} \c{\-i} command-line option
+\IM{\-pgpfp} \c{\-pgpfp} command-line option
+\IM{\-sercfg} \c{\-sercfg} command-line option
+\IM{\-share} \c{\-share} command-line option
+\IM{\-noshare} \c{\-noshare} command-line option
+\IM{\-agent} \c{\-agent} command-line option
+\IM{\-noagent} \c{\-noagent} command-line option
+\IM{\-nc} \c{\-nc} command-line option
+\IM{\-restrict\-acl} \c{\-restrict\-acl} command-line option
+\IM{\-restrict\-putty\-acl} \c{\-restrict\-putty\-acl} Pageant command-line option
+\IM{\-loghost} \c{\-loghost} command-line option
+\IM{\-hostkey} \c{\-hostkey} command-line option
+\IM{\-sessionlog} \c{\-sessionlog} command-line option
+\IM{\-sshlog} \c{\-sshlog} command-line option
+\IM{\-sshrawlog} \c{\-sshrawlog} command-line option
+\IM{\-logoverwrite} \c{\-logoverwrite} command-line option
+\IM{\-logappend} \c{\-logappend} command-line option
+\IM{\-proxycmd} \c{\-proxycmd} command-line option
+\IM{\-cert} \c{\-cert} command-line option
+\IM{\-no\-trivial\-auth} \c{\-no\-trivial\-auth} command-line option
+\IM{\-legacy\-stdio\-prompts} \c{\-legacy\-stdio\-prompts} command-line option
+\IM{\-legacy\-charset\-handling} \c{\-legacy\-charset\-handling} command-line option
+
+\IM{\-host\-ca} \c{\-host\-ca} PuTTY command-line option
+
+\IM{\-sanitise\-stderr} \c{\-sanitise\-stderr} command-line option
+\IM{\-sanitise\-stdout} \c{\-sanitise\-stdout} command-line option
+\IM{\-no\-sanitise\-stderr} \c{\-no\-sanitise\-stderr} command-line option
+\IM{\-no\-sanitise\-stdout} \c{\-no\-sanitise\-stdout} command-line option
 
 \IM{removing registry entries} removing registry entries
 \IM{removing registry entries} registry entries, removing
@@ -338,9 +366,9 @@ saved sessions from
 \IM{SSH packet log} SSH packet log
 \IM{SSH packet log} packet log, SSH
 
-\IM{auto wrap mode}{auto wrap} auto wrap mode
-\IM{auto wrap mode}{auto wrap} wrapping, automatic
-\IM{auto wrap mode}{auto wrap} line wrapping, automatic
+\IM{auto wrap mode} auto wrap mode
+\IM{auto wrap mode} wrapping, automatic
+\IM{auto wrap mode} line wrapping, automatic
 
 \IM{control sequence}{control codes} control sequences
 \IM{control sequence}{control codes} terminal control sequences
@@ -767,22 +795,22 @@ saved sessions from
 \IM{SFTP} SFTP
 \IM{SFTP} SSH file transfer protocol
 
-\IM{-unsafe} \c{-unsafe} PSCP command-line option
-\IM{-ls-PSCP} \c{-ls} PSCP command-line option
-\IM{-p-PSCP} \c{-p} PSCP command-line option
-\IM{-q-PSCP} \c{-q} PSCP command-line option
-\IM{-r-PSCP} \c{-r} PSCP command-line option
-\IM{-batch-PSCP} \c{-batch} PSCP command-line option
-\IM{-sftp} \c{-sftp} PSCP command-line option
-\IM{-scp} \c{-scp} PSCP command-line option
+\IM{\-unsafe} \c{\-unsafe} PSCP command-line option
+\IM{-ls-PSCP} \c{\-ls} PSCP command-line option
+\IM{-p-PSCP} \c{\-p} PSCP command-line option
+\IM{-q-PSCP} \c{\-q} PSCP command-line option
+\IM{-r-PSCP} \c{\-r} PSCP command-line option
+\IM{-batch-PSCP} \c{\-batch} PSCP command-line option
+\IM{\-sftp} \c{\-sftp} PSCP command-line option
+\IM{\-scp} \c{\-scp} PSCP command-line option
 
 \IM{return value} return value
 \IM{return value} exit value
 
-\IM{-b-PSFTP} \c{-b} PSFTP command-line option
-\IM{-bc-PSFTP} \c{-bc} PSFTP command-line option
-\IM{-be-PSFTP} \c{-be} PSFTP command-line option
-\IM{-batch-PSFTP} \c{-batch} PSFTP command-line option
+\IM{-b-PSFTP} \c{\-b} PSFTP command-line option
+\IM{-bc-PSFTP} \c{\-bc} PSFTP command-line option
+\IM{-be-PSFTP} \c{\-be} PSFTP command-line option
+\IM{-batch-PSFTP} \c{\-batch} PSFTP command-line option
 
 \IM{spaces in filenames} spaces in filenames
 \IM{spaces in filenames} filenames containing spaces
@@ -819,9 +847,10 @@ saved sessions from
 
 \IM{PLINK_PROTOCOL} \c{PLINK_PROTOCOL} environment variable
 
-\IM{-batch-plink} \c{-batch} Plink command-line option
-\IM{-s-plink} \c{-s} Plink command-line option
-\IM{-shareexists-plink} \c{-shareexists} Plink command-line option
+\IM{-batch-plink} \c{\-batch} Plink command-line option
+\IM{-s-plink} \c{\-s} Plink command-line option
+\IM{-shareexists-plink} \c{\-shareexists} Plink command-line option
+\IM{-no-antispoof-plink} \c{\-no\-antispoof} Plink command-line option
 
 \IM{subsystem} subsystem, SSH
 \IM{subsystem} SSH subsystem
@@ -889,9 +918,18 @@ saved sessions from
 \IM{authentication agent} authentication agent
 \IM{authentication agent} agent, authentication
 
-\IM{-c-pageant} \c{-c} Pageant command-line option
-\IM{--keylist} \c{--keylist} Pageant command-line option
-\IM{--openssh-config} \c{--openssh-config} Pageant command-line option
+\IM{-t-puttygen} \c{\-t} PuTTYgen command-line option
+\IM{-b-puttygen} \c{\-b} PuTTYgen command-line option
+\IM{--primes-puttygen} \c{\-\-primes} PuTTYgen command-line option
+\IM{--strong-rsa-puttygen} \c{\-\-strong\-rsa} PuTTYgen command-line option
+\IM{--ppk-param-puttygen} \c{\-\-ppk\-param} PuTTYgen command-line option
+\IM{-E-upper-puttygen} \c{\-E} PuTTYgen command-line option
+
+\IM{-c-pageant} \c{\-c} Pageant command-line option
+\IM{\-\-keylist} \c{\-\-keylist} Pageant command-line option
+\IM{\-\-encrypted} \c{\-\-encrypted} Pageant command-line option
+\IM{\-\-unix} \c{\-\-unix} Pageant command-line option
+\IM{\-\-openssh\-config} \c{\-\-openssh\-config} Pageant command-line option
 
 \IM{Windows OpenSSH} Windows OpenSSH
 \IM{Windows OpenSSH} OpenSSH, on Windows
@@ -904,15 +942,6 @@ saved sessions from
 
 \IM{remember my password} storing passwords
 \IM{remember my password} password, storing
-
-\IM{login scripts}{startup scripts} login scripts
-\IM{login scripts}{startup scripts} startup scripts
-
-\IM{Red Hat Linux} Red Hat Linux
-\IM{Red Hat Linux} Linux, Red Hat
-
-\IM{SMB} SMB
-\IM{SMB} Windows file sharing
 
 \IM{clean up} clean up after PuTTY
 \IM{clean up} uninstalling
@@ -937,14 +966,6 @@ saved sessions from
 
 \IM{cascading credentials} cascading credentials
 \IM{cascading credentials} credentials, cascading
-
-\IM{SYSTEM32} \cw{SYSTEM32} directory, on Windows
-
-\IM{32-bit Windows} 32-bit Windows
-\IM{32-bit Windows} Windows, 32-bit
-\IM{32-bit Windows} x86 (32-bit processor architecture)
-\IM{64-bit Windows} 64-bit Windows
-\IM{64-bit Windows} Windows, 64-bit
 
 \IM{Windows process ACL} Windows process ACL
 \IM{Windows process ACL} process ACL (Windows)
@@ -973,3 +994,7 @@ saved sessions from
 
 \IM{Microsoft Store} Microsoft Store
 \IM{Microsoft Store} Windows Store
+
+\IM{pre-connection command} pre-connection command
+\IM{pre-connection command} command, pre-connection
+\IM{pre-connection command} subprocess, pre-connection

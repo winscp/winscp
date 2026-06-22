@@ -432,7 +432,7 @@ typedef struct growbuffer
 // returns nonzero on success, zero on out of memory
 static int growbuffer_append(growbuffer **gb, const char *data, int dataLen)
 {
-    int toCopy = 0 ;
+    int origDataLen = dataLen;
     while (dataLen) {
         growbuffer *buf = *gb ? (*gb)->prev : 0;
         if (!buf || (buf->size == sizeof(buf->data))) {
@@ -454,7 +454,7 @@ static int growbuffer_append(growbuffer **gb, const char *data, int dataLen)
             }
         }
 
-        toCopy = (sizeof(buf->data) - buf->size);
+        int toCopy = (sizeof(buf->data) - buf->size);
         if (toCopy > dataLen) {
             toCopy = dataLen;
         }
@@ -464,7 +464,7 @@ static int growbuffer_append(growbuffer **gb, const char *data, int dataLen)
         buf->size += toCopy, data += toCopy, dataLen -= toCopy;
     }
 
-    return toCopy;
+    return origDataLen;
 }
 
 
@@ -2064,7 +2064,7 @@ static int putObjectDataCallback(int bufferSize, char *buffer,
     return ret;
 }
 
-#define MULTIPART_CHUNK_SIZE (15 << 20) // multipart is 15M
+#define MULTIPART_CHUNK_SIZE (768 << 20) // multipart is 768M
 
 typedef struct MultipartPartData {
     put_object_callback_data put_object_data;
@@ -2208,9 +2208,9 @@ static void put_object(int argc, char **argv, int optindex,
                           CONTENT_LENGTH_PREFIX_LEN)) {
             contentLength = convertInt(&(param[CONTENT_LENGTH_PREFIX_LEN]),
                                        "contentLength");
-            if (contentLength > (5LL * 1024 * 1024 * 1024)) {
+            if (contentLength > (5LL * 1024 * 1024 * 1024 * 1024)) {
                 fprintf(stderr, "\nERROR: contentLength must be no greater "
-                        "than 5 GB\n");
+                        "than 5 TB\n");
                 usageExit(stderr);
             }
         }

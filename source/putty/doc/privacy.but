@@ -19,7 +19,7 @@ computer, necessary for doing its own job. This information is stored
 in the user account of the user who runs PuTTY, so it is under your
 control: you can view it, change it, or delete it.
 
-If you need to delete all of this data, you can use the \c{-cleanup}
+If you need to delete all of this data, you can use the \c{\-cleanup}
 command-line option, as described in \k{using-cleanup}.
 
 PuTTY does not transmit your saved session data to any other site.

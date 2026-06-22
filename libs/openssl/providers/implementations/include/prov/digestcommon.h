@@ -72,6 +72,12 @@ extern "C" {
             *ret = *in;                                                          \
         return ret;                                                              \
     }                                                                            \
+    static void name##_copyctx(void *voutctx, void *vinctx)                      \
+    {                                                                            \
+        CTX *outctx = (CTX *)voutctx;                                            \
+        CTX *inctx = (CTX *)vinctx;                                              \
+        *outctx = *inctx;                                                        \
+    }                                                                            \
     PROV_FUNC_DIGEST_FINAL(name, dgstsize, fin)                                  \
     PROV_FUNC_DIGEST_GET_PARAM(name, blksize, dgstsize, flags)                   \
     const OSSL_DISPATCH ossl_##name##_functions[] = {                            \
@@ -80,6 +86,7 @@ extern "C" {
         { OSSL_FUNC_DIGEST_FINAL, (void (*)(void))name##_internal_final },       \
         { OSSL_FUNC_DIGEST_FREECTX, (void (*)(void))name##_freectx },            \
         { OSSL_FUNC_DIGEST_DUPCTX, (void (*)(void))name##_dupctx },              \
+        { OSSL_FUNC_DIGEST_COPYCTX, (void (*)(void))name##_copyctx },            \
         PROV_DISPATCH_FUNC_DIGEST_GET_PARAMS(name)
 
 #define PROV_DISPATCH_FUNC_DIGEST_CONSTRUCT_END \

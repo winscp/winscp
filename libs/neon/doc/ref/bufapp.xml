@@ -8,7 +8,9 @@
       <refnamediv>
 	<refname id="ne_buffer_append">ne_buffer_append</refname>
 	<refname id="ne_buffer_zappend">ne_buffer_zappend</refname>
+	<refname id="ne_buffer_qappend">ne_buffer_qappend</refname>
 	<refname id="ne_buffer_concat">ne_buffer_concat</refname>
+	<refname id="ne_buffer_snprintf">ne_buffer_snprintf</refname>
 	<refpurpose>append data to a string buffer</refpurpose>
       </refnamediv>
       
@@ -32,12 +34,25 @@
 	  </funcprototype>
 
 	  <funcprototype>
+	    <funcdef>void <function>ne_buffer_qappend</function></funcdef>
+	    <paramdef>ne_buffer *<parameter>buf</parameter></paramdef>
+	    <paramdef>const char *<parameter>string</parameter></paramdef>
+	    <paramdef>size_t <parameter>len</parameter></paramdef>
+	  </funcprototype>
+
+	  <funcprototype>
 	    <funcdef>void <function>ne_buffer_concat</function></funcdef>
 	    <paramdef>ne_buffer *<parameter>buf</parameter></paramdef>
-	    <paramdef>const char *<parameter>str</parameter></paramdef>
 	    <paramdef>...</paramdef>
 	  </funcprototype>
 
+	  <funcprototype>
+	    <funcdef>size_t <function>ne_buffer_snprintf</function></funcdef>
+	    <paramdef>ne_buffer *<parameter>buf</parameter></paramdef>
+	    <paramdef>size_t <parameter>max</parameter></paramdef>
+	    <paramdef>const char *<parameter>format</parameter></paramdef>
+	    <paramdef>...</paramdef>
+	  </funcprototype>
 	</funcsynopsis>
 	
       </refsynopsisdiv>
@@ -55,15 +70,40 @@ string to append; there must be no &nul; terminator in the first
 <function>ne_buffer_zappend</function> must be passed a
 &nul;-terminated string.</para>
 
-	<para>The <function>ne_buffer_concat</function> function takes
-a variable-length argument list following <parameter>str</parameter>;
-each argument must be a <type>char *</type> pointer to a
-&nul;-terminated string.  A &null; pointer must be given as the last
-argument to mark the end of the list.  The strings (including
-<parameter>str</parameter>) are appended to the buffer in the order
-given. None of the strings passed to
-<function>ne_buffer_concat</function> are modified.</para>
+	<para>The <function>ne_buffer_qappend</function> function
+	behaves similarly to <function>ne_buffer_append</function>,
+	except that any non-ASCII characters or ASCII control
+	characters are escaped using C-style hex escaping. For
+	example, the C string <literal>"foo&lt;TAB&gt;bar"</literal>,
+	where TAB represents ASCII character 9, would be appended as
+	<literal>"foo\x09bar"</literal>. Any &nul; bytes within the
+	length specified are also escaped. This function is useful to
+	make strings from untrusted sources safe for logging or output
+	in a user interface.</para>
 
+	<para>The <function>ne_buffer_concat</function> function takes
+	a variable-length argument list; each argument must be a
+	<type>char *</type> pointer to a &nul;-terminated string.  A
+	&null; pointer must be given as the last argument to mark the
+	end of the list.  The strings are appended to the buffer in
+	the order given. None of the strings passed to
+	<function>ne_buffer_concat</function> are modified.</para>
+
+<para>The <function>ne_buffer_snprintf</function> function behaves
+like <function>snprintf</function>, appending the output string
+formatted according to the <parameter>format</parameter> parameter.
+At most <parameter>max</parameter> bytes are written including the
+trailing &nul; terminator.</para>
+
+      </refsect1>
+
+      <refsect1>
+	<title>Return value</title>
+
+        <para>The <function>ne_buffer_snprintf</function> function
+        returns the number of bytes appended
+        <emphasis>excluding</emphasis> the trailing &nul;
+        terminator.</para>
       </refsect1>
 
       <refsect1>
@@ -74,7 +114,8 @@ And goodbye.</literal>".</para>
 	
 	<programlisting>ne_buffer *buf = ne_buffer_create();
 ne_buffer_zappend(buf, "Hello");
-ne_buffer_concat(buf, ", world. ", "And ", "goodbye.", NULL);
+ne_buffer_concat(buf, ", world. ", "And ", NULL);
+ne_buffer_snprintf(buf, 10, "%s.", "goodbye");
 puts(buf->data);
 ne_buffer_destroy(buf);</programlisting>
       </refsect1>
