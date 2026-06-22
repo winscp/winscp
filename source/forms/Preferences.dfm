@@ -2668,7 +2668,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Do not popup error message when idle session is disconnected'
+            Caption = 'Do not p&opup error message when idle session is disconnected'
             TabOrder = 4
             OnClick = ControlChange
           end
