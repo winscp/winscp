@@ -34,14 +34,14 @@ to include a \c{set} command like the one above.
 This section describes the basics of how to use Plink for
 interactive logins and for automated processes.
 
-Once you've got a console window to type into, you can just type
-\c{plink} on its own to bring up a usage message.  This tells you the
+Once you've got a console window to type into, you can type
+\c{plink --help} to bring up a usage message.  This tells you the
 version of Plink you're using, and gives you a brief summary of how to
 use Plink:
 
-\c C:\>plink
+\c C:\>plink --help
 \c Plink: command-line connection utility
-\c Release 0.81
+\c Release 0.83
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -243,6 +243,10 @@ This may help Plink's behaviour when it is used in automated
 scripts: using \c{-batch}, if something goes wrong at connection
 time, the batch job will fail rather than hang.
 
+If another program is invoking Plink on your behalf, then you might
+need to arrange that that program passes \c{-batch} to Plink. See
+\k{plink-git} for an example involving Git.
+
 \S2{plink-option-s} \I{-s-plink}\c{-s}: remote command is SSH subsystem
 
 If you specify the \c{-s} option, Plink passes the specified command
@@ -394,6 +398,38 @@ particular web area:
 
 Any non-interactive command you could usefully run on the server
 command line, you can run in a batch file using Plink in this way.
+
+\H{plink-git} Using Plink with \i{Git}
+
+To use Plink for Git operations performed over SSH, you can set the
+environment variable \i\c{GIT_SSH_COMMAND} to point to Plink.
+
+For example, if you've run PuTTY's full Windows installer and it has
+installed Plink in the default location, you might do this:
+
+\c set GIT_SSH_COMMAND="C:\Program Files\PuTTY\plink.exe"
+
+or if you've put Plink somewhere else then you can do a similar thing
+with a different path.
+
+This environment variable accepts a whole command line, not just an
+executable file name. So you can add Plink options to the end of it if
+you like. For example, if you're using Git in a batch-mode context,
+where your Git jobs are running unattended and nobody is available to
+answer interactive prompts, you might also append the \cq{-batch}
+option (\k{plink-option-batch}):
+
+\c set GIT_SSH_COMMAND="C:\Program Files\PuTTY\plink.exe" -batch
+
+and then if Plink unexpectedly prints a prompt of some kind (for
+example, because the SSH server's host key has changed), your batch
+job will terminate with an error message, instead of stopping and
+waiting for user input that will never arrive.
+
+(However, you don't \e{always} want to do this with Git. If you're
+using Git interactively, you might \e{want} Plink to stop for
+interactive prompts \dash for example, to let you enter a password for
+the SSH server.)
 
 \H{plink-cvs} Using Plink with \i{CVS}
 

@@ -2,12 +2,12 @@
 .\"     Title: ne_strhash
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 15 April 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_STRHASH" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_STRHASH" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -96,11 +96,13 @@ space\-separated hex pairs, e\&.g\&.
 The return value is the ASCII hexadecimal representation of the hash as a malloc\-allocated, NUL\-terminated string, or
 NULL
 if the hash cannot be created\&. The string length is determined by the hash algorithm (and formatting options used)\&. Support for hash algorithms is specific to the SSL toolkit with which neon is compiled\&. Some systems will further restrict hash availability at runtime, e\&.g\&. due to FIPS mode\&.
-.SH "AUTHOR"
+.SH "HISTORY"
 .PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
+\fBne_strhash\fR
+and
+\fBne_vstrhash\fR
+is available in neon 0\&.32\&.0 and later\&.
 .SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
 .br

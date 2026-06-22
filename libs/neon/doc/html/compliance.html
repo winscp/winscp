@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Standards compliance</title><link rel="stylesheet" type="text/css" href="../manual.css"><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot"><link rel="home" href="index.html" title="neon HTTP/WebDAV client library"><link rel="up" href="intro.html" title="Chapter 1. Introduction"><link rel="prev" href="using.html" title="How to use neon from your application"><link rel="next" href="security.html" title="HTTP Client Security"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Standards compliance</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="using.html">Prev</a> </td><th width="60%" align="center">Chapter 1. Introduction</th><td width="20%" align="right"> <a accesskey="n" href="security.html">Next</a></td></tr></table><hr></div><div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="compliance"></a>Standards compliance</h2></div></div></div><p>neon is intended to be compliant with the IETF and W3C
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Standards compliance</title><link rel="stylesheet" type="text/css" href="manual.css"><meta name="generator" content="DocBook XSL Stylesheets Vsnapshot"><link rel="home" href="index.html" title="neon HTTP/WebDAV client library"><link rel="up" href="intro.html" title="Chapter 1. Introduction"><link rel="prev" href="example.html" title="Example application"><link rel="next" href="security.html" title="HTTP Client Security"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Standards compliance</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="example.html">Prev</a> </td><th width="60%" align="center">Chapter 1. Introduction</th><td width="20%" align="right"> <a accesskey="n" href="security.html">Next</a></td></tr></table><hr></div><div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="compliance"></a>Standards compliance</h2></div></div></div><p>neon is intended to be compliant with the IETF and W3C
 	standards which it implements, with a few exceptions due to
 	practical necessity or interoperability issues.  These
 	exceptions are documented in this section.</p><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="id1340"></a>RFC 2518, HTTP Extensions for Distributed Authoring—WebDAV</h3></div></div></div><p>neon is deliberately not compliant with section
@@ -15,7 +15,18 @@
         the header was not present.  neon will give an error if a
         response includes a <code class="literal">Transfer-Encoding</code>
         header with a value other than <span class="quote">“<span class="quote">identity</span>”</span> or
-        <span class="quote">“<span class="quote">chunked</span>”</span>.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="id1342"></a>RFC 2617, HTTP Authentication: Basic and Digest Access Authentication</h3></div></div></div><p>neon is not strictly compliant with the quoting rules
+        <span class="quote">“<span class="quote">chunked</span>”</span>.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="id1342"></a><a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc3986" target="_top">RFC 3986</a> Uniform Resource Identifier (URI): Generic Syntax and <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc6874" target="_top">RFC 6874</a>, Representing IPv6 Zone Identifiers in Address Literals and Uniform Resource Identifiers</h3></div></div></div><p>neon parses and handles scoped IPv6 link-local literal
+        addresses passed to <a class="xref" href="refsess.html" title="ne_session_create"><span class="refentrytitle">ne_session_create</span></a> since version
+        <code class="literal">0.34</code>, following the syntax in RFC 6874. An
+        example <code class="literal">host</code> argument would be
+        <code class="literal">"[fe80::cafe%25eth0]"</code> where
+        <code class="literal">"eth0"</code> is the scope ID. Since <a class="ulink" href="https://datatracker.ietf.org/doc/html/rfc9110" target="_top">RFC
+        9110</a> does not reference the extended syntax of scoped
+        IPv6 literals, and a scope ID has no meaningful interpretation
+        outside of the client host, it is omitted from the
+        <code class="literal">Host</code> header sent over the wire. So the
+        example argument here translates to an HTTP/1.1 header field
+        of <code class="literal">Host: [fe80::cafe]</code>.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="id1343"></a>RFC 7616, HTTP Digest Access Authentication</h3></div></div></div><p>neon is not strictly compliant with the quoting rules
         given in the grammar for the <code class="literal">Authorization</code>
         header.  The grammar requires that the <code class="literal">qop</code>
         and <code class="literal">algorithm</code> parameters are not quoted,
@@ -23,7 +34,15 @@
         (Microsoft® IIS 5) rejects the request if these parameters
         are not quoted.  neon sends these parameters with
         quotes—this is not known to cause any problems with
-        other server implementations.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="id1343"></a>Namespaces in XML</h3></div></div></div><p>The neon XML parser interface will accept and parse
+        other server implementations.</p><p>RFC 7616 predates RFC 9112 and uses conflicting language
+        around URIs. neon uses the RFC 9112
+        <code class="literal">request-target</code> in both the
+        <code class="literal">A2</code> grammar and the <code class="literal">uri=</code>
+        parameter of the <code class="literal">Authorization</code>
+        header. neon will accept (and resolve) any URI-reference in
+        the <code class="literal">domain=</code> parameter for
+        <code class="literal">WWW-Authenticate</code> response header
+        field.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="id1344"></a>Namespaces in XML</h3></div></div></div><p>The neon XML parser interface will accept and parse
         without error some XML documents which are well-formed
         according to the XML specification but do not conform to the
         "Namespaces in XML" specification <a class="xref" href="biblio.html#bib.xmlnames" title="Namespaces in XML">[<abbr class="abbrev">REC-XML-names</abbr>]</a>.  Specifically: the restrictions on
@@ -31,4 +50,4 @@
         not all implemented; neon will allow any
         <code class="literal">CombiningChar</code>, <code class="literal">Extender</code>
         and some characters from the <code class="literal">Digit</code> class in
-        this position.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="using.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="intro.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="security.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">How to use neon from your application </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> HTTP Client Security</td></tr></table></div></body></html>
+        this position.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="example.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="intro.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="security.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Example application </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> HTTP Client Security</td></tr></table></div></body></html>

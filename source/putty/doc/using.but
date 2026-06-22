@@ -1184,3 +1184,88 @@ session at all. Instead, it will just display the configuration dialog
 box for host certification authorities, as described in
 \k{config-ssh-kex-cert}. When you dismiss that dialog box, PuTTY will
 terminate.
+
+\S2{using-cmdline-legacy-stdio-prompts} \i{\c{-legacy-stdio-prompts}}:
+handle Windows console prompts like older versions of PuTTY
+
+This option applies to all of PSCP, PSFTP and Plink on Windows: all
+the tools in the PuTTY suite that run in a Windows console and make
+SSH connections.
+
+These tools use the Windows console to prompt for various information:
+usernames, passwords, answers to questions about host keys, and so on.
+
+In current versions of PuTTY, these prompts work by direct access to
+the Windows console. This means that even if you redirect the standard
+input or output of the tool, prompts will \e{still} be sent to the
+console (and not where you've redirected your output), and the user's
+responses will be read from the console (and not from where you've
+redirected your input).
+
+Another advantage of reading directly from the Windows console is that
+the tools can read input as \i{Unicode}. So this also allows you to
+enter usernames and passwords that contain characters not in the
+Windows system's default character set.
+
+In versions of the PuTTY tools up to and including 0.81, the prompts
+used the tool's ordinary I/O handles, so prompt output and user
+responses could be redirected.
+
+We think the new behaviour is more likely to be useful. For example,
+if you have a local command that generates output, and you want to
+pipe that output into a command running remotely via Plink, you can
+run a command line such as
+
+\c local_command | plink hostname remote_command
+
+and the data piped into the remote command will be the same whether or
+not Plink has to stop to ask for a password. With the old behaviour
+you would have had to include the password in Plink's input, which is
+more awkward.
+
+However, we recognise that people may have customised complicated
+workflows around the old behaviour. So if you need to switch back to
+it, you can do so by specifying \c{-legacy-stdio-prompts} on the
+command-line.
+
+To fully revert to the previous behaviour, you'd also need to specify
+\c{-legacy-charset-handling} (see the next section). (Even without
+that option, prompt handling with \c{-legacy-stdio-prompts} may not be
+fully Unicode-clean.)
+
+\S2{using-cmdline-legacy-charset-handling} \i{\c{-legacy-charset-handling}}:
+handle character set in prompts like older versions of PuTTY
+
+This option applies to PuTTY (on all platforms), and also to all of
+PSCP, PSFTP and Plink on Windows.
+
+In current versions of PuTTY, when you are prompted in the terminal
+window for things like SSH usernames and passwords, the responses you
+type are interpreted as \i{Unicode}, and transmitted to the server as
+such, even if the terminal is otherwise configured to use a different
+character encoding (see \k{config-charset}). Similarly, the same
+prompts from the Windows console tools will unconditionally interpret
+their input as Unicode.
+
+This behaviour is in line with the SSH standards; it allows things
+like usernames to use the full character set of the user's native
+language, and ensures that different keystrokes you type for your
+password are actually treated distinctly.
+
+However, if you are used to the behaviour of the PuTTY tools up to
+version 0.81, this could cause a previously working username and/or
+password not to work as you expected. For instance, if you had set a
+password including some \i{accented characters}, this change in
+behaviour could cause the same keystrokes you've always entered to
+start sending a different sequence of bytes to the server, denying you
+access (and you wouldn't even be able to see the difference, since the
+password is not shown when you type it).
+
+\c{-legacy-charset-handling} reverts the PuTTY tools' behaviour to how
+it was previously: what you type at these prompts will be interpreted
+according to the \q{Remote character set} (for PuTTY) or Windows'
+default character set (for the Windows console tools).
+
+(For example, this could allow you to log in to change your password
+to make using this option unnecessary in future. But if you're doing
+that, make sure the terminal is configured as UTF-8!)

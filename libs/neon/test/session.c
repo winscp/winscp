@@ -199,6 +199,30 @@ static int proxies(void)
     return OK;
 }
 
+static int tls_names(void)
+{
+    static const struct {
+        unsigned int proto;
+        const char *expected;
+    } ts[] = {
+        { NE_SSL_PROTO_SSL_3, "SSLv3" },
+        { NE_SSL_PROTO_TLS_1_0, "TLSv1.0" },
+        { NE_SSL_PROTO_TLS_1_1, "TLSv1.1" },
+        { NE_SSL_PROTO_TLS_1_2, "TLSv1.2" },
+        { NE_SSL_PROTO_TLS_1_3, "TLSv1.3" },
+        { 0 },
+    };
+    unsigned n;
+
+    for (n = 0; ts[n].proto; n++) {
+        const char *actual = ne_ssl_proto_name(ts[n].proto);
+
+        ONCMP(ts[n].expected, actual, "TLS", "protocol name");
+    }
+
+    return OK;
+}
+
 ne_test tests[] = {
     T(fill_uri),
     T(fill_proxy_uri),
@@ -208,6 +232,7 @@ ne_test tests[] = {
     T(get_scheme),
     T(flags),
     T(proxies),
+    T(tls_names),
     T(NULL)
 };
 

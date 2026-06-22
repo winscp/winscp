@@ -1,6 +1,6 @@
 /* 
    HTTP Request Handling
-   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2024, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -45,7 +45,7 @@ typedef struct ne_request_s ne_request;
 /***** Request Handling *****/
 
 /* Create a request in session 'sess', with given method and target.
- * 'target' is used to form the request-target (per RFC 7230ẞ5.3), and
+ * 'target' is used to form the request-target (per RFC 9112ẞ3.2), and
  * may be an absolute-path (with optional query-string), an
  * absolute-URI, or an asterisk. */
 ne_request *ne_request_create(ne_session *sess, const char *method,
@@ -76,8 +76,7 @@ void ne_set_request_body_fd(ne_request *req, int fd,
  *        <0           : error, abort request; session error string must be set.
  *         0           : ignore 'buffer' contents, end of body.
  *     0 < x <= buflen : buffer contains x bytes of body data.  */
-typedef ssize_t (*ne_provide_body)(void *userdata, 
-				   char *buffer, size_t buflen);
+typedef ssize_t (*ne_provide_body)(void *userdata, char *buffer, size_t buflen);
 
 /* Install a callback which is invoked as needed to provide the
  * request body, a block at a time.  The total size of the request
@@ -92,7 +91,7 @@ typedef ssize_t (*ne_provide_body)(void *userdata,
  * returns zero after performing an OPTIONS or HEAD request. */
 void ne_set_request_body_provider(ne_request *req, ne_off_t length,
                                   ne_provide_body provider, void *userdata)
-    ne_attribute((nonnull (1)));
+    ne_attribute((nonnull (1, 3)));
 
 /* Handling response bodies; two callbacks must be provided:
  *
@@ -135,13 +134,15 @@ typedef int (*ne_block_reader)(void *userdata, const char *buf, size_t len);
  * been read, the callback will be called with a 'len' argument of
  * zero.  */
 void ne_add_response_body_reader(ne_request *req, ne_accept_response accpt,
-				 ne_block_reader reader, void *userdata);
+				 ne_block_reader reader, void *userdata)
+    ne_attribute((nonnull (1, 2, 3)));
 
 /* Retrieve the value of the response header field with given name;
  * returns NULL if no response header with given name was found.  The
  * return value is valid only until the next call to either
  * ne_request_destroy or ne_begin_request for this request. */
-const char *ne_get_response_header(ne_request *req, const char *name);
+const char *ne_get_response_header(ne_request *req, const char *name)
+    ne_attribute((nonnull));
 
 /* Iterator interface for response headers: if passed a NULL cursor,
  * returns the first header; if passed a non-NULL cursor pointer,
@@ -166,6 +167,22 @@ void ne_print_request_header(ne_request *req, const char *name,
 			     const char *format, ...) 
     ne_attribute((format(printf, 3, 4)));
 
+/* Returns the request target URI as a malloc-allocated ne_uri object,
+ * or NULL on error if the request target cannot be determined. The
+ * session error string is not changed on error. */
+const ne_uri *ne_get_request_target(ne_request *req)
+    ne_attribute((nonnull));
+
+/* If the response includes a Location header, this function parses
+ * and resolves the URI-reference relative to the request target.  If
+ * a fragment ("#fragment") is used for the request target, it can be
+ * passed as an argument to allow relative resolution. Returns a
+ * malloc-allocated ne_uri object, or NULL if the URI in the Location
+ * header could not be parsed, or the Location header was not
+ * present. */
+ne_uri *ne_get_response_location(ne_request *req, const char *fragment)
+    ne_attribute((nonnull (1)));
+
 /* ne_request_dispatch: Sends the given request, and reads the
  * response.  Returns:
  *  - NE_OK if the request was sent and response read successfully
@@ -176,7 +193,7 @@ void ne_print_request_header(ne_request *req, const char *name,
  * On any error, the session error string is set.  On success or
  * authentication error, the actual response-status can be retrieved using
  * ne_get_status(). */
-int ne_request_dispatch(ne_request *req);
+int ne_request_dispatch(ne_request *req) ne_attribute((nonnull (1)));
 
 /* Returns a pointer to the response status information for the given
  * request; pointer is valid until request object is destroyed. */
@@ -257,7 +274,7 @@ void ne_add_interim_handler(ne_request *req, ne_interim_response_fn fn,
 /**** Request hooks handling *****/
 
 /* Hook called when a request is created; passed the method and
- * request-target as used in the request-line (RFC7230§5.3).  The
+ * request-target as used in the request-line (RFC 9112§3.2).  The
  * create_request hook is called exactly once per request. */
 typedef void (*ne_create_request_fn)(ne_request *req, void *userdata,
 				     const char *method, const char *target);

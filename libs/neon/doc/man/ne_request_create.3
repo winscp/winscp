@@ -2,12 +2,12 @@
 .\"     Title: ne_request_create
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 15 April 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_REQUEST_CREATE" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_REQUEST_CREATE" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -37,7 +37,7 @@ ne_request_create, ne_request_dispatch, ne_request_destroy \- low\-level HTTP re
 .fi
 .ft
 .HP \w'ne_request\ *ne_request_create('u
-.BI "ne_request *ne_request_create(ne_session\ *" "session" ", const\ char\ *" "method" ", const\ char\ *" "path" ");"
+.BI "ne_request *ne_request_create(ne_session\ *" "session" ", const\ char\ *" "method" ", const\ char\ *" "target" ");"
 .HP \w'int\ ne_request_dispatch('u
 .BI "int ne_request_dispatch(ne_request\ *" "req" ");"
 .HP \w'void\ ne_request_destroy('u
@@ -50,18 +50,22 @@ object represents an HTTP request and the associated response\&. The
 \fBne_request_create\fR
 function creates a new request object for the given
 \fIsession\fR\&. The target resource for the request is identified by the
-\fIpath\fR, and the method to be performed on that resource via the
+\fItarget\fR, parameter, and the method to be performed on that resource via the
 \fImethod\fR
 parameter\&.
 .PP
 The
-\fIpath\fR
+\fItarget\fR
 string used must conform to the
-abs_path
-definition given in RFC2396, with an optional "?query" part, and must be URI\-escaped by the caller (for instance, using
-\fBne_path_escape\fR)\&. If the string comes from an untrusted source, failure to perform URI\-escaping results in a security vulnerability\&.
+request\-target
+definition given in
+\m[blue]\fBRFC 9112\fR\m[]\&\s-2\u[1]\d\s+2\&. Usually this will take the
+abolute\-path
+form, which optionally includes a query string\&.
 .PP
-To dispatch a request, and process the response, the
+To
+\fIdispatch\fR
+a request, and process the response, the
 \fBne_request_dispatch\fR
 function can be used\&. An alternative is to use the (more complex, but more flexible) combination of the
 \fBne_begin_request\fR,
@@ -69,6 +73,10 @@ function can be used\&. An alternative is to use the (more complex, but more fle
 \fBne_read_response_block\fR
 functions; see
 \fBne_begin_request\fR\&.
+\fIDispatching\fR
+a request may require multiple iterations of a request being sent and response received, for example if authentication is used (see
+ne_set_server_auth), or if a persistent connection times out; this is handled internally by
+\fBne_request_dispatch\fR\&.
 .PP
 To add extra headers in the request, the functions
 ne_add_request_header
@@ -93,10 +101,12 @@ object produces undefined behaviour\&. Once all processing associated with the r
 \fBne_request_destroy\fR
 function to destroy the resources associated with it\&. Any subsequent use of the request object produces undefined behaviour\&.
 .PP
-For a request with a non\-idempotent method such as
+Request methods are assumed to be
+\m[blue]\fBidempotent\fR\m[]\&\s-2\u[2]\d\s+2
+by default\&. For a request using a non\-idempotent method such as
 POST, the
 NE_REQFLAG_IDEMPOTENT
-flag should be disabled; see
+flag must be disabled using
 ne_set_request_flag\&.
 .SH "RETURN VALUE"
 .PP
@@ -108,6 +118,18 @@ NULL)\&.
 The
 \fBne_request_dispatch\fR
 function returns zero if the request was dispatched successfully, and a non\-zero error code otherwise\&.
+.SH "NOTES"
+.PP
+The
+\fIpath\fR,
+\fImethod\fR
+and
+\fItarget\fR
+parameters of
+\fBne_request_create\fR
+are used directly in request data without validation, so must not be taken from untrusted sources\&. For example, allowing insertion of unescaped CR, LF or other control characters in these parameters may result in unexpected or insecure behaviour\&.
+.PP
+neon does not impose any length restrictions on request input data\&.
 .SH "ERRORS"
 .PP
 \fBNE_ERROR\fR
@@ -168,11 +190,18 @@ ne_get_status,
 ne_add_request_header,
 ne_set_request_body_buffer,
 ne_set_request_flag\&.
-.SH "AUTHOR"
-.PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
 .SH "COPYRIGHT"
 .br
+Copyright \(co 2001-2024 Joe Orton
+.br
+.SH "REFERENCES"
+.IP " 1." 4
+RFC 9112
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc9112
+.RE
+.IP " 2." 4
+idempotent
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc9110.html#name-idempotent-methods
+.RE

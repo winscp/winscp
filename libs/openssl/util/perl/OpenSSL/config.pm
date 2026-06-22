@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 1998-2023 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 1998-2024 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -692,7 +692,6 @@ EOF
                 $disable = [];
             }
             return { target => "linux64-loongarch64",
-                     defines => [ 'L_ENDIAN' ],
                      disable => $disable, };
         }
       ],
@@ -860,6 +859,7 @@ EOF
                                     cflags => [ '-march=armv7-a' ],
                                     cxxflags => [ '-march=armv7-a' ] } ],
       [ 'arm.*-.*-android',       { target => "android-armeabi" } ],
+      [ 'riscv64-.*-android',     { target => "android-riscv64" } ],
       [ '.*-hpux1.*',
         sub {
             my $KERNEL_BITS = $ENV{KERNEL_BITS};

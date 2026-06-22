@@ -100,8 +100,8 @@ $code.=<<___;
 .globl OPENSSL_rdtsc
 .type   OPENSSL_rdtsc,\@function
 OPENSSL_rdtsc:
-    move    $a0,$zero
-    jr      $ra
+    rdtimel.w $a0,$zero
+    jr        $ra
 ___
 }
 

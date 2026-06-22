@@ -2,12 +2,12 @@
 .\"     Title: ne_session_create
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 15 April 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_SESSION_CREATE" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_SESSION_CREATE" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -37,7 +37,7 @@ ne_session_create, ne_close_connection, ne_session_destroy \- set up HTTP sessio
 .fi
 .ft
 .HP \w'ne_session\ *ne_session_create('u
-.BI "ne_session *ne_session_create(const\ char\ *" "scheme" ", const\ char\ *" "hostname" ", unsigned\ int\ " "port" ");"
+.BI "ne_session *ne_session_create(const\ char\ *" "scheme" ", const\ char\ *" "host" ", unsigned\ int\ " "port" ");"
 .HP \w'void\ ne_close_connection('u
 .BI "void ne_close_connection(ne_session\ *" "session" ");"
 .HP \w'void\ ne_session_destroy('u
@@ -51,7 +51,7 @@ object represents an HTTP session \- a logical grouping of a sequence of HTTP re
 A new HTTP session is created using the
 \fBne_session_create\fR
 function; the
-\fIhostname\fR
+\fIhost\fR
 and
 \fIport\fR
 parameters specify the origin server to use, along with the
@@ -66,11 +66,37 @@ must have been called to perform any global initialization needed by any librari
 To enable SSL/TLS for the session, pass the string
 "https"
 as the
-\fIscheme\fR
-parameter, and either register a certificate verification function (see
+\fIscheme\fR, and either register a certificate verification function (see
 ne_ssl_set_verify) or trust the appropriate certificate (see
 ne_ssl_trust_cert,
 ne_ssl_trust_default_ca)\&.
+.PP
+The
+\fIhost\fR
+parameter must follow the definition of host
+host
+in
+\m[blue]\fBRFC 3986\fR\m[]\&\s-2\u[1]\d\s+2, which can be an IP\-literal or registered (DNS) hostname\&. Valid examples of each:
+"198\&.51\&.100\&.42"
+(IPv4 literal address),
+"[2001:db8::42]"
+(IPv6 literal, which
+\fIMUST\fR
+be enclosed in square brackets), or
+"www\&.example\&.com"
+(DNS hostname)\&. The
+\m[blue]\fBRFC 6874\fR\m[]\&\s-2\u[2]\d\s+2
+syntax for scoped IPv6 link\-local literal addresses is also permitted, for example
+"[fe80::1%25eth0]"\&.
+.PP
+The
+\fIscheme\fR
+parameter is used to determine the URI for resources identified during request handling\&. Other than special handling of the string
+"https", no other interpretation or checking of the
+\fIscheme\fR
+is performed\&. For example, if an HTTP\-to\-FTP proxy is configured, a scheme of
+"ftp"
+could be used to access resources\&.
 .PP
 To use a proxy server for the session, it must be configured (see
 ne_session_proxy) before any requests are created from session object\&.
@@ -88,9 +114,8 @@ Once a session has been completed,
 must be called to destroy the resources associated with the session\&. Any subsequent use of the session pointer produces undefined behaviour\&. The session object must not be destroyed until after all associated request objects have been destroyed\&.
 .SH "NOTES"
 .PP
-The hostname passed to
-\fBne_session_create\fR
-is resolved when the first request using the session is dispatched; a DNS resolution failure can only be detected at that time (using the
+If a hostname is passed to
+\fBne_session_create\fR, it will be resolved when the first request using the session is dispatched; a DNS resolution failure can only be detected at that time (using the
 NE_LOOKUP
 error code); see
 ne_request_dispatch
@@ -121,12 +146,20 @@ ne_session_destroy(sess);
 ne_ssl_set_verify,
 ne_ssl_trust_cert,
 ne_sock_init,
-ne_set_session_flag
-.SH "AUTHOR"
-.PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
+ne_set_session_flag,
+ne_session_proxy
 .SH "COPYRIGHT"
 .br
+Copyright \(co 2001-2024 Joe Orton
+.br
+.SH "REFERENCES"
+.IP " 1." 4
+RFC 3986
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc3986
+.RE
+.IP " 2." 4
+RFC 6874
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc6874
+.RE

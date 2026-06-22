@@ -88,10 +88,10 @@ int main(int argc, char **argv)
 
     /* Set password */
     *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_PASSWORD, password,
-                                             sizeof(password));
+        sizeof(password));
     /* Set salt */
     *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, scrypt_salt,
-                                             sizeof(scrypt_salt));
+        sizeof(scrypt_salt));
     /* Set N (default 1048576) */
     *p++ = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_SCRYPT_N, &scrypt_n);
     /* Set R (default 8) */
@@ -110,6 +110,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "Generated key does not match expected value\n");
         goto end;
     }
+
+    printf("Success\n");
 
     ret = EXIT_SUCCESS;
 end:

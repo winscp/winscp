@@ -47,7 +47,7 @@
 
 #ifdef SOCKET_SSL
 #include "ne_ssl.h"
-ne_ssl_context *server_ctx, *client_ctx;
+ne_ssl_context *server_ctx, *client_ctx_tls12, *client_ctx;
 #endif
 
 static ne_sock_addr *localhost;
@@ -131,11 +131,17 @@ static int init_ssl(void)
 
     client_ctx = ne_ssl_context_create(0);
     ONN("SSL_CTX_new failed for client", client_ctx == NULL);
+
+    client_ctx_tls12 = ne_ssl_context_create(0);
+    ONN("SSL_CTX_new failed for client", client_ctx_tls12 == NULL);
+    ne_ssl_context_set_versions(client_ctx_tls12, NE_SSL_PROTO_TLS_1_2,
+                                NE_SSL_PROTO_TLS_1_2);
     
     cert = ne_ssl_cert_read("ca/cert.pem");
     ONN("could not load ca/cert.pem", cert == NULL);
 
     ne_ssl_context_trustcert(client_ctx, cert);
+    ne_ssl_context_trustcert(client_ctx_tls12, cert);
     ne_free(server_key);
 
     return OK;
@@ -177,7 +183,7 @@ static int wrap_serve(ne_socket *sock, void *ud)
     return pair->fn(sock, pair->userdata);
 }
 
-static int begin(ne_socket **sock, server_fn fn, void *ud)
+static int beginc(ne_socket **sock, ne_ssl_context *ctx, server_fn fn, void *ud)
 {
     struct serve_pair pair;
     unsigned int port;
@@ -185,9 +191,14 @@ static int begin(ne_socket **sock, server_fn fn, void *ud)
     pair.userdata = ud;
     CALL(new_spawn_server(1, wrap_serve, &pair, &port));
     CALL(do_connect(sock, localhost, port));
-    ONV(ne_sock_connect_ssl(*sock, client_ctx, NULL),
+    ONV(ne_sock_connect_ssl(*sock, ctx, NULL),
 	("SSL negotiation failed: %s", ne_sock_error(*sock)));
     return OK;
+}
+
+static int begin(ne_socket **sock, server_fn fn, void *ud)
+{
+    return beginc(sock, client_ctx, fn, ud);
 }
 
 #else
@@ -1414,6 +1425,53 @@ static int cipher(void)
     return finish(sock, 1);
 }
 
+static int protocols(void)
+{
+    ne_socket *sock;
+    enum ne_ssl_protocol proto;
+
+    CALL(begin(&sock, serve_close, NULL));
+
+    proto = ne_sock_getproto(sock);
+#ifdef SOCKET_SSL
+    ONN("protocol should be set", proto == NE_SSL_PROTO_UNSPEC);
+#else
+    ONN("protocol should be unset", proto != NE_SSL_PROTO_UNSPEC);
+#endif
+
+    return finish(sock, 1);
+}
+
+#ifdef SOCKET_SSL
+static int serve_protocol(ne_socket *sock, void *ud)
+{
+    enum ne_ssl_protocol proto = ne_sock_getproto(sock);
+    const char *name = ne_ssl_proto_name(proto);
+
+    WRITEL("protocol\n");
+    WRITEL(name);
+    WRITEL("\n");
+
+    return 0;
+}
+
+static int proto_tls12(void)
+{
+    ne_socket *sock;
+    enum ne_ssl_protocol proto;
+
+    CALL(beginc(&sock, client_ctx_tls12, serve_protocol, NULL));
+
+    proto = ne_sock_getproto(sock);
+    NE_DEBUG(NE_DBG_SOCKET, "protocol: %d\n", proto);
+
+    FULLREAD("protocol\n");
+    FULLREAD("TLSv1.2\n");
+
+    return finish(sock, 1);
+}
+#endif
+
 static int error(void)
 {
     ne_socket *sock = ne_sock_create();
@@ -1560,6 +1618,24 @@ static int fail_socks(void)
     return OK;
 }
 
+static int scopes(void)
+{
+    ne_inet_addr *ia;
+
+#ifdef TEST_IPV6
+    ia = ne_iaddr_parse("fe80::cafe", ne_iaddr_ipv6);
+#else
+    ia = ne_iaddr_parse("127.0.0.1", ne_iaddr_ipv4);
+#endif
+
+    (void) ne_iaddr_set_scope(ia, "foobar");
+    (void) ne_iaddr_get_scope(ia);
+
+    ne_iaddr_free(ia);
+    
+    return OK;
+}
+
 ne_test tests[] = {
     T(multi_init),
     T_LEAKY(resolve),
@@ -1586,6 +1662,10 @@ ne_test tests[] = {
     T(larger_read),
     T(ssl_session_id),
     T(cipher),
+    T(protocols),
+#ifdef SOCKET_SSL
+    T(proto_tls12),
+#endif
     T(line_simple),
     T(line_closure),
     T(line_empty),
@@ -1620,5 +1700,6 @@ ne_test tests[] = {
     T(block_timeout),
     T(socks_proxy),
     T(fail_socks),
+    T(scopes),
     T(NULL)
 };

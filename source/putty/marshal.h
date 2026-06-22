@@ -156,6 +156,16 @@ struct BinarySink {
 #define put_c_string_literal(bs, str) \
     BinarySink_put_c_string_literal(BinarySink_UPCAST(bs), str)
 
+/* More complicated function implemented in encode_utf8.c */
+#define put_utf8_char(bs, c) \
+    BinarySink_put_utf8_char(BinarySink_UPCAST(bs), c)
+
+/* More complicated functions still implemented in <platform>/unicode.c */
+#define put_mb_to_wc(bs, codepage, mbstr, mblen) \
+    BinarySink_put_mb_to_wc(BinarySink_UPCAST(bs), codepage, mbstr, mblen)
+#define put_wc_to_mb(bs, codepage, wcstr, wclen, def) \
+    BinarySink_put_wc_to_mb(BinarySink_UPCAST(bs), codepage, wcstr, wclen, def)
+
 /*
  * The underlying real C functions that implement most of those
  * macros. Generally you won't want to call these directly, because
@@ -185,6 +195,13 @@ void BinarySink_put_mp_ssh2(BinarySink *bs, mp_int *x);
 void BinarySink_put_fmt(BinarySink *, const char *fmt, ...) PRINTF_LIKE(2, 3);
 void BinarySink_put_fmtv(BinarySink *, const char *fmt, va_list ap);
 void BinarySink_put_c_string_literal(BinarySink *, ptrlen);
+void BinarySink_put_utf8_char(BinarySink *, unsigned);
+/* put_mb_to_wc / put_wc_to_mb return false if the codepage is invalid */
+bool BinarySink_put_mb_to_wc(
+    BinarySink *bs, int codepage, const char *mbstr, int mblen);
+bool BinarySink_put_wc_to_mb(
+    BinarySink *bs, int codepage, const wchar_t *wcstr, int wclen,
+    const char *defchr);
 
 /* ---------------------------------------------------------------------- */
 
@@ -353,7 +370,14 @@ struct bufchain_sink {
     bufchain *ch;
     BinarySink_IMPLEMENTATION;
 };
+struct buffer_sink {
+    char *out;
+    size_t space;
+    bool overflowed;
+    BinarySink_IMPLEMENTATION;
+};
 void stdio_sink_init(stdio_sink *sink, FILE *fp);
 void bufchain_sink_init(bufchain_sink *sink, bufchain *ch);
+void buffer_sink_init(buffer_sink *sink, void *buffer, size_t len);
 
 #endif /* PUTTY_MARSHAL_H */

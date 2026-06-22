@@ -24,9 +24,9 @@
  */
 uint32_t ossl_rand_uniform_uint32(OSSL_LIB_CTX *ctx, uint32_t upper, int *err)
 {
-    uint32_t i, f;      /* integer and fractional parts */
-    uint32_t f2, rand;  /* extra fractional part and random material */
-    uint64_t prod;      /* temporary holding double width product */
+    uint32_t i, f; /* integer and fractional parts */
+    uint32_t f2, rand; /* extra fractional part and random material */
+    uint64_t prod; /* temporary holding double width product */
     const int max_followup_iterations = 10;
     int j;
 
@@ -34,7 +34,7 @@ uint32_t ossl_rand_uniform_uint32(OSSL_LIB_CTX *ctx, uint32_t upper, int *err)
         *err = 0;
         return 0;
     }
-    if (unlikely(upper == 1))
+    if (ossl_unlikely(upper == 1))
         return 0;
 
     /* Get 32 bits of entropy */
@@ -56,7 +56,7 @@ uint32_t ossl_rand_uniform_uint32(OSSL_LIB_CTX *ctx, uint32_t upper, int *err)
     prod = (uint64_t)upper * rand;
     i = prod >> 32;
     f = prod & 0xffffffff;
-    if (likely(f <= 1 + ~upper))    /* 1+~upper == -upper but compilers whine */
+    if (ossl_likely(f <= 1 + ~upper)) /* 1+~upper == -upper but compilers whine */
         return i;
 
     /*
@@ -85,7 +85,7 @@ uint32_t ossl_rand_uniform_uint32(OSSL_LIB_CTX *ctx, uint32_t upper, int *err)
         if (f < f2)
             return i + 1;
         /* For not all 1 bits, there is no carry so return the result */
-        if (likely(f != 0xffffffff))
+        if (ossl_likely(f != 0xffffffff))
             return i;
         /* setup for the next word of randomness */
         f = prod & 0xffffffff;
@@ -99,7 +99,7 @@ uint32_t ossl_rand_uniform_uint32(OSSL_LIB_CTX *ctx, uint32_t upper, int *err)
 }
 
 uint32_t ossl_rand_range_uint32(OSSL_LIB_CTX *ctx, uint32_t lower, uint32_t upper,
-                                int *err)
+    int *err)
 {
     if (!ossl_assert(lower < upper)) {
         *err = 1;

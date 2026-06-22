@@ -15,21 +15,21 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
-/* Define to 1 if you have the `bind_textdomain_codeset' function. */
+/* Define to 1 if you have the 'bind_textdomain_codeset' function. */
 #undef HAVE_BIND_TEXTDOMAIN_CODESET
 
-/* Define to 1 if you have the `CRYPTO_set_idptr_callback' function. */
+/* Define to 1 if you have the 'CRYPTO_set_idptr_callback' function. */
 #undef HAVE_CRYPTO_SET_IDPTR_CALLBACK
 
-/* Define to 1 if you have the declaration of `h_errno', and to 0 if you
+/* Define to 1 if you have the declaration of 'h_errno', and to 0 if you
    don't. */
 #undef HAVE_DECL_H_ERRNO
 
-/* Define to 1 if you have the declaration of `stpcpy', and to 0 if you don't.
+/* Define to 1 if you have the declaration of 'stpcpy', and to 0 if you don't.
    */
 #undef HAVE_DECL_STPCPY
 
-/* Define to 1 if you have the declaration of `strerror_r', and to 0 if you
+/* Define to 1 if you have the declaration of 'strerror_r', and to 0 if you
    don't. */
 #undef HAVE_DECL_STRERROR_R
 
@@ -42,66 +42,70 @@
 /* Define if you have expat */
 #undef HAVE_EXPAT
 
-/* Define to 1 if you have the `explicit_bzero' function. */
+/* Define to 1 if you have the 'explicit_bzero' function. */
 #undef HAVE_EXPLICIT_BZERO
 
-/* Define to 1 if you have the `fcntl' function. */
+/* Define to 1 if you have the 'fcntl' function. */
 #undef HAVE_FCNTL
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 
-/* Define to 1 if you have the `fstat64' function. */
+/* Define to 1 if you have the 'fstat64' function. */
 #undef HAVE_FSTAT64
 
-/* Define to 1 if you have the `gai_strerror' function. */
+/* Define to 1 if you have the 'gai_strerror' function. */
 #undef HAVE_GAI_STRERROR
 
-/* Define to 1 if you have the `gethostname' function. */
+/* Define to 1 if you have the 'gethostname' function. */
 #undef HAVE_GETHOSTNAME
 
-/* Define to 1 if you have the `getnameinfo' function. */
+/* Define to 1 if you have the 'getnameinfo' function. */
 #undef HAVE_GETNAMEINFO
 
-/* Define to 1 if you have the `getsockopt' function. */
+/* Define to 1 if you have the 'getsockopt' function. */
 #undef HAVE_GETSOCKOPT
 
-/* Define to 1 if you have the `gettimeofday' function. */
+/* Define to 1 if you have the 'gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
 
-/* Define to 1 if you have the `gmtime_r' function. */
+/* Define to 1 if you have the 'gmtime_r' function. */
 #undef HAVE_GMTIME_R
 
 /* Define if GnuTLS support is enabled */
 #undef HAVE_GNUTLS
 
-/* Define to 1 if you have the `gnutls_certificate_get_issuer' function. */
+/* Define to 1 if you have the 'gnutls_certificate_get_issuer' function. */
 #undef HAVE_GNUTLS_CERTIFICATE_GET_ISSUER
 
-/* Define to 1 if you have the `gnutls_certificate_get_x509_cas' function. */
+/* Define to 1 if you have the 'gnutls_certificate_get_x509_cas' function. */
 #undef HAVE_GNUTLS_CERTIFICATE_GET_X509_CAS
 
-/* Define to 1 if you have the `gnutls_certificate_set_retrieve_function2'
+/* Define to 1 if you have the 'gnutls_certificate_set_retrieve_function2'
    function. */
 #undef HAVE_GNUTLS_CERTIFICATE_SET_RETRIEVE_FUNCTION2
 
-/* Define to 1 if you have the `gnutls_certificate_set_x509_system_trust'
+/* Define to 1 if you have the 'gnutls_certificate_set_x509_system_trust'
    function. */
 #undef HAVE_GNUTLS_CERTIFICATE_SET_X509_SYSTEM_TRUST
 
-/* Define to 1 if you have the `gnutls_privkey_import_ext' function. */
+/* Define to 1 if you have the 'gnutls_privkey_import_ext' function. */
 #undef HAVE_GNUTLS_PRIVKEY_IMPORT_EXT
 
-/* Define to 1 if you have the `gnutls_session_get_data2' function. */
+/* Define to 1 if you have the 'gnutls_session_get_data2' function. */
 #undef HAVE_GNUTLS_SESSION_GET_DATA2
 
-/* Define to 1 if you have the `gnutls_x509_crt_equals' function. */
+/* Define to 1 if you have the 'gnutls_set_default_priority_append' function.
+   */
+#undef HAVE_GNUTLS_SET_DEFAULT_PRIORITY_APPEND
+
+/* Define to 1 if you have the 'gnutls_x509_crt_equals' function. */
 #undef HAVE_GNUTLS_X509_CRT_EQUALS
 
-/* Define to 1 if you have the `gnutls_x509_crt_sign2' function. */
+/* Define to 1 if you have the 'gnutls_x509_crt_sign2' function. */
 #undef HAVE_GNUTLS_X509_CRT_SIGN2
 
-/* Define to 1 if you have the `gnutls_x509_dn_get_rdn_ava' function. */
+/* Define to 1 if you have the 'gnutls_x509_dn_get_rdn_ava' function. */
 #undef HAVE_GNUTLS_X509_DN_GET_RDN_AVA
 
 /* Define if GSSAPI support is enabled */
@@ -116,28 +120,34 @@
 /* Define to 1 if you have the <gssapi.h> header file. */
 #undef HAVE_GSSAPI_H
 
-/* Define to 1 if you have the `gss_init_sec_context' function. */
+/* Define to 1 if you have the 'gss_init_sec_context' function. */
 #undef HAVE_GSS_INIT_SEC_CONTEXT
 
-/* Define to 1 if you have the `hstrerror' function. */
+/* Define to 1 if you have the 'hstrerror' function. */
 #undef HAVE_HSTRERROR
 
-/* Define to 1 if you have the `iconv' function. */
+/* Define to 1 if you have the 'iconv' function. */
 #undef HAVE_ICONV
 
 /* Define to 1 if you have the <iconv.h> header file. */
 #undef HAVE_ICONV_H
 
-/* Define to 1 if you have the `inet_ntop' function. */
+/* Define to 1 if you have the 'if_indextoname' function. */
+#undef HAVE_IF_INDEXTONAME
+
+/* Define to 1 if you have the 'if_nametoindex' function. */
+#undef HAVE_IF_NAMETOINDEX
+
+/* Define to 1 if you have the 'inet_ntop' function. */
 #undef HAVE_INET_NTOP
 
-/* Define to 1 if you have the `inet_pton' function. */
+/* Define to 1 if you have the 'inet_pton' function. */
 #undef HAVE_INET_PTON
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `isatty' function. */
+/* Define to 1 if you have the 'isatty' function. */
 #undef HAVE_ISATTY
 
 /* Define to 1 if you have the <libintl.h> header file. */
@@ -161,7 +171,7 @@
 /* Define to 1 if you have the <locale.h> header file. */
 #undef HAVE_LOCALE_H
 
-/* Define to 1 if you have the `lseek64' function. */
+/* Define to 1 if you have the 'lseek64' function. */
 #undef HAVE_LSEEK64
 
 /* Define to 1 if you have the <minix/config.h> header file. */
@@ -175,6 +185,9 @@
 
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
 #undef HAVE_NETINET_TCP_H
+
+/* Define to 1 if you have the <net/if.h> header file. */
+#undef HAVE_NET_IF_H
 
 /* Define if NTLM is supported */
 #undef HAVE_NTLM
@@ -194,46 +207,46 @@
 /* Define if pakchois library supported */
 #undef HAVE_PAKCHOIS
 
-/* Define to 1 if you have the `pipe' function. */
+/* Define to 1 if you have the 'pipe' function. */
 #undef HAVE_PIPE
 
-/* Define to 1 if you have the `poll' function. */
+/* Define to 1 if you have the 'poll' function. */
 #undef HAVE_POLL
 
-/* Define to 1 if you have the `pthread_mutex_init' function. */
+/* Define to 1 if you have the 'pthread_mutex_init' function. */
 #undef HAVE_PTHREAD_MUTEX_INIT
 
-/* Define to 1 if you have the `pthread_mutex_lock' function. */
+/* Define to 1 if you have the 'pthread_mutex_lock' function. */
 #undef HAVE_PTHREAD_MUTEX_LOCK
 
-/* Define to 1 if you have the `sendmsg' function. */
+/* Define to 1 if you have the 'sendmsg' function. */
 #undef HAVE_SENDMSG
 
-/* Define to 1 if you have the `setlocale' function. */
+/* Define to 1 if you have the 'setlocale' function. */
 #undef HAVE_SETLOCALE
 
-/* Define to 1 if you have the `setsockopt' function. */
+/* Define to 1 if you have the 'setsockopt' function. */
 #undef HAVE_SETSOCKOPT
 
-/* Define to 1 if you have the `setvbuf' function. */
+/* Define to 1 if you have the 'setvbuf' function. */
 #undef HAVE_SETVBUF
 
-/* Define to 1 if you have the `shutdown' function. */
+/* Define to 1 if you have the 'shutdown' function. */
 #undef HAVE_SHUTDOWN
 
-/* Define to 1 if you have the `signal' function. */
+/* Define to 1 if you have the 'signal' function. */
 #undef HAVE_SIGNAL
 
 /* Define to 1 if you have the <signal.h> header file. */
 #undef HAVE_SIGNAL_H
 
-/* Define to 1 if you have the `snprintf' function. */
+/* Define to 1 if you have the 'snprintf' function. */
 #undef HAVE_SNPRINTF
 
-/* Define to 1 if the system has the type `socklen_t'. */
+/* Define to 1 if the system has the type 'socklen_t'. */
 #undef HAVE_SOCKLEN_T
 
-/* Define to 1 if you have the `SSL_SESSION_cmp' function. */
+/* Define to 1 if you have the 'SSL_SESSION_cmp' function. */
 #undef HAVE_SSL_SESSION_CMP
 
 /* Define to 1 if you have the <stdarg.h> header file. */
@@ -248,13 +261,13 @@
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
-/* Define to 1 if you have the `stpcpy' function. */
+/* Define to 1 if you have the 'stpcpy' function. */
 #undef HAVE_STPCPY
 
-/* Define to 1 if you have the `strcasecmp' function. */
+/* Define to 1 if you have the 'strcasecmp' function. */
 #undef HAVE_STRCASECMP
 
-/* Define if you have `strerror_r'. */
+/* Define if you have 'strerror_r'. */
 #undef HAVE_STRERROR_R
 
 /* Define to 1 if you have the <strings.h> header file. */
@@ -263,16 +276,16 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
-/* Define to 1 if you have the `strtoll' function. */
+/* Define to 1 if you have the 'strtoll' function. */
 #undef HAVE_STRTOLL
 
-/* Define to 1 if you have the `strtoq' function. */
+/* Define to 1 if you have the 'strtoq' function. */
 #undef HAVE_STRTOQ
 
-/* Define to 1 if `tm_gmtoff' is a member of `struct tm'. */
+/* Define to 1 if 'tm_gmtoff' is a member of 'struct tm'. */
 #undef HAVE_STRUCT_TM_TM_GMTOFF
 
-/* Define to 1 if `__tm_gmtoff' is a member of `struct tm'. */
+/* Define to 1 if '__tm_gmtoff' is a member of 'struct tm'. */
 #undef HAVE_STRUCT_TM___TM_GMTOFF
 
 /* Define to 1 if you have the <sys/limits.h> header file. */
@@ -311,10 +324,10 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if you have the `usleep' function. */
+/* Define to 1 if you have the 'usleep' function. */
 #undef HAVE_USLEEP
 
-/* Define to 1 if you have the `vsnprintf' function. */
+/* Define to 1 if you have the 'vsnprintf' function. */
 #undef HAVE_VSNPRINTF
 
 /* Define to 1 if you have the <wchar.h> header file. */
@@ -422,34 +435,34 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
-/* The size of `int', as computed by sizeof. */
+/* The size of 'int', as computed by sizeof. */
 #undef SIZEOF_INT
 
-/* The size of `long', as computed by sizeof. */
+/* The size of 'long', as computed by sizeof. */
 #undef SIZEOF_LONG
 
-/* The size of `long long', as computed by sizeof. */
+/* The size of 'long long', as computed by sizeof. */
 #undef SIZEOF_LONG_LONG
 
-/* The size of `off64_t', as computed by sizeof. */
+/* The size of 'off64_t', as computed by sizeof. */
 #undef SIZEOF_OFF64_T
 
-/* The size of `off_t', as computed by sizeof. */
+/* The size of 'off_t', as computed by sizeof. */
 #undef SIZEOF_OFF_T
 
-/* The size of `size_t', as computed by sizeof. */
+/* The size of 'size_t', as computed by sizeof. */
 #undef SIZEOF_SIZE_T
 
-/* The size of `ssize_t', as computed by sizeof. */
+/* The size of 'ssize_t', as computed by sizeof. */
 #undef SIZEOF_SSIZE_T
 
-/* The size of `time_t', as computed by sizeof. */
+/* The size of 'time_t', as computed by sizeof. */
 #undef SIZEOF_TIME_T
 
-/* The size of `XML_Size', as computed by sizeof. */
+/* The size of 'XML_Size', as computed by sizeof. */
 #undef SIZEOF_XML_SIZE
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
@@ -463,7 +476,7 @@
 /* Define if getaddrinfo() should be used */
 #undef USE_GETADDRINFO
 
-/* Enable extensions on AIX 3, Interix.  */
+/* Enable extensions on AIX, Interix, z/OS.  */
 #ifndef _ALL_SOURCE
 # undef _ALL_SOURCE
 #endif
@@ -524,11 +537,15 @@
 #ifndef __STDC_WANT_IEC_60559_DFP_EXT__
 # undef __STDC_WANT_IEC_60559_DFP_EXT__
 #endif
+/* Enable extensions specified by C23 Annex F.  */
+#ifndef __STDC_WANT_IEC_60559_EXT__
+# undef __STDC_WANT_IEC_60559_EXT__
+#endif
 /* Enable extensions specified by ISO/IEC TS 18661-4:2015.  */
 #ifndef __STDC_WANT_IEC_60559_FUNCS_EXT__
 # undef __STDC_WANT_IEC_60559_FUNCS_EXT__
 #endif
-/* Enable extensions specified by ISO/IEC TS 18661-3:2015.  */
+/* Enable extensions specified by C23 Annex H and ISO/IEC TS 18661-3:2015.  */
 #ifndef __STDC_WANT_IEC_60559_TYPES_EXT__
 # undef __STDC_WANT_IEC_60559_TYPES_EXT__
 #endif
@@ -566,25 +583,25 @@
 /* Always defined to enable GNU extensions */
 #undef _GNU_SOURCE
 
-/* Define to empty if `const' does not conform to ANSI C. */
+/* Define to empty if 'const' does not conform to ANSI C. */
 #undef const
 
 /* Define if in_addr_t is not available */
 #undef in_addr_t
 
-/* Define to `__inline__' or `__inline' if that's what the C compiler
+/* Define to '__inline__' or '__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
 #ifndef __cplusplus
 #undef inline
 #endif
 
-/* Define to `long int' if <sys/types.h> does not define. */
+/* Define to 'long int' if <sys/types.h> does not define. */
 #undef off_t
 
 /* Define as a signed integer type capable of holding a process identifier. */
 #undef pid_t
 
-/* Define to `unsigned int' if <sys/types.h> does not define. */
+/* Define as 'unsigned int' if <stddef.h> doesn't define. */
 #undef size_t
 
 /* Define if socklen_t is not available */

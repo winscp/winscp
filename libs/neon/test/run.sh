@@ -24,6 +24,8 @@ for f in $*; do
 	:
     else
 	RETVAL=$?
+        echo ' -->>>' "$f failed => ${RETVAL}"
+        break
     fi
 done
 

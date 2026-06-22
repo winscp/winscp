@@ -113,7 +113,9 @@ typedef enum {
 ne_inet_addr *ne_iaddr_make(ne_iaddr_type type, const unsigned char *raw);
 
 /* Compare two network address objects i1 and i2; returns zero if they
- * are equivalent or non-zero otherwise.  */
+ * are equivalent or non-zero otherwise. For an IPv6 literal, the
+ * scope is ignored by this function if set, so must be compared
+ * seperately if required. */
 int ne_iaddr_cmp(const ne_inet_addr *i1, const ne_inet_addr *i2);
 
 /* Return the type of the given network address object. */
@@ -138,6 +140,12 @@ int ne_iaddr_reverse(const ne_inet_addr *ia, char *buf, size_t bufsiz);
  * into a network address object.  Returns NULL on parse error.  If
  * non-NULL, return value must be freed using ne_iaddr_free. */
 ne_inet_addr *ne_iaddr_parse(const char *addr, ne_iaddr_type type);
+
+/* Set the scope_id for an IPv6 address from 'scope'. */
+int ne_iaddr_set_scope(ne_inet_addr *ia, const char *scope);
+
+/* Returns the scope_id for an IPv6 address. */
+char *ne_iaddr_get_scope(const ne_inet_addr *ia);
 
 /* Destroy a network address object created using ne_iaddr_make or
  * ne_iaddr_parse. */
@@ -209,7 +217,7 @@ int ne_sock_fullwritev(ne_socket *sock, const struct ne_iovec *vector,
  * At most 'len' bytes are read (including the NUL terminator).
  * Returns:
  * NE_SOCK_* on error,
- * >0 number of bytes read (including NUL terminator)
+ * >0 number of bytes read (excluding NUL terminator)
  */
 ssize_t ne_sock_readline(ne_socket *sock, char *buffer, size_t len);
 
@@ -297,6 +305,10 @@ int ne_sock_sessid(ne_socket *sock, unsigned char *buf, size_t *buflen);
  * NUL-terminated malloc-allocated string if not NULL, which must be
  * freed by the caller. */
 char *ne_sock_cipher(ne_socket *sock);
+
+/* Return the SSL/TLS protocol version used for socket 'sock', or
+ * NE_SSL_PROTO_UNSPEC if SSL/TLS is not in use for the socket. */
+enum ne_ssl_protocol ne_sock_getproto(ne_socket *sock);
 
 /* SOCKS proxy protocol version: */
 enum ne_sock_sversion {

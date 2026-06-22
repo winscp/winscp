@@ -66,11 +66,10 @@ int main(int argc, char **argv)
         goto err;
     }
 
-    fprintf(stderr, "Verification Successful\n");
+    printf("Verification Successful\n");
 
     ret = EXIT_SUCCESS;
-
- err:
+err:
     if (ret != EXIT_SUCCESS) {
         fprintf(stderr, "Error Verifying Data\n");
         ERR_print_errors_fp(stderr);

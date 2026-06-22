@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2021-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -8,7 +8,7 @@
  */
 
 #if defined(_WIN32)
-# include <windows.h>
+#include <windows.h>
 #endif
 
 #include <string.h>
@@ -37,7 +37,7 @@ static DWORD WINAPI thread_run(LPVOID arg)
 {
     void (*f)(void);
 
-    *(void **) (&f) = arg;
+    *(void **)(&f) = arg;
 
     f();
     return 0;
@@ -45,7 +45,7 @@ static DWORD WINAPI thread_run(LPVOID arg)
 
 static int run_thread(thread_t *t, void (*f)(void))
 {
-    *t = CreateThread(NULL, 0, thread_run, *(void **) &f, 0, NULL);
+    *t = CreateThread(NULL, 0, thread_run, *(void **)&f, 0, NULL);
     return *t != NULL;
 }
 
@@ -62,15 +62,16 @@ static void *thread_run(void *arg)
 {
     void (*f)(void);
 
-    *(void **) (&f) = arg;
+    *(void **)(&f) = arg;
 
     f();
+    OPENSSL_thread_stop();
     return NULL;
 }
 
 static int run_thread(thread_t *t, void (*f)(void))
 {
-    return pthread_create(t, NULL, thread_run, *(void **) &f) == 0;
+    return pthread_create(t, NULL, thread_run, *(void **)&f) == 0;
 }
 
 static int wait_for_thread(thread_t thread)
@@ -79,4 +80,3 @@ static int wait_for_thread(thread_t thread)
 }
 
 #endif
-

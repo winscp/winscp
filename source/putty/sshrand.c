@@ -93,8 +93,10 @@ void random_save_seed(void)
 
 void random_ref(void)
 {
-    if (!random_active++)
+    if (!random_active++) {
+        enable_dit(); /* just in case main() forgot */
         random_create(&ssh_sha256);
+    }
 }
 
 void random_setup_custom(const ssh_hashalg *hash)

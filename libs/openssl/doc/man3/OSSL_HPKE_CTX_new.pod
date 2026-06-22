@@ -187,11 +187,11 @@ modes> and L</Sender-authenticated HPKE Modes>.
 
 =head2 HPKE Roles
 
-HPKE contexts have a role - either sender or receiver. This is used 
+HPKE contexts have a role - either sender or receiver. This is used
 to control which functions can be called and so that senders do not
 reuse a key and nonce with different plaintexts.
 
-OSSL_HPKE_CTX_free(), OSSL_HPKE_export(), OSSL_HPKE_CTX_set1_psk(), 
+OSSL_HPKE_CTX_free(), OSSL_HPKE_export(), OSSL_HPKE_CTX_set1_psk(),
 and OSSL_HPKE_CTX_get_seq() can be called regardless of role.
 
 =over 4
@@ -199,7 +199,7 @@ and OSSL_HPKE_CTX_get_seq() can be called regardless of role.
 =item B<OSSL_HPKE_ROLE_SENDER>, 0
 
 An I<OSSL_HPKE_CTX> with this role can be used with
-OSSL_HPKE_encap(), OSSL_HPKE_seal(), OSSL_HPKE_CTX_set1_ikme() and 
+OSSL_HPKE_encap(), OSSL_HPKE_seal(), OSSL_HPKE_CTX_set1_ikme() and
 OSSL_HPKE_CTX_set1_authpriv().
 
 =item B<OSSL_HPKE_ROLE_RECEIVER>, 1
@@ -451,12 +451,12 @@ OSSL_HPKE_get_ciphertext_size() and OSSL_HPKE_get_public_encap_size().
 
 OSSL_HPKE_str2suite() maps input I<str> strings to an B<OSSL_HPKE_SUITE> object.
 The input I<str> should be a comma-separated string with a KEM,
-KDF and AEAD name in that order, for example "x25519,hkdf-sha256,aes128gcm".
+KDF and AEAD name in that order, for example "x25519,hkdf-sha256,aes-128-gcm".
 This can be used by command line tools that accept string form names for HPKE
 codepoints. Valid (case-insensitive) names are:
 "p-256", "p-384", "p-521", "x25519" and "x448" for KEM,
 "hkdf-sha256", "hkdf-sha384" and "hkdf-sha512" for KDF, and
-"aes-gcm-128", "aes-gcm-256", "chacha20-poly1305" and "exporter" for AEAD.
+"aes-128-gcm", "aes-256-gcm", "chacha20-poly1305" and "exporter" for AEAD.
 String variants of the numbers listed in L</OSSL_HPKE_SUITE Identifiers>
 can also be used.
 
@@ -566,7 +566,7 @@ This functionality described here was added in OpenSSL 3.2.
 
 =head1 COPYRIGHT
 
-Copyright 2022-2025 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2022-2026 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

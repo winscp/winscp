@@ -60,10 +60,9 @@
 	    </listitem>
 	  </varlistentry>
 	  <varlistentry>
-            <term><constant>NE_SESSFLAG_SSLv2</constant> (default on)</term>
+            <term><constant>NE_SESSFLAG_SSLv2</constant></term>
 	    <listitem>
-	      <simpara>disable this flag to disable support for the SSLv2
-	      protocol</simpara>
+	      <simpara>this flag is ignored</simpara>
 	    </listitem>
 	  </varlistentry>
 	  <varlistentry>
@@ -83,7 +82,7 @@
 	    </listitem>
 	  </varlistentry>
 	  <varlistentry>
-            <term><constant>NE_SESSFLAG_TLS_SNI</constant> (default off)</term>
+            <term><constant>NE_SESSFLAG_TLS_SNI</constant> (default on)</term>
 	    <listitem>
 	      <simpara>disable this flag if a server is used
               which does not correctly support the TLS SNI 
@@ -103,6 +102,14 @@
 	    <listitem>
 	      <simpara>enable this flag to use various workarounds to
 	      improve interoperability with SharePoint</simpara>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+            <term><constant>NE_SESSFLAG_STRICT</constant> (default on)</term>
+	    <listitem>
+	      <simpara>disable this flag to parse HTTP/1.1 messages
+	      without strict requirements introduced in RFC 7230 and
+	      later</simpara>
 	    </listitem>
 	  </varlistentry>
         </variablelist>

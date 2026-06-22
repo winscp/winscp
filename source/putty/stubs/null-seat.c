@@ -17,6 +17,7 @@ void nullseat_notify_session_started(Seat *seat) {}
 void nullseat_notify_remote_exit(Seat *seat) {}
 void nullseat_notify_remote_disconnect(Seat *seat) {}
 void nullseat_connection_fatal(Seat *seat, const char *message) {}
+void nullseat_nonfatal(Seat *seat, const char *message) {}
 void nullseat_update_specials_menu(Seat *seat) {}
 char *nullseat_get_ttymode(Seat *seat, const char *mode) { return NULL; }
 void nullseat_set_busy_status(Seat *seat, BusyStatus status) {}

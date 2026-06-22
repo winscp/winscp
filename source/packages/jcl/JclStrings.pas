@@ -653,8 +653,8 @@ uses
 
 type
   TStrRec = packed record
-    RefCount: Longint;
-    Length: Longint;
+    RefCount: Integer;
+    Length: Integer;
   end;
   PStrRec = ^TStrRec;
 

@@ -714,12 +714,57 @@ int ne_ssl_context_set_verify(ne_ssl_context *ctx, int required,
 
 void ne_ssl_context_set_flag(ne_ssl_context *ctx, int flag, int value)
 {
-    /* SSLv2 not supported. */
 }
 
 int ne_ssl_context_get_flag(ne_ssl_context *ctx, int flag)
 {
     return 0;
+}
+
+int ne_ssl_context_set_versions(ne_ssl_context *ctx, enum ne_ssl_protocol min,
+                                enum ne_ssl_protocol max)
+{
+#ifdef HAVE_GNUTLS_SET_DEFAULT_PRIORITY_APPEND
+    ne_buffer *prio;
+
+    if (min > max) return NE_SOCK_ERROR;
+
+    if (ctx->priority) {
+        ne_free(ctx->priority);
+        ctx->priority = NULL;
+    }
+
+    if (min == 0 && max == 0) {
+        return 0;
+    }
+
+    prio = ne_buffer_create();
+    ne_buffer_czappend(prio, "+VERS-ALL");
+
+    if (min > NE_SSL_PROTO_SSL_3)
+        ne_buffer_czappend(prio, ":-VERS-SSL3.0");
+    if (min > NE_SSL_PROTO_TLS_1_0)
+        ne_buffer_czappend(prio, ":-VERS-TLS1.0");
+    if (min > NE_SSL_PROTO_TLS_1_1)
+        ne_buffer_czappend(prio, ":-VERS-TLS1.1");
+    if (min > NE_SSL_PROTO_TLS_1_2)
+        ne_buffer_czappend(prio, ":-VERS-TLS1.2");
+
+    if (max && max < NE_SSL_PROTO_TLS_1_3)
+        ne_buffer_czappend(prio, ":-VERS-TLS1.3");
+    if (max && max < NE_SSL_PROTO_TLS_1_2)
+        ne_buffer_czappend(prio, ":-VERS-TLS1.2");
+    if (max && max < NE_SSL_PROTO_TLS_1_1)
+        ne_buffer_czappend(prio, ":-VERS-TLS1.1");
+    if (max && max < NE_SSL_PROTO_TLS_1_0)
+        ne_buffer_czappend(prio, ":-VERS-TLS1.0");
+
+    ctx->priority = ne_buffer_finish(prio);
+
+    return 0;
+#else
+    return NE_SOCK_ERROR;
+#endif
 }
 
 void ne_ssl_context_destroy(ne_ssl_context *ctx)
@@ -734,7 +779,8 @@ void ne_ssl_context_destroy(ne_ssl_context *ctx)
     } else if (ctx->cache.server.key.data) {
         gnutls_free(ctx->cache.server.key.data);
         gnutls_free(ctx->cache.server.data.data);
-    }    
+    }
+    if (ctx->priority) ne_free(ctx->priority);
     ne_free(ctx);
 }
 

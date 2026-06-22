@@ -358,6 +358,7 @@ end;
 procedure HookedRaiseException(ExceptionCode, ExceptionFlags, NumberOfArguments: DWORD;
   Arguments: PExceptionArguments); stdcall;
 const
+  MS_VC_EXCEPTION = $406D1388;
   cDelphiException = $0EEDFADE;
   cNonContinuable = 1;                  // Delphi exceptions
   cNonContinuableException = $C0000025; // C++Builder exceptions (sounds like a bug)
@@ -372,6 +373,7 @@ begin
     {$IFDEF CPU32}
     and (TJclAddr(Arguments) = TJclAddr(@Arguments) + SizeOf(Pointer))
     {$ENDIF CPU32}
+    and (ExceptionCode <> MS_VC_EXCEPTION) // ignore TThread.NameThreadForDebugging
     then
   begin
     DoExceptNotify(Arguments.ExceptObj, Arguments.ExceptAddr, False, GetFramePointer);
@@ -381,14 +383,21 @@ end;
 
 {$IFDEF BORLAND}
 function HookedExceptObjProc(P: PExceptionRecord): Exception;
+const
+  MS_VC_EXCEPTION = $406D1388;
 var
   NewResultExcCache: Exception; // TLS optimization
 begin
-  Result := DoExceptFilter(P);
-  DoExceptNotify(Result, P^.ExceptionAddress, True, GetFramePointer);
-  NewResultExcCache := NewResultExc;
-  if NewResultExcCache <> nil then
-    Result := NewResultExcCache;
+  if P.ExceptionCode <> MS_VC_EXCEPTION then
+  begin
+    Result := DoExceptFilter(P);
+    DoExceptNotify(Result, P^.ExceptionAddress, True, GetFramePointer);
+    NewResultExcCache := NewResultExc;
+    if NewResultExcCache <> nil then
+      Result := NewResultExcCache;
+  end
+  else
+    Result := SysUtils_ExceptObjProc(P);
 end;
 {$ENDIF BORLAND}
 

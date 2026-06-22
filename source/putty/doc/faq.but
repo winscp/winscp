@@ -1198,6 +1198,17 @@ don't advise anyone to use it in preference to our own site.
 The real PuTTY web site, run by the PuTTY team, has always been at
 \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/}\cw{https://www.chiark.greenend.org.uk/~sgtatham/putty/}.
 
+\S{faq-the}{Question} Why do the download links point to
+\cw{the.earth.li} and not chiark? Has your website been hacked?
+
+We haven't been hacked: links to \cw{the.earth.li} are legit. The
+files for released versions of PuTTY are hosted on a different server
+from the web pages, for bandwidth reasons.
+
+The download site \cw{the.earth.li} is hosted by
+\W{https://www.mythic-beasts.com/}{Mythic Beasts}, and we're very
+grateful to them!
+
 \S{faq-domain}{Question} Would you like me to register you a nicer
 domain name?
 
@@ -1297,8 +1308,7 @@ There isn't one, that we know of.
 If someone else wants to set up a mailing list or other forum for
 PuTTY users to help each other with common problems, that would be
 fine with us, though the PuTTY team would almost certainly not have the
-time to read it.  It's probably better to use one of the established
-newsgroups for this purpose (see \k{feedback-other-fora}).
+time to read it.
 
 \S{faq-donations}{Question} How can I donate to PuTTY development?
 

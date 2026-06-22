@@ -11,7 +11,7 @@
 
 <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/html/chunk.xsl"/>
 
-<xsl:variable name="html.stylesheet">../manual.css</xsl:variable>
+<xsl:variable name="html.stylesheet">manual.css</xsl:variable>
 
 <!-- for sections with id attributes, use the id in the filename.
   This produces meaningful (and persistent) URLs for the sections. -->

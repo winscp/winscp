@@ -47,8 +47,8 @@ OSSL_DECODER_INSTANCE_get_input_structure
  int OSSL_DECODER_CTX_set_input_structure(OSSL_DECODER_CTX *ctx,
                                           const char *input_structure);
  int OSSL_DECODER_CTX_add_decoder(OSSL_DECODER_CTX *ctx, OSSL_DECODER *decoder);
- int OSSL_DECODER_CTX_add_extra(OSSL_DECODER_CTX *ctx, 
-                                OSSL_LIB_CTX *libctx, 
+ int OSSL_DECODER_CTX_add_extra(OSSL_DECODER_CTX *ctx,
+                                OSSL_LIB_CTX *libctx,
                                 const char *propq);
  int OSSL_DECODER_CTX_get_num_decoders(OSSL_DECODER_CTX *ctx);
 
@@ -166,6 +166,13 @@ decode instance I<decoder_inst> that the constructor got and an object
 I<reference>, unpacks the object which it refers to, and exports it by
 creating an L<OSSL_PARAM(3)> array that it then passes to I<export_cb>,
 along with I<export_arg>.
+
+Note that functions OSSL_DECODER_CTX_set_selection(),
+OSSL_DECODER_CTX_set_output_type(), OSSL_DECODER_CTX_set_output_structure(),
+OSSL_DECODER_CTX_add_encoder(), OSSL_DECODER_CTX_add_extra(),
+OSSL_DECODER_CTX_set_construct(), OSSL_DECODER_CTX_set_construct_data(), and
+OSSL_DECODER_CTX_set_cleanup() shouldn't be used after the context is finalised,
+in particular after calling the function OSSL_DECODER_CTX_new_for_pkey().
 
 =head2 Constructor
 

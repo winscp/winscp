@@ -2,12 +2,12 @@
 .\"     Title: ne_status
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 15 April 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_STATUS" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_STATUS" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -36,27 +36,40 @@ ne_status \- HTTP status structure
 #include <ne_utils\&.h>
 
 typedef struct {
-    int major_version, minor_version;
-    int code, klass;
-    const char *reason_phrase;
+    int major_version;
+    int minor_version;
+    int code;
+    int klass;
+    char *reason_phrase;
 } ne_status;
 .fi
 .ft
 .SH "DESCRIPTION"
 .PP
-An
+The
 \fBne_status\fR
 type represents an HTTP response status; used in response messages giving a result of request\&. The
 \fImajor_version\fR
 and
 \fIminor_version\fR
-fields give the HTTP version supported by the server issuing the response\&. The
+fields give the protocol version supported by the server issuing the response\&. The
 \fIcode\fR
-field gives the status code of the result (lying between 100 and 999 inclusive), and the
+field gives the status code of the result (lying between
+100
+and
+599
+inclusive), and the
 \fIklass\fR
-field gives the class\&\s-2\u[1]\d\s+2, which is equal to the most significant digit of the status\&.
+field gives the class, which is equal to the most significant digit of the status\&. The
+\fIreason_phrase\fR
+field gives a human\-readable string describing the status, which is purely informational (and optional) \- any interpretation of the response status must be done using the
+\fIklass\fR
+and/or
+\fIcode\fR
+fields\&.
 .PP
-There are five classes of HTTP status code defined by RFC2616:
+There are five classes of response status code defined for HTTP/1\&.1 (see
+\m[blue]\fBRFC 9110 ẞ15\fR\m[]\&\s-2\u[1]\d\s+2):
 .PP
 1xx
 .RS 4
@@ -82,24 +95,27 @@ Client error: the request made was incorrect in some manner\&.
 .RS 4
 Server error
 .RE
-.SH "SEE ALSO"
-.PP
-ne_get_status\&.
-.SH "AUTHOR"
-.PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
-.SH "COPYRIGHT"
-.br
 .SH "NOTES"
-.IP " 1." 4
-the field is named
+.PP
+The
+\fIklass\fR
+field is named
 \(lqklass\(rq
 not
 \(lqclass\(rq
 so that the header can be used from a C++ program, in which
 \(lqclass\(rq
-is a reserved word)
-
+is a reserved word\&.
+.SH "SEE ALSO"
+.PP
+ne_get_status\&.
+.SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
+.br
+.SH "REFERENCES"
+.IP " 1." 4
+RFC 9110 ẞ15
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc9110#name-status-codes
+.RE

@@ -32,14 +32,14 @@ to include a \c{set} command like the one above.
 
 \H{pscp-usage} PSCP Usage
 
-Once you've got a console window to type into, you can just type
-\c{pscp} on its own to bring up a usage message.  This tells you the
+Once you've got a console window to type into, you can type
+\c{pscp -h} to bring up a usage message. This tells you the
 version of PSCP you're using, and gives you a brief summary of how to
 use PSCP:
 
-\c C:\>pscp
+\c C:\>pscp -h
 \c PuTTY Secure Copy client
-\c Release 0.81
+\c Release 0.83
 \c Usage: pscp [options] [user@]host:source target
 \c        pscp [options] source [source...] [user@]host:target
 \c        pscp [options] -ls [user@]host:filespec

@@ -141,6 +141,11 @@ int proxied_session_server(ne_session **sess, const char *scheme,
                            const char *host, unsigned int fakeport,
                            server_fn fn, void *userdata);
 
+int proxied_multi_session_server(int count, ne_session **sess,
+                                 const char *scheme, const char *host,
+                                 unsigned int fakeport,
+                                 server_fn fn, void *userdata);
+
 /* As per proxied_session_server, but uses a "fake" (direct) TCP proxy
  * rather than an HTTP proxy. */
 int fakeproxied_session_server(ne_session **sess, const char *scheme,
@@ -156,5 +161,18 @@ int fakeproxied_multi_session_server(int count,
 
 /* Read contents of file 'filename' into buffer 'buf'. */
 int file_to_buffer(const char *filename, ne_buffer *buf);
-   
+
+#define MULTI_207(x) "HTTP/1.0 207 Foo\r\nConnection: close\r\n\r\n" \
+"<?xml version='1.0'?>\r\n" \
+"<D:multistatus xmlns:D='DAV:'>" x "</D:multistatus>"
+#define RESP_207(href, x) "<D:response><D:href>" href "</D:href>" x \
+"</D:response>"
+#define PSTAT_207(x) "<D:propstat>" x "</D:propstat>"
+#define STAT_207(s) "<D:status>HTTP/1.1 " s "</D:status>"
+#define DESCR_207(d) "<D:responsedescription>" d "</D:responsedescription>"
+#define DESCR_REM "The end of the world, as we know it"
+
+#define PROPS_207(x) "<D:prop>" x "</D:prop>"
+#define APROP_207(n, c) "<D:" n ">" c "</D:" n ">"
+
 #endif /* UTILS_H */

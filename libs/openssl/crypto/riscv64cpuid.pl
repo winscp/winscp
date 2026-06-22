@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2022-2025 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -84,6 +84,23 @@ OPENSSL_cleanse:
 ___
 }
 
+{
+my ($ret) = ('a0');
+$code .= <<___;
+################################################################################
+# size_t riscv_vlen_asm(void)
+# Return VLEN (i.e. the length of a vector register in bits).
+.p2align 3
+.globl riscv_vlen_asm
+.type riscv_vlen_asm,\@function
+riscv_vlen_asm:
+    # 0xc22 is CSR vlenb
+    csrr $ret, 0xc22
+    slli $ret, $ret, 3
+    ret
+.size riscv_vlen_asm,.-riscv_vlen_asm
+___
+}
 
 print $code;
 close STDOUT or die "error closing STDOUT: $!";

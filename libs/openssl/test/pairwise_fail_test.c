@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -36,9 +36,9 @@ const OPTIONS *test_get_options(void)
     static const OPTIONS test_options[] = {
         OPT_TEST_OPTIONS_DEFAULT_USAGE,
         { "config", OPT_CONFIG_FILE, '<',
-          "The configuration file to use for the libctx" },
+            "The configuration file to use for the libctx" },
         { "pairwise", OPT_PAIRWISETEST, 's',
-          "Test keygen pairwise test failures" },
+            "Test keygen pairwise test failures" },
         { "dsaparam", OPT_DSAPARAM, 's', "DSA param file" },
         { NULL }
     };
@@ -122,6 +122,17 @@ static int test_keygen_pairwise_failure(void)
             goto err;
         if (!TEST_ptr_null(pkey))
             goto err;
+    } else if (strncmp(pairwise_name, "eddsa", 5) == 0) {
+        if (!TEST_true(setup_selftest_pairwise_failure(type)))
+            goto err;
+        if (!TEST_ptr(ctx = EVP_PKEY_CTX_new_from_name(libctx, "ED25519", NULL)))
+            goto err;
+        if (!TEST_int_eq(EVP_PKEY_keygen_init(ctx), 1))
+            goto err;
+        if (!TEST_int_le(EVP_PKEY_keygen(ctx, &pkey), 0))
+            goto err;
+        if (!TEST_ptr_null(pkey))
+            goto err;
     }
     ret = 1;
 err:
@@ -149,7 +160,7 @@ int setup_tests(void)
             dsaparam_file = opt_arg();
             break;
         case OPT_TEST_CASES:
-           break;
+            break;
         default:
         case OPT_ERR:
             return 0;

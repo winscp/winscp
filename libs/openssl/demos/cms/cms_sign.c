@@ -38,7 +38,8 @@ int main(int argc, char **argv)
 
     scert = PEM_read_bio_X509(tbio, NULL, 0, NULL);
 
-    BIO_reset(tbio);
+    if (BIO_reset(tbio) < 0)
+        goto err;
 
     skey = PEM_read_bio_PrivateKey(tbio, NULL, 0, NULL);
 
@@ -62,15 +63,17 @@ int main(int argc, char **argv)
     if (!out)
         goto err;
 
-    if (!(flags & CMS_STREAM))
-        BIO_reset(in);
+    if (!(flags & CMS_STREAM)) {
+        if (BIO_reset(in) < 0)
+            goto err;
+    }
 
     /* Write out S/MIME message */
     if (!SMIME_write_CMS(out, cms, in, flags))
         goto err;
 
     ret = EXIT_SUCCESS;
- err:
+err:
     if (ret != EXIT_SUCCESS) {
         fprintf(stderr, "Error Signing Data\n");
         ERR_print_errors_fp(stderr);

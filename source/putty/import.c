@@ -339,7 +339,7 @@ static void BinarySink_put_mp_ssh2_from_string(BinarySink *bs, ptrlen str)
 static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
                                                     const char **errmsg_p)
 {
-    struct openssh_pem_key *ret;
+    struct openssh_pem_key *key;
     char *line = NULL;
     const char *errmsg;
     char *p;
@@ -347,8 +347,8 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
     char base64_bit[4];
     int base64_chars = 0;
 
-    ret = snew(struct openssh_pem_key);
-    ret->keyblob = strbuf_new_nm();
+    key = snew(struct openssh_pem_key);
+    key->keyblob = strbuf_new_nm();
 
     if (!(line = bsgetline(src))) {
         errmsg = "unexpected end of file";
@@ -366,11 +366,11 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
      * base64.
      */
     if (!strcmp(line, "-----BEGIN RSA PRIVATE KEY-----")) {
-        ret->keytype = OP_RSA;
+        key->keytype = OP_RSA;
     } else if (!strcmp(line, "-----BEGIN DSA PRIVATE KEY-----")) {
-        ret->keytype = OP_DSA;
+        key->keytype = OP_DSA;
     } else if (!strcmp(line, "-----BEGIN EC PRIVATE KEY-----")) {
-        ret->keytype = OP_ECDSA;
+        key->keytype = OP_ECDSA;
     } else if (!strcmp(line, "-----BEGIN OPENSSH PRIVATE KEY-----")) {
         errmsg = "this is a new-style OpenSSH key";
         goto error;
@@ -382,8 +382,8 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
     sfree(line);
     line = NULL;
 
-    ret->encrypted = false;
-    memset(ret->iv, 0, sizeof(ret->iv));
+    key->encrypted = false;
+    memset(key->iv, 0, sizeof(key->iv));
 
     headers_done = false;
     while (1) {
@@ -411,15 +411,15 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
                 }
                 p += 2;
                 if (!strcmp(p, "ENCRYPTED"))
-                    ret->encrypted = true;
+                    key->encrypted = true;
             } else if (!strcmp(line, "DEK-Info")) {
                 int i, ivlen;
 
                 if (!strncmp(p, "DES-EDE3-CBC,", 13)) {
-                    ret->encryption = OP_E_3DES;
+                    key->encryption = OP_E_3DES;
                     ivlen = 8;
                 } else if (!strncmp(p, "AES-128-CBC,", 12)) {
-                    ret->encryption = OP_E_AES;
+                    key->encryption = OP_E_AES;
                     ivlen = 16;
                 } else {
                     errmsg = "unsupported cipher";
@@ -432,7 +432,7 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
                         errmsg = "expected more iv data in DEK-Info";
                         goto error;
                     }
-                    ret->iv[i] = j;
+                    key->iv[i] = j;
                     p += 2;
                 }
                 if (*p) {
@@ -459,7 +459,7 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
                         goto error;
                     }
 
-                    put_data(ret->keyblob, out, len);
+                    put_data(key->keyblob, out, len);
 
                     smemclr(out, sizeof(out));
                 }
@@ -472,12 +472,12 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
         line = NULL;
     }
 
-    if (!ret->keyblob || ret->keyblob->len == 0) {
+    if (!key->keyblob || key->keyblob->len == 0) {
         errmsg = "key body not present";
         goto error;
     }
 
-    if (ret->encrypted && ret->keyblob->len % 8 != 0) {
+    if (key->encrypted && key->keyblob->len % 8 != 0) {
         errmsg = "encrypted key blob is not a multiple of "
             "cipher block size";
         goto error;
@@ -485,7 +485,7 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
 
     smemclr(base64_bit, sizeof(base64_bit));
     if (errmsg_p) *errmsg_p = NULL;
-    return ret;
+    return key;
 
   error:
     if (line) {
@@ -494,11 +494,11 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
         line = NULL;
     }
     smemclr(base64_bit, sizeof(base64_bit));
-    if (ret) {
-        if (ret->keyblob)
-            strbuf_free(ret->keyblob);
-        smemclr(ret, sizeof(*ret));
-        sfree(ret);
+    if (key) {
+        if (key->keyblob)
+            strbuf_free(key->keyblob);
+        smemclr(key, sizeof(*key));
+        sfree(key);
     }
     if (errmsg_p) *errmsg_p = errmsg;
     return NULL;
@@ -1119,7 +1119,7 @@ struct openssh_new_key {
 static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
                                                     const char **errmsg_p)
 {
-    struct openssh_new_key *ret;
+    struct openssh_new_key *key;
     char *line = NULL;
     const char *errmsg;
     char *p;
@@ -1129,8 +1129,8 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
     ptrlen str;
     unsigned key_index;
 
-    ret = snew(struct openssh_new_key);
-    ret->keyblob = strbuf_new_nm();
+    key = snew(struct openssh_new_key);
+    key->keyblob = strbuf_new_nm();
 
     if (!(line = bsgetline(filesrc))) {
         errmsg = "unexpected end of file";
@@ -1171,7 +1171,7 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
                     goto error;
                 }
 
-                put_data(ret->keyblob, out, len);
+                put_data(key->keyblob, out, len);
 
                 smemclr(out, sizeof(out));
             }
@@ -1183,12 +1183,12 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
         line = NULL;
     }
 
-    if (ret->keyblob->len == 0) {
+    if (key->keyblob->len == 0) {
         errmsg = "key body not present";
         goto error;
     }
 
-    BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(ret->keyblob));
+    BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(key->keyblob));
 
     if (strcmp(get_asciz(src), "openssh-key-v1") != 0) {
         errmsg = "new-style OpenSSH magic number missing\n";
@@ -1198,11 +1198,11 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
     /* Cipher name */
     str = get_string(src);
     if (ptrlen_eq_string(str, "none")) {
-        ret->cipher = ON_E_NONE;
+        key->cipher = ON_E_NONE;
     } else if (ptrlen_eq_string(str, "aes256-cbc")) {
-        ret->cipher = ON_E_AES256CBC;
+        key->cipher = ON_E_AES256CBC;
     } else if (ptrlen_eq_string(str, "aes256-ctr")) {
-        ret->cipher = ON_E_AES256CTR;
+        key->cipher = ON_E_AES256CTR;
     } else {
         errmsg = get_err(src) ? "no cipher name found" :
             "unrecognised cipher name\n";
@@ -1212,9 +1212,9 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
     /* Key derivation function name */
     str = get_string(src);
     if (ptrlen_eq_string(str, "none")) {
-        ret->kdf = ON_K_NONE;
+        key->kdf = ON_K_NONE;
     } else if (ptrlen_eq_string(str, "bcrypt")) {
-        ret->kdf = ON_K_BCRYPT;
+        key->kdf = ON_K_BCRYPT;
     } else {
         errmsg = get_err(src) ? "no kdf name found" :
             "unrecognised kdf name\n";
@@ -1223,7 +1223,7 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
 
     /* KDF extra options */
     str = get_string(src);
-    switch (ret->kdf) {
+    switch (key->kdf) {
       case ON_K_NONE:
         if (str.len != 0) {
             errmsg = "expected empty options string for 'none' kdf";
@@ -1234,8 +1234,8 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
         BinarySource opts[1];
 
         BinarySource_BARE_INIT_PL(opts, str);
-        ret->kdfopts.bcrypt.salt = get_string(opts);
-        ret->kdfopts.bcrypt.rounds = get_uint32(opts);
+        key->kdfopts.bcrypt.salt = get_string(opts);
+        key->kdfopts.bcrypt.rounds = get_uint32(opts);
 
         if (get_err(opts)) {
             errmsg = "failed to parse bcrypt options string";
@@ -1257,23 +1257,23 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
      * 'key_wanted' field is set to a value in the range [0,
      * nkeys) by some mechanism.
      */
-    ret->nkeys = toint(get_uint32(src));
-    if (ret->nkeys != 1) {
+    key->nkeys = toint(get_uint32(src));
+    if (key->nkeys != 1) {
         errmsg = get_err(src) ? "no key count found" :
             "multiple keys in new-style OpenSSH key file not supported\n";
         goto error;
     }
-    ret->key_wanted = 0;
+    key->key_wanted = 0;
 
     /* Read and ignore a string per public key. */
-    for (key_index = 0; key_index < ret->nkeys; key_index++)
+    for (key_index = 0; key_index < key->nkeys; key_index++)
         str = get_string(src);
 
     /*
      * Now we expect a string containing the encrypted part of the
      * key file.
      */
-    ret->private = get_string(src);
+    key->private = get_string(src);
     if (get_err(src)) {
         errmsg = "no private key container string found\n";
         goto error;
@@ -1285,7 +1285,7 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
 
     smemclr(base64_bit, sizeof(base64_bit));
     if (errmsg_p) *errmsg_p = NULL;
-    return ret;
+    return key;
 
   error:
     if (line) {
@@ -1294,10 +1294,10 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
         line = NULL;
     }
     smemclr(base64_bit, sizeof(base64_bit));
-    if (ret) {
-        strbuf_free(ret->keyblob);
-        smemclr(ret, sizeof(*ret));
-        sfree(ret);
+    if (key) {
+        strbuf_free(key->keyblob);
+        smemclr(key, sizeof(*key));
+        sfree(key);
     }
     if (errmsg_p) *errmsg_p = errmsg;
     return NULL;
@@ -1725,7 +1725,7 @@ struct sshcom_key {
 static struct sshcom_key *load_sshcom_key(BinarySource *src,
                                           const char **errmsg_p)
 {
-    struct sshcom_key *ret;
+    struct sshcom_key *key;
     char *line = NULL;
     int hdrstart, len;
     const char *errmsg;
@@ -1734,9 +1734,9 @@ static struct sshcom_key *load_sshcom_key(BinarySource *src,
     char base64_bit[4];
     int base64_chars = 0;
 
-    ret = snew(struct sshcom_key);
-    ret->comment[0] = '\0';
-    ret->keyblob = strbuf_new_nm();
+    key = snew(struct sshcom_key);
+    key->comment[0] = '\0';
+    key->keyblob = strbuf_new_nm();
 
     if (!(line = bsgetline(src))) {
         errmsg = "unexpected end of file";
@@ -1803,8 +1803,8 @@ static struct sshcom_key *load_sshcom_key(BinarySource *src,
                     p++;
                     p[strlen(p)-1] = '\0';
                 }
-                strncpy(ret->comment, p, sizeof(ret->comment));
-                ret->comment[sizeof(ret->comment)-1] = '\0';
+                strncpy(key->comment, p, sizeof(key->comment));
+                key->comment[sizeof(key->comment)-1] = '\0';
             }
         } else {
             headers_done = true;
@@ -1824,7 +1824,7 @@ static struct sshcom_key *load_sshcom_key(BinarySource *src,
                         goto error;
                     }
 
-                    put_data(ret->keyblob, out, len);
+                    put_data(key->keyblob, out, len);
                 }
 
                 p++;
@@ -1835,13 +1835,13 @@ static struct sshcom_key *load_sshcom_key(BinarySource *src,
         line = NULL;
     }
 
-    if (ret->keyblob->len == 0) {
+    if (key->keyblob->len == 0) {
         errmsg = "key body not present";
         goto error;
     }
 
     if (errmsg_p) *errmsg_p = NULL;
-    return ret;
+    return key;
 
   error:
     if (line) {
@@ -1849,10 +1849,10 @@ static struct sshcom_key *load_sshcom_key(BinarySource *src,
         sfree(line);
         line = NULL;
     }
-    if (ret) {
-        strbuf_free(ret->keyblob);
-        smemclr(ret, sizeof(*ret));
-        sfree(ret);
+    if (key) {
+        strbuf_free(key->keyblob);
+        smemclr(key, sizeof(*key));
+        sfree(key);
     }
     if (errmsg_p) *errmsg_p = errmsg;
     return NULL;

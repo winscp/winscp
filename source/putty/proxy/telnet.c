@@ -339,7 +339,8 @@ static void proxy_telnet_process_queue(ProxyNegotiator *pn)
         put_datapl(logmsg, PTRLEN_LITERAL("Sending Telnet proxy command: "));
         put_c_string_literal(logmsg, ptrlen_from_asciz(censored_cmd));
 
-        plug_log(pn->ps->plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg->s, 0);
+        plug_log(pn->ps->plug, &pn->ps->sock, PLUGLOG_PROXY_MSG, NULL, 0,
+                 logmsg->s, 0);
         strbuf_free(logmsg);
         sfree(censored_cmd);
     }

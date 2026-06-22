@@ -63,8 +63,6 @@ EVP_CIPHER_CTX_get_block_size,
 EVP_CIPHER_CTX_get_key_length,
 EVP_CIPHER_CTX_get_iv_length,
 EVP_CIPHER_CTX_get_tag_length,
-EVP_CIPHER_CTX_get_app_data,
-EVP_CIPHER_CTX_set_app_data,
 EVP_CIPHER_CTX_flags,
 EVP_CIPHER_CTX_set_flags,
 EVP_CIPHER_CTX_clear_flags,
@@ -200,8 +198,6 @@ EVP_CIPHER_CTX_mode
  int EVP_CIPHER_CTX_get_key_length(const EVP_CIPHER_CTX *ctx);
  int EVP_CIPHER_CTX_get_iv_length(const EVP_CIPHER_CTX *ctx);
  int EVP_CIPHER_CTX_get_tag_length(const EVP_CIPHER_CTX *ctx);
- void *EVP_CIPHER_CTX_get_app_data(const EVP_CIPHER_CTX *ctx);
- void EVP_CIPHER_CTX_set_app_data(const EVP_CIPHER_CTX *ctx, void *data);
  int EVP_CIPHER_CTX_get_type(const EVP_CIPHER_CTX *ctx);
  int EVP_CIPHER_CTX_get_mode(const EVP_CIPHER_CTX *ctx);
  int EVP_CIPHER_CTX_get_num(const EVP_CIPHER_CTX *ctx);
@@ -493,7 +489,9 @@ EVP_CIPHER_free().
 
 Return the NID of a cipher when passed an B<EVP_CIPHER> or B<EVP_CIPHER_CTX>
 structure.  The actual NID value is an internal value which may not have a
-corresponding OBJECT IDENTIFIER.
+corresponding OBJECT IDENTIFIER.  NID_undef is returned in the event that the
+nid is unknown or if the cipher has not been properly initialized via a call to
+B<EVP_CipherInit>.
 
 =item EVP_CIPHER_CTX_set_flags(), EVP_CIPHER_CTX_clear_flags() and EVP_CIPHER_CTX_test_flags()
 
@@ -530,8 +528,10 @@ length to any value other than the fixed value is an error.
 =item EVP_CIPHER_get_iv_length() and EVP_CIPHER_CTX_get_iv_length()
 
 Return the IV length of a cipher when passed an B<EVP_CIPHER> or
-B<EVP_CIPHER_CTX>. It will return zero if the cipher does not use an IV.
-The constant B<EVP_MAX_IV_LENGTH> is the maximum IV length for all ciphers.
+B<EVP_CIPHER_CTX>. It will return zero if the cipher does not use an IV, if
+the cipher has not yet been initialized within the B<EVP_CIPHER_CTX>, or if the
+passed cipher is NULL.  The constant B<EVP_MAX_IV_LENGTH> is the maximum IV
+length for all ciphers.
 
 =item EVP_CIPHER_CTX_get_tag_length()
 
@@ -543,7 +543,8 @@ the tag length has not been set.
 
 Return the block size of a cipher when passed an B<EVP_CIPHER> or
 B<EVP_CIPHER_CTX> structure. The constant B<EVP_MAX_BLOCK_LENGTH> is also the
-maximum block length for all ciphers.
+maximum block length for all ciphers. A value of 0 is returned if the cipher
+has not been properly initialized with a call to B<EVP_CipherInit>.
 
 =item EVP_CIPHER_get_type() and EVP_CIPHER_CTX_get_type()
 
@@ -585,7 +586,7 @@ B<EVP_CIPHER>.
 
 Returns the B<EVP_CIPHER> structure when passed an B<EVP_CIPHER_CTX> structure.
 EVP_CIPHER_CTX_get1_cipher() is the same except the ownership is passed to
-the caller.
+the caller. Both functions return NULL on error.
 
 =item EVP_CIPHER_get_mode() and EVP_CIPHER_CTX_get_mode()
 
@@ -621,7 +622,8 @@ Sets the AlgorithmIdentifier "parameter" based on the passed cipher. This will
 typically include any parameters and an IV. The cipher IV (if any) must be set
 when this call is made. This call should be made before the cipher is actually
 "used" (before any EVP_EncryptUpdate(), EVP_DecryptUpdate() calls for example).
-This function may fail if the cipher does not have any ASN1 support.
+This function may fail if the cipher does not have any ASN1 support, or if an
+uninitialized cipher is passed to it.
 
 =item EVP_CIPHER_asn1_to_param()
 
@@ -1250,14 +1252,18 @@ return 1 for success and 0 for failure.
 EVP_DecryptInit_ex2() and EVP_DecryptUpdate() return 1 for success and 0 for failure.
 EVP_DecryptFinal_ex() returns 0 if the decrypt failed or 1 for success.
 
-EVP_CipherInit_ex2() and EVP_CipherUpdate() return 1 for success and 0 for failure.
-EVP_CipherFinal_ex() returns 0 for a decryption failure or 1 for success.
+EVP_CipherInit_ex2() and EVP_CipherUpdate() return 1 for success and 0 for
+failure.
+EVP_CipherFinal_ex() returns 0 for an encryption/decryption failure or 1 for
+success.
 
-EVP_Cipher() returns 1 on success or 0 on failure, if the flag
-B<EVP_CIPH_FLAG_CUSTOM_CIPHER> is not set for the cipher.
-EVP_Cipher() returns the number of bytes written to I<out> for encryption / decryption, or
-the number of bytes authenticated in a call specifying AAD for an AEAD cipher, if the flag
-B<EVP_CIPH_FLAG_CUSTOM_CIPHER> is set for the cipher.
+EVP_Cipher() returns 1 on success and <= 0 on failure, if the flag
+B<EVP_CIPH_FLAG_CUSTOM_CIPHER> is not set for the cipher, or if the cipher has
+not been initialized via a call to B<EVP_CipherInit_ex2>.
+EVP_Cipher() returns the number of bytes written to I<out> for
+encryption/decryption, or the number of bytes authenticated in a call specifying
+AAD for an AEAD cipher, if the flag B<EVP_CIPH_FLAG_CUSTOM_CIPHER> is set for
+the cipher.
 
 EVP_CIPHER_CTX_reset() returns 1 for success and 0 for failure.
 
@@ -1267,7 +1273,7 @@ return an B<EVP_CIPHER> structure or NULL on error.
 EVP_CIPHER_get_nid() and EVP_CIPHER_CTX_get_nid() return a NID.
 
 EVP_CIPHER_get_block_size() and EVP_CIPHER_CTX_get_block_size() return the
-block size.
+block size, or 0 on error.
 
 EVP_CIPHER_get_key_length() and EVP_CIPHER_CTX_get_key_length() return the key
 length.
@@ -1305,6 +1311,9 @@ for failure.
 EVP_CIPHER_names_do_all() returns 1 if the callback was called for all names.
 A return value of 0 means that the callback was not called for any names.
 
+EVP_CIPHER_get_params(), EVP_CIPHER_CTX_get_params() and
+EVP_CIPHER_CTX_set_params() return 1 for success and 0 for failure.
+
 =head1 CIPHER LISTING
 
 All algorithms have a fixed key length unless otherwise stated.
@@ -1328,8 +1337,13 @@ depending on the mode specified.
 
 To specify additional authenticated data (AAD), a call to EVP_CipherUpdate(),
 EVP_EncryptUpdate() or EVP_DecryptUpdate() should be made with the output
-parameter I<out> set to B<NULL>. In this case, on success, the parameter
-I<outl> is set to the number of bytes authenticated.
+parameter I<out> set to NULL. In this case, on success, the parameter
+I<outl> is set to the number of AAD bytes processed in that call
+(that is, the value of I<inl>), and does not include any plaintext
+or ciphertext bytes processed by other calls.
+
+If no AAD is used, this call can be omitted. See the mode-specific notes
+below for any exceptions.
 
 When decrypting, the return value of EVP_DecryptFinal() or EVP_CipherFinal()
 indicates whether the operation was successful. If it does not indicate success,
@@ -1802,7 +1816,7 @@ EVP_CIPHER_CTX_dup() was added in OpenSSL 3.2.
 
 =head1 COPYRIGHT
 
-Copyright 2000-2025 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2000-2026 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

@@ -53,6 +53,11 @@ uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #define SIZEu "zu"
 #endif
 
+#if !HAVE_WMEMCHR
+/* Work around lack of wmemchr in older MSVC */
+wchar_t *wmemchr(const wchar_t *s, wchar_t c, size_t n);
+#endif
+
 #if defined __GNUC__ || defined __clang__
 /*
  * On MinGW, the correct compiler format checking for vsnprintf() etc
@@ -74,6 +79,12 @@ uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #endif /* __GNUC__ */
 
 typedef struct conf_tag Conf;
+typedef struct ConfKeyInfo ConfKeyInfo;
+typedef struct ConfSaveEnumValue ConfSaveEnumValue;
+typedef struct ConfSaveEnumType ConfSaveEnumType;
+typedef struct CmdlineArgList CmdlineArgList;
+typedef struct CmdlineArg CmdlineArg;
+
 typedef struct terminal_tag Terminal;
 typedef struct term_utf8_decode term_utf8_decode;
 
@@ -91,6 +102,7 @@ typedef struct BinarySink BinarySink;
 typedef struct BinarySource BinarySource;
 typedef struct stdio_sink stdio_sink;
 typedef struct bufchain_sink bufchain_sink;
+typedef struct buffer_sink buffer_sink;
 typedef struct handle_sink handle_sink;
 
 typedef struct IdempotentCallback IdempotentCallback;
@@ -99,7 +111,7 @@ typedef struct SockAddr SockAddr;
 
 typedef struct Socket Socket;
 typedef struct Plug Plug;
-typedef struct SocketPeerInfo SocketPeerInfo;
+typedef struct SocketEndpointInfo SocketEndpointInfo;
 typedef struct DeferredSocketOpener DeferredSocketOpener;
 typedef struct DeferredSocketOpenerVtable DeferredSocketOpenerVtable;
 
@@ -113,6 +125,11 @@ typedef struct Ldisc_tag Ldisc;
 typedef struct LogContext LogContext;
 typedef struct LogPolicy LogPolicy;
 typedef struct LogPolicyVtable LogPolicyVtable;
+
+typedef struct TermLineEditor TermLineEditor;
+typedef struct TermLineEditorCallbackReceiver TermLineEditorCallbackReceiver;
+typedef struct TermLineEditorCallbackReceiverVtable
+    TermLineEditorCallbackReceiverVtable;
 
 typedef struct Seat Seat;
 typedef struct SeatVtable SeatVtable;
@@ -175,10 +192,13 @@ typedef struct ssh2_ciphers ssh2_ciphers;
 typedef struct dh_ctx dh_ctx;
 typedef struct ecdh_key ecdh_key;
 typedef struct ecdh_keyalg ecdh_keyalg;
+typedef struct pq_kemalg pq_kemalg;
+typedef struct pq_kem_dk pq_kem_dk;
 typedef struct NTRUKeyPair NTRUKeyPair;
 typedef struct NTRUEncodeSchedule NTRUEncodeSchedule;
 typedef struct RFC6979 RFC6979;
 typedef struct RFC6979Result RFC6979Result;
+typedef struct ShakeXOF ShakeXOF;
 
 typedef struct dlgparam dlgparam;
 typedef struct dlgcontrol dlgcontrol;

@@ -156,7 +156,7 @@ bool ssh2_connection_parse_global_request(
 PktOut *ssh2_portfwd_chanopen(
     struct ssh2_connection_state *s, struct ssh2_channel *c,
     const char *hostname, int port,
-    const char *description, const SocketPeerInfo *peerinfo)
+    const char *description, const SocketEndpointInfo *peerinfo)
 {
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
     PktOut *pktout;
@@ -321,7 +321,7 @@ SshChannel *ssh2_session_open(ConnectionLayer *cl, Channel *chan)
 }
 
 SshChannel *ssh2_serverside_x11_open(
-    ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi)
+    ConnectionLayer *cl, Channel *chan, const SocketEndpointInfo *pi)
 {
     unreachable("Should never be called in the client");
 }

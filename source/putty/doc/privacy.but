@@ -1,0 +1,246 @@
+\A{privacy} PuTTY privacy considerations
+
+This appendix lists the implications of using PuTTY for your privacy
+and personal data.
+
+The short summary: PuTTY never \q{phones home} to us, the developers.
+It does store data on your own computer, and it does transmit data
+over the network, but in both cases, only as necessary to do its job.
+In particular, data is only transmitted over the network to the server
+you told PuTTY to connect to.
+
+But if you're concerned about exactly \e{what} information is stored
+or transmitted, then here's a more detailed description.
+
+\H{privacy-local}Information that PuTTY stores locally
+
+When you use PuTTY, it stores a small amount of information on your
+computer, necessary for doing its own job. This information is stored
+in the user account of the user who runs PuTTY, so it is under your
+control: you can view it, change it, or delete it.
+
+If you need to delete all of this data, you can use the \c{-cleanup}
+command-line option, as described in \k{using-cleanup}.
+
+PuTTY does not transmit your saved session data to any other site.
+However, you may need to be aware of the fact that it is stored on
+\e{your} computer. (For example, somebody else accessing your computer
+might be able to find a list of sites you have connected to, if you
+have saved details of them.)
+
+\S{privacy-hostkeys} Host key cache
+
+If you use the SSH protocol, then PuTTY stores a list of the SSH
+servers you have connected to, together with their host keys.
+
+This is known as the \q{host key cache}. It is used to detect network
+attacks, by notifying you if a server you've connected to before
+doesn't look like the same one you thought it was. (See \k{gs-hostkey}
+for a basic introduction to host keys.)
+
+The host key cache is optional. An entry is only saved in the host key
+cache if you select the \q{Accept} action at one of the PuTTY suite's
+host key verification prompts. So if you want to make an SSH
+connection without PuTTY saving any trace of where you connected to,
+you can press \q{Connect Once} instead of \q{Accept}, which does not
+store the host key in the cache.
+
+However, if you do this, PuTTY can't automatically detect the host key
+changing in the future, so you should check the key fingerprint
+yourself every time you connect. \s{This is vitally important.} If you
+don't let PuTTY cache host keys \e{and} don't check them yourself,
+then it becomes easy for an attacker to interpose a listener between
+you and the server you're connecting to. The entire cryptographic
+system of SSH depends on making sure the host key is right.
+
+The host key cache is only used by SSH. No other protocol supported
+by PuTTY has any analogue of it.
+
+\S{privacy-savedsessions} Saved sessions
+
+After you set up PuTTY's configuration for a particular network
+connection, you can choose to save it as a \q{saved session}, so that
+you can make the same connection again later without having to
+re-enter all the details.
+
+PuTTY will not do this unless you use the \q{Save} button in its
+configuration box. It never saves session configuration automatically.
+
+So if you want to make an SSH connection without leaving any trace of
+where you connected to, you should not make a saved session for that
+connection. Instead, re-enter the details by hand every time you do
+it.
+
+\S{privacy-jumplist} Jump list
+
+On Windows, the operating system provides a feature called a \q{jump
+list}. This is a menu that pops up from an application's icon in the
+Windows taskbar, and the application can configure entries that appear
+in it. Applications typically include menu items to re-launch recently
+used documents or configurations.
+
+PuTTY updates its jump list whenever a saved session is loaded, either
+to launch it immediately or to load it within the configuration dialog
+box. So if you have a collection of saved sessions, the jump list will
+contain a record of which ones you have recently used.
+
+An exception is that saved sessions are not included in the jump list
+if they are not \q{launchable}, meaning that they actually specify a
+host name or serial port to connect to. A non-launchable session can
+specify all the other configuration details (such as fonts, window
+size, keyboard setup, SSH features, etc), but leave out the hostname.
+
+If you want to avoid leaving any evidence of having made a particular
+connection, then make the connection without creating a launchable
+saved session for it: either make no saved session at all, or create a
+non-launchable one which sets up every detail \e{except} the
+destination host name. Then it won't appear in the jump list.
+
+(The saved session itself would also be evidence, of course, as
+discussed in the previous section.)
+
+\S{privacy-logfiles} Log files
+
+PuTTY can be configured to save a log file of your entire session to
+the computer you run it on. By default it does not do so: the content
+of your session is not saved.
+
+See \k{config-logging} for details of the logging features. Some
+logging modes store only output sent by the server and printed in
+PuTTY's terminal window. Other more thorough modes also store your
+input that PuTTY sends \e{to} the server.
+
+If the logging feature is enabled, then by default, PuTTY will avoid
+saving data in the log file that it knows to be sensitive, such as
+passwords. However, it cannot reliably identify \e{all} passwords. If
+you use a password for your initial login to an SSH server, PuTTY
+knows that is a password, and will omit it from the log file. But if
+after login you type a password into an application on the server,
+then PuTTY will not know that \e{that} is a password, so it will
+appear in the log file, if PuTTY is writing a type that includes
+keyboard input.
+
+PuTTY can also be configured to include all passwords in its log
+files, even the ones it would normally leave out. This is intended for
+debugging purposes, for example if a server is refusing your password
+and you need to check whether the password is being sent correctly. We
+do not recommend enabling this option routinely.
+
+\S{privacy-randomseed} Random seed file
+
+PuTTY stores a small file of random bytes under the name
+\cq{putty.rnd}, which is reloaded the next time it is run and used to
+seed its random number generator. These bytes are meaningless and
+random, and do not contain an encrypted version of anything.
+
+\H{privacy-network} Sending information over the network
+
+PuTTY is a communications tool. Its \e{purpose} is to connect to
+another computer, over a network or a serial port, and send
+information. However it only makes the network connections that its
+configuration instructs it to.
+
+\S{privacy-nophonehome} PuTTY only connects to the specified destination host
+
+No PuTTY tool will \q{phone home} to any site under the control of us
+(the development team), or to any other site apart from the
+destination host or proxy host in its configuration, and any DNS
+server that is needed to look up the IP addresses corresponding to
+those host names.
+
+No information about your network sessions, and no information from
+the computer you run PuTTY on, is collected or recorded by the PuTTY
+developers.
+
+Information you provide to PuTTY (via keyboard input, the command
+line, or files loaded by the file transfer tools) is sent to the
+server that PuTTY's configuration tells it to connect to. It is not
+sent anywhere else.
+
+\S{privacy-whatdata} What data is sent to the destination host
+
+When you log in to a server, PuTTY will send your username. If you use
+a password to authenticate to the server, PuTTY will send it that
+password as well.
+
+(Therefore, the server is told what your password is during login.
+This means that if you use the same password on two servers, the
+administrator of one could find out your password and log in to your
+account on the other.)
+
+If you use an SSH private key to authenticate, PuTTY will send the
+\e{public} key, but not the private key. If you typed a passphrase to
+decrypt the private key, PuTTY will not send the passphrase either.
+
+(Therefore, it is safer to use the same \e{public key} to authenticate
+to two SSH servers. Neither server gains the ability to impersonate
+you to the other server. However, if the server maintainers talked to
+each other, they would at least be able to find out that your accounts
+on the two machines were owned by the same person, if they didn't
+already know.)
+
+When PuTTY prompts for a private key passphrase, a small copy of the
+PuTTY icon appears to the left of the prompt, to indicate that the
+prompt was genuinely from PuTTY. (We call this a \q{trust sigil}.)
+That icon never appears next to text sent from the server. So if a
+server tries to mimic that prompt to trick you into telling it your
+private key passphrase, it won't be able to fake that trust sigil, and
+you can tell the difference.
+
+If you're running Pageant, and you haven't configured a specific
+public key to authenticate to this server, then PuTTY will try all the
+keys in Pageant one after the other, sending each public key to the
+server to see if it's acceptable. This can lead to the server finding
+out about other public keys you own. However, if you configure PuTTY
+to use a specific public key, then it will ignore all the other keys
+in Pageant.
+
+Once you have logged in, keystrokes you type in the PuTTY terminal
+window, and data you paste in with the mouse, are sent to the
+destination host. That is PuTTY's primary job.
+
+The server can request PuTTY to send details of mouse movements in the
+terminal window, in order to implement mouse-controlled user
+interfaces on the server. If you consider this to be a privacy
+intrusion, you can turn off that terminal feature in the Features
+configuration panel (\q{Disable xterm-style mouse reporting}, as
+described in \k{config-features-mouse}).
+
+\H{privacy-config} Configuration
+
+The operation of a PuTTY network tool is controlled by its
+configuration. This configuration is obtained from:
+
+\b the command line used to run the tool
+
+\b settings configured in the GUI before opening a network session
+
+\b optionally, the contents of a saved session, if the command line
+or a GUI action instructed PuTTY to load one
+
+\b the special saved session called \q{Default Settings}, which
+applies if no other saved session is loaded
+
+\b defaults built in to PuTTY itself.
+
+The defaults built in to PuTTY do not tell it to save log files, or
+specify the name of any network site to connect to.
+
+However, if PuTTY has been installed for you by somebody else, such as
+an organisation, then that organisation may have provided their own
+default configuration. In that situation you may wish to check that
+the defaults they have set are compatible with your privacy needs. For
+example, an organisation providing your PuTTY configuration might
+configure PuTTY to save log files of your sessions, even though
+PuTTY's own default is not to do so.
+
+\H{privacy-modified} Modified versions of PuTTY
+
+PuTTY is free software. Its source code is available, so anyone can
+make a modified version of it. The modified version can behave
+differently from the original in any way it likes.
+
+This list of privacy considerations only applies to the original
+version of PuTTY, as distributed by its development team. We cannot
+make any promises about the behaviour of modified versions distributed
+by other people.

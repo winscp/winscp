@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2011-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -20,62 +20,62 @@
 
 #ifndef OPENSSL_NO_SRTP
 
-static SRTP_PROTECTION_PROFILE srtp_known_profiles[] = {
+static const SRTP_PROTECTION_PROFILE srtp_known_profiles[] = {
     {
-     "SRTP_AES128_CM_SHA1_80",
-     SRTP_AES128_CM_SHA1_80,
-     },
+        "SRTP_AES128_CM_SHA1_80",
+        SRTP_AES128_CM_SHA1_80,
+    },
     {
-     "SRTP_AES128_CM_SHA1_32",
-     SRTP_AES128_CM_SHA1_32,
-     },
+        "SRTP_AES128_CM_SHA1_32",
+        SRTP_AES128_CM_SHA1_32,
+    },
     {
-     "SRTP_AEAD_AES_128_GCM",
-     SRTP_AEAD_AES_128_GCM,
-     },
+        "SRTP_AEAD_AES_128_GCM",
+        SRTP_AEAD_AES_128_GCM,
+    },
     {
-     "SRTP_AEAD_AES_256_GCM",
-     SRTP_AEAD_AES_256_GCM,
-     },
+        "SRTP_AEAD_AES_256_GCM",
+        SRTP_AEAD_AES_256_GCM,
+    },
     {
-     "SRTP_DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM",
-     SRTP_DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM,
-     },
+        "SRTP_DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM",
+        SRTP_DOUBLE_AEAD_AES_128_GCM_AEAD_AES_128_GCM,
+    },
     {
-     "SRTP_DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM",
-     SRTP_DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM,
-     },
+        "SRTP_DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM",
+        SRTP_DOUBLE_AEAD_AES_256_GCM_AEAD_AES_256_GCM,
+    },
     {
-     "SRTP_ARIA_128_CTR_HMAC_SHA1_80",
-     SRTP_ARIA_128_CTR_HMAC_SHA1_80,
-     },
+        "SRTP_ARIA_128_CTR_HMAC_SHA1_80",
+        SRTP_ARIA_128_CTR_HMAC_SHA1_80,
+    },
     {
-     "SRTP_ARIA_128_CTR_HMAC_SHA1_32",
-     SRTP_ARIA_128_CTR_HMAC_SHA1_32,
-     },
+        "SRTP_ARIA_128_CTR_HMAC_SHA1_32",
+        SRTP_ARIA_128_CTR_HMAC_SHA1_32,
+    },
     {
-     "SRTP_ARIA_256_CTR_HMAC_SHA1_80",
-     SRTP_ARIA_256_CTR_HMAC_SHA1_80,
-     },
+        "SRTP_ARIA_256_CTR_HMAC_SHA1_80",
+        SRTP_ARIA_256_CTR_HMAC_SHA1_80,
+    },
     {
-     "SRTP_ARIA_256_CTR_HMAC_SHA1_32",
-     SRTP_ARIA_256_CTR_HMAC_SHA1_32,
-     },
+        "SRTP_ARIA_256_CTR_HMAC_SHA1_32",
+        SRTP_ARIA_256_CTR_HMAC_SHA1_32,
+    },
     {
-     "SRTP_AEAD_ARIA_128_GCM",
-     SRTP_AEAD_ARIA_128_GCM,
-     },
+        "SRTP_AEAD_ARIA_128_GCM",
+        SRTP_AEAD_ARIA_128_GCM,
+    },
     {
-     "SRTP_AEAD_ARIA_256_GCM",
-     SRTP_AEAD_ARIA_256_GCM,
-     },
-    {0}
+        "SRTP_AEAD_ARIA_256_GCM",
+        SRTP_AEAD_ARIA_256_GCM,
+    },
+    { 0 }
 };
 
 static int find_profile_by_name(char *profile_name,
-                                SRTP_PROTECTION_PROFILE **pptr, size_t len)
+    const SRTP_PROTECTION_PROFILE **pptr, size_t len)
 {
-    SRTP_PROTECTION_PROFILE *p;
+    const SRTP_PROTECTION_PROFILE *p;
 
     p = srtp_known_profiles;
     while (p->name) {
@@ -92,13 +92,13 @@ static int find_profile_by_name(char *profile_name,
 }
 
 static int ssl_ctx_make_profiles(const char *profiles_string,
-                                 STACK_OF(SRTP_PROTECTION_PROFILE) **out)
+    STACK_OF(SRTP_PROTECTION_PROFILE) **out)
 {
     STACK_OF(SRTP_PROTECTION_PROFILE) *profiles;
 
     char *col;
     char *ptr = (char *)profiles_string;
-    SRTP_PROTECTION_PROFILE *p;
+    const SRTP_PROTECTION_PROFILE *p;
 
     if ((profiles = sk_SRTP_PROTECTION_PROFILE_new_null()) == NULL) {
         ERR_raise(ERR_LIB_SSL, SSL_R_SRTP_COULD_NOT_ALLOCATE_PROFILES);
@@ -108,14 +108,16 @@ static int ssl_ctx_make_profiles(const char *profiles_string,
     do {
         col = strchr(ptr, ':');
 
-        if (!find_profile_by_name(ptr, &p, col ? (size_t)(col - ptr)
-                                               : strlen(ptr))) {
-            if (sk_SRTP_PROTECTION_PROFILE_find(profiles, p) >= 0) {
+        if (!find_profile_by_name(ptr, &p, col ? (size_t)(col - ptr) : strlen(ptr))) {
+            if (sk_SRTP_PROTECTION_PROFILE_find(profiles,
+                    (SRTP_PROTECTION_PROFILE *)p)
+                >= 0) {
                 ERR_raise(ERR_LIB_SSL, SSL_R_BAD_SRTP_PROTECTION_PROFILE_LIST);
                 goto err;
             }
 
-            if (!sk_SRTP_PROTECTION_PROFILE_push(profiles, p)) {
+            if (!sk_SRTP_PROTECTION_PROFILE_push(profiles,
+                    (SRTP_PROTECTION_PROFILE *)p)) {
                 ERR_raise(ERR_LIB_SSL, SSL_R_SRTP_COULD_NOT_ALLOCATE_PROFILES);
                 goto err;
             }
@@ -133,7 +135,7 @@ static int ssl_ctx_make_profiles(const char *profiles_string,
     *out = profiles;
 
     return 0;
- err:
+err:
     sk_SRTP_PROTECTION_PROFILE_free(profiles);
     return 1;
 }

@@ -2,12 +2,12 @@
 .\"     Title: ne_ssl_trust_cert
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 15 April 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_SSL_TRUST_CERT" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_SSL_TRUST_CERT" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -70,16 +70,16 @@ if (cert) {
 .if n \{\
 .RE
 .\}
+.SH "HISTORY"
+.PP
+\fBne_ssl_trust_default_ca\fR
+is not safe to call for non\-SSL sessions versions of neon before 0\&.33\&.0\&. In 0\&.33\&.0 and later, this function is a no\-op for non\-SSL sessinos\&.
 .SH "SEE ALSO"
 .PP
 ne_ssl_cert_read,
 ne_ssl_cert_import,
 ne_ssl_cert_free
-.SH "AUTHOR"
-.PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
 .SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
 .br

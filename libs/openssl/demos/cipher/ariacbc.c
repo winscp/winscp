@@ -27,8 +27,22 @@ static const unsigned char cbc_key[] = {
 
 /* Unique initialisation vector */
 static const unsigned char cbc_iv[] = {
-    0x99, 0xaa, 0x3e, 0x68, 0xed, 0x81, 0x73, 0xa0, 0xee, 0xd0, 0x66, 0x84,
-    0x99, 0xaa, 0x3e, 0x68,
+    0x99,
+    0xaa,
+    0x3e,
+    0x68,
+    0xed,
+    0x81,
+    0x73,
+    0xa0,
+    0xee,
+    0xd0,
+    0x66,
+    0x84,
+    0x99,
+    0xaa,
+    0x3e,
+    0x68,
 };
 
 /* Example plaintext to encrypt */
@@ -58,9 +72,7 @@ int aria_cbc_encrypt(void)
     EVP_CIPHER_CTX *ctx;
     EVP_CIPHER *cipher = NULL;
     int outlen, tmplen;
-    size_t cbc_ivlen = sizeof(cbc_iv);
     unsigned char outbuf[1024];
-    unsigned char outtag[16];
 
     printf("ARIA CBC Encrypt:\n");
     printf("Plaintext:\n");
@@ -115,8 +127,7 @@ int aria_cbc_decrypt(void)
     int ret = 0;
     EVP_CIPHER_CTX *ctx;
     EVP_CIPHER *cipher = NULL;
-    int outlen, tmplen, rv;
-    size_t cbc_ivlen = sizeof(cbc_iv);
+    int outlen, tmplen;
     unsigned char outbuf[1024];
 
     printf("ARIA CBC Decrypt:\n");

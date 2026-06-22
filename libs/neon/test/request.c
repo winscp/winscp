@@ -1,6 +1,6 @@
 /* 
    HTTP request handling tests
-   Copyright (C) 2001-2010, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2001-2024, Joe Orton <joe@manyfish.co.uk>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -72,6 +72,10 @@ static int finish_request(void)
 
 #define RESP200 "HTTP/1.1 200 OK\r\n" "Server: neon-test-server\r\n"
 #define TE_CHUNKED "Transfer-Encoding: chunked\r\n"
+#define CHUNK(len, data) #len "\r\n" data "\r\n"
+#define ABCDE_CHUNKS CHUNK(1, "a") CHUNK(1, "b") \
+ CHUNK(1, "c") CHUNK(1, "d") \
+ CHUNK(1, "e") CHUNK(0, "")
 
 /* takes response body chunks and appends them to a buffer. */
 static int collector(void *ud, const char *data, size_t len)
@@ -124,6 +128,9 @@ static int expect_header_value(const char *name, const char *value,
     const char *gotval;
 
     CALL(make_session(&sess, fn, userdata));
+
+    NE_DEBUG(NE_DBG_HTTP, "[test] Testing for expected header [%s] / [%s]\n",
+             name, value);
 
     req = ne_request_create(sess, "FOO", "/bar");
     ONREQ(ne_request_dispatch(req));
@@ -215,35 +222,30 @@ static int reason_phrase(void)
     return OK;    
 }
 
-static int single_get_eof(void)
+#if 0
+/* This feature was added then remoevd, it potentially wasn't safe
+ * since the location string wasn't cleaned or checked to be a valid
+ * URI. */
+static int redirect_error(void)
 {
-    return expect_response("a", single_serve_string, 
-			   RESP200
-			   "Connection: close\r\n"
-			   "\r\n"
-			   "a");
-}
+    ne_session *sess;
 
-static int single_get_clength(void)
-{
-    return expect_response("a", single_serve_string,
-			   RESP200
-			   "Content-Length: \t\t 1 \t\t\r\n"
-			   "\r\n"
-			   "a"
-			   "bbbbbbbbasdasd");
-}
+    CALL(make_session(&sess, single_serve_string,
+                      "HTTP/1.1 301 Moved Permanently\r\n"
+                      "Location: http://example.com/redirected\r\n"
+		      "Connection: close\r\n\r\n"));
+    ONREQ(any_request(sess, "/foo"));
+    ne_close_connection(sess);
+    CALL(await_server());
 
-static int single_get_chunked(void) 
-{
-    return expect_response("a", single_serve_string,
-			   RESP200 TE_CHUNKED
-			   "\r\n"
-			   "1\r\n"
-			   "a\r\n"
-			   "0\r\n" "\r\n"
-			   "g;lkjalskdjalksjd");
+    ONV(strcmp(ne_get_error(sess), "Redirected to http://example.com/redirected"),
+	("error mismatch: got `%s' not redirect location",
+	 ne_get_error(sess)));
+
+    ne_session_destroy(sess);
+    return OK;
 }
+#endif
 
 static int no_body_304(void)
 {
@@ -261,81 +263,6 @@ static int no_body_HEAD(void)
 {
     return expect_no_body("HEAD", "HTTP/1.1 200 OK\r\n"
 			  "Content-Length: 5\r\n\r\n");
-}
-
-static int no_headers(void)
-{
-    return expect_response("abcde", single_serve_string,
-			   "HTTP/1.1 200 OK\r\n\r\n"
-			   "abcde");
-}
-
-#define CHUNK(len, data) #len "\r\n" data "\r\n"
-
-#define ABCDE_CHUNKS CHUNK(1, "a") CHUNK(1, "b") \
- CHUNK(1, "c") CHUNK(1, "d") \
- CHUNK(1, "e") CHUNK(0, "")
-
-static int chunks(void)
-{
-    /* lots of little chunks. */
-    return expect_response("abcde", single_serve_string,
-			   RESP200 TE_CHUNKED
-			   "\r\n"
-			   ABCDE_CHUNKS);
-}
-
-static int te_header(void)
-{
-    return expect_response("abcde", single_serve_string,
-			   RESP200 "Transfer-Encoding: CHUNKED\r\n"
-			   "\r\n" ABCDE_CHUNKS);
-}
-
-static int te_identity(void)
-{
-    /* http://bugzilla.gnome.org/show_bug.cgi?id=310636 says privoxy
-     * uses the "identity" transfer-coding. */
-    return expect_response("abcde", single_serve_string,
-			   RESP200 "Transfer-Encoding: identity\r\n"
-                           "Content-Length: 5\r\n"
-			   "\r\n"
-                           "abcde");
-}
-
-static int chunk_numeric(void)
-{    
-    /* leading zero's */
-    return expect_response("0123456789abcdef", single_serve_string,
-			   RESP200 TE_CHUNKED
-			   "\r\n"
-			   "000000010\r\n" "0123456789abcdef\r\n"
-			   "000000000\r\n" "\r\n");
-}
-
-static int chunk_extensions(void)
-{
-    /* chunk-extensions. */
-    return expect_response("0123456789abcdef", single_serve_string,
-			   RESP200 TE_CHUNKED
-			   "\r\n"
-			   "000000010; foo=bar; norm=fish\r\n" 
-			   "0123456789abcdef\r\n"
-			   "000000000\r\n" "\r\n");
-}
-
-static int chunk_trailers(void)
-{
-    /* trailers. */
-    return expect_response("abcde", single_serve_string,
-			   RESP200 TE_CHUNKED
-			   "\r\n"
-			   "00000005; foo=bar; norm=fish\r\n" 
-			   "abcde\r\n"
-			   "000000000\r\n" 
-			   "X-Hello: world\r\n"
-			   "X-Another: header\r\n"
-			   "\r\n");
 }
 
 static int chunk_oversize(void)
@@ -362,27 +289,6 @@ static int chunk_oversize(void)
     ne_free(body);
 
     return OK;
-}
-
-static int te_over_clength(void)
-{   
-    /* T-E dominates over C-L. */
-    return expect_response("abcde", single_serve_string,
-			   RESP200 TE_CHUNKED
-			   "Content-Length: 300\r\n" 
-			   "\r\n"
-			   ABCDE_CHUNKS);
-}
-
-/* te_over_clength with the headers the other way round; check for
- * ordering problems. */
-static int te_over_clength2(void)
-{   
-    return expect_response("abcde", single_serve_string,
-			   RESP200 "Content-Length: 300\r\n" 
-			   TE_CHUNKED
-			   "\r\n"
-			   ABCDE_CHUNKS);
 }
 
 /* obscure case which is possibly a valid request by 2616, but should
@@ -669,10 +575,52 @@ static int response_bodies(void)
         server_fn fn;
         const char *response;
     } ts[] = {
+        { "a", single_serve_string, RESP200 "Connection: close\r\n" "\r\n" "a" },
+        { "a", single_serve_string, RESP200 "Content-Length: \t\t 1 \t\t\r\n"
+          "\r\n" "a" "bbbbbbbbasdasd" },
+        { "a", single_serve_string, RESP200 TE_CHUNKED "\r\n"
+			   "1\r\n" "a\r\n"
+			   "0\r\n" "\r\n"
+          "g;lkjalskdjalksjd" },
+        { "abcde", single_serve_string, "HTTP/1.1 200 OK\r\n\r\n" "abcde" }, /* no headers */
         { "abcde", single_serve_string, RESP200 "Stupid Header\r\n" "ReallyStupidHeader\r\n"
           "Content-Length: 5\r\n" "\r\n" "abcde" },
         { "abcde", single_serve_string, RESP200 "Content-Length: \r\n   5\r\n" "\r\n" "abcde" },
         { "abcde", single_serve_string, RESP200 "Content-Length: \r\n \r\n \r\n \r\n  5\r\n" "\r\n" "abcde" },
+        /* chunk tests */
+        { "abcde", single_serve_string, RESP200 TE_CHUNKED "\r\n" ABCDE_CHUNKS },
+        { "abcde", single_serve_string, RESP200 "Transfer-Encoding: CHUNKED\r\n" "\r\n" ABCDE_CHUNKS },
+        /* http://bugzilla.gnome.org/show_bug.cgi?id=310636 says privoxy
+         * uses the "identity" transfer-coding. */
+        { "abcde", single_serve_string, RESP200 "Transfer-Encoding: identity\r\n" "Content-Length: 5\r\n"
+          "\r\n" "abcde" },
+        /* leading zero's */
+        { "0123456789abcdef", single_serve_string, RESP200 TE_CHUNKED "\r\n"
+          "000000010\r\n" "0123456789abcdef\r\n"
+          "000000000\r\n" "\r\n" },
+        /* chunk-extensions. */
+        { "0123456789abcdef", single_serve_string, RESP200 TE_CHUNKED "\r\n"
+          "000000010; foo=bar; norm=fish\r\n"
+          "0123456789abcdef\r\n"
+          "000000000\r\n" "\r\n" },
+        { "0123456789abcdef", single_serve_string, RESP200 TE_CHUNKED "\r\n"
+          "10 \t ; foo=bar\r\n"
+          "0123456789abcdef\r\n"
+          "000000000\r\n" "\r\n" },
+            /* trailers. */
+        { "abcde", single_serve_string, RESP200 TE_CHUNKED "\r\n"
+          "00000005; foo=bar; norm=fish\r\n"
+          "abcde\r\n"
+          "000000000\r\n"
+          "X-Hello: world\r\n"
+          "X-Another: header\r\n"
+          "\r\n" },
+        /* T-E dominates over C-L. */
+        { "abcde", single_serve_string, RESP200 TE_CHUNKED
+          "Content-Length: 300\r\n"
+          "\r\n" ABCDE_CHUNKS },
+        { "abcde", single_serve_string, RESP200 "Content-Length: 300\r\n"
+          TE_CHUNKED "\r\n" ABCDE_CHUNKS },
         { NULL, NULL, NULL }
     };
     unsigned n;
@@ -694,7 +642,7 @@ static int response_headers(void)
         { "ranDom-HEader", "", single_serve_string,      RESP200 "RANDom-HeADEr:\r\n" NO_BODY },
         { "ranDom-HEader", "noddy", single_serve_string, RESP200 "RANDom-HeADEr: noddy\r\n" NO_BODY },
         { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr:    fishy\r\n" NO_BODY },
-        { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr \t :    fishy\r\n" NO_BODY},
+        { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr: \t    fishy\r\n" NO_BODY},
         { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr: fishy  \r\n" NO_BODY },
         { "ranDom-HEader", "geezer", single_serve_string, RESP200 "RANDom-HeADEr: \t \tgeezer\r\n" NO_BODY },
         { "gONe", "fishing", single_serve_string,
@@ -723,6 +671,15 @@ static int response_headers(void)
         { "X-Trailer", "fooish, barish", single_serve_string,
           RESP200 TE_CHUNKED "X-Trailer: fooish\r\n\r\n"
           CHUNK(6, "foobar") "0\r\nX-Trailer: barish\r\n\r\n" },
+        /* Test that bare LFs are treated as a spaces. */
+        { "X-Test", "just plain spaces", single_serve_string,
+          RESP200 "X-Test: just\rplain\rspaces\r\n" NO_BODY },
+        /* Invalid vs valid header names */
+        { "Content\"Length", NULL, single_serve_string,
+          RESP200 "Content\"Length: foobar\r\n" NO_BODY },
+        { "Content!Length", "foobar", single_serve_string,
+          RESP200 "Content!Length: foobar\r\n" NO_BODY },
+
         { NULL, NULL, NULL, NULL }
     };
     unsigned n;
@@ -965,7 +922,7 @@ static int want_body(ne_socket *sock, void *userdata)
     CALL(discard_request(sock));
     ONN("request has c-l header", clength == 0);
     
-    ONN("request length", clength != (int)b->size);
+    ONN("request length", clength != b->size);
     
     NE_DEBUG(NE_DBG_HTTP, 
 	     "reading body of %" NE_FMT_SIZE_T " bytes...\n", b->size);
@@ -1502,6 +1459,8 @@ static int fail_long_header(void)
     return invalid_response_gives_error(resp, "Line too long");
 }
 
+#define VALID_ABCDE "abcde\r\n" CHUNK(0, "")
+
 static int fail_on_invalid(void)
 {
     static const struct {
@@ -1519,8 +1478,27 @@ static int fail_on_invalid(void)
         /* chunk with CR then notLF */
         { RESP200 TE_CHUNKED "\r\n" "5\r\n" "abcde\rZZZ",
           "delimiter was invalid" },
+        /* chunk with CR then notLF */
+        { RESP200 TE_CHUNKED "\r\n" "5\r\n" "abcde\r\r\n",
+          "delimiter was invalid" },
+        /* chunk with non-hex character */
+        { RESP200 TE_CHUNKED "\r\n" "5Z\r\n" "abcde",
+          "Could not parse chunk size" },
         /* chunk size overflow */
         { RESP200 TE_CHUNKED "\r\n" "800000000\r\n" "abcde\r\n",
+          "Could not parse chunk size" },
+        { RESP200 TE_CHUNKED "\r\n" "-8000\r\n" "abcde\r\n",
+          "Could not parse chunk size" },
+        { RESP200 TE_CHUNKED "\r\n" "0x5\r\n" VALID_ABCDE,
+          "Could not parse chunk size" },
+        { RESP200 TE_CHUNKED "\r\n" "+5\r\n" VALID_ABCDE,
+          "Could not parse chunk size" },
+        { RESP200 TE_CHUNKED "\r\n" "5 5\r\n" VALID_ABCDE,
+          "Could not parse chunk size" },
+        /* LF rather than CRLF in chunk-size is invalid. */
+        { RESP200 TE_CHUNKED "\r\n" "5\n" VALID_ABCDE,
+          "Invalid chunk-size line" },
+        { RESP200 TE_CHUNKED "\r\n" ";5\r\n" VALID_ABCDE,
           "Could not parse chunk size" },
         /* EOF at chunk size */
         { RESP200 TE_CHUNKED "\r\n", "Could not read chunk size" },
@@ -1542,12 +1520,22 @@ static int fail_on_invalid(void)
           "\r\n" "abcde",
           "Invalid Content-Length" },
         
+        /* incompatible HTTP-version */
+        { "HTTP/2.0 200 OK\r\n"
+          "Content-Length: 0\r\n\r\n",
+          "Incompatible HTTP version" },
+        { "HTTP/0.9 200 OK\r\n"
+          "Content-Length: 0\r\n\r\n",
+          "Incompatible HTTP version" },
+
         { NULL, NULL }
     };
-    int n;
+    unsigned n;
 
-    for (n = 0; ts[n].resp; n++)
+    for (n = 0; ts[n].resp; n++) {
+        NE_DEBUG(NE_DBG_HTTP, "-- fail_on_invalid - test %u\n", n);
         CALL(invalid_response_gives_error(ts[n].resp, ts[n].error));
+    }
 
     return OK;
 }
@@ -2175,15 +2163,15 @@ static int serve_mirror(ne_socket *sock, void *userdata)
 
     CALL(discard_request(sock));
 
-    ONV(clength == 0 || (size_t)clength > sizeof buffer, 
-        ("C-L out of bounds: %d", clength));
+    ONV(clength == 0 || clength > sizeof buffer,
+        ("C-L out of bounds: %lu", clength));
 
     ONV(ne_sock_fullread(sock, buffer, clength),
         ("read failed: %s", ne_sock_error(sock)));
     
     ne_snprintf(response, sizeof response,
                 "HTTP/1.0 200 OK\r\n"
-                "Content-Length: %d\r\n"
+                "Content-Length: %lu\r\n"
                 "\r\n", clength);
 
     ONN("send response header failed",
@@ -2290,9 +2278,10 @@ static int serve_check_reqline(ne_socket *sock, void *userdata)
 
     NE_DEBUG(NE_DBG_HTTP, "child: got request-line %s\n", buffer);
 
-    ONCMPN(expect, buffer, "request-line", "check for absolute URI");
-
-    return single_serve_string(sock, RESP200 "Connection: close\r\n\r\n");
+    if (strcmp(expect, buffer) != 0)
+        return single_serve_string(sock, "HTTP/1.1 400 Bad Request-Line\r\n" EMPTY_RESP);
+    else
+        return single_serve_string(sock, RESP200 "Connection: close\r\n\r\n");
 }
 
 /* Test that various request target forms are allowed. */
@@ -2314,7 +2303,7 @@ static int target_forms(void)
 
         CALL(make_session(&sess, serve_check_reqline, (void *)ts[n].reqline));
 
-        ONREQ(any_request(sess, ts[n].uri));
+        ONREQ(any_2xx_request(sess, ts[n].uri));
 
         CALL(destroy_and_wait(sess));
     }
@@ -2444,36 +2433,67 @@ static int ipv6_literal(void)
     ne_session *sess;
 
     CALL(fakeproxied_session_server(&sess, "http", V6_EXAMPLE_HOST,
-                                    80, serve_v6_check,
-                                    RESP200 "Content-Length: 2\r\n"
-                                    "ok"));
+                                    80, serve_v6_check, NULL));
 
     CALL(any_2xx_request(sess, "/ipv6ish"));
 
     return destroy_and_wait(sess);
 }
 
+static int targets(void)
+{
+    struct {
+        const char *scheme;
+        const char *host;
+        int port;
+        const char *method;
+        const char *target;
+        const char *expected;
+    } ts[] = {
+        { "http", "example.com", 80, "GET", "/fish", "http://example.com/fish" },
+        { "http", "example.com", 8080, "GET", "/fish", "http://example.com:8080/fish" },
+        { "https", "example.com", 443, "GET", "/", "https://example.com/" },
+        { "http", "proxy.example.com", 80, "GET", "ftp://example.com/fishfood", "ftp://example.com/fishfood" },
+        { "https", "example.com", 443, "OPTIONS", "*", "https://example.com" },
+        { NULL }
+    };
+    unsigned n;
+
+    for (n = 0; ts[n].scheme != NULL; n++ ) {
+        const ne_uri *uri, *uri2;
+        ne_session *sess;
+        ne_request *req;
+        char *actual;
+
+        sess = ne_session_create(ts[n].scheme, ts[n].host, ts[n].port);
+        req = ne_request_create(sess, ts[n].method, ts[n].target);
+        uri = ne_get_request_target(req);
+        uri2 = ne_get_request_target(req);
+        actual = uri ? ne_uri_unparse(uri) : NULL;
+
+        ONCMP(ts[n].expected, actual, "request target", "URI");
+
+        ONN("caching failed, different rv on second call", uri != uri2);
+
+        if (actual) ne_free(actual);
+
+        ne_request_destroy(req);
+        ne_session_destroy(sess);
+    }
+
+    return OK;
+}
+
 /* TODO: test that ne_set_notifier(, NULL, NULL) DTRT too. */
 
 ne_test tests[] = {
     T(lookup_localhost),
-    T(single_get_clength),
-    T(single_get_eof),
-    T(single_get_chunked),
+    T(response_bodies),
     T(no_body_204),
     T(no_body_304),
     T(no_body_HEAD),
-    T(no_headers),
-    T(chunks),
-    T(te_header),
-    T(te_identity),
     T(reason_phrase),
-    T(chunk_numeric),
-    T(chunk_extensions),
-    T(chunk_trailers),
     T(chunk_oversize),
-    T(te_over_clength),
-    T(te_over_clength2),
     T(no_body_chunks),
     T(persist_http11),
     T(persist_chunked),
@@ -2486,7 +2506,6 @@ ne_test tests[] = {
     T(closed_connection),
     T(close_not_retried),
     T(send_progress),
-    T(response_bodies),
     T(response_headers),
     T(reset_headers),
     T(iterate_none),
@@ -2540,5 +2559,9 @@ ne_test tests[] = {
     T(retry_408),
     T(dont_retry_408),
     T(ipv6_literal),
+#if 0
+    T(redirect_error),
+#endif
+    T(targets),
     T(NULL)
 };

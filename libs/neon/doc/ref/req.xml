@@ -22,7 +22,7 @@
 	    <funcdef>ne_request *<function>ne_request_create</function></funcdef>
 	    <paramdef>ne_session *<parameter>session</parameter></paramdef>
 	    <paramdef>const char *<parameter>method</parameter></paramdef>
-	    <paramdef>const char *<parameter>path</parameter></paramdef>
+	    <paramdef>const char *<parameter>target</parameter></paramdef>
 	  </funcprototype>
 
 	  <funcprototype>
@@ -42,28 +42,31 @@
 	<title>Description</title>
 
 	<para>The <type>ne_request</type> object represents an HTTP
-        request and the associated response.
-        The <function>ne_request_create</function> function creates a
-        new request object for the
-        given <parameter>session</parameter>.  The target resource for
-        the request is identified by the <parameter>path</parameter>,
-        and the method to be performed on that resource via
-        the <parameter>method</parameter> parameter.</para>
+	request and the associated response.  The
+	<function>ne_request_create</function> function creates a new
+	request object for the given <parameter>session</parameter>.
+	The target resource for the request is identified by the
+	<parameter>target</parameter>, parameter, and the method to be
+	performed on that resource via the
+	<parameter>method</parameter> parameter.</para>
 
-<para>The <parameter>path</parameter> string used must conform to the
-<literal>abs_path</literal> definition given in RFC2396, with an
-optional "?query" part, and must be URI-escaped by the caller (for
-instance, using <function>ne_path_escape</function>).  If the string
-comes from an untrusted source, failure to perform URI-escaping
-results in a security vulnerability.</para>
+<para>The <parameter>target</parameter> string used must conform to
+the <literal>request-target</literal> definition given in <ulink
+url="https://www.rfc-editor.org/rfc/rfc9112">RFC 9112</ulink>. Usually
+this will take the <literal>abolute-path</literal> form, which
+optionally includes a query string.</para>
 
-	<para>To dispatch a request, and process the response, the
+	<para>To <emphasis>dispatch</emphasis> a request, and process the response, the
 <function>ne_request_dispatch</function> function can be used.  An
 alternative is to use the (more complex, but more flexible)
 combination of the <function>ne_begin_request</function>,
 <function>ne_end_request</function>, and
 <function>ne_read_response_block</function> functions; see
-<function>ne_begin_request</function>.</para>
+<function>ne_begin_request</function>. <emphasis>Dispatching</emphasis> a request may require
+multiple iterations of a request being sent and response received, for example
+if authentication is used (see <xref linkend="ne_set_server_auth"/>), or if a persistent
+connection times out; this is handled internally by <function>ne_request_dispatch</function>.</para>
+
 
 	<para>To add extra headers in the request, the functions <xref
 linkend="ne_add_request_header"/> and <xref
@@ -87,10 +90,12 @@ any processing of the response headers and message body.</para>
         the resources associated with it.  Any subsequent use of the
 	request object produces undefined behaviour.</para>
 
-        <para>For a request with a non-idempotent method such
+        <para>Request methods are assumed to be <ulink
+        url="https://www.rfc-editor.org/rfc/rfc9110.html#name-idempotent-methods">idempotent</ulink>
+        by default. For a request using a non-idempotent method such
         as <literal>POST</literal>, the
-        <literal>NE_REQFLAG_IDEMPOTENT</literal> flag should be
-        disabled; see <xref linkend="ne_set_request_flag"/>.</para>
+        <literal>NE_REQFLAG_IDEMPOTENT</literal> flag must be
+        disabled using <xref linkend="ne_set_request_flag"/>.</para>
 
       </refsect1>
 
@@ -106,7 +111,22 @@ non-zero error code otherwise.</para>
 
       </refsect1>
 
-<!-- TODO: abs_path description in a NOTES section -->
+      <refsect1>
+	<title>Notes</title>
+
+	<para>The <parameter>path</parameter>,
+	<parameter>method</parameter> and
+	<parameter>target</parameter> parameters of
+	<function>ne_request_create</function> are used directly in
+	request data without validation, so must not be taken from
+	untrusted sources. For example, allowing insertion of
+	unescaped CR, LF or other control characters in these
+	parameters may result in unexpected or insecure behaviour.</para>
+
+        <para>&neon; does not impose any length restrictions on
+        request input data.</para>
+
+      </refsect1>
 
       <refsect1>
 	<title>Errors</title>

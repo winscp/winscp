@@ -2,12 +2,12 @@
 .\"     Title: ne_set_session_flag
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 15 April 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_SET_SESSION_FLAG" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_SET_SESSION_FLAG" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -60,9 +60,9 @@ disable this flag to prevent use of persistent connections
 enable this flag to enable support for non\-HTTP ShoutCast\-style "ICY" responses
 .RE
 .PP
-\fBNE_SESSFLAG_SSLv2\fR (default on)
+\fBNE_SESSFLAG_SSLv2\fR
 .RS 4
-disable this flag to disable support for the SSLv2 protocol
+this flag is ignored
 .RE
 .PP
 \fBNE_SESSFLAG_RFC4918\fR (default off)
@@ -75,7 +75,7 @@ enable this flag to enable support for RFC4918\-only WebDAV features; losing bac
 enable this flag if an RFC\-violating connection\-based HTTP authentication scheme is in use
 .RE
 .PP
-\fBNE_SESSFLAG_TLS_SNI\fR (default off)
+\fBNE_SESSFLAG_TLS_SNI\fR (default on)
 .RS 4
 disable this flag if a server is used which does not correctly support the TLS SNI extension
 .RE
@@ -91,6 +91,11 @@ for new requests
 .RS 4
 enable this flag to use various workarounds to improve interoperability with SharePoint
 .RE
+.PP
+\fBNE_SESSFLAG_STRICT\fR (default on)
+.RS 4
+disable this flag to parse HTTP/1\&.1 messages without strict requirements introduced in RFC 7230 and later
+.RE
 .SH "RETURN VALUE"
 .PP
 The
@@ -100,11 +105,7 @@ function returns zero if a flag is disabled, less than zero if the flag is not s
 .PP
 ne_session_create,
 ne_set_request_flag\&.
-.SH "AUTHOR"
-.PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
 .SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
 .br

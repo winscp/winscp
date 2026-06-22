@@ -33,7 +33,7 @@ static const PacketProtocolLayerVtable ssh2_connection_vtable = {
 
 static SshChannel *ssh2_lportfwd_open(
     ConnectionLayer *cl, const char *hostname, int port,
-    const char *description, const SocketPeerInfo *pi, Channel *chan);
+    const char *description, const SocketEndpointInfo *pi, Channel *chan);
 static struct X11FakeAuth *ssh2_add_x11_display(
     ConnectionLayer *cl, int authtype, struct X11Display *x11disp);
 static struct X11FakeAuth *ssh2_add_sharing_x11_display(
@@ -1461,7 +1461,7 @@ static void ssh2channel_hint_channel_is_simple(SshChannel *sc)
 
 static SshChannel *ssh2_lportfwd_open(
     ConnectionLayer *cl, const char *hostname, int port,
-    const char *description, const SocketPeerInfo *pi, Channel *chan)
+    const char *description, const SocketEndpointInfo *pi, Channel *chan)
 {
     struct ssh2_connection_state *s =
         container_of(cl, struct ssh2_connection_state, cl);

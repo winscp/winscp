@@ -1129,6 +1129,22 @@ resourcestring
   RsCompressionSquashFSExtensions    = '*.squashfs';
   RsCompressionCramFSName            = 'CramFS archive';
   RsCompressionCramFSExtensions      = '*.cramfs';
+  RsCompressionExtName               = 'Ext filesystem archive';
+  RsCompressionExtExtensions         = '*.ext;*.ext2;*.ext3;*.ext4;*.img';
+  RsCompressionVMDKName              = 'Virtual Machine Disk archive';
+  RsCompressionVMDKExtensions        = '*.vmdk';
+  RsCompressionVDIName               = 'Virtual Disk Image archive';
+  RsCompressionVDIExtensions         = '*.vdi';
+  RsCompressionQcowName              = 'QEMU Copy On Write archive';
+  RsCompressionQcowExtensions        = '*.qcow;*.qcow2;*.qcow2c';
+  RsCompressionGPTName               = 'GUID Partition Table archive';
+  RsCompressionGPTExtensions         = '*.gpt;*.mbr';
+  RsCompressionRar5Name              = 'RAR v5 archive';
+  RsCompressionRar5Extensions        = '*.rar;*.r00';
+  RsCompressionIHexName              = 'IHex archive';
+  RsCompressionIHexExtensions        = '*.ihex';
+  RsCompressionHxsName               = 'Help 2.0 archive';
+  RsCompressionHxsExtensions         = '*.hxs;*.hxi;*.hxr;*.hxq;*.hxw;*.lit';
   RsCompressionDuplicate             = 'The file %s already exists in the archive';
   RsCompressionReplaceError          = 'At least one compression volume could not be replaced after an archive out-of-place update';
 
@@ -1197,10 +1213,10 @@ resourcestring
   RsCannotCreateDir = 'Unable to create directory';
   RsDelTreePathIsEmpty = 'DelTree: Path is empty';
   RsFileSearchAttrInconsistency = 'Some file search attributes are required AND rejected!';
-  RsEWindowsVersionNotSupported = 'This windows version is not supported';
+  RsEWindowsVersionNotSupported = 'This Windows version is not supported';
   RsEWindowNotValid = 'The window with handle %d is not valid';
   RsEProcessNotValid = 'The process with ID %d is not valid';
-  RsEModuleNotValid = 'The Module with handle %d is not valid';
+  RsEModuleNotValid = 'The module with handle %d is not valid';
 
   // TJclFileVersionInfo
   RsFileUtilsNoVersionInfo = 'File contains no version information';
@@ -1942,6 +1958,10 @@ resourcestring
   RsOSVersionWinServer2012R2    = 'Windows Server 2012 R2';
   RsOSVersionWin10              = 'Windows 10';
   RsOSVersionWinServer2016      = 'Windows Server 2016';
+  RsOSVersionWinServer2019      = 'Windows Server 2019';
+  RsOSVersionWinServer2022      = 'Windows Server 2022';
+  RsOSVersionWinServer          = 'Windows Server';
+  RsOSVersionWin11              = 'Windows 11';
 
   RsEditionWinXPHome            = 'Home Edition';
   RsEditionWinXPPro             = 'Professional';
@@ -1988,8 +2008,8 @@ resourcestring
   RsProductTypeEnterprise       = 'Enterprise';
   RsProductTypeWebEdition       = 'Web Edition';
 
-  RsEOpenGLInfo = 'GetOpenGLVersion: %s failed';
-  RsENetWkstaGetInfo = 'NetWkstaGetInfo failed';
+  RsEOpenGLInfo                 = 'GetOpenGLVersion: %s failed';
+  RsENetWkstaGetInfo            = 'NetWkstaGetInfo failed';
 
   {$IFDEF MSWINDOWS}
   RsSPInfo = 'SP%u';

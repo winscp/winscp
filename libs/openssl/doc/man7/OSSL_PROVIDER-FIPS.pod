@@ -337,6 +337,8 @@ The FIPS module passes the following descriptions(s) to OSSL_SELF_TEST_onbegin()
 
 =item "ECDSA" (B<OSSL_SELF_TEST_DESC_PCT_ECDSA>)
 
+=item "EDDSA" (B<OSSL_SELF_TEST_DESC_PCT_EDDSA>)
+
 =item "DSA" (B<OSSL_SELF_TEST_DESC_PCT_DSA>)
 
 Key generation tests used with the "Pairwise_Consistency_Test" type.
@@ -407,7 +409,7 @@ Key Derivation Function tests used with the "KAT_KDF" type.
 
 DRBG tests used with the "DRBG" type.
 
-= item "RNG" (B<OSSL_SELF_TEST_DESC_RNG>)
+=item "RNG" (B<OSSL_SELF_TEST_DESC_RNG>)
 
 "Continuous_RNG_Test" uses this.
 

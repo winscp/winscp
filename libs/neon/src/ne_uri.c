@@ -94,6 +94,9 @@
 /* any characters which should be path-escaped: */
 #define URI_ESCAPE ((URI_GENDELIM & ~(FS)) | URI_SUBDELIM | OT | PC)
 
+/* Maximum allowed port number. */
+#define MAX_PORT (65535)
+
 static const unsigned short uri_chars[256] = {
 /* 0xXX    x0      x2      x4      x6      x8      xA      xC      xE     */
 /*   0x */ OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT,
@@ -198,6 +201,9 @@ int ne_uri_parse(const char *uri, ne_uri *parsed)
         if (s[0] == '[') {
             p = s + 1;
 
+            /* This allows any characters in IP-literal which is too
+             * broad, however e.g. zone identifiers per RFC 6874 are
+             * allowed through. */
             while (*p != ']' && p < pa)
                 p++;
 
@@ -206,34 +212,41 @@ int ne_uri_parse(const char *uri, ne_uri *parsed)
                 return -1;
             }
 
-            p++; /* => p = colon */
+            p++; /* => p = [ ':' port ] */
         } else {
-            /* Find the colon. */
+            /* Find any colon before reaching path-abempty. */
             p = s;
             while (*p != ':' && p < pa)
                 p++;
         }
-        /* => p = colon */
+        /* => p = [ ":" port ] */
 
         parsed->host = ne_strndup(s, p - s);
 
-        if (p != pa && p + 1 != pa) {
-            p++;
+        /* Iff p and pa (=> path-abempty) differ, the optional port
+         * section is present and parsed here: */
+        if (p != pa) {
+            unsigned int port = 0;
 
-            s = p;
-            /* => s = port */
+            if (*p++ != ':') return -1;
 
-            while (p < pa) {
-                if (!(uri_lookup(*p) & URI_DIGIT))
-                    return -1;
+            /* => p = port */
 
-                p++;
-            }
+            /* port = *DIGIT
+             *
+             * Note: port can be the empty string, in which case now:
+             * p == pa and port is parsed as 0, as desired. */
+            while (p < pa && port <= MAX_PORT && (uri_lookup(*p) & URI_DIGIT) != 0)
+                port = 10*port + *p++-'0';
 
-            parsed->port = atoi(s);
+            /* If p did not reach pa there was some non-digit present
+             * or the integer was too large, so fail. */
+            if (p != pa || port > MAX_PORT) return -1;
+
+            parsed->port = port;
         }
         
-        s = pa;
+        s = pa; /* Next, parse path-abempty */
     }
 
     /* => s = path-abempty / path-absolute / path-rootless

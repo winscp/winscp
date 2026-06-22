@@ -326,4 +326,76 @@ static void shake256_reset(ssh_hash *hash)
         HASHALG_NAMES_BARE("SHAKE" #param),                     \
     }
 
-DEFINE_SHAKE(256, 114);
+DEFINE_SHAKE(256, 114);                /* used by Ed448 */
+DEFINE_SHAKE(256, 32);                 /* used by ML-KEM */
+
+struct ShakeXOF {
+    keccak_state state;
+    unsigned char *buf;
+    size_t bytes_per_transform, pos;
+};
+
+static ShakeXOF *shake_xof_from_input(unsigned bits, ptrlen data)
+{
+    ShakeXOF *sx = snew_plus(ShakeXOF, 200 * 64);
+    sx->buf = snew_plus_get_aux(sx);
+
+    /* Initialise as if we were generating 0 bytes of hash. That way,
+     * keccak_output will do the final accumulation but generate no data. */
+    keccak_shake_init(&sx->state, bits, 0);
+    keccak_accumulate(&sx->state, data.ptr, data.len);
+    keccak_output(&sx->state, NULL);
+
+    sx->bytes_per_transform = 200 - bits/4;
+    sx->pos = 0;
+
+    return sx;
+}
+
+ShakeXOF *shake128_xof_from_input(ptrlen data)
+{
+    return shake_xof_from_input(128, data);
+}
+
+ShakeXOF *shake256_xof_from_input(ptrlen data)
+{
+    return shake_xof_from_input(256, data);
+}
+
+void shake_xof_read(ShakeXOF *sx, void *output_v, size_t size)
+{
+    unsigned char *output = (unsigned char *)output_v;
+
+    while (size > 0) {
+        if (sx->pos == 0) {
+            /* Copy the 64-bit words from the Keccak state into the
+             * output buffer of bytes */
+            for (unsigned y = 0; y < 5; y++)
+                for (unsigned x = 0; x < 5; x++)
+                    PUT_64BIT_LSB_FIRST(sx->buf + 8 * (5*y+x),
+                                        sx->state.A[x][y]);
+        }
+
+        /* Read a chunk from the byte buffer */
+        size_t this_size = sx->bytes_per_transform - sx->pos;
+        if (this_size > size)
+            this_size = size;
+        memcpy(output, sx->buf + sx->pos, this_size);
+        sx->pos += this_size;
+        output += this_size;
+        size -= this_size;
+
+        /* Retransform the Keccak state if we've run out of data */
+        if (sx->pos >= sx->bytes_per_transform) {
+            keccak_transform(sx->state.A);
+            sx->pos = 0;
+        }
+    }
+}
+
+void shake_xof_free(ShakeXOF *sx)
+{
+    smemclr(sx->buf, 200 * 64);
+    smemclr(sx, sizeof(*sx));
+    sfree(sx);
+}

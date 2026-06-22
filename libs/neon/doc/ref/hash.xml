@@ -105,4 +105,10 @@
 
       </refsect1>
 
+      <refsect1>
+	<title>History</title>
+
+        <para><function>ne_strhash</function> and <function>ne_vstrhash</function> is
+        available in &neon; 0.32.0 and later.</para>
+      </refsect1>
     </refentry>

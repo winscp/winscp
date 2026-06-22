@@ -369,13 +369,15 @@ static int do_request(ne_session *sess, const char *path, int depth,
 #define LOCK_MODPARENT (0x01)
 /* Enable SharePoint hacks. */
 #define LOCK_SHAREPOINT (0x02)
+/* Use a MOVE request. */
+#define LOCK_MOVE (0x04)
 
 /* Tests If: header submission, for a lock of depth 'lockdepth' at
  * 'lockpath', with a request to 'reqpath' which Depth header of
  * 'reqdepth'.  'flags' is bitwise-or of LOCK_* flags above. */
-static int submit_test(const char *lockpath, int lockdepth,
-		       const char *reqpath, int reqdepth,
-		       unsigned int flags)
+static int submit_test2(const char *lockpath, int lockdepth,
+                        const char *path1, const char *path2,
+                        int reqdepth, unsigned int flags)
 {
     ne_lock_store *store = ne_lockstore_create();
     ne_session *sess;
@@ -403,7 +405,13 @@ static int submit_test(const char *lockpath, int lockdepth,
     ne_lockstore_register(store, sess);
     ne_lockstore_add(store, lk);
 
-    ret = do_request(sess, reqpath, reqdepth, flags & LOCK_MODPARENT);
+    if (flags & LOCK_MOVE) {
+        ret = ne_move(sess, 0, path1, path2);
+        if (ret)
+            t_context("MOVE failed: %s", ne_get_error(sess));
+    }
+    else
+        ret = do_request(sess, path1, reqdepth, flags & LOCK_MODPARENT);
     CALL(await_server());
 
     ne_lockstore_destroy(store);
@@ -411,6 +419,19 @@ static int submit_test(const char *lockpath, int lockdepth,
 
     return ret;
 }
+
+/* Tests If: header submission, for a lock of depth 'lockdepth' at
+ * 'lockpath', with a request to 'reqpath' which Depth header of
+ * 'reqdepth'.  'flags' is bitwise-or of LOCK_* flags above. */
+static int submit_test(const char *lockpath, int lockdepth,
+                        const char *reqpath, int reqdepth,
+                        unsigned int flags)
+{
+    return submit_test2(lockpath, lockdepth,
+                        reqpath, NULL, reqdepth,
+                        flags);
+}
+
 
 static int if_simple(void)
 {
@@ -446,6 +467,11 @@ static int if_sharepoint(void)
 {
     return submit_test("/foo-sharepoint", 0, "/foo-sharepoint", 0,
                        LOCK_SHAREPOINT);
+}
+
+static int if_movefrom(void)
+{
+    return submit_test2("/from", 0, "/from/here.txt", "/to", 0, LOCK_MOVE);
 }
 
 static int serve_discovery(ne_socket *sock, void *userdata)
@@ -703,6 +729,7 @@ ne_test tests[] = {
     T(if_child),
     T(if_covered_child),
     T(if_sharepoint),
+    T(if_movefrom),
     T(lock_timeout),
     T(lock_long_timeout),
     T(lock_shared),

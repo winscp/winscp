@@ -385,6 +385,12 @@ if (defined env($local_config_envname)) {
     }
 }
 
+# Fail if no configuration is apparent
+if (!%table) {
+    print "Failed to find any os/compiler configurations. Please make sure the Configurations directory is included.\n";
+    &usage;
+}
+
 # Save away perl command information
 $config{perl_cmd} = $^X;
 $config{perl_version} = $Config{version};
@@ -485,6 +491,7 @@ my @disablables = (
     "posix-io",
     "psk",
     "quic",
+    "unstable-qlog",
     "rc2",
     "rc4",
     "rc5",
@@ -591,7 +598,7 @@ our %disabled = ( # "what"         => "comment"
 my @disable_cascades = (
     # "what"            => [ "cascade", ... ]
     "bulk"              => [ "shared", "dso",
-                             "aria", "async", "autoload-config",
+                             "aria", "async", "atexit", "autoload-config",
                              "blake2", "bf", "camellia", "cast", "chacha",
                              "cmac", "cms", "cmp", "comp", "ct",
                              "des", "dgram", "dh", "dsa",
@@ -626,6 +633,7 @@ my @disable_cascades = (
     sub { 0 == scalar grep { !$disabled{$_} } @tls }
                         => [ "tls" ],
     "tls1_3"            => [ "quic" ],
+    "quic"              => [ "unstable-qlog" ],
 
     "crypto-mdebug"     => [ "crypto-mdebug-backtrace" ],
 
@@ -1545,6 +1553,10 @@ foreach (grep /^-fsanitize=/, @{$config{CFLAGS} || []}) {
 # code knows about it.  Any other flag is taken care of by the configs.
 unless($disabled{threads}) {
     push @{$config{openssl_feature_defines}}, "OPENSSL_THREADS";
+}
+
+if ($disabled{"unstable-qlog"}) {
+    $disabled{"qlog"} = 1;
 }
 
 my $no_shared_warn=0;

@@ -19,9 +19,7 @@ About c99 compiler
 
 The c99 compiler is required for building OpenSSL from source. While c11
 may work, it has not been broadly tested. c99 is the only compiler
-prerequisite needed to build OpenSSL 3.0 on this platform. You should also
-have the FLOSS package installed on your system. The ITUGLIB FLOSS package
-is the only FLOSS variant that has been broadly tested.
+prerequisite needed to build OpenSSL 3.0 on this platform.
 
 Threading Models
 ----------------
@@ -60,10 +58,13 @@ relating to `atexit()` processing when a shared library is unloaded and when
 the program terminates. This limitation applies to all OpenSSL shared library
 components.
 
-It is possible to configure the build with `no-atexit` to avoid the SIGSEGV.
-Preferably, you can explicitly call `OPENSSL_cleanup()` from your application.
-It is not mandatory as it just deallocates various global data structures
-OpenSSL allocated.
+A control has been added as of 3.3.x to disable calls to `atexit()` within the
+`libcrypto` builds (specifically in `crypto/init.c`). This switch can be
+controlled using `disable-atexit` or `enable-atexit`, and is disabled by default
+for NonStop builds. If you need to have `atexit()` functionality, set
+`enabled-atexit` when configuring OpenSSL to enable the `atexit()` call to
+register `OPENSSL_cleanup()` automatically. Preferably, you can explicitly call
+`OPENSSL_cleanup()` from your application.
 
 About Prefix and OpenSSLDir
 ---------------------------

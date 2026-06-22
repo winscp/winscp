@@ -26,6 +26,13 @@
 
 NE_BEGIN_DECLS
 
+/***
+ * Since neon 0.34.0, this API is now mainly a caching wrapper around
+ * ne_get_response_location(); that function should be used directly
+ * if possible instead. Note that the API below does not handle
+ * fragments.
+ ***/
+
 /* Register redirect handling for the session: if a valid redirect
  * (30x) response is given for any request in this session, the
  * request will fail with the NE_REDIRECT code, and the destination of
