@@ -49,8 +49,6 @@ procedure PIDL_Free(PIDL: PItemIDList);
 function PIDL_Equal(PIDL1, PIDL2: PItemIDList): Boolean;
 
 var
-  ShellMalloc: IMalloc;
-
   CF_FILENAMEMAP: UINT;
   CF_FILENAMEMAPW: UINT;
   CF_SHELLIDLIST: UINT;
@@ -60,6 +58,9 @@ implementation
 
 uses
   SysUtils, CompThread, OperationWithTimeout;
+
+var
+  ShellMalloc: IMalloc = nil;
 
 const NullTerm=2;
 
@@ -84,7 +85,7 @@ begin
     while PIDL^.mkid.cb <> 0 do
     begin
       Inc(Result, PIDL^.mkid.cb);
-      Inc(LongInt(PIDL), PIDL^.mkid.cb);
+      PIDL := PITEMIDLIST(NativeUInt(PIDL) + PIDL^.mkid.cb);
     end;
   end;
 end;

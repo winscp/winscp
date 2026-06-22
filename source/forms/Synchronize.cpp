@@ -1,26 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
-#include "WinInterface.h"
 #include "Synchronize.h"
-#include "VCLCommon.h"
-#include "CopyParams.h"
+#include <ComboEdit.hpp>
 #include "Terminal.h"
-#include "GUITools.h"
-
-#include <CoreMain.h>
-#include <Configuration.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <WinConfiguration.h>
 #include <TerminalManager.h>
-#include <StrUtils.hpp>
-#include <Tools.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma link "GrayedCheckBox"
 #pragma resource "*.dfm"
@@ -67,7 +53,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   return Result;
 }
 //---------------------------------------------------------------------------
-const TSynchronizeDialog::MaxLogItems = 1000;
+const int TSynchronizeDialog::MaxLogItems = 1000;
 //---------------------------------------------------------------------------
 struct TLogItemData
 {
@@ -235,8 +221,6 @@ bool __fastcall TSynchronizeDialog::Execute()
   // at start assume that copy param is current preset
   FPreset = GUIConfiguration->CopyParamCurrent;
 
-  LocalDirectoryEdit->Items = CustomWinConfiguration->History[L"LocalDirectory"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
   ShowModal();
 
   return true;
@@ -280,7 +264,7 @@ void __fastcall TSynchronizeDialog::LocalDirectoryBrowseButtonClick(
       TObject * /*Sender*/)
 {
   UnicodeString Directory = LocalDirectoryEdit->Text;
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), false))
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY)))
   {
     LocalDirectoryEdit->Text = Directory;
   }
@@ -452,7 +436,7 @@ void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::Start()
 {
-  bool Synchronize;
+  bool Synchronize = false; // shut up
   bool Continue = true;
   if (SynchronizeSynchronizeCheck->State == cbGrayed)
   {
@@ -511,9 +495,7 @@ void __fastcall TSynchronizeDialog::Start()
 void __fastcall TSynchronizeDialog::SaveHistory()
 {
   LocalDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
   RemoteDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::StopButtonClick(TObject * /*Sender*/)
@@ -532,7 +514,7 @@ void __fastcall TSynchronizeDialog::Stop()
   OnlyStop();
   UpdateControls();
   Repaint();
-  if (IsApplicationMinimized() && FMinimizedByMe)
+  if (IsMainFormMinimized() && FMinimizedByMe)
   {
     FMinimizedByMe = false;
     ApplicationRestore();

@@ -1,9 +1,9 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "ServerPath.h"
 #include "structures.h"
 
-#define FTP_MVS_DOUBLE_QUOTA (TCHAR)0xDC
+#define FTP_MVS_DOUBLE_QUOTA static_cast<wchar_t>(0xDC)
 
 //////////////////////////////////////////////////////////////////////
 // Konstruktion/Destruktion
@@ -385,7 +385,7 @@ CServerPath& CServerPath::operator=(const CServerPath &op)
   return *this;
 }
 
-const bool CServerPath::operator==(const CServerPath &op) const
+bool CServerPath::operator==(const CServerPath &op) const
 {
   if (this == &op)
     return true;
@@ -415,7 +415,7 @@ const bool CServerPath::operator==(const CServerPath &op) const
   return true;
 }
 
-const bool CServerPath::operator!=(const CServerPath &op) const
+bool CServerPath::operator!=(const CServerPath &op) const
 {
   if (*this == op)
     return false;
@@ -452,7 +452,7 @@ BOOL CServerPath::HasParent() const
     return FALSE;
 }
 
-const BOOL CServerPath::IsEmpty() const
+BOOL CServerPath::IsEmpty() const
 {
   return m_bEmpty;
 }

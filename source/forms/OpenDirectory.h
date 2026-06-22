@@ -2,7 +2,7 @@
 #ifndef OpenDirectoryH
 #define OpenDirectoryH
 //----------------------------------------------------------------------------
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include <System.Classes.hpp>
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Controls.hpp>
@@ -15,7 +15,6 @@
 #include <PasTools.hpp>
 #include <ComCtrls.hpp>
 #include <Vcl.ExtCtrls.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 //----------------------------------------------------------------------------
 class TOpenDirectoryDialog : public TForm
 {
@@ -124,7 +123,7 @@ private:
   UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
   inline TBookmark * __fastcall GetBookmark(TListBox * BookmarksList, int Index);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

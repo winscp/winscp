@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -34,8 +34,10 @@ DEFINE_LHASH_OF_EX(MEM);
 
 void OPENSSL_cpuid_setup(void);
 #if defined(__i386) || defined(__i386__) || defined(_M_IX86) || defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || defined(_M_X64)
+#define OPENSSL_IA32CAP_P_MAX_INDEXES 10
 extern unsigned int OPENSSL_ia32cap_P[];
 #endif
+
 void OPENSSL_showfatal(const char *fmta, ...);
 int ossl_do_ex_data_init(OSSL_LIB_CTX *ctx);
 void ossl_crypto_cleanup_all_ex_data_int(OSSL_LIB_CTX *ctx);
@@ -98,7 +100,7 @@ typedef struct ossl_ex_data_global_st {
 #define OSSL_LIB_CTX_NAMEMAP_INDEX 4
 #define OSSL_LIB_CTX_DRBG_INDEX 5
 #define OSSL_LIB_CTX_DRBG_NONCE_INDEX 6
-#define OSSL_LIB_CTX_RAND_CRNGT_INDEX 7
+/* slot 7 unused, was CRNG test data and can be reused */
 #ifdef FIPS_MODULE
 #define OSSL_LIB_CTX_THREAD_EVENT_HANDLER_INDEX 8
 #endif
@@ -114,7 +116,9 @@ typedef struct ossl_ex_data_global_st {
 #define OSSL_LIB_CTX_CHILD_PROVIDER_INDEX 18
 #define OSSL_LIB_CTX_THREAD_INDEX 19
 #define OSSL_LIB_CTX_DECODER_CACHE_INDEX 20
-#define OSSL_LIB_CTX_MAX_INDEXES 20
+#define OSSL_LIB_CTX_COMP_METHODS 21
+#define OSSL_LIB_CTX_INDICATOR_CB_INDEX 22
+#define OSSL_LIB_CTX_MAX_INDEXES 22
 
 OSSL_LIB_CTX *ossl_lib_ctx_get_concrete(OSSL_LIB_CTX *ctx);
 int ossl_lib_ctx_is_default(OSSL_LIB_CTX *ctx);
@@ -128,6 +132,8 @@ OSSL_EX_DATA_GLOBAL *ossl_lib_ctx_get_ex_data_global(OSSL_LIB_CTX *ctx);
 
 const char *ossl_lib_ctx_get_descriptor(OSSL_LIB_CTX *libctx);
 CRYPTO_THREAD_LOCAL *ossl_lib_ctx_get_rcukey(OSSL_LIB_CTX *libctx);
+
+int ossl_thread_init_local(CRYPTO_THREAD_LOCAL *key, void (*cleanup)(void *));
 
 OSSL_LIB_CTX *ossl_crypto_ex_data_get_ossl_lib_ctx(const CRYPTO_EX_DATA *ad);
 int ossl_crypto_new_ex_data_ex(OSSL_LIB_CTX *ctx, int class_index, void *obj,
@@ -157,5 +163,14 @@ char *ossl_ipaddr_to_asc(unsigned char *p, int len);
 char *ossl_buf2hexstr_sep(const unsigned char *buf, long buflen, char sep);
 unsigned char *ossl_hexstr2buf_sep(const char *str, long *buflen,
     const char sep);
+
+/**
+ *  Writes |n| value in hex format into |buf|,
+ *  and returns the number of bytes written
+ */
+size_t ossl_to_hex(char *buf, uint8_t n);
+
+STACK_OF(SSL_COMP) *ossl_load_builtin_compressions(void);
+void ossl_free_compression_methods_int(STACK_OF(SSL_COMP) *methods);
 
 #endif

@@ -1,29 +1,14 @@
 //---------------------------------------------------------------------------
-#define NO_WIN32_LEAN_AND_MEAN
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include "TerminalManager.h"
 #include <Authenticate.h>
 #include "CustomScpExplorer.h"
 #include "NonVisual.h"
-#include "WinConfiguration.h"
-#include "Tools.h"
-#include <Common.h>
-#include <CoreMain.h>
-#include <GUITools.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
 #include <Progress.h>
-#include <Exceptions.h>
-#include <VCLCommon.h>
 #include <WinApi.h>
 #include <PuttyTools.h>
-#include <HelpWin.h>
-#include <System.IOUtils.hpp>
-#include <StrUtils.hpp>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 TTerminalManager * TTerminalManager::FInstance = NULL;
 //---------------------------------------------------------------------------
@@ -31,7 +16,8 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   TConfiguration * Configuration) :
   TTerminal(SessionData, Configuration),
   LocalBrowser(false), LocalExplorerState(NULL), RemoteExplorerState(NULL), OtherLocalExplorerState(NULL),
-  ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false), DisconnectedTemporarily(false),
+  ReopenStart(), DirectoryLoaded(Now()), TerminalThread(NULL),
+  Disconnected(false), DisconnectedTemporarily(false), InitiateReconnectTimeout(false),
   ThumbnailsSection(new TCriticalSection()), ThumbnailsEnabled(false), ThumbnailDownloadQueueItem(NULL),
   ThumbnailVisibleResult(-1)
 {
@@ -150,7 +136,6 @@ __fastcall TTerminalManager::TTerminalManager() :
   FTerminalPendingAction = tpNull;
   FDirectoryReadingStart = 0;
   FAuthenticateForm = NULL;
-  FTaskbarList = NULL;
   FAuthenticating = 0;
   FMainThread = GetCurrentThreadId();
   FChangeSection.reset(new TCriticalSection());
@@ -158,6 +143,7 @@ __fastcall TTerminalManager::TTerminalManager() :
   FKeepAuthenticateForm = false;
   FUpdating = 0;
   FOpeningTerminal = NULL;
+  FReconnectingInactiveTerminal = NULL;
 
   FApplicationsEvents.reset(new TApplicationEvents(Application));
   FApplicationsEvents->OnException = ApplicationException;
@@ -178,7 +164,6 @@ __fastcall TTerminalManager::TTerminalManager() :
 
   FSessionList = new TStringList();
   FQueues = new TList();
-  FTerminationMessages = new TStringList();
   std::unique_ptr<TSessionData> DummyData(new TSessionData(L""));
   FLocalTerminal = CreateTerminal(DummyData.get());
   SetupTerminal(FLocalTerminal);
@@ -200,11 +185,9 @@ __fastcall TTerminalManager::~TTerminalManager()
 
   delete FLocalTerminal;
   delete FQueues;
-  delete FTerminationMessages;
   delete FSessionList;
   CloseAutheticateForm();
   delete FQueueSection;
-  ReleaseTaskbarList();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SetQueueConfiguration(TTerminalQueue * Queue)
@@ -272,7 +255,6 @@ TManagedTerminal * __fastcall TTerminalManager::DoNewSession(TSessionData * Data
   try
   {
     FQueues->Add(NewQueue(Session));
-    FTerminationMessages->Add(L"");
 
     SetupTerminal(Session);
   }
@@ -357,6 +339,11 @@ TManagedTerminal * __fastcall TTerminalManager::NewSessions(TList * DataList)
       {
         Result = Session;
       }
+      else if (WinConfiguration->WorkspaceConnectAll)
+      {
+        Session->NextInactiveReconnect = IncSecond(Now(), 3);
+        AppLogFmt(L"Scheduling connect of session %s", (Data->SessionName));
+      }
     }
   }
   DoSessionListChanged();
@@ -377,49 +364,87 @@ void __fastcall TTerminalManager::FreeActiveTerminal()
   }
 }
 //---------------------------------------------------------------------------
+TTerminalThread * TTerminalManager::CreateTerminalThread(TTerminal * Terminal)
+{
+  TTerminalThread * TerminalThread = new TTerminalThread(Terminal);
+  TerminalThread->OnIdle = MakeMethod<TNotifyEvent>(NULL, TerminalThreadIdle);
+  return TerminalThread;
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::ReconnectingTerminal(TManagedTerminal * ManagedTerminal)
+{
+  // particularly when we are reconnecting RemoteDirectory of managed terminal
+  // hold the last used remote directory as opposite to session data, which holds
+  // the default remote directory.
+  // make sure the last used directory is used, but the default is preserved too
+  ManagedTerminal->OrigRemoteDirectory = ManagedTerminal->SessionData->RemoteDirectory;
+  ManagedTerminal->SessionData->RemoteDirectory = ManagedTerminal->StateData->RemoteDirectory;
+
+  if (ManagedTerminal->ReopenStart == TDateTime())
+  {
+    ManagedTerminal->ReopenStart = Now();
+  }
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::ReconnectedTerminal(TManagedTerminal * ManagedTerminal)
+{
+  ManagedTerminal->SessionData->RemoteDirectory = ManagedTerminal->OrigRemoteDirectory;
+  if (ManagedTerminal->Active)
+  {
+    ManagedTerminal->ReopenStart = TDateTime();
+    ManagedTerminal->Permanent = true;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool Reopen, bool AdHoc)
 {
   TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
   // it must be managed terminal, unless it is secondary terminal (of managed terminal)
   DebugAssert((ManagedTerminal != NULL) || (dynamic_cast<TSecondaryTerminal *>(Terminal) != NULL));
 
-  // particularly when we are reconnecting RemoteDirectory of managed terminal
-  // hold the last used remote directory as opposite to session data, which holds
-  // the default remote directory.
-  // make sure the last used directory is used, but the default is preserved too
-  UnicodeString OrigRemoteDirectory = Terminal->SessionData->RemoteDirectory;
   try
   {
     TValueRestorer<TTerminal *> OpeningTerminalRestorer(FOpeningTerminal, Terminal);
-    TTerminalThread * TerminalThread = new TTerminalThread(Terminal);
-    TerminalThread->AllowAbandon = (Terminal == ActiveTerminal);
+    TTerminalThread * TerminalThread;
+    bool ReconnectingInactiveTerminal = (Terminal == FReconnectingInactiveTerminal);
+    if (ReconnectingInactiveTerminal)
+    {
+      DebugAssert(Terminal == ActiveTerminal);
+      TerminalThread = ManagedTerminal->TerminalThread;
+      FReconnectingInactiveTerminal = NULL;
+    }
+    else
+    {
+      TerminalThread = CreateTerminalThread(Terminal);
+    }
     try
     {
-      if (ManagedTerminal != NULL)
+      TerminalThread->AllowAbandon = (Terminal == ActiveTerminal);
+      if (ReconnectingInactiveTerminal && DebugAlwaysTrue(Reopen))
       {
-        Terminal->SessionData->RemoteDirectory = ManagedTerminal->StateData->RemoteDirectory;
-
-        if ((double)ManagedTerminal->ReopenStart == 0)
-        {
-          ManagedTerminal->ReopenStart = Now();
-        }
-
-        ManagedTerminal->Disconnected = false;
-        ManagedTerminal->DisconnectedTemporarily = false;
-        DebugAssert(ManagedTerminal->TerminalThread == NULL);
-        ManagedTerminal->TerminalThread = TerminalThread;
-      }
-
-      TNotifyEvent OnIdle;
-      ((TMethod*)&OnIdle)->Code = TerminalThreadIdle;
-      TerminalThread->OnIdle = OnIdle;
-      if (Reopen)
-      {
-        TerminalThread->TerminalReopen();
+        TerminalThread->ContinueTerminalReopenInteractive();
       }
       else
       {
-        TerminalThread->TerminalOpen();
+        if (ManagedTerminal != NULL)
+        {
+          ReconnectingTerminal(ManagedTerminal);
+          ManagedTerminal->Disconnected = false;
+          ManagedTerminal->DisconnectedTemporarily = false;
+          ManagedTerminal->DisconnectMessage = EmptyStr;
+          ManagedTerminal->InitiateReconnectTimeout = false;
+          DebugAssert(ManagedTerminal->TerminalThread == NULL);
+          ManagedTerminal->TerminalThread = TerminalThread;
+        }
+
+        if (Reopen)
+        {
+          TerminalThread->TerminalReopen();
+        }
+        else
+        {
+          TerminalThread->TerminalOpen();
+        }
       }
     }
     __finally
@@ -446,8 +471,8 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
         // to complete its task and destroy the terminal afterwards.
         TerminalThread->Terminate();
 
-        // When abandoning cancelled terminal, DoInformation(Phase = 0) does not make it to TerminalInformation handler.
-        if (DebugAlwaysTrue(FAuthenticating > 0))
+        // When abandoning cancelled terminal, DoInformation(Phase = 0) usually does not make it to TerminalInformation handler.
+        if (FAuthenticating > 0)
         {
           FKeepAuthenticateForm = false;
           AuthenticatingDone();
@@ -464,11 +489,14 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
   }
   __finally
   {
-    Terminal->SessionData->RemoteDirectory = OrigRemoteDirectory;
-    if (Terminal->Active && (ManagedTerminal != NULL))
+    if (ManagedTerminal != NULL)
     {
-      ManagedTerminal->ReopenStart = 0;
-      ManagedTerminal->Permanent = true;
+      ReconnectedTerminal(ManagedTerminal);
+    }
+    if (ScpExplorer != NULL)
+    {
+      // Particularly to enable remote panel, now that FOpeningTerminal is cleared
+      ScpExplorer->UpdateControls();
     }
   }
 
@@ -507,7 +535,10 @@ void __fastcall TTerminalManager::TerminalThreadIdle(void * /*Data*/, TObject * 
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 {
-  ActiveTerminal->CollectUsage();
+  if (ActiveTerminal != FReconnectingInactiveTerminal)
+  {
+    ActiveTerminal->CollectUsage();
+  }
 
   TTerminalPendingAction Action;
   bool Result;
@@ -551,17 +582,17 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 
   if (Action == tpFree)
   {
-    DisconnectActiveTerminalIfPermanentFreeOtherwise();
+    DisconnectActiveTerminalIfPermanentFreeOtherwise(EmptyStr);
   }
 
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::DisconnectActiveTerminalIfPermanentFreeOtherwise()
+void __fastcall TTerminalManager::DisconnectActiveTerminalIfPermanentFreeOtherwise(const UnicodeString & Message)
 {
   if (ActiveTerminal->Permanent)
   {
-    DisconnectActiveTerminal();
+    DisconnectActiveTerminal(Message);
   }
   else
   {
@@ -621,7 +652,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::DisconnectActiveTerminal()
+void __fastcall TTerminalManager::DisconnectActiveTerminal(const UnicodeString & Message)
 {
   DebugAssert(ActiveTerminal);
   if (ActiveTerminal->Active)
@@ -643,6 +674,8 @@ void __fastcall TTerminalManager::DisconnectActiveTerminal()
   delete OldQueue;
 
   ActiveTerminal->Disconnected = true;
+  ActiveTerminal->DisconnectMessage = Message;
+  ActiveTerminal->InitiateReconnectTimeout = !Message.IsEmpty() && GUIConfiguration->SessionReopenAutoIdleOn;
   ActiveTerminal->DisableThumbnails();
   if (ScpExplorer != NULL)
   {
@@ -657,12 +690,11 @@ void __fastcall TTerminalManager::ReconnectActiveTerminal()
 {
   DebugAssert(ActiveTerminal);
 
-  if (ScpExplorer)
+  if ((ScpExplorer != NULL) &&
+      (ActiveTerminal != FReconnectingInactiveTerminal) &&
+      (ScpExplorer->Terminal == ActiveTerminal))
   {
-    if (ScpExplorer->Terminal == ActiveTerminal)
-    {
-      ScpExplorer->UpdateSession(ActiveTerminal);
-    }
+    ScpExplorer->UpdateSession(ActiveTerminal);
   }
 
   try
@@ -699,11 +731,70 @@ void __fastcall TTerminalManager::FreeAll()
   }
 }
 //---------------------------------------------------------------------------
+void TTerminalManager::FreeTerminalCleanup(TTerminal * ATerminal, bool IsActiveSession)
+{
+  int Index = IndexOf(ATerminal);
+  Extract(ATerminal);
+
+  TTerminalQueue * Queue;
+  Queue = reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
+  FQueues->Delete(Index);
+
+  if (IsActiveSession)
+  {
+    TManagedTerminal * NewActiveTerminal;
+    bool LastTerminalClosed = false;
+
+    if (FDestroying)
+    {
+      NewActiveTerminal = NULL;
+    }
+    else
+    {
+      if (Count > 0)
+      {
+        NewActiveTerminal = Sessions[Index < Count ? Index : Index - 1];
+        if (!NewActiveTerminal->Active && !NewActiveTerminal->Disconnected)
+        {
+          NewActiveTerminal->Disconnected = true;
+          NewActiveTerminal->DisconnectedTemporarily = true;
+          NewActiveTerminal->DisconnectMessage = EmptyStr;
+          NewActiveTerminal->InitiateReconnectTimeout = false;
+        }
+      }
+      else
+      {
+        NewActiveTerminal = NULL;
+        LastTerminalClosed = true;
+        if (ScpExplorer != NULL)
+        {
+          TAutoNestingCounter UpdatingCounter(FUpdating); // prevent tab flicker
+          NewActiveTerminal = ScpExplorer->GetReplacementForLastSession();
+        }
+      }
+    }
+    DoSetActiveSession(NewActiveTerminal, false, LastTerminalClosed);
+  }
+
+  // only now all references to/from queue (particularly events to explorer) are cleared
+  delete Queue;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
 {
+  TTerminal * ATerminal = Terminal;
+  bool IsActiveSession = ((ActiveSession != NULL) && (Terminal == ActiveSession));
   try
   {
+    if (!IsActiveSession)
+    {
+      // For active session, done by DoSetActiveSession below.
+      // For inactive session, needs to be done here before potentially abandoning the session.
+      SaveTerminal(Terminal);
+    }
+
     TManagedTerminal * ManagedSession = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
+
     // we want the Login dialog to open on auto-workspace name,
     // as set in TCustomScpExplorerForm::FormClose
     if ((!FDestroying || !WinConfiguration->AutoSaveWorkspace) && !ManagedSession->LocalBrowser)
@@ -719,63 +810,41 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
       ScpExplorer->TerminalRemoved(Terminal);
     }
 
-    if (Terminal->Active)
+    if (ManagedSession == FReconnectingInactiveTerminal)
+    {
+      DebugAssert(!IsActiveSession);
+      AppLog(L"Cancelling background reconnect before closing session");
+      TTerminalThread * TerminalThread = DebugNotNull(ManagedSession->TerminalThread);
+      DebugAssert(TerminalThread->AllowAbandon);
+      TerminalThread->Cancel();
+      while (!TerminalThread->Abandoned())
+      {
+        Sleep(50);
+      }
+
+      if (!TerminalThread->Release())
+      {
+        AppLog(L"Abandoned background reconnect");
+        TerminalThread->Terminate();
+        Terminal = NULL;
+      }
+      else
+      {
+        AppLog(L"Background reconnect stopped");
+        ManagedSession->TerminalThread = NULL;
+      }
+      FReconnectingInactiveTerminal = NULL;
+    }
+    else if (Terminal->Active)
     {
       Terminal->Close();
     }
   }
   __finally
   {
-    int Index = IndexOf(Terminal);
-    Extract(Terminal);
+    FreeTerminalCleanup(ATerminal, IsActiveSession);
 
-    TTerminalQueue * Queue;
-    Queue = reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
-    FQueues->Delete(Index);
-    FTerminationMessages->Delete(Index);
-
-    if ((ActiveSession != NULL) && (Terminal == ActiveSession))
-    {
-      TManagedTerminal * NewActiveTerminal;
-      bool LastTerminalClosed = false;
-
-      if (FDestroying)
-      {
-        NewActiveTerminal = NULL;
-      }
-      else
-      {
-        if (Count > 0)
-        {
-          NewActiveTerminal = Sessions[Index < Count ? Index : Index - 1];
-          if (!NewActiveTerminal->Active && !NewActiveTerminal->Disconnected)
-          {
-            NewActiveTerminal->Disconnected = true;
-            NewActiveTerminal->DisconnectedTemporarily = true;
-          }
-        }
-        else
-        {
-          NewActiveTerminal = NULL;
-          LastTerminalClosed = true;
-          if (ScpExplorer != NULL)
-          {
-            TAutoNestingCounter UpdatingCounter(FUpdating); // prevent tab flicker
-            NewActiveTerminal = ScpExplorer->GetReplacementForLastSession();
-          }
-        }
-      }
-      DoSetActiveSession(NewActiveTerminal, false, LastTerminalClosed);
-    }
-    else
-    {
-      SaveTerminal(Terminal);
-    }
-
-    // only now all references to/from queue (particularly events to explorer)
-    // are cleared
-    delete Queue;
-    delete Terminal;
+    delete Terminal; // noop if abandoned
 
     DoSessionListChanged();
   }
@@ -845,12 +914,19 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
       // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateSession)
       // but it seems to be duplicate to call from TCustomScpExporer::SessionChanging
 
+      bool ReconnectingInactiveTerminal =
+        (value != nullptr) &&
+        (FReconnectingInactiveTerminal == value) &&
+        (ScpExplorer != NULL) &&
+        DebugAlwaysTrue(FReconnectingInactiveTerminal->TerminalThread != NULL);
+
       TManagedTerminal * PActiveSession = ActiveSession;
       FActiveSession = value;
       if (ScpExplorer)
       {
         Focus = ScpExplorer->SaveFocus();
         if ((ActiveSession != NULL) &&
+            !ReconnectingInactiveTerminal &&
             ((ActiveSession->Status == ssOpened) || ActiveSession->Disconnected || ActiveSession->LocalBrowser))
         {
           SessionReady();
@@ -880,30 +956,28 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
 
       if (ActiveSession != NULL)
       {
-        int Index = ActiveSessionIndex;
-        if (!ActiveSession->Active &&
-            !FTerminationMessages->Strings[Index].IsEmpty() &&
-            DebugAlwaysTrue(!ActiveSession->LocalBrowser))
+        if (ReconnectingInactiveTerminal)
         {
-          UnicodeString Message = FTerminationMessages->Strings[Index];
-          FTerminationMessages->Strings[Index] = L"";
-          if (AutoReconnect)
+          DebugAssert(FTerminalPendingAction == tpNull); // the only assumed and tested scenario
+          ReconnectActiveTerminal();
+        }
+        else if (!ActiveSession->Active &&
+                 !ActiveSession->InactiveTerminationMessage.IsEmpty() &&
+                 DebugAlwaysTrue(!ActiveSession->LocalBrowser))
+        {
+          UnicodeString Message = ActiveSession->InactiveTerminationMessage;
+          ActiveSession->InactiveTerminationMessage = EmptyStr;
+          if (AutoReconnect || GUIConfiguration->SessionReopenAutoInactive)
           {
             ReconnectActiveTerminal();
           }
           else
           {
-            Exception * E = new ESshFatal(NULL, Message);
-            try
-            {
-              // finally show pending terminal message,
-              // this gives user also possibility to reconnect
-              ActiveTerminal->ShowExtendedException(E);
-            }
-            __finally
-            {
-              delete E;
-            }
+            // finally show pending terminal message,
+            // this gives user also possibility to reconnect
+            std::unique_ptr<ESshFatal> E(new ESshFatal(NULL, Message));
+            E->InactiveTerminationMessage = true;
+            ActiveTerminal->ShowExtendedException(E.get());
           }
         }
 
@@ -927,6 +1001,7 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
       if ((ActiveSession != NULL) &&
           !ActiveSession->Active && !ActiveSession->Disconnected && !ActiveSession->LocalBrowser)
       {
+        DebugAssert(ActiveSession->InactiveTerminationMessage.IsEmpty());
         ConnectActiveTerminal();
       }
     }
@@ -951,7 +1026,7 @@ void __fastcall TTerminalManager::QueueStatusUpdated()
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::ShouldDisplayQueueStatusOnAppTitle()
 {
-  bool Result = IsApplicationMinimized();
+  bool Result = IsMainFormMinimized();
   if (!Result && (ScpExplorer != NULL))
   {
     HWND Window = GetActiveWindow();
@@ -996,7 +1071,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     if (MainForm != ScpExplorer)
     {
       // triggers caption update for some forms
-      MainForm->Perform(WM_MANAGES_CAPTION, 0, 0);
+      MainForm->Perform(WM_MANAGES_CAPTION, 0, NativeInt(0));
     }
 
     UnicodeString NewTitle = FormatMainFormCaption(GetActiveSessionAppTitle());
@@ -1114,12 +1189,12 @@ bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
       {
         // Send it only to windows we tested it with.
         // Though we should sooner or later remove this test and pass it to all our windows.
-        if (Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, 0) == 1))
+        if (Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, NativeInt(0)) == 1))
         {
           SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
           Result = true;
         }
-        else if (!Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL_INACTIVE, 0, 0) == 1))
+        else if (!Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL_INACTIVE, 0, NativeInt(0)) == 1))
         {
           TWinControl * Control2;
           // FindVCLWindow stops on window level, when the window is not active? or when there's a modal window over it?
@@ -1175,11 +1250,12 @@ void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
   // XE6 VCL already handles TaskbarButtonCreated, but does not call ChangeWindowMessageFilterEx.
   // So we keep our implementation.
   // See also https://stackoverflow.com/q/14614823/850848#14618587
+  // See also VCL's TTaskbar class
   FTaskbarButtonCreatedMessage = RegisterWindowMessage(L"TaskbarButtonCreated");
 
   HINSTANCE User32Library = LoadLibrary(L"user32.dll");
   ChangeWindowMessageFilterExProc ChangeWindowMessageFilterEx =
-    (ChangeWindowMessageFilterExProc)GetProcAddress(User32Library, "ChangeWindowMessageFilterEx");
+    reinterpret_cast<ChangeWindowMessageFilterExProc>(GetProcAddress(User32Library, "ChangeWindowMessageFilterEx"));
 
   if (ChangeWindowMessageFilterEx != NULL)
   {
@@ -1191,11 +1267,7 @@ void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::CreateTaskbarList()
 {
-
-  ReleaseTaskbarList();
-
-  if(SUCCEEDED(CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_ALL,
-        IID_ITaskbarList3, (void **) &FTaskbarList)))
+  if (FTaskbarList.TryCreate(CLSID_TaskbarList, CLSCTX_ALL))
   {
     if (ScpExplorer != NULL)
     {
@@ -1204,17 +1276,9 @@ void __fastcall TTerminalManager::CreateTaskbarList()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::ReleaseTaskbarList()
-{
-  if (FTaskbarList != NULL)
-  {
-    FTaskbarList->Release();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::UpdateTaskbarList()
 {
-  ScpExplorer->UpdateTaskbarList(FTaskbarList);
+  ScpExplorer->UpdateTaskbarList(FTaskbarList.Get());
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DeleteLocalFile(const UnicodeString FileName, bool Alternative, int & Deleted)
@@ -1226,6 +1290,7 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * Sender,
   const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
   const TQueryParams * Params, unsigned int & Answer, TQueryType Type, void * /*Arg*/)
 {
+  TTerminal * Terminal = DebugNotNull(dynamic_cast<TTerminal *>(Sender));
   UnicodeString HelpKeyword;
   TMessageParams MessageParams(Params);
   UnicodeString AQuery = Query;
@@ -1248,7 +1313,7 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * Sender,
   if (ScpExplorer)
   {
     Answer = ScpExplorer->MoreMessageDialog(AQuery, MoreMessages, Type, Answers,
-      HelpKeyword, &MessageParams, dynamic_cast<TTerminal *>(Sender));
+      HelpKeyword, &MessageParams, Terminal);
   }
   else
   {
@@ -1340,7 +1405,7 @@ void __fastcall TTerminalManager::TerminalPromptUser(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalDisplayBanner(
-  TTerminal * Terminal, UnicodeString SessionName,
+  TTerminal * Terminal, UnicodeString DebugUsedArg(SessionName),
   const UnicodeString & Banner, bool & NeverShowAgain, int Options, unsigned int & Params)
 {
   DebugAssert(FAuthenticateForm != NULL);
@@ -1381,7 +1446,7 @@ static TDateTime DirectoryReadingProgressDelay(0, 0, 1, 500);
 void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
   TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel)
 {
-  DebugAlwaysTrue((Sender == FOpeningTerminal) == (FAuthenticateForm != NULL));
+  DebugAssert((Sender == FOpeningTerminal) == (FAuthenticateForm != NULL));
   if (Progress == 0)
   {
     if ((ScpExplorer != NULL) && (Sender != FOpeningTerminal))
@@ -1642,6 +1707,11 @@ UnicodeString __fastcall TTerminalManager::GetSessionTitle(TManagedTerminal * Se
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString TTerminalManager::FormatTerminalNoteMessage(TManagedTerminal * Terminal, const UnicodeString & Message)
+{
+  return FORMAT(L"%s: %s", (GetSessionTitle(Terminal, true), Message));
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TTerminalManager::GetActiveSessionAppTitle()
 {
   UnicodeString Result;
@@ -1782,6 +1852,102 @@ void __fastcall TTerminalManager::NewSession(
   while (Retry);
 }
 //---------------------------------------------------------------------------
+void TTerminalManager::StartInactiveTerminalReconnect(TManagedTerminal * Terminal)
+{
+  ReconnectingTerminal(Terminal);
+  Terminal->NextInactiveReconnect = TDateTime(); // just in case
+  FReconnectingInactiveTerminal = Terminal;
+
+  DebugAssert(Terminal->TerminalThread == NULL);
+  TTerminalThread * TerminalThread = CreateTerminalThread(Terminal);
+  Terminal->TerminalThread = TerminalThread;
+  TerminalThread->AllowAbandon = true;
+  TerminalThread->StartTerminalReopenNonInteractive();
+  FReconnectingNote = FormatTerminalNoteMessage(Terminal, LoadStr(SESSION_RECONNECTING));
+  ScpExplorer->PostNote(FReconnectingNote);
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::CheckInactiveTerminalReconnect()
+{
+  TManagedTerminal * Terminal = DebugNotNull(FReconnectingInactiveTerminal);
+  TTerminalThread * TerminalThread = DebugNotNull(Terminal->TerminalThread);
+  TTerminalReopenResult ReopenResult = TerminalThread->IsTerminalReopenComplete();
+  UnicodeString SessionName = Terminal->SessionData->SessionName;
+  if (ReopenResult == trrPending)
+  {
+    AppLog(FORMAT(L"Inactive session %s is still being reconnected", (SessionName)));
+  }
+  else
+  {
+    try
+    {
+      DebugCheck(TerminalThread->Release());
+    }
+    __finally
+    {
+      ReconnectedTerminal(Terminal);
+      Terminal->TerminalThread = NULL;
+      FReconnectingInactiveTerminal = NULL;
+    }
+
+    if (ReopenResult == trrSucceeded)
+    {
+      AppLog(FORMAT(L"Inactive session %s was reconnected", (SessionName)));
+      ScpExplorer->CancelNote(FReconnectingNote);
+      UnicodeString ReconnectMessage = LoadStr(SESSION_RECONNECTED);
+      // This is an indication that we got tray popup on disconnect, so counter that with the same on reconnect
+      if (!Terminal->InactiveTerminationMessage.IsEmpty())
+      {
+        ScpExplorer->InactiveTerminalNotify(Terminal, ReconnectMessage, qtInformation);
+      }
+      // otherwise (= when connecting a workspace on the background), notify more subtly with just status bar note
+      else
+      {
+        ScpExplorer->PostNote(FormatTerminalNoteMessage(Terminal, ReconnectMessage));
+        // update session tab (implied by InactiveTerminalNotify in the previous branch)
+        ScpExplorer->TerminalStatusChanged(Terminal);
+      }
+    }
+    else
+    {
+      if (ReopenResult == trrFailed)
+      {
+        // in case it was disabled meanwhile
+        if (GUIConfiguration->SessionReopenAutoInactive)
+        {
+          int Interval = 2 * GUIConfiguration->SessionReopenAutoIdle;
+          AppLog(FORMAT(L"Inactive session %s failed to reconnect, will try again in %d ms", (SessionName, Interval)));
+          // Might want to consider SessionReopenTimeout
+          Terminal->NextInactiveReconnect = IncMilliSecond(Now(), Interval);
+        }
+        else
+        {
+          Terminal->NextInactiveReconnect = TDateTime();
+        }
+      }
+      else if (ReopenResult == trrNeedsInteraction)
+      {
+        AppLog(FORMAT(L"Inactive session %s needs interaction", (SessionName)));
+        ScpExplorer->CancelNote(FReconnectingNote);
+        ScpExplorer->InactiveTerminalNotify(Terminal, LoadStr(SESSION_NEED_INTERACTION), qtInformation);
+        Terminal->NextInactiveReconnect = TDateTime();
+      }
+      try
+      {
+        if (Terminal->Active)
+        {
+          Terminal->Close();
+        }
+      }
+      catch (...)
+      {
+      }
+    }
+
+    FReconnectingNote = EmptyStr;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
 {
 
@@ -1809,7 +1975,11 @@ void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
     TManagedTerminal * Terminal = Sessions[Index];
     try
     {
-      if (!SkipCurrentTerminal || (Terminal != ActiveTerminal))
+      if (Terminal == FReconnectingInactiveTerminal)
+      {
+        CheckInactiveTerminalReconnect();
+      }
+      else if (!SkipCurrentTerminal || (Terminal != ActiveTerminal))
       {
         // make sure Idle is called on the thread that runs the terminal
         if (Terminal->TerminalThread != NULL)
@@ -1821,6 +1991,15 @@ void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
           if (Terminal->Active)
           {
             Terminal->Idle();
+          }
+          else if ((Terminal != ActiveTerminal) &&
+                   ((!Terminal->InactiveTerminationMessage.IsEmpty() && GUIConfiguration->SessionReopenAutoInactive) ||
+                    (Terminal->InactiveTerminationMessage.IsEmpty() && WinConfiguration->WorkspaceConnectAll)) &&
+                   (FReconnectingInactiveTerminal == NULL) &&
+                   (Terminal->NextInactiveReconnect != TDateTime()) &&
+                   (Terminal->NextInactiveReconnect < Now()))
+          {
+            StartInactiveTerminalReconnect(Terminal);
           }
         }
 
@@ -1846,28 +2025,28 @@ void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
       {
         // we may not have inactive terminal, unless there is a explorer,
         // also Idle is called from explorer anyway
-        DebugAssert(ScpExplorer != NULL);
-        if (ScpExplorer != NULL)
+        if (DebugAlwaysTrue(ScpExplorer != NULL))
         {
-          ScpExplorer->InactiveTerminalException(Terminal, &E);
+          ScpExplorer->InactiveTerminalNotify(Terminal, EmptyStr, qtError, &E);
         }
 
         if (!Terminal->Active)
         {
           // if session is lost, save the error message and rethrow it
           // once the terminal gets activated
-          FTerminationMessages->Strings[Index] = E.Message;
+          Terminal->InactiveTerminationMessage = E.Message;
+          Terminal->NextInactiveReconnect = IncMilliSecond(Now(), GUIConfiguration->SessionReopenAutoIdle);
         }
       }
     }
   }
 
   TTerminalQueue * QueueWithEvent;
-  TQueueEvent QueueEvent;
 
   do
   {
     QueueWithEvent = NULL;
+    TQueueEvent QueueEvent = TQueueEvent(); // shut up
 
     {
       TGuard Guard(FQueueSection);
@@ -1951,9 +2130,30 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminalManager::IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data)
+bool TTerminalManager::IsOpenedTerminal(TTerminal * Terminal)
 {
-  bool Result = Terminal->Active;
+  return
+    (Terminal != NULL) &&
+    Terminal->Active;
+}
+//---------------------------------------------------------------------------
+bool TTerminalManager::IsAvailableTerminal(TTerminal * Terminal)
+{
+  return
+    IsOpenedTerminal(Terminal) &&
+    !IsReconnectingTerminal(Terminal);
+}
+//---------------------------------------------------------------------------
+bool TTerminalManager::IsReconnectingTerminal(TTerminal * Terminal)
+{
+  return
+    (Terminal != NULL) &&
+    ((Terminal == FOpeningTerminal) || (Terminal == FReconnectingInactiveTerminal));
+}
+//---------------------------------------------------------------------------
+bool TTerminalManager::IsAvailableTerminalForSite(TTerminal * Terminal, TSessionData * Data)
+{
+  bool Result = IsAvailableTerminal(Terminal);
   if (Result)
   {
     std::unique_ptr<TSessionData> TerminalData(Terminal->SessionData->Clone());
@@ -1969,7 +2169,7 @@ TManagedTerminal * __fastcall TTerminalManager::FindActiveTerminalForSite(TSessi
   for (int Index = 0; (Result == NULL) && (Index < Count); Index++)
   {
     TManagedTerminal * Terminal = Sessions[Index];
-    if (IsActiveTerminalForSite(Terminal, Data))
+    if (IsAvailableTerminalForSite(Terminal, Data))
     {
       Result = Terminal;
     }
@@ -2016,7 +2216,7 @@ bool __fastcall TTerminalManager::UploadPublicKey(
         Terminal->OnFinished = NULL;
         DoConnectTerminal(Terminal, false, true);
       }
-      catch (Exception & E)
+      catch (Exception &)
       {
         CloseAutheticateForm();
         throw;
@@ -2180,7 +2380,7 @@ TThumbnailDownloadQueueItem::TThumbnailDownloadQueueItem(
     TCustomScpExplorerForm * ScpExplorer, TManagedTerminal * Terminal, const UnicodeString & SourceDir,
     const UnicodeString & TargetDir, const TCopyParamType * CopyParam) :
   TTransferQueueItem(Terminal, NULL, TargetDir, CopyParam, cpNoConfirmation | cpTemporary, osRemote, true, false),
-  FScpExplorer(ScpExplorer), FManagedTerminal(Terminal)
+  FManagedTerminal(Terminal), FScpExplorer(ScpExplorer)
 {
   FInfo->Source = SourceDir;
 }

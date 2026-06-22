@@ -70,7 +70,7 @@ namespace WinSCP
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
     [ComSourceInterfaces(typeof(ISessionEvents))]
-    public sealed class Session : IDisposable, IReflect
+    public sealed class Session : ISession, IReflect
     {
         public string ExecutablePath { get { return GetExecutablePath(); } set { CheckNotOpened(); _executablePath = value; } }
 #if !NETSTANDARD
@@ -2591,7 +2591,8 @@ namespace WinSCP
         {
             CheckNotOpened();
             const string XmlExtension = ".xml";
-            if (Path.GetExtension(value).Equals(XmlExtension, StringComparison.OrdinalIgnoreCase))
+            if ((value != null) &&
+                Path.GetExtension(value).Equals(XmlExtension, StringComparison.OrdinalIgnoreCase))
             {
                 throw Logger.WriteException(new ArgumentException($"Session log cannot have {XmlExtension} extension"));
             }

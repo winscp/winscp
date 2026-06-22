@@ -84,7 +84,7 @@ protected:
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
     VCL_MESSAGE_HANDLER(CM_SHOWINGCHANGED, TMessage, CMShowingChanged)
-  END_MESSAGE_MAP(TCustomDriveView);
+  END_MESSAGE_MAP(TCustomDriveView)
   #pragma warn +inl
 
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };

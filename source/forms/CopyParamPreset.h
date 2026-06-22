@@ -47,7 +47,7 @@ protected:
   TCopyParamRule * __fastcall GetRule();
   void __fastcall SetRuleData(const TCopyParamRuleData & Data);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TCopyParamPresetDialog(TComponent * Owner,

@@ -484,7 +484,7 @@ static S3Status make_list_bucket_callback(ListBucketData *lbData)
                        !strcmp(lbData->isTruncated, "1")) ? 1 : 0;
 
     // Convert the contents
-    S3ListBucketContent * contents = new S3ListBucketContent[lbData->contentsCount]; // WINSCP (heap allocation)
+    S3ListBucketContent contents[lbData->contentsCount];
 
     int contentsCount = lbData->contentsCount;
     for (i = 0; i < contentsCount; i++) {
@@ -504,18 +504,15 @@ static S3Status make_list_bucket_callback(ListBucketData *lbData)
 
     // Make the common prefixes array
     int commonPrefixesCount = lbData->commonPrefixesCount;
-    char **commonPrefixes = new char*[commonPrefixesCount]; // WINSCP (heap allocation)
+    char *commonPrefixes[commonPrefixesCount];
     for (i = 0; i < commonPrefixesCount; i++) {
         commonPrefixes[i] = lbData->commonPrefixes[i];
     }
 
-    S3Status status = (*(lbData->listBucketCallback))
+    return (*(lbData->listBucketCallback))
         (isTruncated, lbData->nextMarker,
          contentsCount, contents, commonPrefixesCount,
          (const char **) commonPrefixes, lbData->callbackData);
-    delete[] contents; // WINSCP (heap allocation)
-    delete[] commonPrefixes;
-    return status;
 }
 
 
@@ -572,7 +569,7 @@ static S3Status listBucketXmlCallback(const char *elementPath,
             int which = lbData->commonPrefixesCount;
             size_t oldLen = lbData->commonPrefixLens[which];
             lbData->commonPrefixLens[which] +=
-                snprintf_S(lbData->commonPrefixes[which]+oldLen,
+                snprintf(lbData->commonPrefixes[which]+oldLen,
                          sizeof(lbData->commonPrefixes[which]) -
                          oldLen - 1,
                          "%.*s", dataLen, data);
@@ -710,7 +707,7 @@ void S3_list_bucket(const S3BucketContext *bucketContext, const char *prefix,
 
 
     int amp = 0;
-    if (prefix) {
+    if (prefix) { // WINSCP
         safe_append("prefix", prefix);
     }
     if (marker && *marker) {

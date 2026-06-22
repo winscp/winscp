@@ -22,9 +22,7 @@ static ssh_hash *sha1_select(const ssh_hashalg *alg)
         NULL,
     };
 
-    { // WINSCP
-    size_t i;
-    for (i = 0; real_algs[i]; i++) {
+    for (size_t i = 0; real_algs[i]; i++) {
         const ssh_hashalg *alg = real_algs[i];
         const struct sha1_extra *alg_extra =
             (const struct sha1_extra *)alg->extra;
@@ -36,18 +34,11 @@ static ssh_hash *sha1_select(const ssh_hashalg *alg)
      * the last non-NULL entry should be software-only SHA-1, which
      * is always available. */
     unreachable("sha1_select ran off the end of its list");
-    } // WINSCP
 }
 
 const ssh_hashalg ssh_sha1 = {
-    // WINSCP
-    /*.new =*/ sha1_select,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    /*.hlen =*/ 20,
-    /*.blocklen =*/ 64,
+    .new = sha1_select,
+    .hlen = 20,
+    .blocklen = 64,
     HASHALG_NAMES_ANNOTATED("SHA-1", "dummy selector vtable"),
-    NULL,
 };

@@ -26,7 +26,7 @@ namespace WinSCP
     [Guid("155B841F-39D4-40C8-BA87-C79675E14CE3")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
-    public sealed class TransferOptions
+    public sealed class TransferOptions : ITransferOptions
     {
         public bool PreserveTimestamp { get; set; }
         public FilePermissions FilePermissions { get; set; }

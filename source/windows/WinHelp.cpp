@@ -1,16 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <Tools.h>
-#include <TextsWin.h>
-#include <CoreMain.h>
 #include <HelpIntfs.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
-class TWebHelpSystem : public TInterfacedObject, public ICustomHelpViewer
+class TWebHelpSystem : public TCppInterfacedObject<ICustomHelpViewer>
 {
 public:
   __fastcall TWebHelpSystem(const UnicodeString & Version, const UnicodeString & Language);
@@ -23,8 +17,6 @@ public:
   virtual bool __fastcall CanShowTableOfContents();
   virtual void __fastcall ShowTableOfContents();
   virtual void __fastcall ShowHelp(const UnicodeString HelpString);
-
-  IUNKNOWN
 
 private:
   UnicodeString FVersion;
@@ -57,7 +49,7 @@ __fastcall TWebHelpSystem::TWebHelpSystem(
 {
 }
 //---------------------------------------------------------------------------
-int __fastcall TWebHelpSystem::UnderstandsKeyword(const UnicodeString HelpString)
+int __fastcall TWebHelpSystem::UnderstandsKeyword(const UnicodeString DebugUsedArg(HelpString))
 {
   // pretend that we know everything
   return 1;

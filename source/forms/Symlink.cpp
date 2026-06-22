@@ -1,15 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <Configuration.h>
-#include <TextsWin.h>
 #include "Symlink.h"
-#include "VCLCommon.h"
-#include <WinInterface.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoSymlinkDialog(UnicodeString & FileName, UnicodeString & PointTo,

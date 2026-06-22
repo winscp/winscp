@@ -855,9 +855,9 @@ static inline void ssh_hash_digest_nondestructive(ssh_hash *h,
 
 /* Handy macros for defining all those text-name fields at once */
 #define HASHALG_NAMES_BARE(base) \
-    /*.text_basename =*/ base, /*.annotation =*/ NULL, /*.text_name =*/ base
+    .text_basename = base, .annotation = NULL, .text_name = base
 #define HASHALG_NAMES_ANNOTATED(base, ann) \
-    /*.text_basename =*/ base, /*.annotation =*/ ann, /*.text_name =*/ base " (" ann ")"
+    .text_basename = base, .annotation = ann, .text_name = base " (" ann ")"
 
 #ifndef WINSCP_VS
 
@@ -893,7 +893,6 @@ enum kexlist {
     NKEXLIST
 };
 
-#pragma option push -w-mnc // WINSCP
 struct ssh_keyalg {
     /* Constructors that create an ssh_key */
     ssh_key *(*new_pub) (const ssh_keyalg *self, ptrlen pub);
@@ -937,7 +936,6 @@ struct ssh_keyalg {
     bool is_certificate;   /* is this a certified key type? */
     const ssh_keyalg *base_alg; /* if so, for what underlying key alg? */
 };
-#pragma option pop // WINSCP
 
 static inline ssh_key *ssh_key_new_pub(const ssh_keyalg *self, ptrlen pub)
 { return self->new_pub(self, pub); }

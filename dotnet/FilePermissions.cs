@@ -7,7 +7,7 @@ namespace WinSCP
     [Guid("90A290B2-C8CE-4900-8C42-7736F9E435C6")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
-    public sealed class FilePermissions
+    public sealed class FilePermissions : IFilePermissions
     {
         public int Numeric
         {

@@ -15,9 +15,8 @@
 #include "UpDownEdit.hpp"
 #include <Dialogs.hpp>
 #include <PasTools.hpp>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include "PathLabel.hpp"
-#include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
 #include <WinInterface.h>
 #include <WinConfiguration.h>
@@ -240,7 +239,7 @@ __published:
   TTabSheet *PanelLocalSheet;
   TGroupBox *LocalPanelGroup;
   TCheckBox *SystemContextMenuCheck;
-  TGroupBox *PasswordGroupBox;
+  TGroupBox *AuthenticationGroup;
   TCheckBox *SessionRememberPasswordCheck;
   TStaticText *PuttyPathHintText;
   TLabel *PuttyRegistryStorageKeyLabel;
@@ -356,10 +355,19 @@ __published:
   TCheckBox *SessionTabCaptionTruncationCheck;
   TGroupBox *InternalEditorBehaviourGroup;
   TCheckBox *EditorDisableSmoothScrollCheck;
+  TCheckBox *EditorWarnLargeFileCheck;
+  TUpDownEdit *EditorLargeFileSizeEdit;
+  TLabel *EditorLargeFileSizeUnitLabel;
   TComboEdit *SearchEdit;
   TTabSheet *SearchSheet;
   TGroupBox *SearchGroup;
+  TCheckBox *SessionReopenAutoInactiveCheck;
   TPanel *NavigationPanel;
+  TCheckBox *FlashTaskbarCheck;
+  TCheckBox *WorkspaceConnectAllCheck;
+  TLabel *Label13;
+  TComboBox *AuthAgentCombo;
+  TCheckBox *SessionSilentDisconnectCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -584,7 +592,7 @@ protected:
   void UpdateSshHostCAsViewView();
   void SshHostCAsRefresh();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

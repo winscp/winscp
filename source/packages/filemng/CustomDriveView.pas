@@ -5,7 +5,7 @@ interface
 uses
   Classes, ComCtrls, CommCtrl, Windows, Controls, Forms, ShlObj, Messages,
     Graphics,
-  DragDrop, CustomDirView, IEDriveInfo, DragDropFilesEx, PasTools;
+  DragDrop, CustomDirView, IEDriveInfoInt, DragDropFilesEx, PasTools;
 
 type
   {Types uses by the function IterateSubTree:}
@@ -25,13 +25,11 @@ type
     FParentForm: TCustomForm;
     FDragFileList: TStringList;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
-    FDragImageList: TDragImageList;
     FDragDrive: string;
     FExeDrag: Boolean;
     FDDLinkOnExeDrag: Boolean;
     FDragNode: TTreeNode;
     FDragStartTime: FILETIME;
-    FDragPos: TPoint;
     FStartPos: TPoint;
     FContextMenu: Boolean;
     FCanChange: Boolean;
@@ -151,7 +149,6 @@ type
     procedure DisplayPropertiesMenu(Node: TTreeNode); virtual; abstract;
 
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
-    procedure ScrollOnDragOverAfterUpdate;
 
     function DoBusy(Busy: Integer): Boolean;
     function StartBusy: Boolean;
@@ -279,7 +276,6 @@ begin
 
   FScrollOnDragOver := TTreeViewScrollOnDragOver.Create(Self, False);
   FScrollOnDragOver.OnBeforeUpdate := ScrollOnDragOverBeforeUpdate;
-  FScrollOnDragOver.OnAfterUpdate := ScrollOnDragOverAfterUpdate;
 end;
 
 destructor TCustomDriveView.Destroy;
@@ -289,13 +285,6 @@ begin
 
   if Assigned(Images) then
     Images.Free;
-
-  if Assigned(FDragImageList) then
-  begin
-    if GlobalDragImageList = FDragImageList then
-      GlobalDragImageList := nil;
-    FDragImageList.Free;
-  end;
 
   FDragFileList.Destroy;
 
@@ -383,11 +372,6 @@ begin
 
   NeedImageLists;
 
-  if not (csDesigning in ComponentState) then
-    FDragImageList := TDragImageList.Create(Self);
-  if not Assigned(GlobalDragImageList) then
-    GlobalDragImageList := FDragImageList;
-
   FDragDropFilesEx.DragDropControl := Self;
   FParentForm := GetParentForm(Self);
 
@@ -435,18 +419,12 @@ procedure TCustomDriveView.ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObjec
 var
   NodeToValidate: TTreeNode;
 begin
-  GlobalDragImageList.HideDragImage;
   if Assigned(ObjectToValidate) then
   begin
     NodeToValidate := (ObjectToValidate as TTreeNode);
     if not NodeToValidate.HasChildren then
       ValidateDirectory(NodeToValidate);
   end;
-end;
-
-procedure TCustomDriveView.ScrollOnDragOverAfterUpdate;
-begin
-  GlobalDragImageList.ShowDragImage;
 end;
 
 procedure TCustomDriveView.DDDragEnter(DataObj: IDataObject; KeyState: Longint;
@@ -492,8 +470,6 @@ procedure TCustomDriveView.DDDragLeave(Dummy: Integer);
 begin
   if Assigned(DropTarget) then
   begin
-    if GlobalDragImageList.Dragging then
-      GlobalDragImageList.HideDragImage;
     DropTarget := nil;
     Update;
   end;
@@ -505,9 +481,6 @@ end; {DragLeave}
 procedure TCustomDriveView.DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint; PreferredEffect: Longint);
 var
   Node: TTreeNode;
-  Rect1: TRect;
-  UpdateImage: Boolean;
-  LastDragNode: TTreeNode;
 begin
   if Effect <> DROPEFFECT_NONE then
   begin
@@ -515,39 +488,7 @@ begin
 
     if Assigned(Node) then
     begin
-      LastDragNode := DropTarget;
-      UpdateImage := False;
-      if GlobalDragImageList.Dragging and (LastDragNode <> Node) then
-      begin
-        if Assigned(LastDragNode) then
-        begin
-          Rect1 := LastDragNode.DisplayRect(True);
-          if Rect1.Right >= Point.x - GlobalDragImageList.GetHotSpot.X then
-          begin
-            GlobalDragImageList.HideDragImage;
-            UpdateImage := True;
-          end
-            else
-          begin
-            Rect1 := Node.DisplayRect(True);
-            if Rect1.Right >= Point.x - GlobalDragImageList.GetHotSpot.X then
-            begin
-              GlobalDragImageList.HideDragImage;
-              UpdateImage := True;
-            end
-          end;
-        end
-          else
-        begin
-          {LastDragNode not assigned:}
-          GlobalDragImageList.HideDragImage;
-          UpdateImage := True;
-        end;
-      end;
-
       DropTarget := Node;
-      if UpdateImage then
-        GlobalDragImageList.ShowDragImage;
 
       {Drop-operation allowed at this location?}
       if Assigned(FDragNode) and
@@ -580,9 +521,6 @@ end; {DDDragOver}
 procedure TCustomDriveView.DDDrop(DataObj: IDataObject; KeyState: Longint;
   Point: TPoint; var Effect: Longint);
 begin
-  if GlobalDragImageList.Dragging then
-    GlobalDragImageList.HideDragImage;
-
   if Effect = DROPEFFECT_NONE then
     DropTarget := nil;
 
@@ -593,8 +531,6 @@ end; {DDDrop}
 procedure TCustomDriveView.DDQueryContinueDrag(EscapePressed: BOOL; KeyState: Longint;
   var Result: HResult);
 var
-  Point: TPoint;
-  ClientPoint: TPoint;
   KnowTime: FILETIME;
 begin
   if Result = DRAGDROP_S_DROP then
@@ -609,29 +545,7 @@ begin
 
   if EscapePressed then
   begin
-    if GlobalDragImageList.Dragging then
-      GlobalDragImageList.HideDragImage;
     DropTarget := nil;
-  end
-    else
-  begin
-    if GlobalDragImageList.Dragging then
-    begin
-      GetCursorPos(Point);
-      {Convert screen coordinates to the parentforms coordinates:}
-      ClientPoint := FParentForm.ScreenToClient(Point);
-      {Move the drag image to the new position and show it:}
-      if not CompareMem(@ClientPoint, @FDragPos, SizeOf(TPoint)) then
-      begin
-        FDragPos := ClientPoint;
-        if PtInRect(FParentForm.BoundsRect, Point) then
-        begin
-          GlobalDragImageList.DragMove(ClientPoint.X, ClientPoint.Y);
-          GlobalDragImageList.ShowDragImage;
-        end
-          else GlobalDragImageList.HideDragImage;
-      end;
-    end;
   end;
 end; {DDQueryContinueDrag}
 
@@ -703,10 +617,8 @@ procedure TCustomDriveView.DDDragDetect(KeyState: Longint; DetectStart, Point: T
   DragStatus: TDragDetectStatus);
 var
   P: TPoint;
-  ImageList: HImageList;
   NodeRect: TRect;
   FileListCreated: Boolean;
-  AvoidDragImage: Boolean;
 begin
   if (DragStatus = ddsDrag) and (not Assigned(FDragNode)) then
   begin
@@ -735,13 +647,10 @@ begin
     ClearDragFileList(FDragDropFilesEx.FileList);
     FDragDropFilesEx.CompleteFileList := DragCompleteFileList;
     FileListCreated := False;
-    AvoidDragImage := False;
 
     if Assigned(OnDDCreateDragFileList) then
     begin
       OnDDCreateDragFileList(Self, FDragDropFilesEx.FileList, FileListCreated);
-      if FileListCreated then
-        AvoidDragImage := True;
     end;
 
     if not FileListCreated then
@@ -753,30 +662,6 @@ begin
 
     if FDragDropFilesEx.FileList.Count > 0 then
     try
-      {Create the dragimage:}
-      GlobalDragImageList := FDragImageList;
-      if not AvoidDragImage then
-      begin
-        {Hide the selection mark to get a proper dragimage:}
-        if Selected = FDragNode then
-          Selected := nil;
-        ImageList := TreeView_CreateDragImage(Handle, FDragNode.ItemID);
-
-        {Show the selection mark if it was hidden:}
-        if not Assigned(Selected) then
-          Selected := FDragNode;
-
-        if ImageList <> Invalid_Handle_Value then
-        begin
-          GlobalDragImageList.Handle := ImageList;
-          GlobalDragImageList.SetDragImage(0, P.X - NodeRect.TopLeft.X, P.Y - NodeRect.TopLeft.Y);
-          P := FParentForm.ScreenToClient(Point);
-          GlobalDragImageList.BeginDrag(FParentForm.Handle, P.X, P.Y);
-          GlobalDragImageList.HideDragImage;
-          ShowCursor(True);
-        end;
-      end;
-
       DropSourceControl := Self;
 
       GetSystemTimeAsFileTime(FDragStartTime);
@@ -786,10 +671,6 @@ begin
 
       {Execute the drag&drop-Operation:}
       FLastDDResult := DDExecute;
-
-      {the drag&drop operation is finished, so clean up the used drag image:}
-      GlobalDragImageList.EndDrag;
-      GlobalDragImageList.Clear;
 
       Application.ProcessMessages;
 

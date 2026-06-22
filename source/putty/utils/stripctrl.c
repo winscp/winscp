@@ -47,6 +47,7 @@ struct StripCtrlCharsImpl {
     StripCtrlChars public;
 };
 
+#ifndef WINSCP
 static void stripctrl_locale_BinarySink_write(
     BinarySink *bs, const void *vp, size_t len);
 static void stripctrl_term_BinarySink_write(
@@ -63,7 +64,6 @@ static StripCtrlCharsImpl *stripctrl_new_common(
     return scc;
 }
 
-#ifndef WINSCP
 StripCtrlChars *stripctrl_new(
     BinarySink *bs_out, bool permit_cr, wchar_t substitution)
 {
@@ -320,7 +320,6 @@ static void stripctrl_locale_BinarySink_write(
             to_copy = len;
 
         memcpy(scc->buf + scc->buflen, p, to_copy);
-        { // WINSCP
         size_t consumed = stripctrl_locale_try_consume(
             scc, scc->buf, scc->buflen + to_copy);
 
@@ -370,7 +369,6 @@ static void stripctrl_locale_BinarySink_write(
          */
         scc->buflen -= consumed;
         memmove(scc->buf, scc->buf + consumed, scc->buflen);
-        } // WINSCP
     }
 
     /*

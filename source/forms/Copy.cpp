@@ -1,21 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <WinInterface.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <VCLCommon.h>
-#include <CustomWinConfiguration.h>
-#include <Tools.h>
-#include <GUITools.h>
-
 #include "Copy.h"
+#include <ComboEdit.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-#pragma link "Rights"
-#pragma link "CopyParams"
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -130,7 +119,7 @@ __fastcall TCopyDialog::TCopyDialog(
   HotTrackLabel(CopyParamLabel);
   HotTrackLabel(ShortCutHintLabel);
 
-  if (FLAGSET(FOptions, coBrowse))
+  if (FLAGSET(FOptions, coExplore))
   {
     DebugAssert(!FToRemote);
     OkButton->Style = TCustomButton::bsSplitButton;
@@ -297,7 +286,7 @@ int __fastcall TCopyDialog::GetOutputOptions()
   return FOutputOptions |
     FLAGMASK(FSaveSettings, cooSaveSettings) |
     FLAGMASK(NeverShowAgainCheck->Checked, cooDoNotShowAgain) |
-    FLAGMASK(FBrowse, cooBrowse);
+    FLAGMASK(FExplore, cooExplore);
 }
 //---------------------------------------------------------------------------
 THistoryComboBox * __fastcall TCopyDialog::GetDirectoryEdit()
@@ -337,8 +326,7 @@ void __fastcall TCopyDialog::SetDirectory(UnicodeString value)
 {
   if (!value.IsEmpty())
   {
-    value = RemotePaths() ?
-      UnicodeString(UnixIncludeTrailingBackslash(value)) : IncludeTrailingBackslash(value);
+    value = UniversalIncludeTrailingBackslash(RemotePaths(), value);
   }
   DirectoryEdit->Text = value + GetFileMask();
 }
@@ -351,18 +339,14 @@ UnicodeString __fastcall TCopyDialog::GetDirectory()
   if (RemotePaths())
   {
     Result = UnixExtractFilePath(Result);
-    if (!Result.IsEmpty())
-    {
-      Result = UnixIncludeTrailingBackslash(Result);
-    }
   }
   else
   {
     Result = ExtractFilePath(Result);
-    if (!Result.IsEmpty())
-    {
-      Result = IncludeTrailingBackslash(Result);
-    }
+  }
+  if (!Result.IsEmpty())
+  {
+    Result = UniversalIncludeTrailingBackslash(RemotePaths(), Result);
   }
   return Result;
 }
@@ -418,9 +402,8 @@ bool __fastcall TCopyDialog::Execute()
 {
   // at start assume that copy param is current preset
   FPreset = GUIConfiguration->CopyParamCurrent;
-  DirectoryEdit->Items = CustomWinConfiguration->History[
-    FToRemote ? L"RemoteTarget" : L"LocalTarget"];
-  FBrowse = false;
+  DirectoryEdit->HistoryKey = FToRemote ? L"RemoteTarget" : L"LocalTarget";
+  FExplore = false;
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
@@ -432,8 +415,6 @@ bool __fastcall TCopyDialog::Execute()
         GUIConfiguration->DefaultCopyParam = Params;
       }
       DirectoryEdit->SaveToHistory();
-      CustomWinConfiguration->History[FToRemote ?
-        L"RemoteTarget" : L"LocalTarget"] = DirectoryEdit->Items;
 
       if (FLAGSET(FOptions, coShortCutHint))
       {
@@ -451,7 +432,7 @@ bool __fastcall TCopyDialog::Execute()
 void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
       bool &CanClose)
 {
-  if ((ModalResult == DefaultResult(this)) && !FBrowse)
+  if ((ModalResult == DefaultResult(this)) && !FExplore)
   {
     ExitActiveControl(this);
 
@@ -478,7 +459,7 @@ void __fastcall TCopyDialog::LocalDirectoryBrowseButtonClick(
     ADirectory = Directory;
   }
 
-  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
+  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY)))
   {
     Directory = ADirectory;
     UpdateControls();
@@ -602,9 +583,9 @@ void __fastcall TCopyDialog::DownloadItemClick(TObject *)
   OkButton->Click();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::BrowseItemClick(TObject *)
+void __fastcall TCopyDialog::ExploreItemClick(TObject *)
 {
-  FBrowse = true;
+  FExplore = true;
   OkButton->Click();
 }
 //---------------------------------------------------------------------------
@@ -617,5 +598,11 @@ void __fastcall TCopyDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, i
 {
   DebugUsedParam2(OldDPI, NewDPI);
   AutoSizeCheckBox(NeverShowAgainCheck);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
 }
 //---------------------------------------------------------------------------

@@ -1,14 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include <Configuration.h>
-#include <CoreMain.h>
-#include <Common.h>
 #include <Usage.h>
 #include <FileInfo.h>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 const UnicodeString LastInternalExceptionCounter(L"LastInternalException2");
 const UnicodeString LastUpdateExceptionCounter(L"LastUpdateException");

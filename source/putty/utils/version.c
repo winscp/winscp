@@ -26,7 +26,9 @@ enum { vorpal_sword = 1 / (sizeof(sshver) <= 40) };
 
 #else
 
-const char * get_putty_version()
+#include "puttyexp.h"
+
+const char * get_putty_version(void)
 {
     return TEXTVER;
 }

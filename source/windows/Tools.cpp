@@ -1,32 +1,18 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Consts.hpp>
 #include <shlobj.h>
 #include <stdio.h>
 #define INITGUID
 #include <propkey.h>
 #include <powrprof.h>
 
-#include <Common.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <HelpWin.h>
-#include <Exceptions.h>
-#include <CoreMain.h>
 #include <RemoteFiles.h>
 #include <PuttyTools.h>
-
-#include "GUITools.h"
-#include "VCLCommon.h"
 #include "Setup.h"
-#include "Tools.h"
 #include <WinHelpViewer.hpp>
-#include <PasTools.hpp>
 #include <System.Win.ComObj.hpp>
-#include <StrUtils.hpp>
-#include <WinConfiguration.h>
 #include <ProgParams.h>
 //---------------------------------------------------------------------------
 // WORKAROUND
@@ -39,11 +25,9 @@
 #undef SECURITY_FLAG_IGNORE_CERT_CN_INVALID
 
 #define URL_COMPONENTS URL_COMPONENTS_ANOTHER
-#define URL_COMPONENTSA URL_COMPONENTSA_ANOTHER
 #define URL_COMPONENTSW URL_COMPONENTSW_ANOTHER
 
 #define LPURL_COMPONENTS LPURL_COMPONENTS_ANOTHER
-#define LPURL_COMPONENTSA LPURL_COMPONENTS_ANOTHER
 #define LPURL_COMPONENTSW LPURL_COMPONENTS_ANOTHER
 
 #define INTERNET_SCHEME INTERNET_SCHEME_ANOTHER
@@ -68,8 +52,6 @@
 #undef HTTP_VERSION_INFO
 #undef LPHTTP_VERSION_INFO
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 TFontStyles __fastcall IntToFontStyles(int value)
 {
   TFontStyles Result;
@@ -77,7 +59,7 @@ TFontStyles __fastcall IntToFontStyles(int value)
   {
     if (value & 1)
     {
-      Result << (TFontStyle)i;
+      Result << static_cast<TFontStyle>(i);
     }
     value >>= 1;
   }
@@ -90,7 +72,7 @@ int __fastcall FontStylesToInt(const TFontStyles value)
   for (int i = fsStrikeOut; i >= fsBold; i--)
   {
     Result <<= 1;
-    if (value.Contains((TFontStyle)i))
+    if (value.Contains(static_cast<TFontStyle>(i)))
     {
       Result |= 1;
     }
@@ -132,6 +114,17 @@ TColor __fastcall GetBtnFaceColor()
   return WinConfiguration->UseDarkTheme() ? TColor(RGB(43, 43, 43)) : clBtnFace;
 }
 //---------------------------------------------------------------------------
+TColor GetLightLinkColor()
+{
+  return clBlue;
+}
+//---------------------------------------------------------------------------
+TColor GetLinkColor(TControl * Control)
+{
+  // dark theme Windows 11 Settings app On/Off toggle color
+  return UseDarkModeForControl(Control) ? TColor(RGB(0x4C, 0xC2, 0xFF)) : GetLightLinkColor();
+}
+//---------------------------------------------------------------------------
 TColor __fastcall GetNonZeroColor(TColor Color)
 {
   // 0,0,0 is "default color"
@@ -143,19 +136,13 @@ TColor __fastcall GetNonZeroColor(TColor Color)
   return Color;
 }
 //---------------------------------------------------------------------------
-void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn)
-{
-  TPoint ScreenPoint = CenterOn->ClientToScreen(TPoint(0, 0));
-  Form->Left = ScreenPoint.x + (CenterOn->Width / 2) - (Form->Width / 2);
-  Form->Top = ScreenPoint.y + (CenterOn->Height / 2) - (Form->Height / 2);
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall GetListViewStr(TListView * ListView)
+UnicodeString __fastcall GetListViewStr(TCustomListView * ListView)
 {
   UnicodeString Result;
-  for (int Index = 0; Index < ListView->Columns->Count; Index++)
+  TListView * AListView = static_cast<TListView *>(ListView);
+  for (int Index = 0; Index < AListView->Columns->Count; Index++)
   {
-    AddToList(Result, IntToStr(ListView->Column[Index]->Width), L",");
+    AddToList(Result, IntToStr(AListView->Column[Index]->Width), L",");
   }
   // WORKAROUND
   // Adding an additional comma after the list,
@@ -167,23 +154,24 @@ UnicodeString __fastcall GetListViewStr(TListView * ListView)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
+void __fastcall LoadListViewStr(TCustomListView * ListView, UnicodeString ALayoutStr)
 {
   UnicodeString LayoutStr = CutToChar(ALayoutStr, L';', true);
   int PixelsPerInch = LoadPixelsPerInch(CutToChar(ALayoutStr, L';', true), ListView);
   int Index = 0;
-  while (!LayoutStr.IsEmpty() && (Index < ListView->Columns->Count))
+  TListView * AListView = static_cast<TListView *>(ListView);
+  while (!LayoutStr.IsEmpty() && (Index < AListView->Columns->Count))
   {
     int Width;
     if (TryStrToInt(CutToChar(LayoutStr, L',', true), Width))
     {
-      ListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch, ListView);
+      AListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch, ListView);
     }
     Index++;
   }
 }
 //---------------------------------------------------------------------------
-wchar_t FormDataSep = L';';
+static wchar_t FormDataSep = L';';
 //---------------------------------------------------------------------------
 void LoadFormDimensions(
   const UnicodeString & AData, int PixelsPerInch, Forms::TMonitor * Monitor, TForm * Form, TRect & Bounds, bool & DefaultPos)
@@ -241,7 +229,7 @@ void RestoreForm(const UnicodeString & AData, TForm * Form, bool PositionOnly, c
     {
       CutToChar(Data, FormDataSep, true);
     }
-    TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, FormDataSep, true), (int)wsNormal);
+    TWindowState State = static_cast<TWindowState>(StrToIntDef(CutToChar(Data, FormDataSep, true), static_cast<int>(wsNormal)));
     int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, FormDataSep, true), Form);
 
     TRect OriginalBounds = Form->BoundsRect;
@@ -350,7 +338,7 @@ UnicodeString __fastcall StoreForm(TForm * Form)
     FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
       SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
       // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
-      (int)(Form->WindowState == wsMinimized ? GetWindowStateBeforeMimimize(Form) : Form->WindowState),
+      static_cast<int>(Form->WindowState == wsMinimized ? GetWindowStateBeforeMimimize(Form) : Form->WindowState),
       SavePixelsPerInch(Form)));
   return Result;
 }
@@ -526,6 +514,7 @@ void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeStr
     Arg = FORMAT(L"\"%s\"", (Param));
   }
   UnicodeString Space(L" ");
+  AddToList(Arg, GetIniFileParam(), Space);
   AddToList(Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH), Space);
   AddToList(Arg, AdditionalParams, Space);
 
@@ -536,7 +525,7 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
   int SpecialFolder, int IconIndex, bool Return)
 {
-  IShellLink* pLink = NULL;
+  TComPtr<IShellLink> Link;
 
   if (SpecialFolder < 0)
   {
@@ -545,97 +534,70 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
 
   try
   {
-    OleCheck(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (void **) &pLink));
+    Link.Create(CLSID_ShellLink, CLSCTX_INPROC_SERVER);
 
-    try
+    Link->SetPath(File.c_str());
+    Link->SetDescription(Description.c_str());
+    Link->SetArguments(Params.c_str());
+    Link->SetShowCmd(SW_SHOW);
+    // Explicitly setting icon file,
+    // without this icons are not shown at least in Windows 7 jumplist
+    Link->SetIconLocation(File.c_str(), IconIndex);
+
+    TComPtr<IPersistFile> PersistFile;
+    if (!Return &&
+        SUCCEEDED(Link->QueryInterface(IID_PPV_ARGS(&PersistFile))))
     {
-      pLink->SetPath(File.c_str());
-      pLink->SetDescription(Description.c_str());
-      pLink->SetArguments(Params.c_str());
-      pLink->SetShowCmd(SW_SHOW);
-      // Explicitly setting icon file,
-      // without this icons are not shown at least in Windows 7 jumplist
-      pLink->SetIconLocation(File.c_str(), IconIndex);
-
-      IPersistFile* pPersistFile;
-      if (!Return &&
-          SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+      UnicodeString FolderPath;
+      if (::SpecialFolderLocation(SpecialFolder, FolderPath))
       {
-        try
-        {
-          LPMALLOC      ShellMalloc;
-          LPITEMIDLIST  DesktopPidl;
-          wchar_t DesktopDir[MAX_PATH];
-
-          OleCheck(SHGetMalloc(&ShellMalloc));
-
-          try
-          {
-            OleCheck(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl));
-
-            OleCheck(SHGetPathFromIDList(DesktopPidl, DesktopDir));
-          }
-          __finally
-          {
-            ShellMalloc->Free(DesktopPidl);
-            ShellMalloc->Release();
-          }
-
-          WideString strShortCutLocation(DesktopDir);
-          // Name can contain even path (e.g. to create quick launch icon)
-          strShortCutLocation += UnicodeString(L"\\") + Name + L".lnk";
-          OleCheck(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE));
-        }
-        __finally
-        {
-          pPersistFile->Release();
-        }
-      }
-
-      // this is necessary for Windows 7 taskbar jump list links
-      IPropertyStore * PropertyStore;
-      if (SUCCEEDED(pLink->QueryInterface(IID_IPropertyStore, (void**)&PropertyStore)))
-      {
-        PROPVARIANT Prop;
-        Prop.vt = VT_LPWSTR;
-        Prop.pwszVal = Name.c_str();
-        PropertyStore->SetValue(PKEY_Title, Prop);
-        PropertyStore->Commit();
-        PropertyStore->Release();
+        // Name can contain even path (e.g. to create quick launch icon)
+        WideString ShortCutPath = WideString(CombinePaths(FolderPath, Name + L".lnk"));
+        OleCheck(PersistFile->Save(ShortCutPath.c_bstr(), TRUE));
       }
     }
-    catch(...)
+
+    // this is necessary for Windows 7 taskbar jump list links
+    TComPtr<IPropertyStore> PropertyStore;
+    if (SUCCEEDED(Link->QueryInterface(IID_PPV_ARGS(&PropertyStore))))
     {
-      pLink->Release();
-      throw;
+      PROPVARIANT Prop;
+      Prop.vt = VT_LPWSTR;
+      Prop.pwszVal = Name.c_str();
+      PropertyStore->SetValue(PKEY_Title, Prop);
+      PropertyStore->Commit();
     }
 
     if (!Return)
     {
-      pLink->Release();
-      pLink = NULL;
+      Link.Reset(nullptr);
     }
   }
-  catch(Exception & E)
+  catch (Exception & E)
   {
     throw ExtException(&E, LoadStr(CREATE_SHORTCUT_ERROR));
   }
 
-  return pLink;
+  return Link.Detach();
+}
+//---------------------------------------------------------------------------
+UnicodeString GetIniFileParam()
+{
+  UnicodeString ParamValue = Configuration->GetIniFileParamValue();
+
+  UnicodeString Result;
+  if (!ParamValue.IsEmpty())
+  {
+    Result = TProgramParams::FormatSwitch(INI_SWITCH) + L"=" + AddQuotes(ParamValue);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateAppDesktopShortCut(
   const UnicodeString & Name, const UnicodeString & AParams, const UnicodeString & Description,
   int SpecialFolder, int IconIndex, bool Return)
 {
-  UnicodeString ParamValue = Configuration->GetIniFileParamValue();
-
-  UnicodeString Params;
-  if (!ParamValue.IsEmpty())
-  {
-    Params = TProgramParams::FormatSwitch(INI_SWITCH) + L"=" + AddQuotes(ParamValue);
-  }
-
+  UnicodeString Params = GetIniFileParam();
   AddToList(Params, AParams, L" ");
 
   return CreateDesktopShortCut(Name, Application->ExeName, Params, Description, SpecialFolder, IconIndex, Return);
@@ -646,7 +608,6 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & AdditionalParams, int SpecialFolder, int IconIndex,
   bool Return)
 {
-  bool DefaultsOnly;
   UnicodeString InfoTip;
 
   bool IsFolder = StoredSessions->IsFolder(SessionName);
@@ -667,8 +628,9 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   else
   {
     // this should not be done for workspaces and folders
+    int ParsedInfo;
     TSessionData * SessionData =
-      StoredSessions->ParseUrl(EncodeUrlString(SessionName), NULL, DefaultsOnly);
+      StoredSessions->ParseUrl(EncodeUrlString(SessionName), NULL, ParsedInfo);
     InfoTip =
       FMTLOAD(SHORTCUT_INFO_TIP, (SessionName, SessionData->InfoTip));
     if (Name.IsEmpty())
@@ -744,7 +706,7 @@ void __fastcall ExitActiveControl(TForm * Form)
 {
   if (Form->ActiveControl != NULL)
   {
-    TNotifyEvent OnExit = ((TEdit*)Form->ActiveControl)->OnExit;
+    TNotifyEvent OnExit = static_cast<TEdit*>(Form->ActiveControl)->OnExit;
     if (OnExit != NULL)
     {
       OnExit(Form->ActiveControl);
@@ -772,6 +734,14 @@ UnicodeString __fastcall SecureUrl(const UnicodeString & Url)
   return Result;
 }
 //---------------------------------------------------------------------------
+void ShellOpen(const UnicodeString & Param)
+{
+  if (!CopyCommandToClipboard(Param))
+  {
+    ShellExecute(Application->Handle, L"open", Param.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall OpenBrowser(UnicodeString URL)
 {
   if (IsWinSCPUrl(URL))
@@ -779,22 +749,20 @@ void __fastcall OpenBrowser(UnicodeString URL)
     DebugAssert(!IsHttpUrl(URL));
     URL = CampaignUrl(URL);
   }
-  if (!CopyCommandToClipboard(URL))
+  // Rather arbitrary limit. Opening a URL over approx. 5 KB fails in Chrome, Firefox and Edge.
+  const int URLLimit = 4*1024;
+  if (URL.Length() > URLLimit)
   {
-    // Rather arbitrary limit. Opening a URL over approx. 5 KB fails in Chrome, Firefox and Edge.
-    const int URLLimit = 4*1024;
-    if (URL.Length() > URLLimit)
-    {
-      URL.SetLength(URLLimit);
-    }
-    ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    URL.SetLength(URLLimit);
   }
+  ShellOpen(URL);
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
 {
-  if ((int)ShellExecute(Application->Handle, L"explore",
-      (wchar_t*)Path.data(), NULL, NULL, SW_SHOWNORMAL) <= 32)
+  auto PathStr = static_cast<const wchar_t*>(Path.data());
+  int Result = reinterpret_cast<int>(ShellExecute(Application->Handle, L"explore", PathStr, NULL, NULL, SW_SHOWNORMAL));
+  if (Result <= 32)
   {
     throw Exception(FMTLOAD(EXPLORE_LOCAL_DIR_ERROR, (Path)));
   }
@@ -802,8 +770,9 @@ void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
 //---------------------------------------------------------------------------
 void __fastcall OpenFileInExplorer(const UnicodeString & Path)
 {
-  PCIDLIST_ABSOLUTE Folder = ILCreateFromPathW(ApiPath(Path).c_str());
+  PIDLIST_ABSOLUTE Folder = ILCreateFromPathW(ApiPath(Path).c_str());
   SHOpenFolderAndSelectItems(Folder, 0, NULL, 0);
+  ILFree(Folder);
 }
 //---------------------------------------------------------------------------
 void __fastcall ShowHelp(const UnicodeString & AHelpKeyword)
@@ -894,15 +863,15 @@ bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
       const int Limit = 64*1024;
       ErrorContext = L"size";
       size_t Size = GlobalSize(Handle);
-      int Len = (Size / sizeof(*AText)) - 1;
+      size_t Len = (Size / sizeof(*AText)) - 1;
       if (Len > Limit)
       {
-        ErrorContext = FORMAT(L"substring(%d,%d)", (int(Size), Len));
+        ErrorContext = FORMAT(L"substring(%d,%d)", (int(Size), int(Len)));
         Text = UnicodeString(AText, Limit);
       }
       else
       {
-        ErrorContext = FORMAT(L"string(%d,%d)", (int(Size), Len));
+        ErrorContext = FORMAT(L"string(%d,%d)", (int(Size), int(Len)));
         Text = AText;
       }
       if (Trim)
@@ -1220,7 +1189,7 @@ static void __fastcall AcquireShutDownPrivileges()
   Priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
   // Get the shutdown privilege for this process.
-  Win32Check(AdjustTokenPrivileges(Token, FALSE, &Priv, 0, (PTOKEN_PRIVILEGES)NULL, 0));
+  Win32Check(AdjustTokenPrivileges(Token, FALSE, &Priv, 0, nullptr, 0));
 }
 //---------------------------------------------------------------------------
 void __fastcall ShutDownWindows()
@@ -1484,8 +1453,8 @@ bool __fastcall DetectSystemExternalEditor(
   }
   else
   {
-    unsigned int File = FileCreate(ApiPath(TempName));
-    if (File == (unsigned int)INVALID_HANDLE_VALUE)
+    THandle File = FileCreate(ApiPath(TempName));
+    if (File == reinterpret_cast<THandle>(INVALID_HANDLE_VALUE))
     {
       TryNextTime = true;
       UsageState = "F";
@@ -1554,7 +1523,7 @@ bool __fastcall DetectSystemExternalEditor(
 //---------------------------------------------------------------------------
 // this was moved to global scope in past in some attempt to fix crashes,
 // not sure it really helped
-WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
+static WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
 //---------------------------------------------------------------------------
 static bool __fastcall GetProxyUrlFromIE(UnicodeString & Proxy)
 {
@@ -1654,7 +1623,7 @@ bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-class TWinHelpTester : public TInterfacedObject, public IWinHelpTester
+class TWinHelpTester : public TCppInterfacedObject<IWinHelpTester>
 {
 public:
   virtual bool __fastcall CanShowALink(const UnicodeString ALink, const UnicodeString FileName);
@@ -1663,19 +1632,15 @@ public:
   virtual TStringList * __fastcall GetHelpStrings(const UnicodeString ALink);
   virtual UnicodeString __fastcall GetHelpPath();
   virtual UnicodeString __fastcall GetDefaultHelpFile();
-
-  IUNKNOWN
 };
 //---------------------------------------------------------------------------
-class TCustomHelpSelector : public TInterfacedObject, public IHelpSelector
+class TCustomHelpSelector : public TCppInterfacedObject<IHelpSelector>
 {
 public:
   __fastcall TCustomHelpSelector(const UnicodeString & Name);
 
   virtual int __fastcall SelectKeyword(TStrings * Keywords);
   virtual int __fastcall TableOfContents(TStrings * Contents);
-
-  IUNKNOWN
 
 private:
   UnicodeString FName;
@@ -1707,21 +1672,21 @@ void __fastcall FinalizeCustomHelp()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowALink(const UnicodeString ALink,
-  const UnicodeString FileName)
+bool __fastcall TWinHelpTester::CanShowALink(
+  const UnicodeString DebugUsedArg(ALink), const UnicodeString DebugUsedArg(FileName))
 {
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowTopic(const UnicodeString Topic,
-  const UnicodeString FileName)
+bool __fastcall TWinHelpTester::CanShowTopic(
+  const UnicodeString DebugUsedArg(Topic), const UnicodeString DebugUsedArg(FileName))
 {
   DebugFail();
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/,
-  const UnicodeString FileName)
+bool __fastcall TWinHelpTester::CanShowContext(
+  const int DebugUsedArg(Context), const UnicodeString DebugUsedArg(FileName))
 {
   DebugFail();
   return !Application->HelpFile.IsEmpty();

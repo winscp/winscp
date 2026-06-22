@@ -1,12 +1,10 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 //---------------------------------------------------------------------------
 #include "FileZillaIntf.h"
 #include "FileZillaIntern.h"
 //---------------------------------------------------------------------------
 #pragma comment(lib, "uafxcw.lib")
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall TFileZillaIntf::Initialize()
 {
@@ -16,11 +14,6 @@ void __fastcall TFileZillaIntf::Initialize()
 void __fastcall TFileZillaIntf::Finalize()
 {
   // noop
-}
-//---------------------------------------------------------------------------
-void __fastcall TFileZillaIntf::SetResourceModule(void * ResourceHandle)
-{
-  afxCurrentResourceHandle = (HINSTANCE)ResourceHandle;
 }
 //---------------------------------------------------------------------------
 __fastcall TFileZillaIntf::TFileZillaIntf() :
@@ -233,7 +226,7 @@ bool __fastcall TFileZillaIntf::FileTransfer(
   Transfer.server = *FServer;
   // 1 = ascii, 2 = binary
   Transfer.nType = Type;
-  Transfer.nUserData = reinterpret_cast<int>(UserData);
+  Transfer.nUserData = reinterpret_cast<NativeInt>(UserData);
   Transfer.OnTransferOut = OnTransferOut;
   Transfer.OnTransferIn = OnTransferIn;
 
@@ -262,7 +255,7 @@ bool __fastcall TFileZillaIntf::PostMessage(WPARAM wParam, LPARAM lParam)
   return DoPostMessage(Type, wParam, lParam);
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyContact(TFtpsCertificateData::TContact & Dest,
+static void __fastcall CopyContact(TFtpsCertificateData::TContact & Dest,
   const t_SslCertData::t_Contact& Source)
 {
   Dest.Organization = Source.Organization;
@@ -275,7 +268,7 @@ void __fastcall CopyContact(TFtpsCertificateData::TContact & Dest,
   Dest.Other = Source.Other;
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyValidityTime(TFtpsCertificateData::TValidityTime & Dest,
+static void __fastcall CopyValidityTime(TFtpsCertificateData::TValidityTime & Dest,
   const t_SslCertData::t_validTime& Source)
 {
   Dest.Year = Source.y;
@@ -286,7 +279,7 @@ void __fastcall CopyValidityTime(TFtpsCertificateData::TValidityTime & Dest,
   Dest.Sec = Source.s;
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyFileTime(TRemoteFileTime & Dest, const t_directory::t_direntry::t_date & Source)
+static void __fastcall CopyFileTime(TRemoteFileTime & Dest, const t_directory::t_direntry::t_date & Source)
 {
   Dest.Year = Source.year;
   Dest.Month = Source.month;
@@ -313,7 +306,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
     case FZ_MSG_STATUS:
       {
         DebugAssert(FZ_MSG_PARAM(wParam) == 0);
-        t_ffam_statusmessage * Status = (t_ffam_statusmessage *)lParam;
+        t_ffam_statusmessage * Status = reinterpret_cast<t_ffam_statusmessage *>(lParam);
         DebugAssert(Status->post);
         Result = HandleStatus(Status->status, Status->type);
         delete Status;
@@ -326,16 +319,16 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       {
         int RequestResult;
         wchar_t FileName1[MAX_PATH];
-        COverwriteRequestData * Data = (COverwriteRequestData *)lParam;
+        COverwriteRequestData * Data = reinterpret_cast<COverwriteRequestData *>(lParam);
         try
         {
           DebugAssert(Data != NULL);
-          wcsncpy(FileName1, Data->FileName1, LENOF(FileName1));
-          FileName1[LENOF(FileName1) - 1] = L'\0';
+          wcsncpy(FileName1, Data->FileName1, std::size(FileName1));
+          FileName1[std::size(FileName1) - 1] = L'\0';
           TRemoteFileTime RemoteTime;
           CopyFileTime(RemoteTime, Data->remotetime);
           Result = HandleAsynchRequestOverwrite(
-            FileName1, LENOF(FileName1), Data->FileName2, Data->path1, Data->path2,
+            FileName1, std::size(FileName1), Data->FileName2, Data->path1, Data->path2,
             Data->size1, Data->size2,
             (Data->localtime != NULL) ? Data->localtime->GetTime() : 0,
             (Data->localtime != NULL) && ((Data->localtime->GetHour() != 0) || (Data->localtime->GetMinute() != 0)),
@@ -358,7 +351,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       else if (FZ_MSG_PARAM(wParam) == FZ_ASYNCREQUEST_VERIFYCERT)
       {
         int RequestResult;
-        CVerifyCertRequestData * AData = (CVerifyCertRequestData *)lParam;
+        CVerifyCertRequestData * AData = reinterpret_cast<CVerifyCertRequestData *>(lParam);
         try
         {
           DebugAssert(AData != NULL);
@@ -394,18 +387,16 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       else if (FZ_MSG_PARAM(wParam) == FZ_ASYNCREQUEST_NEEDPASS)
       {
         int RequestResult = 0;
-        CNeedPassRequestData * AData = (CNeedPassRequestData *)lParam;
+        CNeedPassRequestData * AData = reinterpret_cast<CNeedPassRequestData *>(lParam);
         try
         {
             TNeedPassRequestData Data;
-            Data.Password = AData->Password.GetBuffer(AData->Password.GetLength());
+            Data.Password = NULL;
             Result = HandleAsynchRequestNeedPass(Data, RequestResult);
-            AData->Password.ReleaseBuffer(AData->Password.GetLength());
             if (Result && (RequestResult == TFileZillaIntf::REPLY_OK))
             {
               AData->Password = Data.Password;
               free(Data.Password);
-              Data.Password = NULL;
             }
         }
         catch(...)
@@ -432,7 +423,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
     case FZ_MSG_LISTDATA:
       {
         DebugAssert(FZ_MSG_PARAM(wParam) == 0);
-        t_directory * Directory = (t_directory *)lParam;
+        t_directory * Directory = reinterpret_cast<t_directory *>(lParam);
         CString Path = Directory->path.GetPath();
         std::vector<TListDataEntry> Entries(Directory->num);
 
@@ -454,7 +445,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
           Dest.LinkTarget = Source.linkTarget;
         }
 
-        int Num = Directory->num;
+        ssize_t Num = Directory->num;
         TListDataEntry * pEntries = Num > 0 ? &Entries[0] : NULL;
         Result = HandleListData(Path, pEntries, Num);
 
@@ -465,7 +456,7 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
     case FZ_MSG_TRANSFERSTATUS:
       {
         DebugAssert(FZ_MSG_PARAM(wParam) == 0);
-        t_ffam_transferstatus * Status = (t_ffam_transferstatus *)lParam;
+        t_ffam_transferstatus * Status = reinterpret_cast<t_ffam_transferstatus *>(lParam);
         if (Status != NULL)
         {
           Result = HandleTransferStatus(
@@ -480,11 +471,11 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       break;
 
     case FZ_MSG_REPLY:
-      Result = HandleReply(FZ_MSG_PARAM(wParam), lParam);
+      Result = HandleReply(FZ_MSG_PARAM(wParam), SizeToIntChecked(lParam));
       break;
 
     case FZ_MSG_CAPABILITIES:
-      Result = HandleCapabilities((TFTPServerCapabilities *)lParam);
+      Result = HandleCapabilities(reinterpret_cast<TFTPServerCapabilities *>(lParam));
       break;
 
     default:

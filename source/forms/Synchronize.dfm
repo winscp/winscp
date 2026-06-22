@@ -64,24 +64,24 @@ object SynchronizeDialog: TSynchronizeDialog
       Top = 87
       Width = 444
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 2
       Text = 'RemoteDirectoryEdit'
       OnChange = ControlChange
+      HistoryKey = 'RemoteDirectory'
     end
     object LocalDirectoryEdit: THistoryComboBox
       Left = 49
       Top = 40
       Width = 358
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 0
       Text = 'LocalDirectoryEdit'
       OnChange = ControlChange
+      HistoryKey = 'LocalDirectory'
     end
     object LocalDirectoryBrowseButton: TButton
       Left = 413

@@ -1,20 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include "ScpExplorer.h"
 
-#include <Common.h>
-#include <CoreMain.h>
-
 #include "NonVisual.h"
 #include "Glyphs.h"
-#include "Tools.h"
-#include "WinConfiguration.h"
-#include <VCLCommon.h>
-#include <TextsWin.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "CustomDirView"
 #pragma link "CustomScpExplorer"
 #pragma link "CustomUnixDirView"
@@ -86,7 +78,7 @@ void __fastcall TScpExplorerForm::RestoreParams()
   bool HadHandleAllocated = RemoteDirView->HandleAllocated();
   RemoteDirView->UnixColProperties->ParamsStr = WinConfiguration->ScpExplorer.DirViewParams;
   RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
-  RemoteDirView->DirViewStyle = (TDirViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
+  RemoteDirView->DirViewStyle = static_cast<TDirViewStyle>(WinConfiguration->ScpExplorer.ViewStyle);
   if (HadHandleAllocated)
   {
     // This is here to make our persistence checks in VerifyControl pass,
@@ -194,7 +186,7 @@ bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed
       Action->Visible = false;
     }
   }
-  #define FLAG ((TActionFlag)(Action->Tag))
+  #define FLAG (static_cast<TActionFlag>(Action->Tag))
   return
     TCustomScpExplorerForm::AllowedAction(Action, Allowed) &&
     // always require Explorer flag
@@ -246,7 +238,7 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
   UnicodeString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   UnicodeString RemoteDirectory = RemoteDirView->PathName;
   bool SaveMode = true;
-  TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
+  TSynchronizeMode Mode = static_cast<TSynchronizeMode>(GUIConfiguration->SynchronizeMode);
   int Params = GUIConfiguration->SynchronizeParams;
   if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, -1) >= 0)
   {
@@ -264,11 +256,11 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
 
   TControl * ControlsOrder[] =
     { RemoteDirPanel, QueueSplitter, QueuePanel, BottomDock, RemoteStatusBar };
-  SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+  SetVerticalControlsOrder(ControlsOrder, std::size(ControlsOrder));
 
   TControl * RemoteControlsOrder[] =
     { RemoteDrivePanel, RemotePanelSplitter, RemoteDirPanel };
-  SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
+  SetHorizontalControlsOrder(RemoteControlsOrder, std::size(RemoteControlsOrder));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(

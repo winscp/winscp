@@ -4,7 +4,6 @@
 //---------------------------------------------------------------------------
 #define FORMAT(S, F) Format(S, ARRAYOFCONST(F))
 #define FMTLOAD(I, F) FmtLoadStr(I, ARRAYOFCONST(F))
-#define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 #define FLAGSET(SET, FLAG) (((SET) & (FLAG)) == (FLAG))
 #define FLAGCLEAR(SET, FLAG) (((SET) & (FLAG)) == 0)
 #define FLAGMASK(ENABLE, FLAG) ((ENABLE) ? (FLAG) : 0)
@@ -13,6 +12,7 @@
 //---------------------------------------------------------------------------
 UnicodeString NormalizeString(const UnicodeString & S);
 UnicodeString DenormalizeString(const UnicodeString & S);
+#define DateTimeToVariant(DATETIME) static_cast<long double>(static_cast<double>(DATETIME))
 //---------------------------------------------------------------------------
 class TGuard
 {
@@ -48,18 +48,21 @@ private:
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #include <assert.h>
-#define ACCESS_VIOLATION_TEST { (*((int*)NULL)) = 0; }
+// Mere write to constant null pointer would be optimized out by Clang, so we need to calculate one
+#define ACCESS_VIOLATION_TEST { (*strchr(const_cast<char *>(""), 'a')) = 0; }
 #if defined(_DEBUG) && !defined(DESIGN_ONLY)
 #define DODEBUGGING
 #endif
 #ifndef DODEBUGGING
 #define DebugAssert(p)   ((void)0)
 #define DebugCheck(p) (p)
+#define DebugCheckNotEqual(p, e) (p)
 #define DebugFail()
 #else // ifndef DODEBUGGING
 void __fastcall DoAssert(const wchar_t * Message, const wchar_t * Filename, int LineNumber);
 #define DebugAssert(p) ((p) ? (void)0 : DoAssert(TEXT(#p), TEXT(__FILE__), __LINE__))
 #define DebugCheck(p) { bool __CHECK_RESULT__ = (p); DebugAssert(__CHECK_RESULT__); }
+#define DebugCheckNotEqual(p, e) DebugCheck((p) != e)
 #define DebugFail() DebugAssert(false)
 #endif // ifndef DODEBUGGING
 //---------------------------------------------------------------------------

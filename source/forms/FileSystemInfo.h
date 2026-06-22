@@ -101,7 +101,7 @@ private:
   bool __fastcall SpaceAvailableSupported();
   void __fastcall FeedControls();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

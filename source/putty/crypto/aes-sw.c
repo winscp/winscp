@@ -26,8 +26,6 @@ static bool aes_sw_available(void)
 
 #define SLICE_PARALLELISM (BIGNUM_INT_BYTES / 2)
 
-#ifdef WINSCP_VS
-
 #ifdef BITSLICED_DEBUG
 /* Dump function that undoes the bitslicing transform, so you can see
  * the logical data represented by a set of slice words. */
@@ -618,8 +616,6 @@ DECRYPT_ROUND_FN(serial_first, uint16_t, NO_MIXCOLUMNS)
 DECRYPT_ROUND_FN(parallel, BignumInt, BITSLICED_INVMIXCOLUMNS)
 DECRYPT_ROUND_FN(parallel_first, BignumInt, NO_MIXCOLUMNS)
 
-#endif // WINSCP_VS
-
 /* -----
  * Key setup function.
  */
@@ -631,11 +627,8 @@ struct aes_sliced_key {
     unsigned rounds;
 };
 
-/*WINSCP static*/ void aes_sliced_key_setup(
+static void aes_sliced_key_setup(
     aes_sliced_key *sk, const void *vkey, size_t keybits)
-#ifndef WINSCP_VS
-;
-#else
 {
     const unsigned char *key = (const unsigned char *)vkey;
 
@@ -745,9 +738,7 @@ struct aes_sliced_key {
             ((BignumInt)~(BignumInt)0 / 0xFFFF);
     }
 }
-#endif
 
-#ifdef WINSCP_VS
 /* -----
  * The full cipher primitive, including transforming the input and
  * output to/from bit-sliced form.
@@ -808,8 +799,6 @@ DECRYPT_FN(serial, uint16_t, 1)
 ENCRYPT_FN(parallel, BignumInt, SLICE_PARALLELISM)
 DECRYPT_FN(parallel, BignumInt, SLICE_PARALLELISM)
 
-#endif // WINSCP_VS
-
 /* -----
  * The SSH interface and the cipher modes.
  */
@@ -854,8 +843,6 @@ struct aes_sw_context {
     ssh_cipher ciph;
 };
 
-#ifndef WINSCP_VS
-
 static ssh_cipher *aes_sw_new(const ssh_cipheralg *alg)
 {
     aes_sw_context *ctx = snew(aes_sw_context);
@@ -888,8 +875,7 @@ static void aes_sw_setiv_sdctr(ssh_cipher *ciph, const void *viv)
     const uint8_t *iv = (const uint8_t *)viv;
 
     /* Import the initial counter value into the internal representation */
-    unsigned i; // WINSCP
-    for (i = 0; i < SDCTR_WORDS; i++)
+    for (unsigned i = 0; i < SDCTR_WORDS; i++)
         ctx->iv.sdctr.counter[i] =
             GET_BIGNUMINT_MSB_FIRST(
                 iv + 16 - BIGNUM_INT_BYTES - i*BIGNUM_INT_BYTES);
@@ -925,11 +911,7 @@ static void aes_sw_next_message_gcm(ssh_cipher *ciph)
         ctx->iv.gcm.keystream + sizeof(ctx->iv.gcm.keystream);
 }
 
-#endif
-
 typedef void (*aes_sw_fn)(uint32_t v[4], const uint32_t *keysched);
-
-#ifdef WINSCP_VS
 
 static inline void memxor16(void *vout, const void *vlhs, const void *vrhs)
 {
@@ -1127,82 +1109,25 @@ static inline void aes_gcm_sw(
 }
 
 #define SW_ENC_DEC(len)                                 \
-    /*WINSCP static*/ void aes##len##_sw_cbc_encrypt(              \
+    static void aes##len##_sw_cbc_encrypt(              \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_cbc_sw_encrypt(ciph, vblk, blklen); }         \
-    /*WINSCP static*/ void aes##len##_sw_cbc_decrypt(              \
+    static void aes##len##_sw_cbc_decrypt(              \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_cbc_sw_decrypt(ciph, vblk, blklen); }         \
-    /*WINSCP static*/ void aes##len##_sw_sdctr(                    \
+    static void aes##len##_sw_sdctr(                    \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_sdctr_sw(ciph, vblk, blklen); }               \
-    /*WINSCP static*/ void aes##len##_sw_gcm(                      \
+    static void aes##len##_sw_gcm(                      \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_gcm_sw(ciph, vblk, blklen); }                 \
-    /*WINSCP static*/ void aes##len##_sw_encrypt_ecb_block(        \
+    static void aes##len##_sw_encrypt_ecb_block(        \
         ssh_cipher *ciph, void *vblk)                   \
     { aes_encrypt_ecb_block_sw(ciph, vblk); }
-
-#else // WINSCP_VS
-
-#define SW_ENC_DEC(len)                                 \
-    void aes##len##_sw_cbc_encrypt(                     \
-        ssh_cipher *ciph, void *vblk, int blklen);      \
-    void aes##len##_sw_cbc_decrypt(                     \
-        ssh_cipher *ciph, void *vblk, int blklen);      \
-    void aes##len##_sw_sdctr(                           \
-        ssh_cipher *ciph, void *vblk, int blklen);      \
-    void aes##len##_sw_gcm(                      \
-        ssh_cipher *ciph, void *vblk, int blklen);       \
-    void aes##len##_sw_encrypt_ecb_block(        \
-        ssh_cipher *ciph, void *vblk);                   \
-
-#endif // WINSCP_VS
 
 SW_ENC_DEC(128)
 SW_ENC_DEC(192)
 SW_ENC_DEC(256)
 
-#ifndef WINSCP_VS
-
 AES_EXTRA(_sw);
 AES_ALL_VTABLES(_sw, "unaccelerated");
-
-#ifdef MPEXT
-
-#include "puttyexp.h"
-
-AESContext * aes_make_context()
-{
-  ssh_cipher * cipher = ssh_cipher_new(&ssh_aes256_sdctr);
-  return cipher;
-}
-
-void aes_free_context(AESContext * ctx)
-{
-  ssh_cipher * cipher = (ssh_cipher *)ctx;
-  ssh_cipher_free(cipher);
-}
-
-void aes_iv(AESContext * ctx, const void * iv)
-{
-  ssh_cipher * cipher = (ssh_cipher *)ctx;
-  ssh_cipher_setiv(cipher, iv);
-}
-
-void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen)
-{
-  ssh_cipher * cipher = (ssh_cipher *)ctx;
-  assert(keylen == 32);
-  ssh_cipher_setkey(cipher, key);
-}
-
-void call_aes_sdctr(unsigned char *blk, int len, void *ctx)
-{
-  ssh_cipher * cipher = (ssh_cipher *)ctx;
-  ssh_cipher_encrypt(cipher, blk, len);
-}
-
-#endif
-
-#endif // WINSCP_VS

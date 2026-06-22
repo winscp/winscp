@@ -1,13 +1,7 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <VCLCommon.h>
-#include <CoreMain.h>
-#include <WinConfiguration.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
 #include <PuttyTools.h>
 #include "Cleanup.h"
 //---------------------------------------------------------------------

@@ -6,11 +6,10 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 #include "GrayedCheckBox.hpp"
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
 //---------------------------------------------------------------------------
 #include <WinInterface.h>
@@ -97,7 +96,7 @@ private:
   TSynchronizeOptions * FSynchronizeOptions;
   TFeedSynchronizeError * FOnFeedSynchronizeError;
   TSynchronizeInNewWindow FOnSynchronizeInNewWindow;
-  static const MaxLogItems;
+  static const int MaxLogItems;
 
   void __fastcall SetParams(const TSynchronizeParamType& value);
   TSynchronizeParamType __fastcall GetParams();
@@ -137,7 +136,7 @@ protected:
   bool __fastcall CanStartInNewWindow();
   void Abort(bool Close);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner);

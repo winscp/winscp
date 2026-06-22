@@ -104,6 +104,8 @@ else
 	$2
 fi
 
+AC_CONFIG_FILES([${neon_bundled_builddir}/Makefile])
+
 ])
 
 dnl Not got any bundled sources:
@@ -136,12 +138,12 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 
 # Define the current versions.
 NE_VERSION_MAJOR=0
-NE_VERSION_MINOR=34
-NE_VERSION_PATCH=2
+NE_VERSION_MINOR=37
+NE_VERSION_PATCH=1
 NE_VERSION_TAG=
 
-# 0.34.x is backwards-compatible to 0.27.x, so AGE=7
-NE_LIBTOOL_VERSINFO="34:${NE_VERSION_PATCH}:7"
+# 0.37.x is backwards-compatible to 0.27.x, so AGE=10
+NE_LIBTOOL_VERSINFO="37:${NE_VERSION_PATCH}:10"
 
 NE_DEFINE_VERSIONS
 
@@ -367,6 +369,14 @@ fi
 
 AC_SUBST(NEON_BUILD_BUNDLED)
 
+dnl Define NE_MINIMUM_VERSION() for both bundled and non-bundled
+dnl builds.
+AH_BOTTOM([#undef NE_MINIMUM_VERSION
+#define NE_MINIMUM_VERSION(majv_, minv_) \
+    (((majv_) == NE_VERSION_MAJOR && NE_VERSION_MINOR >= (minv_)) \
+     || NE_VERSION_MAJOR > (majv_))
+])
+
 ])
 
 dnl AC_SEARCH_LIBS done differently. Usage:
@@ -400,6 +410,10 @@ AC_CACHE_CHECK([for library containing $1], [ne_cv_libsfor_$1], [
     bindtextdomain)
       ne__prologue="#include <libintl.h>"
       ne__code="bindtextdomain(\"\",\"\");"
+      ;;
+    gethostbyname)
+      ne__prologue="#include <netdb.h>"
+      ne__code="gethostbyname(\"\");"
       ;;
     *)
       ne__prologue=""
@@ -507,6 +521,13 @@ AS_CASE([x"$ne_cv_os_uname"],
 )dnl AS_CASE
 ])
 
+AC_DEFUN([NE_FORMAT_TIMET], [
+NEON_FORMAT(time_t, [
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif])
+])
+
 AC_DEFUN([NEON_COMMON_CHECKS], [
 
 # These checks are done whether or not the bundled neon build
@@ -530,7 +551,7 @@ AC_CHECK_HEADERS([errno.h stdarg.h string.h stdlib.h sys/uio.h])
 NEON_FORMAT(size_t,,u) dnl size_t is unsigned; use %u formats
 NEON_FORMAT(off_t)
 NEON_FORMAT(ssize_t)
-
+NE_FORMAT_TIMET
 ])
 
 AC_DEFUN([NEON_FORMAT_PREP], [
@@ -697,8 +718,7 @@ NE_LARGEFILE
 AC_REPLACE_FUNCS(strcasecmp)
 
 AC_CHECK_FUNCS([signal setvbuf setsockopt stpcpy poll fcntl getsockopt \
-                explicit_bzero sendmsg gettimeofday gmtime_r if_nametoindex \
-                if_indextoname])
+                explicit_bzero sendmsg gettimeofday gmtime_r getrandom])
 
 if test "x${ac_cv_func_poll}${ac_cv_header_sys_poll_h}y" = "xyesyesy"; then
   AC_DEFINE([NE_USE_POLL], 1, [Define if poll() should be used])
@@ -736,6 +756,7 @@ NE_SEARCH_LIBS(getaddrinfo, nsl,,
 
 if test $ne_enable_gai = yes; then
    NE_ENABLE_SUPPORT(IPV6, [IPv6 support is enabled])
+   NE_CHECK_FUNCS([if_nametoindex if_indextoname])
    AC_DEFINE(USE_GETADDRINFO, 1, [Define if getaddrinfo() should be used])
    AC_CACHE_CHECK([for working AI_ADDRCONFIG], [ne_cv_gai_addrconfig], [
    AC_RUN_IFELSE([AC_LANG_PROGRAM([#include <netdb.h>
@@ -806,6 +827,7 @@ fi
 
 NEON_SSL()
 NEON_GSSAPI()
+NEON_NTLM()
 NEON_LIBPROXY()
 
 AC_SUBST(NEON_CFLAGS)
@@ -1005,6 +1027,7 @@ yes|openssl)
 
    NE_CHECK_OPENSSLVER(ne_cv_lib_ssl097, 0.9.7, 0x00907000L)
    NE_CHECK_OPENSSLVER(ne_cv_lib_ssl110, 1.1.0, 0x10100000L)
+   NE_CHECK_FUNCS(SSL_CIPHER_standard_name ASN1_TIME_to_tm timegm)
    if test "$ne_cv_lib_ssl110" = "yes"; then
       NE_ENABLE_SUPPORT(SSL, [SSL support enabled, using OpenSSL $NE_SSL_VERSION])
       AC_DEFINE(HAVE_OPENSSL11, 1, [Enable OpenSSL 1.1 support])
@@ -1043,8 +1066,6 @@ yes|openssl)
 
    AC_DEFINE([HAVE_OPENSSL], 1, [Define if OpenSSL support is enabled])
    NEON_EXTRAOBJS="$NEON_EXTRAOBJS ne_openssl"
-
-   AC_DEFINE([HAVE_NTLM], 1, [Define if NTLM is supported])
    ;;
 gnutls)
    NE_PKG_CONFIG(NE_SSL, gnutls,
@@ -1073,6 +1094,7 @@ gnutls)
 
    # Check for functions in later releases
    NE_CHECK_FUNCS([gnutls_session_get_data2 gnutls_x509_dn_get_rdn_ava \
+                  gnutls_ciphersuite_get \
                   gnutls_certificate_get_issuer \
                   gnutls_certificate_get_x509_cas \
                   gnutls_x509_crt_sign2 \
@@ -1218,6 +1240,24 @@ else
 fi
 ])   
 
+AC_DEFUN([NEON_NTLM], [
+AC_ARG_WITH(libntlm, AS_HELP_STRING(--without-libntlm, disable Libntlm support),
+            [need_ntlm=$withval], [need_ntlm=no])
+if test "$with_libntlm" != "no"; then
+  ne_save_CFLAGS=$CFLAGS
+  ne_save_LIBS=$NEON_LIBS
+  NE_PKG_CONFIG(NE_NTLM, [libntlm],
+    [NE_ENABLE_SUPPORT(NTLM, [NTLM support enabled using Libntlm $NE_NTLM_VERSION])
+     NEON_LIBS="$NEON_LIBS ${NE_NTLM_LIBS}"
+     CPPFLAGS="$CPPFLAGS $NE_NTLM_CFLAGS"
+    ],
+    [NE_DISABLE_SUPPORT(NTLM, [NTLM authentication is not supported])])
+else
+    NE_DISABLE_SUPPORT(NTLM, [NTLM authentication is not supported])
+fi
+])
+
+
 dnl Adds an --enable-warnings argument to configure to allow enabling
 dnl compiler warnings
 AC_DEFUN([NEON_WARNINGS],[
@@ -1227,13 +1267,20 @@ AC_REQUIRE([AC_PROG_CC]) dnl so that $GCC is set
 AC_ARG_ENABLE(warnings,
 AS_HELP_STRING(--enable-warnings, [enable compiler warnings]))
 
+if test "$enable_warnings" = "error"; then
+   CFLAGS="$CFLAGS -Werror"
+   enable_warnings=yes
+fi
+
 if test "$enable_warnings" = "yes"; then
    case $GCC:`uname` in
    yes:*)
-      CFLAGS="$CFLAGS -Wall -Wmissing-declarations -Wshadow -Wreturn-type -Wsign-compare -Wundef -Wpointer-arith -Wbad-function-cast -Wformat-security"
-      if test -z "$with_ssl" -o "$with_ssl" = "no"; then
-	 # OpenSSL headers fail strict prototypes checks
-	 CFLAGS="$CFLAGS -Wstrict-prototypes"
+      CFLAGS="$CFLAGS -Wall -Wstrict-prototypes -Wmissing-declarations -Wshadow -Wreturn-type -Wsign-compare -Wundef -Wpointer-arith -Wbad-function-cast -Wformat-security"
+      if test "${with_ssl}X${ne_cv_pkg_pakchois}" = "opensslXyes"; then
+         CFLAGS="-DOPENSSL_SUPPRESS_DEPRECATED $CFLAGS"
+      fi
+      if test "$neon_xml_parser" = "libxml2"; then
+         CFLAGS="$CFLAGS -Wno-pointer-sign -Wno-discarded-qualifiers"
       fi
       ;;
    no:OSF1) CFLAGS="$CFLAGS -check -msg_disable returnchecks -msg_disable alignment -msg_disable overflow" ;;

@@ -1,20 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "CoreMain.h"
-
-#include "Common.h"
-#include "Interface.h"
 #include "Configuration.h"
 #include "PuttyIntf.h"
 #include "Cryptography.h"
-#include <DateUtils.hpp>
 #include "FileZillaIntf.h"
 #include "NeonIntf.h"
-#include "TextsCore.h"
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 TConfiguration * Configuration = NULL;
 TStoredSessionList * StoredSessions = NULL;
@@ -146,6 +138,7 @@ void CoreLoad()
   // should be noop, unless exception occurred above
   ConfigStorage->CloseAll();
 
+  AppLog(L"Loading sites");
   StoredSessions = new TStoredSessionList();
 
   try
@@ -159,6 +152,7 @@ void CoreLoad()
   {
     ShowExtendedException(&E);
   }
+  AppLog(L"Sites loaded");
 }
 //---------------------------------------------------------------------------
 void CoreInitialize()
@@ -200,11 +194,6 @@ void CoreFinalize()
   Configuration = NULL;
 
   CryptographyFinalize();
-}
-//---------------------------------------------------------------------------
-void CoreSetResourceModule(void * ResourceHandle)
-{
-  TFileZillaIntf::SetResourceModule(ResourceHandle);
 }
 //---------------------------------------------------------------------------
 void CoreMaintenanceTask()

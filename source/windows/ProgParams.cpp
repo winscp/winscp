@@ -1,13 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include "ProgParams.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
-std::unique_ptr<TProgramParams> ProgramParamsOwner;
+static std::unique_ptr<TProgramParams> ProgramParamsOwner;
 //---------------------------------------------------------------------------
 TProgramParams * __fastcall TProgramParams::Instance()
 {

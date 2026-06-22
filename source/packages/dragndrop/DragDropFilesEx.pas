@@ -863,6 +863,8 @@ begin
       ReleaseStgMedium(StgMedium);
     end;
   end;
+
+  dwEffect := GetPreferredDropEffect(DataObj);
 end;
 
 // TShellExtension ---------------------------------------------------

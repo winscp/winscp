@@ -1,30 +1,18 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
-#include "Common.h"
-#include "WinConfiguration.h"
-#include "Exceptions.h"
+
 #include "Bookmarks.h"
 #include "Terminal.h"
-#include "TextsWin.h"
-#include "WinInterface.h"
-#include "GUITools.h"
-#include "Tools.h"
 #include "Setup.h"
 #include "Security.h"
 #include "TerminalManager.h"
 #include "Cryptography.h"
-#include <VCLCommon.h>
-#include <InitGUID.h>
+#include <initguid.h>
 #include <DragExt.h>
-#include <Math.hpp>
-#include <StrUtils.hpp>
 #include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
-#include "CoreMain.h"
-#include "DriveView.hpp"
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
+#include "DriveView.h"
 //---------------------------------------------------------------------------
 TWinConfiguration * WinConfiguration = NULL;
 //---------------------------------------------------------------------------
@@ -189,7 +177,7 @@ void __fastcall TEditorPreferences::Load(THierarchicalStorage * Storage, bool Le
   {
     FData.FileMask = Storage->ReadString(L"FileMask", FData.FileMask.Masks);
   }
-  FData.Editor = (TEditor)Storage->ReadInteger(L"Editor", FData.Editor);
+  FData.Editor = static_cast<TEditor>(Storage->ReadInteger(L"Editor", FData.Editor));
   FData.ExternalEditor = Storage->ReadString(L"ExternalEditor", FData.ExternalEditor);
   FData.ExternalEditorText = Storage->ReadBool(L"ExternalEditorText", FData.ExternalEditorText);
   FData.SDIExternalEditor = Storage->ReadBool(L"SDIExternalEditor", FData.SDIExternalEditor);
@@ -240,7 +228,7 @@ UnicodeString __fastcall TEditorPreferences::GetName() const
         FName.SetLength(P - 1);
       }
 
-      if (FName.ByteType(1) == mbSingleByte)
+      if (FName.ByteType(1) == UnicodeString::ctNotLeadChar)
       {
         if (FName.UpperCase() == FName)
         {
@@ -582,6 +570,7 @@ void __fastcall TWinConfiguration::Default()
   FAutoSaveWorkspace = false;
   FAutoSaveWorkspacePasswords = false;
   FAutoWorkspace = L"";
+  FWorkspaceConnectAll = false;
   FPathInCaption = picShort;
   FSessionTabNameFormat = stnfShortPathTrunc;
   FMinimizeToTray = false;
@@ -665,9 +654,10 @@ void __fastcall TWinConfiguration::Default()
   FEditor.EarlyClose = 2; // seconds
   FEditor.SDIShellEditor = false;
   FEditor.WindowParams = L"";
-  FEditor.Encoding = CP_ACP;
+  FEditor.Encoding = CP_UTF8;
   FEditor.WarnOnEncodingFallback = true;
   FEditor.WarnOrLargeFileSize = true;
+  FEditor.LargeFileSize = 10*1024;
   FEditor.AutoFont = true;
   FEditor.DisableSmoothScroll = false;
 
@@ -701,7 +691,7 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.AuthenticationEmail = L"";
   FUpdates.Mode = EmptyStr;
   // for backward compatibility the default is decided based on value of ProxyHost
-  FUpdates.ConnectionType = (TConnectionType)-1;
+  FUpdates.ConnectionType = ctUndefined;
   FUpdates.ProxyHost = L""; // keep empty (see above)
   FUpdates.ProxyPort = 8080;
   FUpdates.Results.Reset();
@@ -837,19 +827,11 @@ void __fastcall TWinConfiguration::DefaultLocalized()
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::DetectRegistryStorage(HKEY RootKey)
 {
-  bool Result = false;
-  TRegistryStorage * Storage = new TRegistryStorage(RegistryStorageKey, RootKey);
-  try
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(RegistryStorageKey, RootKey, KEY_READ | KEY_WOW64_32KEY));
+  bool Result = Storage->OpenRootKey(false);
+  if (Result)
   {
-    if (Storage->OpenRootKey(false))
-    {
-      Result = true;
-      Storage->CloseSubKey();
-    }
-  }
-  __finally
-  {
-    delete Storage;
+    Storage->CloseSubKey();
   }
   return Result;
 }
@@ -1041,11 +1023,11 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
-    KEYEX(Integer,DoubleClickAction, L"CopyOnDoubleClick"); \
+    KEYEX(Enum,   DoubleClickAction, L"CopyOnDoubleClick"); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
     KEY(Bool,     AlwaysRespectDoubleClickAction); \
     KEY(Bool,     DDDisableMove); \
-    KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
+    KEYEX(Enum,   DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
     KEY(String,   DDDrives); \
     KEY(Bool,     DDWarnLackOfTempSpace); \
@@ -1056,8 +1038,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     SelectDirectories); \
     KEY(String,   SelectMask); \
     KEY(Bool,     ShowHiddenFiles); \
-    KEY(Integer,  FormatSizeBytes); \
-    KEY(Integer,  PanelSearch); \
+    KEY(Enum,     FormatSizeBytes); \
+    KEY(Enum,     PanelSearch); \
     KEY(Bool,     ShowInaccesibleDirectories); \
     KEY(Bool,     ConfirmTransferring); \
     KEY(Bool,     ConfirmDeleting); \
@@ -1076,13 +1058,14 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
     KEY(Bool,     PreservePanelState); \
-    KEY(Integer,  DarkTheme); \
+    KEY(Enum,     DarkTheme); \
     KEY(String,   LastStoredSession); \
     KEY(Bool,     AutoSaveWorkspace); \
     KEY(Bool,     AutoSaveWorkspacePasswords); \
     KEY(String,   AutoWorkspace); \
-    KEY(Integer,  PathInCaption); \
-    KEY(Integer,  SessionTabNameFormat); \
+    KEY(Bool,     WorkspaceConnectAll); \
+    KEY(Enum,     PathInCaption); \
+    KEY(Enum,     SessionTabNameFormat); \
     KEY(Bool,     MinimizeToTray); \
     KEY(Bool,     BalloonNotifications); \
     KEY(Integer,  NotificationsTimeout); \
@@ -1108,9 +1091,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   OpenedStoredSessionFolders); \
     KEY(Bool,     AutoImportedFromPuttyOrFilezilla); \
     KEY(Integer,  GenerateUrlComponents); \
-    KEY(Integer,  GenerateUrlCodeTarget); \
-    KEY(Integer,  GenerateUrlScriptFormat); \
-    KEY(Integer,  GenerateUrlAssemblyLanguage); \
+    KEY(Enum,     GenerateUrlCodeTarget); \
+    KEY(Enum,     GenerateUrlScriptFormat); \
+    KEY(Enum,     GenerateUrlAssemblyLanguage); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
     KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
@@ -1118,8 +1101,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     LocalIconsByExt); \
     KEY(Bool,     FlashTaskbar); \
     KEY(Integer,  MaxSessions); \
-    KEY(Integer,  BidiModeOverride); \
-    KEY(Integer,  FlipChildrenOverride); \
+    KEY(Enum,     BidiModeOverride); \
+    KEY(Enum,     FlipChildrenOverride); \
     KEY(Bool,     ShowTips); \
     KEY(String,   TipsSeen); \
     KEY(DateTime, TipsShown); \
@@ -1135,7 +1118,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TimeoutShellIconRetrieval); \
     KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
-    KEY(Integer,  StoreTransition); \
+    KEY(Enum,     StoreTransition); \
     KEY(Integer,  QueueTransferLimitMax); \
     KEY(Bool,     HiContrast); \
     KEY(Bool,     EditorCheckNotModified); \
@@ -1150,8 +1133,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  Editor.Font.FontSize); \
     KEY(Integer,  Editor.Font.FontStyle); \
     KEY(Integer,  Editor.Font.FontCharset); \
-    KEY(Integer,  Editor.FontColor); \
-    KEY(Integer,  Editor.BackgroundColor); \
+    KEY(Enum,     Editor.FontColor); \
+    KEY(Enum,     Editor.BackgroundColor); \
     KEY(Bool,     Editor.WordWrap); \
     KEY(String,   Editor.FindText); \
     KEY(String,   Editor.ReplaceText); \
@@ -1166,6 +1149,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  Editor.Encoding); \
     KEY(Bool,     Editor.WarnOnEncodingFallback); \
     KEY(Bool,     Editor.WarnOrLargeFileSize); \
+    KEY(Integer,  Editor.LargeFileSize); \
     KEY(Bool,     Editor.AutoFont); \
     KEY(Bool,     Editor.DisableSmoothScroll); \
   ); \
@@ -1173,8 +1157,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  QueueView.Height); \
     KEY(Integer,  QueueView.HeightPixelsPerInch); \
     KEY(String,   QueueView.Layout); \
-    KEY(Integer,  QueueView.Show); \
-    KEY(Integer,  QueueView.LastHideShow); \
+    KEY(Enum,     QueueView.Show); \
+    KEY(Enum,     QueueView.LastHideShow); \
     KEY(Bool,     QueueView.ToolBar); \
     KEY(Bool,     QueueView.Label); \
     KEY(Bool,     QueueView.FileList); \
@@ -1186,11 +1170,11 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(DateTime, FUpdates.LastCheck); \
     KEY(Integer,  FUpdates.HaveResults); \
     KEY(Integer,  FUpdates.ShownResults); \
-    KEY(Integer,  FUpdates.BetaVersions); \
+    KEY(Enum,     FUpdates.BetaVersions); \
     KEY(Bool,     FUpdates.ShowOnStartup); \
     KEY(String,   FUpdates.AuthenticationEmail); \
     KEY(String,   FUpdates.Mode); \
-    KEY(Integer,  FUpdates.ConnectionType); \
+    KEY(Enum,     FUpdates.ConnectionType); \
     KEY(String,   FUpdates.ProxyHost); \
     KEY(Integer,  FUpdates.ProxyPort); \
     KEY(Integer,  FUpdates.Results.ForVersion); \
@@ -1236,13 +1220,13 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   BLOCK(L"Interface\\Commander", CANCREATE, \
     KEYEX(String,  ScpCommander.ToolbarsLayout, ToolbarsLayoutKey); \
     KEY(String,  ScpCommander.ToolbarsButtons); \
-    KEY(Integer, ScpCommander.CurrentPanel); \
+    KEY(Enum,    ScpCommander.CurrentPanel); \
     KEY(Float,   ScpCommander.LocalPanelWidth); \
     KEY(Bool,    ScpCommander.SwappedPanels); \
     KEY(Bool,    ScpCommander.SessionsTabs); \
     KEY(Bool,    ScpCommander.StatusBar); \
     KEY(String,  ScpCommander.WindowParams); \
-    KEYEX(Integer, ScpCommander.NortonLikeMode, L"ExplorerStyleSelection"); \
+    KEYEX(Enum,  ScpCommander.NortonLikeMode, L"ExplorerStyleSelection"); \
     KEY(Bool,    ScpCommander.PreserveLocalDirectory); \
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
@@ -1397,7 +1381,7 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
     FLegacyEditor = NULL;
   }
 
-  if (FUpdates.ConnectionType == -1)
+  if (FUpdates.ConnectionType == ctUndefined)
   {
     FUpdates.ConnectionType = (FUpdates.ProxyHost.IsEmpty() ? ctAuto : ctProxy);
   }
@@ -1787,6 +1771,7 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
 {
   if (FDDExtInstalled < 0)
   {
+    #ifndef _WIN64
     if (IsWin64())
     {
       // WORKAROUND
@@ -1794,7 +1779,7 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
       // so we fallback to querying registration keys
       #define CLSID_SIZE 39
       wchar_t ClassID[CLSID_SIZE];
-      StringFromGUID2(CLSID_ShellExtension, ClassID, LENOF(ClassID));
+      StringFromGUID2(CLSID_ShellExtension, ClassID, std::size(ClassID));
       NULL_TERMINATE(ClassID);
       UnicodeString SubKey = UnicodeString(L"CLSID\\") + ClassID;
       HKEY HKey;
@@ -1810,19 +1795,12 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
       }
     }
     else
+    #endif
     {
-      void * DragExtRef;
-      int CreateResult =
-        CoCreateInstance(CLSID_ShellExtension, NULL,
-          CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IUnknown,
-          &DragExtRef);
-      bool Result = (CreateResult == S_OK);
+      TComPtr<IUnknown> DragExtRef;
+      bool Result = DragExtRef.TryCreate(CLSID_ShellExtension, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER);
       FDDExtInstalled = (Result ? 1 : 0);
-      if (Result)
-      {
-        reinterpret_cast<IUnknown *>(DragExtRef)->Release();
-        CoFreeUnusedLibraries();
-      }
+      CoFreeUnusedLibraries();
     }
   }
   return (FDDExtInstalled > 0);
@@ -2248,31 +2226,16 @@ void __fastcall TWinConfiguration::SetDarkTheme(TAutoSwitch value)
   SET_CONFIG_PROPERTY_EX(DarkTheme, ConfigureInterface());
 }
 //---------------------------------------------------------------------------
-static int __fastcall SysDarkTheme(HKEY RootKey)
-{
-  std::unique_ptr<TRegistry> Registry(new TRegistry());
-  Registry->RootKey = RootKey;
-  UnicodeString ThemesPersonalizeKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-  UnicodeString AppsUseLightThemeValue = L"AppsUseLightTheme";
-  int Result = -1;
-  if (Registry->OpenKeyReadOnly(ThemesPersonalizeKey) &&
-      Registry->ValueExists(AppsUseLightThemeValue))
-  {
-    Result = Registry->ReadBool(AppsUseLightThemeValue) ? 0 : 1;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::UseDarkTheme()
 {
-  switch (WinConfiguration->DarkTheme)
+  switch (DarkTheme)
   {
     case asOn:
       return true;
     case asOff:
       return false;
     default:
-      return (GetSysDarkTheme() > 0);
+      return GetSysDarkTheme();
   }
 }
 //---------------------------------------------------------------------------
@@ -2294,6 +2257,11 @@ void __fastcall TWinConfiguration::SetAutoSaveWorkspacePasswords(bool value)
 void __fastcall TWinConfiguration::SetAutoWorkspace(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(AutoWorkspace);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetWorkspaceConnectAll(bool value)
+{
+  SET_CONFIG_PROPERTY(WorkspaceConnectAll);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetPathInCaption(TPathInCaption value)
@@ -2529,8 +2497,8 @@ void __fastcall TWinConfiguration::SetExtensionList(TCustomCommandList * value)
     for (int Index = 0; Index < ExtensionList->Count; Index++)
     {
       const TCustomCommandType * CustomCommand = ExtensionList->Commands[Index];
-      int Index = value->FindIndexByFileName(CustomCommand->FileName);
-      if (Index < 0)
+      int Index2 = value->FindIndexByFileName(CustomCommand->FileName);
+      if (Index2 < 0)
       {
         if (FileExists(CustomCommand->FileName) &&
             !DeleteFile(CustomCommand->FileName))
@@ -2706,24 +2674,23 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall TWinConfiguration::GetResourceModuleCompleteness(HINSTANCE Module)
+int TWinConfiguration::GetResourceModuleCompleteness(HINSTANCE Module)
 {
   UnicodeString CompletenessStr = LoadStrFrom(Module, TRANSLATION_COMPLETENESS);
   return StrToIntDef(CompletenessStr, -1);
 }
 //---------------------------------------------------------------------------
-int __fastcall TWinConfiguration::GetLocaleCompletenessTreshold()
+int TWinConfiguration::GetLocaleCompletenessTreshold()
 {
   return 80;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::IsTranslationComplete(HINSTANCE Module)
+bool TWinConfiguration::IsTranslationComplete(HINSTANCE Module)
 {
   return (GetResourceModuleCompleteness(Module) >= LocaleCompletenessTreshold);
 }
 //---------------------------------------------------------------------------
-HINSTANCE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
-  UnicodeString & FileName)
+HINSTANCE TWinConfiguration::LoadNewResourceModule(LCID ALocale, UnicodeString & FileName)
 {
   HINSTANCE Instance = TCustomWinConfiguration::LoadNewResourceModule(ALocale, FileName);
   if (Instance != NULL)
@@ -3071,7 +3038,7 @@ void __fastcall TWinConfiguration::RestoreFont(
 {
   Font->Name = Configuration.FontName;
   Font->Size = Configuration.FontSize;
-  Font->Charset = Configuration.FontCharset;
+  Font->Charset = static_cast<TFontCharset>(Configuration.FontCharset);
   Font->Style = IntToFontStyles(Configuration.FontStyle);
 }
 //---------------------------------------------------------------------------
@@ -3269,7 +3236,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
 
     if (!Continuation)
     {
-      int P;
+      int P CLANG_INITIALIZE(0); // shut up
       if (!ExtensionLine.IsEmpty() && (ExtensionLine[1] == ExtensionMark) && ((P = Pos(L" ", ExtensionLine)) >= 2))
       {
         UnicodeString Key = ExtensionLine.SubString(2, P - 2).LowerCase();
@@ -3614,7 +3581,7 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandType::GetOptionsCount() const
 {
-  return FOptions.size();
+  return SizeToIntChecked(FOptions.size());
 }
 //---------------------------------------------------------------------------
 const TCustomCommandType::TOption & __fastcall TCustomCommandType::GetOption(int Index) const
@@ -3823,7 +3790,7 @@ void __fastcall TCustomCommandList::Load(THierarchicalStorage * Storage)
     for (int Index = 0; Index < FCommands->Count; Index++)
     {
       TCustomCommandType * Command = GetCommand(Index);
-      Command->ShortCut = (Word)Storage->ReadInteger(Command->Name, Command->ShortCut);
+      Command->ShortCut = static_cast<Word>(Storage->ReadInteger(Command->Name, Command->ShortCut));
     }
     Storage->CloseSubKey();
   }
@@ -3956,11 +3923,11 @@ public:
     // fallback to comparing by name
     else if ((Index1 < 0) && (Index2 < 0))
     {
-      Result = TComparer__1<UnicodeString>::Default()->Compare(CustomCommand1->Name, CustomCommand2->Name);
+      Result = AnsiCompareStr(CustomCommand1->Name, CustomCommand2->Name);
     }
     else
     {
-      Result = TComparer__1<int>::Default()->Compare(Index1, Index2);
+      Result = ((Index1 < Index2) ? -1 : ((Index1 > Index2) ? 1 : 0));
     }
     return Result;
   }

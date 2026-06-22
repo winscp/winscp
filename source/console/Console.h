@@ -81,7 +81,7 @@ struct TConsoleCommStruct
     bool Error; // TRANSFERIN only
   };
 
-  size_t Size;
+  unsigned int Size;
   int Version;
   enum { NONE, PRINT, INPUT, CHOICE, TITLE, INIT, PROGRESS, TRANSFEROUT, TRANSFERIN } Event;
 

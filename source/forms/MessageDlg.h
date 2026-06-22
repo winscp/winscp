@@ -34,6 +34,7 @@ protected:
   UnicodeString __fastcall GetReportText();
   UnicodeString __fastcall NormalizeNewLines(UnicodeString Text);
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall CreateWnd();
   DYNAMIC void __fastcall DoShow();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall MenuItemClick(TObject * Sender);
@@ -42,11 +43,15 @@ protected:
   void __fastcall UpdateForShiftStateTimer(TObject * Sender);
   DYNAMIC void __fastcall SetZOrder(bool TopMost);
   void __fastcall LoadMessageBrowser();
+  TControl * GetContentsControls();
 
 private:
   typedef std::map<unsigned int, TButton *> TAnswerButtons;
 
   UnicodeString MessageText;
+  TLabel * MainMessageLabel;
+  TLabel * MessageLabel;
+  TStaticText * MessageStaticText;
   TPanel * ContentsPanel;
   TMemo * MessageMemo;
   TPanel * MessageBrowserPanel;
@@ -62,6 +67,7 @@ private:
   void __fastcall ReportButtonSubmit(TObject * Sender, unsigned int & Answer);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall CMShowingChanged(TMessage & Message);
+  void WMGetObject(TMessage & Message);
   void __fastcall UpdateForShiftState();
   TButton * __fastcall CreateButton(
     UnicodeString Name, UnicodeString Caption, unsigned int Answer,

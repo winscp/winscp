@@ -9,7 +9,7 @@
 #include <Terminal.h>
 #include <SynchronizeController.h>
 #include <Script.h>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 
 #ifdef LOCALINTERFACE
 #include <LocalInterface.h>
@@ -50,7 +50,8 @@ const int mpAllowContinueOnError = 0x02;
 #define DUMPCALLSTACK_SWITCH L"DumpCallstack"
 #define INFO_SWITCH L"Info"
 #define COMREGISTRATION_SWITCH L"ComRegistration"
-#define BROWSE_SWITCH L"Browse"
+#define EXPLORE_SWITCH L"Explore"
+#define EXPLORE_OLD_SWITCH L"Browse"
 #define NOINTERACTIVEINPUT_SWITCH L"NoInteractiveInput"
 #define STDOUT_SWITCH L"StdOut"
 #define STDIN_SWITCH L"StdIn"
@@ -124,7 +125,8 @@ Tbx::TTBXSeparatorItem * __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Me
 void __fastcall AddMenuLabel(Tb2item::TTBCustomItem * Menu, const UnicodeString & Label);
 void __fastcall ClickToolbarItem(Tb2item::TTBCustomItem * Item, bool PositionCursor);
 
-void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button, unsigned int Answer = 0);
+void InitiateDialogTimeout(TForm * Dialog, int Timeout, TButton * Button, unsigned int Answer = 0);
+void RestartToolbarDialogTimeout(TForm * Dialog, int Timeout, TTBCustomItem * Item);
 
 // windows\WinHelp.cpp
 void __fastcall InitializeWinHelp();
@@ -215,17 +217,17 @@ void __fastcall DoConsoleDialog(TTerminal * Terminal,
     const UnicodeString Command = L"", const TStrings * Log = NULL);
 
 // forms\Copy.cpp
-const coTemp                = 0x001;
-const coDisableQueue        = 0x002;
-const coDoNotShowAgain      = 0x020;
-const coAllowRemoteTransfer = 0x100;
-const coShortCutHint        = 0x800;
-const coAllFiles            = 0x1000;
-const coBrowse              = 0x2000;
-const cooDoNotShowAgain     = 0x01;
-const cooRemoteTransfer     = 0x02;
-const cooSaveSettings       = 0x04;
-const cooBrowse             = 0x08;
+const int coTemp                = 0x001;
+const int coDisableQueue        = 0x002;
+const int coDoNotShowAgain      = 0x020;
+const int coAllowRemoteTransfer = 0x100;
+const int coShortCutHint        = 0x800;
+const int coAllFiles            = 0x1000;
+const int coExplore             = 0x2000;
+const int cooDoNotShowAgain     = 0x01;
+const int cooRemoteTransfer     = 0x02;
+const int cooSaveSettings       = 0x04;
+const int cooExplore            = 0x08;
 bool __fastcall DoCopyDialog(
   bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
@@ -235,9 +237,9 @@ bool CopyDialogValidateFileMask(
   const UnicodeString & FileMask, THistoryComboBox * DirectoryEdit, bool MultipleFiles, bool RemotePaths);
 
 // forms\CopyLocal.cpp
-const cloShortCutHint = 0x01;
-const cloMultipleFiles = 0x02;
-const clooDoNotShowAgain = 0x01;
+const int cloShortCutHint = 0x01;
+const int cloMultipleFiles = 0x02;
+const int clooDoNotShowAgain = 0x01;
 bool DoCopyLocalDialog(bool Move, int Options, UnicodeString & TargetDirectory, UnicodeString & FileMask, int & OutputOptions);
 
 // forms\CreateDirectory.cpp
@@ -271,7 +273,7 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
 enum TPreferencesMode { pmDefault, pmEditor, pmCustomCommands,
     pmQueue, pmLogging, pmUpdates, pmPresets, pmEditors, pmCommander,
     pmEditorInternal, pmFileColors };
-class TCopyParamRuleData;
+struct TCopyParamRuleData;
 struct TPreferencesDialogData
 {
   TCopyParamRuleData * CopyParamRuleData;
@@ -284,8 +286,8 @@ class TCustomCommandList;
 class TCustomCommandType;
 class TShortCuts;
 enum TCustomCommandsMode { ccmAdd, ccmEdit, ccmAdHoc };
-const ccoDisableRemote = 0x01;
-const ccoDisableRemoteFiles = 0x02;
+const int ccoDisableRemote = 0x01;
+const int ccoDisableRemoteFiles = 0x02;
 typedef void __fastcall (__closure *TCustomCommandValidate)
   (const TCustomCommandType & Command);
 bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,
@@ -308,12 +310,12 @@ bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam,
 class TRemoteProperties;
 class TRemoteTokenList;
 struct TCalculateSizeStats;
-const cpMode =  0x01;
-const cpOwner = 0x02;
-const cpGroup = 0x04;
-const cpAcl =   0x08;
-const poUserGroupByID = 0x01;
-const poTags =          0x02;
+const int cpMode =  0x01;
+const int cpOwner = 0x02;
+const int cpGroup = 0x04;
+const int cpAcl =   0x08;
+const int poUserGroupByID = 0x01;
+const int poTags =          0x02;
 typedef void __fastcall (__closure *TCalculateSizeEvent)
   (TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
    bool & Close);
@@ -348,9 +350,9 @@ bool __fastcall DoFileColorDialog(TFileColorData & FileColorData);
 bool __fastcall DoEditMaskDialog(TFileMasks & Mask);
 
 // forms\Synchronize.cpp
-const soDoNotUsePresets =  0x01;
-const soNoMinimize =       0x02;
-const soAllowSelectedOnly = 0x04;
+const int soDoNotUsePresets =  0x01;
+const int soNoMinimize =       0x02;
+const int soAllowSelectedOnly = 0x04;
 typedef void __fastcall (__closure *TGetSynchronizeOptionsEvent)
   (int Params, TSynchronizeOptions & Options);
 typedef void __fastcall (__closure *TSynchronizeSessionLog)
@@ -373,15 +375,17 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
 // forms\FullSynchronize.cpp
 struct TUsableCopyParamAttrs;
 enum TSynchronizeMode { smRemote, smLocal, smBoth };
-const fsoDisableTimestamp = 0x01;
-const fsoDoNotUsePresets =  0x02;
-const fsoAllowSelectedOnly = 0x04;
-const fsoDisableByChecksum = 0x08;
+const int fsoDisableTimestamp = 0x01;
+const int fsoDoNotUsePresets = 0x02;
+const int fsoAllowSelectedOnly = 0x04;
+const int fsoDisableByChecksum = 0x08;
+const int fsoLocalLocal = 0x10;
 typedef void __fastcall (__closure *TFullSynchronizeInNewWindow)
-  (TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+  (TSynchronizeMode Mode, int Params, const UnicodeString & Directory1, const UnicodeString & Directory2,
    const TCopyParamType * CopyParams);
-bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
-  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
+bool DoFullSynchronizeDialog(
+  TSynchronizeMode & Mode, int & Params,
+  UnicodeString & Directory1, UnicodeString & Directory2,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode,
   int Options, const TUsableCopyParamAttrs & CopyParamAttrs,
   TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow, int AutoSubmit);
@@ -398,15 +402,15 @@ typedef void __fastcall (__closure *TSynchronizeChecklistCalculateSize)
   (TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
 typedef void __fastcall (__closure *TSynchronizeMoveEvent)(
   TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token);
-typedef void __fastcall (__closure *TSynchronizeBrowseEvent)(
+typedef void __fastcall (__closure *TSynchronizeExploreEvent)(
   TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
-bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
-  TSynchronizeMode Mode, int Params,
-  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
+bool DoSynchronizeChecklistDialog(
+  TSynchronizeChecklist * Checklist, TSynchronizeMode Mode, int Params,
+  const UnicodeString & Directory1, const UnicodeString & Directory2,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
+  TSynchronizeExploreEvent OnSynchronizeExplore, void * Token);
 
 // forms\Editor.cpp
 typedef void __fastcall (__closure *TFileClosedEvent)
@@ -466,7 +470,7 @@ int __fastcall Console(TConsoleMode Mode);
 
 // forms\EditorPreferences.cpp
 enum TEditorPreferencesMode { epmAdd, epmEdit, epmAdHoc };
-class TEditorData;
+struct TEditorData;
 bool __fastcall DoEditorPreferencesDialog(TEditorData * Editor,
   bool & Remember, TEditorPreferencesMode Mode, bool MayRemote);
 
@@ -533,7 +537,8 @@ int __fastcall AdjustLocaleFlag(const UnicodeString & S, TLocaleFlagOverride Loc
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * Form, TNotifyEvent OnMinimize);
 void __fastcall ClearGlobalMinimizeHandler(TNotifyEvent OnMinimize);
 void __fastcall CallGlobalMinimizeHandler(TObject * Sender);
-bool __fastcall IsApplicationMinimized();
+bool IsMainFormMinimized();
+bool IsApplicationMinimized();
 void __fastcall ApplicationMinimize();
 void __fastcall ApplicationRestore();
 bool __fastcall HandleMinimizeSysCommand(TMessage & Message);
@@ -557,7 +562,6 @@ UnicodeString DumpCallstackFileName(int ProcessId);
 void CheckConfigurationForceSave();
 void InterfaceStarted();
 void InterfaceStartDontMeasure();
-void AddStartupSequence(const UnicodeString & Tag);
 //---------------------------------------------------------------------------
 #define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow3"
 //---------------------------------------------------------------------------
@@ -578,7 +582,7 @@ struct TCopyDataMessage
       wchar_t Session[1024];
       wchar_t Path[1024];
     } Refresh;
-  };
+  } Data;
 
   TCopyDataMessage()
   {
@@ -658,7 +662,7 @@ enum TConsoleFlag
 class TConsole
 {
 public:
-  virtual __fastcall ~TConsole() {};
+  virtual __fastcall ~TConsole() {}
   virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false) = 0;
   void __fastcall PrintLine(const UnicodeString & Str = UnicodeString(), bool Error = false);
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer) = 0;

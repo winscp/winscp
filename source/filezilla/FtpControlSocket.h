@@ -50,7 +50,7 @@ public:
   BOOL IsReady();
   void List(BOOL bFinish, int nError = 0, CServerPath path = CServerPath(), CString subdir = L"");
   void ListFile(CString filename, const CServerPath & path);
-  void FtpCommand(LPCTSTR pCommand);
+  void FtpCommand(const wchar_t * pCommand);
   void Disconnect();
   void FileTransfer(t_transferfile * transferfile = 0, BOOL bFinish = FALSE, int nError = 0);
   void Delete(CString filename, const CServerPath & path, bool filenameOnly);
@@ -91,14 +91,17 @@ public:
   };
 
   BOOL RemoveActiveTransfer();
-  BOOL SpeedLimitAddTransferredBytes(enum transferDirection direction, _int64 nBytesTransferred);
+  BOOL SpeedLimitAddTransferredBytes(enum transferDirection direction, __int64 nBytesTransferred);
 
-  _int64 GetSpeedLimit(enum transferDirection direction, CTime & time);
+  __int64 GetSpeedLimit(enum transferDirection direction);
 
-  _int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting, int nBufSize = 0);
+  __int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting);
 
   t_server GetCurrentServer();
   CFtpListResult * CreateListResult(bool mlst);
+
+  static UnicodeString DecodeString(
+    const RawByteString & S, CApiLog * ApiLog, const t_server & Server, bool * UTF8, bool MayInvalidateUTF8);
 
 public:
   virtual void OnReceive(int nErrorCode);
@@ -133,9 +136,8 @@ protected:
   BOOL ParsePwdReply(CString & rawpwd, CServerPath & realPath);
   BOOL SendAuthSsl();
 
-  void DiscardLine(CStringA line);
-  int FileTransferListState(bool get);
-  bool NeedModeCommand();
+  void DiscardLine(RawByteString line);
+  int FileTransferListState();
   bool NeedOptsCommand();
   CString GetListingCmd();
 
@@ -143,10 +145,12 @@ protected:
   int InitConnectState();
 
   bool IsRoutableAddress(const CString & host);
+  int ParsePasvPort(int code, BOOL & bTriedPortPasvOnce, BOOL & bPasv, const CString & reply, CString & host, int & port);
+  CString FormatPortCmd(UINT nPort);
   bool CheckForcePasvIp(CString & host);
   void TransferFinished(bool preserveFileTimeForUploads);
 
-  virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
+  virtual void LogSocketMessageRaw(int nMessageType, const wchar_t * pMsg);
   virtual bool LoggingSocketMessage(int nMessageType);
   virtual int GetSocketOptionVal(int OptionID) const;
 
@@ -156,8 +160,8 @@ protected:
 
   void Close();
   BOOL Connect(CString hostAddress, UINT nHostPort);
-  CString ConvertDomainName(CString domain);
   bool ConnectTransferSocket(const CString & host, UINT port);
+  void TransferSocketFailed();
 
   struct t_ActiveList
   {
@@ -167,10 +171,10 @@ protected:
   };
   static std::list<t_ActiveList> m_InstanceList[2];
   static CTime m_CurrentTransferTime[2];
-  static _int64 m_CurrentTransferLimit[2];
+  static __int64 m_CurrentTransferLimit[2];
   static CCriticalSectionWrapper m_SpeedLimitSync;
-  _int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, _int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction, int nBufSize);
-  _int64 GetSpeedLimit(CTime & time, int valType, int valValue);
+  __int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, __int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction);
+  __int64 GetSpeedLimit(int valType, int valValue);
 
   void SetDirectoryListing(t_directory * pDirectory, bool bSetWorkingDir = true);
   int CheckOverwriteFile();
@@ -183,28 +187,22 @@ protected:
 
   CFile * m_pDataFile;
   CTransferSocket * m_pTransferSocket;
-  CStringA m_MultiLine;
-  CTime m_LastSendTime;
+  RawByteString m_MultiLine;
+  TDateTime m_LastSendTime;
 
   CString m_ServerName;
-  std::list<CStringA> m_RecvBuffer;
-  CTime m_LastRecvTime;
+  std::list<RawByteString> m_RecvBuffer;
+  TDateTime m_LastRecvTime;
   class CLogonData;
   class CListData;
   class CListFileData;
   class CMakeDirData;
 
-#ifndef MPEXT_NO_ZLIB
-  bool m_useZlib;
-  bool m_zlibSupported;
-  int m_zlibLevel;
-#endif
-
   bool m_bUTF8;
   bool m_bAnnouncesUTF8;
   bool m_hasClntCmd;
   TFTPServerCapabilities m_serverCapabilities;
-  CStringA m_ListFile;
+  RawByteString m_ListFile;
   __int64 m_ListFileSize;
   bool m_isFileZilla;
 
@@ -226,8 +224,8 @@ protected:
     class COpData //Base class which will store operation specific parameters.
     {
     public:
-      COpData() {};
-      virtual ~COpData() {};
+      COpData() {}
+      virtual ~COpData() {}
     };
     COpData * pData;
   public:

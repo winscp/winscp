@@ -1,40 +1,26 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
+
+#include "GUITools.h"
 
 #include <shlobj.h>
 #include <mshtmhst.h>
-#include <Common.h>
 
-#include "GUITools.h"
-#include "WinConfiguration.h"
-#include <TextsCore.h>
-#include <TextsWin.h>
-#include <CoreMain.h>
 #include <SessionData.h>
-#include <WinInterface.h>
-#include <TbxUtils.hpp>
-#include <Math.hpp>
-#include <Tools.h>
+#include <TBXUtils.hpp>
 #include "PngImageList.hpp"
-#include <StrUtils.hpp>
-#include <limits>
 #include <Glyphs.h>
-#include <PasTools.hpp>
-#include <VCLCommon.h>
 #include <WinApi.h>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 #include <vssym32.h>
-#include <DateUtils.hpp>
-#include <IOUtils.hpp>
 #include <Queue.h>
+#include <Vcl.Themes.hpp>
 
 #include "Animations96.h"
 #include "Animations120.h"
 #include "Animations144.h"
 #include "Animations192.h"
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 extern const UnicodeString PageantTool = L"pageant.exe";
 extern const UnicodeString PuttygenTool = L"puttygen.exe";
@@ -152,7 +138,30 @@ bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExist
   return Result;
 }
 //---------------------------------------------------------------------------
-class TPuttyCleanupThread : public TSimpleThread
+//---------------------------------------------------------------------------
+class TStandaloneThread : public TSimpleThread
+{
+public:
+  virtual void __fastcall Terminate();
+protected:
+  virtual bool __fastcall Finished();
+};
+//---------------------------------------------------------------------------
+void __fastcall TStandaloneThread::Terminate()
+{
+  // noop - the thread always self-terminates
+  DebugFail();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TStandaloneThread::Finished()
+{
+  // self-destroy
+  return TSimpleThread::Finished() || true;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+template<typename T, int TT, int I>
+class TSingletonThread : public TStandaloneThread
 {
 public:
   static void Schedule();
@@ -160,25 +169,26 @@ public:
 
 protected:
   virtual void __fastcall Execute();
-  virtual void __fastcall Terminate();
-  bool __fastcall Finished();
   void DoSchedule();
+  virtual void DoExecute(bool HasExpired) = 0;
 
-private:
   TDateTime FTimer;
-  static TPuttyCleanupThread * FInstance;
+  static T * FInstance;
   static std::unique_ptr<TCriticalSection> FSection;
 };
 //---------------------------------------------------------------------------
-std::unique_ptr<TCriticalSection> TPuttyCleanupThread::FSection(TraceInitPtr(new TCriticalSection()));
-TPuttyCleanupThread * TPuttyCleanupThread::FInstance;
+template<typename T, int TT, int I>
+std::unique_ptr<TCriticalSection> TSingletonThread<T, TT, I>::FSection(TraceInitPtr(new TCriticalSection()));
+template<typename T, int TT, int I>
+T * TSingletonThread<T, TT, I>::FInstance;
 //---------------------------------------------------------------------------
-void TPuttyCleanupThread::Schedule()
+template<typename T, int TT, int I>
+void TSingletonThread<T, TT, I>::Schedule()
 {
   TGuard Guard(FSection.get());
   if (FInstance == NULL)
   {
-    FInstance = new TPuttyCleanupThread();
+    FInstance = new T();
     FInstance->DoSchedule();
     FInstance->Start();
   }
@@ -188,7 +198,8 @@ void TPuttyCleanupThread::Schedule()
   }
 }
 //---------------------------------------------------------------------------
-void TPuttyCleanupThread::Finalize()
+template<typename T, int TT, int I>
+void TSingletonThread<T, TT, I>::Finalize()
 {
   while (true)
   {
@@ -203,64 +214,25 @@ void TPuttyCleanupThread::Finalize()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPuttyCleanupThread::Execute()
+template<typename T, int TT, int I>
+void __fastcall TSingletonThread<T, TT, I>::Execute()
 {
   try
   {
-    std::unique_ptr<TStrings> Sessions(new TStringList());
-    bool Continue = true;
-
+    bool HasExpired;
     do
     {
       {
         TGuard Guard(FSection.get());
-        std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
-        Storage->AccessMode = smReadWrite;
-        Storage->ConfigureForPutty();
-
-        std::unique_ptr<TStringList> Sessions2(new TStringList());
-        if (Storage->OpenRootKey(true))
-        {
-          std::unique_ptr<TStrings> SubKeys(new TStringList());
-          Storage->GetSubKeyNames(SubKeys.get());
-          for (int Index = 0; Index < SubKeys->Count; Index++)
-          {
-            UnicodeString SessionName = SubKeys->Strings[Index];
-            if (StartsStr(GUIConfiguration->PuttySession, SessionName))
-            {
-              Sessions2->Add(SessionName);
-            }
-          }
-
-          Sessions2->Sort();
-          if (!Sessions->Equals(Sessions2.get()))
-          {
-            // Just in case new sessions from another WinSCP instance are added, delay the cleanup
-            // (to avoid having to implement some inter-process communication).
-            // Both instances will attempt to do the cleanup, but that not a problem
-            Sessions->Assign(Sessions2.get());
-            DoSchedule();
-          }
-        }
-
-        if (FTimer < Now())
-        {
-          for (int Index = 0; Index < Sessions->Count; Index++)
-          {
-            UnicodeString SessionName = Sessions->Strings[Index];
-            Storage->RecursiveDeleteSubKey(SessionName);
-          }
-
-          Continue = false;
-        }
+        HasExpired = (FTimer < Now());
       }
-
-      if (Continue)
+      DoExecute(HasExpired);
+      if (!HasExpired)
       {
-        Sleep(1000);
+        Sleep(I);
       }
     }
-    while (Continue);
+    while (!HasExpired);
   }
   __finally
   {
@@ -269,23 +241,65 @@ void __fastcall TPuttyCleanupThread::Execute()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPuttyCleanupThread::Terminate()
+template<typename T, int TT, int I>
+void TSingletonThread<T, TT, I>::DoSchedule()
 {
-  DebugFail();
+  FTimer = IncSecond(Now(), TT);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TPuttyCleanupThread::Finished()
+//---------------------------------------------------------------------------
+class TPuttyCleanupThread : public TSingletonThread<TPuttyCleanupThread, 10, 1000>
 {
-  // self-destroy
-  return TSimpleThread::Finished() || true;
+protected:
+  virtual void DoExecute(bool HasExpired);
+};
+//---------------------------------------------------------------------------
+void TPuttyCleanupThread::DoExecute(bool HasExpired)
+{
+  std::unique_ptr<TStrings> Sessions(new TStringList());
+
+  TGuard Guard(FSection.get());
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
+  Storage->AccessMode = smReadWrite;
+  Storage->ConfigureForPutty();
+
+  std::unique_ptr<TStringList> Sessions2(new TStringList());
+  if (Storage->OpenRootKey(true))
+  {
+    std::unique_ptr<TStrings> SubKeys(new TStringList());
+    Storage->GetSubKeyNames(SubKeys.get());
+    for (int Index = 0; Index < SubKeys->Count; Index++)
+    {
+      UnicodeString SessionName = SubKeys->Strings[Index];
+      if (StartsStr(GUIConfiguration->PuttySession, SessionName))
+      {
+        Sessions2->Add(SessionName);
+      }
+    }
+
+    Sessions2->Sort();
+    if (!Sessions->Equals(Sessions2.get()))
+    {
+      // Just in case new sessions from another WinSCP instance are added, delay the cleanup
+      // (to avoid having to implement some inter-process communication).
+      // Both instances will attempt to do the cleanup, but that not a problem
+      Sessions->Assign(Sessions2.get());
+      DoSchedule();
+    }
+  }
+
+  if (HasExpired)
+  {
+    for (int Index = 0; Index < Sessions->Count; Index++)
+    {
+      UnicodeString SessionName = Sessions->Strings[Index];
+      Storage->RecursiveDeleteSubKey(SessionName);
+    }
+
+  }
 }
 //---------------------------------------------------------------------------
-void TPuttyCleanupThread::DoSchedule()
-{
-  FTimer = IncSecond(Now(), 10);
-}
-//---------------------------------------------------------------------------
-class TPuttyPasswordThread : public TSimpleThread
+class TPuttyPasswordThread : public TStandaloneThread
 {
 public:
   TPuttyPasswordThread(const UnicodeString & Password, const UnicodeString & PipeName);
@@ -293,8 +307,6 @@ public:
 
 protected:
   virtual void __fastcall Execute();
-  virtual void __fastcall Terminate();
-  virtual bool __fastcall Finished();
 
 private:
   HANDLE FPipe;
@@ -319,20 +331,10 @@ TPuttyPasswordThread::TPuttyPasswordThread(const UnicodeString & Password, const
 //---------------------------------------------------------------------------
 __fastcall TPuttyPasswordThread::~TPuttyPasswordThread()
 {
-  DebugAlwaysTrue(FFinished);
+  DebugAssert(FFinished);
   AppLog(L"Disconnecting and closing password pipe");
   DisconnectNamedPipe(FPipe);
   CloseHandle(FPipe);
-}
-//---------------------------------------------------------------------------
-void __fastcall TPuttyPasswordThread::Terminate()
-{
-  // noop - the thread always self-terminates
-}
-//---------------------------------------------------------------------------
-bool __fastcall TPuttyPasswordThread::Finished()
-{
-  return true;
 }
 //---------------------------------------------------------------------------
 void TPuttyPasswordThread::DoSleep(int & Timeout)
@@ -421,7 +423,7 @@ UnicodeString FindPuttyPath()
   return Program;
 }
 //---------------------------------------------------------------------------
-unsigned int PipeCounter = 0;
+static unsigned int PipeCounter = 0;
 //---------------------------------------------------------------------------
 void OpenSessionInPutty(TSessionData * SessionData)
 {
@@ -468,7 +470,8 @@ void OpenSessionInPutty(TSessionData * SessionData)
         std::unique_ptr<TStoredSessionList> HostKeySessionList(new TStoredSessionList());
         HostKeySessionList->OwnsObjects = false;
         HostKeySessionList->Add(SessionData);
-        int Imported = TStoredSessionList::ImportHostKeys(SourceHostKeyStorage.get(), TargetHostKeyStorage.get(), HostKeySessionList.get(), false);
+        int Imported =
+          TStoredSessionList::ImportHostKeys(SourceHostKeyStorage.get(), TargetHostKeyStorage.get(), HostKeySessionList.get(), false, true);
         AppLogFmt(L"Imported host keys: %d", (Imported));
       }
 
@@ -615,6 +618,64 @@ void OpenSessionInPutty(TSessionData * SessionData)
   }
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+static HWND OperationStatusWindow = 0;
+static TRect OperationStatusCenterRect;
+//---------------------------------------------------------------------------
+void PlaceOperationStatusWindow()
+{
+  TRect CurRect;
+  if (GetWindowRect(OperationStatusWindow, &CurRect))
+  {
+    TRect Rect = CurRect;
+    CenterFormOn(Rect, OperationStatusCenterRect);
+    if (Rect != CurRect)
+    {
+      // What TWinControl.SetBounds does
+      SetWindowPos(OperationStatusWindow, 0, Rect.Left, Rect.Top, 0, 0, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSIZE);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+class TOperationStatusWindowMonitorThread : public TSingletonThread<TOperationStatusWindowMonitorThread, 3, 25>
+{
+protected:
+  virtual void DoExecute(bool HasExpired);
+};
+//---------------------------------------------------------------------------
+void TOperationStatusWindowMonitorThread::DoExecute(bool)
+{
+  PlaceOperationStatusWindow();
+}
+//---------------------------------------------------------------------------
+void CheckOperationStatusWindow()
+{
+  if (Screen->ActiveForm != nullptr)
+  {
+    OperationStatusCenterRect = GetCenterRect(Screen->ActiveForm, nullptr);
+    HWND WindowHandle = GetForegroundWindow();
+    if ((WindowHandle != nullptr) && (WindowHandle != OperationStatusWindow))
+    {
+      DWORD ProcessId;
+      if ((GetWindowThreadProcessId(WindowHandle, &ProcessId) != 0) &&
+          (ProcessId == GetCurrentProcessId()))
+      {
+        UnicodeString ClassName;
+        ClassName.SetLength(256);
+        GetClassName(WindowHandle, ClassName.c_str(), ClassName.Length());
+        PackStr(ClassName);
+        if ((ClassName == L"OperationStatusWindow") &&
+            !IsIconic(WindowHandle))
+        {
+          OperationStatusWindow = WindowHandle;
+          PlaceOperationStatusWindow();
+          TOperationStatusWindowMonitorThread::Schedule();
+        }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
 {
   UnicodeString AppPath = IncludeTrailingBackslash(ExtractFilePath(Application->ExeName));
@@ -702,6 +763,7 @@ TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFi
     catch (Exception & E)
     {
       // Ignore errors watching not-ready drives
+      DebugUsedParam(E);
     }
   }
   return Result.release();
@@ -744,8 +806,8 @@ static bool __fastcall DoExecuteShell(const UnicodeString Path, const UnicodeStr
       SEE_MASK_FLAG_NO_UI |
       FLAGMASK((Handle != NULL), SEE_MASK_NOCLOSEPROCESS);
     ExecuteInfo.hwnd = Application->Handle;
-    ExecuteInfo.lpFile = (wchar_t*)Path.data();
-    ExecuteInfo.lpParameters = (wchar_t*)Params.data();
+    ExecuteInfo.lpFile = static_cast<const wchar_t *>(Path.data());
+    ExecuteInfo.lpParameters = static_cast<const wchar_t *>(Params.data());
     ExecuteInfo.lpDirectory = (ChangeWorkingDirectory ? Directory.c_str() : NULL);
     ExecuteInfo.nShow = SW_SHOW;
 
@@ -824,14 +886,18 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)
 {
   LPITEMIDLIST Pidl;
-  wchar_t Buf[256];
-  if (SHGetSpecialFolderLocation(NULL, PathID, &Pidl) == NO_ERROR &&
-      SHGetPathFromIDList(Pidl, Buf))
+  bool Result = SUCCEEDED(SHGetSpecialFolderLocation(NULL, PathID, &Pidl));
+  if (Result)
   {
-    Path = UnicodeString(Buf);
-    return true;
+    wchar_t Buf[MAX_PATH];
+    Result = SHGetPathFromIDList(Pidl, Buf);
+    CoTaskMemFree(Pidl);
+    if (Result)
+    {
+      Path = UnicodeString(Buf);
+    }
   }
-  return false;
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeString Identity,
@@ -859,19 +925,13 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeS
 class TSessionColors : public TComponent
 {
 public:
-  __fastcall TSessionColors(TComponent * Owner) : TComponent(Owner)
+  __fastcall TSessionColors() : TComponent(nullptr)
   {
-    Name = QualifiedClassName();
   }
 
   static TSessionColors * __fastcall Retrieve(TComponent * Component)
   {
-    TSessionColors * SessionColors = dynamic_cast<TSessionColors *>(Component->FindComponent(QualifiedClassName()));
-    if (SessionColors == NULL)
-    {
-      SessionColors = new TSessionColors(Component);
-    }
-    return SessionColors;
+    return GetComponentInstance<TSessionColors>(Component);
   }
 
   typedef std::map<TColor, int> TColorMap;
@@ -1324,17 +1384,18 @@ public:
 protected:
   ICustomDoc * FCustomDoc;
 
-  #pragma warn -hid
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Woverloaded-virtual"
   virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID ClassId, void ** Intf)
   {
     HRESULT Result = S_OK;
     if (ClassId == IID_IUnknown)
     {
-      *Intf = (IUnknown *)this;
+      *Intf = static_cast<IUnknown *>(this);
     }
     else if (ClassId == ::IID_IDocHostUIHandler)
     {
-      *Intf = (::IDocHostUIHandler *)this;
+      *Intf = static_cast<::IDocHostUIHandler *>(this);
     }
     else
     {
@@ -1342,7 +1403,7 @@ protected:
     }
     return Result;
   }
-  #pragma warn .hid
+  #pragma clang diagnostic pop
 
   virtual ULONG STDMETHODCALLTYPE AddRef()
   {
@@ -1355,7 +1416,7 @@ protected:
   }
 
   virtual HRESULT STDMETHODCALLTYPE ShowContextMenu(
-    DWORD dwID, POINT * ppt, IUnknown * pcmdtReserved, IDispatch * pdispReserved)
+    DWORD DebugUsedArg(dwID), POINT *, IUnknown *, IDispatch *)
   {
     // No context menu
     // (implementing IDocHostUIHandler reenabled context menu disabled by TBrowserViewer::DoContextPopup)
@@ -1371,8 +1432,7 @@ protected:
   }
 
   virtual HRESULT STDMETHODCALLTYPE ShowUI(
-    DWORD dwID, IOleInPlaceActiveObject * pActiveObject, IOleCommandTarget * pCommandTarget, IOleInPlaceFrame * pFrame,
-    IOleInPlaceUIWindow * pDoc)
+    DWORD DebugUsedArg(dwID), IOleInPlaceActiveObject *, IOleCommandTarget *, IOleInPlaceFrame *, IOleInPlaceUIWindow *)
   {
     return E_NOTIMPL;
   }
@@ -1387,52 +1447,52 @@ protected:
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE EnableModeless(BOOL fEnable)
+  virtual HRESULT STDMETHODCALLTYPE EnableModeless(BOOL DebugUsedArg(fEnable))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE OnDocWindowActivate(BOOL fActivate)
+  virtual HRESULT STDMETHODCALLTYPE OnDocWindowActivate(BOOL DebugUsedArg(fActivate))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE OnFrameWindowActivate(BOOL fActivate)
+  virtual HRESULT STDMETHODCALLTYPE OnFrameWindowActivate(BOOL DebugUsedArg(fActivate))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE ResizeBorder(LPCRECT prcBorder, IOleInPlaceUIWindow * pUIWindow, BOOL fRameWindow)
+  virtual HRESULT STDMETHODCALLTYPE ResizeBorder(LPCRECT, IOleInPlaceUIWindow *, BOOL DebugUsedArg(fRameWindow))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG lpMsg, const GUID * pguidCmdGroup, DWORD nCmdID)
+  virtual HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG, const GUID * DebugUsedArg(pguidCmdGroup), DWORD DebugUsedArg(nCmdID))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE GetOptionKeyPath(LPOLESTR * pchKey, DWORD dw)
+  virtual HRESULT STDMETHODCALLTYPE GetOptionKeyPath(LPOLESTR * DebugUsedArg(pchKey), DWORD DebugUsedArg(dw))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE GetDropTarget(IDropTarget * pDropTarget, IDropTarget ** ppDropTarget)
+  virtual HRESULT STDMETHODCALLTYPE GetDropTarget(IDropTarget *, IDropTarget **)
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE GetExternal(IDispatch ** ppDispatch)
+  virtual HRESULT STDMETHODCALLTYPE GetExternal(IDispatch **)
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE TranslateUrl(DWORD dwTranslate, OLECHAR * pchURLIn, OLECHAR ** ppchURLOut)
+  virtual HRESULT STDMETHODCALLTYPE TranslateUrl(DWORD DebugUsedArg(dwTranslate), OLECHAR * DebugUsedArg(pchURLIn), OLECHAR ** DebugUsedArg(ppchURLOut))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE FilterDataObject(IDataObject * pDO, IDataObject ** ppDORet)
+  virtual HRESULT STDMETHODCALLTYPE FilterDataObject(IDataObject *, IDataObject **)
   {
     return E_NOTIMPL;
   }
@@ -1533,15 +1593,6 @@ void __fastcall TBrowserViewer::NavigateToUrl(const UnicodeString & Url)
   Navigate(Url.c_str());
 }
 //---------------------------------------------------------------------------
-TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label)
-{
-  TPanel * Result = CreateBlankPanel(Parent);
-  Result->Parent = Parent;
-  Result->Align = alClient;
-  Result->Caption = Label;
-  return Result;
-}
-//---------------------------------------------------------------------------
 TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeString & LoadingLabel)
 {
   TBrowserViewer * Result = new TBrowserViewer(Parent);
@@ -1621,6 +1672,25 @@ bool CopyTextFromBrowser(TWebBrowserEx * WebBrowser, UnicodeString & Text)
   return Result;
 }
 //---------------------------------------------------------------------------
+TPanel * CreateBlankPanel(TComponent * Owner)
+{
+  TPanel * Panel = new TPanel(Owner);
+  Panel->BevelOuter = bvNone;
+  Panel->BevelInner = bvNone; // default
+  Panel->BevelKind = bkNone;
+  Panel->Color = clWindow;
+  return Panel;
+}
+//---------------------------------------------------------------------------
+TPanel * CreateLabelPanel(TPanel * Parent, const UnicodeString & Label)
+{
+  TPanel * Result = CreateBlankPanel(Parent);
+  Result->Parent = Parent;
+  Result->Align = alClient;
+  Result->Caption = Label;
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless)
 {
   UnicodeString Result =
@@ -1634,12 +1704,9 @@ UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeSt
     L"{\n"
     L"    font-family: '" + Font->Name + L"';\n"
     L"    margin: " + UnicodeString(Seamless ? L"0" : L"0.5em") + L";\n"
+    L"    color: " + ColorToWebColorStr(Parent->Font->Color) + L";\n"
     L"    background-color: " + ColorToWebColorStr(Parent->Color) + L";\n" +
     UnicodeString(Seamless ? L"    overflow: hidden;\n" : L"") +
-    L"}\n"
-    L"\n"
-    L"body\n"
-    L"{\n"
     L"    font-size: " + IntToStr(Font->Size) + L"pt;\n"
     L"}\n"
     L"\n"
@@ -1651,7 +1718,7 @@ UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeSt
     L"\n"
     L"a, a:visited, a:hover, a:visited, a:current\n"
     L"{\n"
-    L"    color: " + ColorToWebColorStr(LinkColor) + L";\n"
+    L"    color: " + ColorToWebColorStr(GetLinkColor(Parent)) + L";\n"
     L"}\n"
     L"</style>\n"
     L"</head>\n"
@@ -1676,7 +1743,7 @@ void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Docum
   TStreamAdapter * DocumentStreamAdapter = new TStreamAdapter(DocumentStream.get(), soReference);
   IPersistStreamInit * PersistStreamInit = NULL;
   if (DebugAlwaysTrue(WebBrowser->Document != NULL) &&
-      SUCCEEDED(WebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
+      SUCCEEDED(WebBrowser->Document->QueryInterface(IID_IPersistStreamInit, reinterpret_cast<void **>(&PersistStreamInit))) &&
       DebugAlwaysTrue(PersistStreamInit != NULL))
   {
     PersistStreamInit->Load(static_cast<_di_IStream>(*DocumentStreamAdapter));
@@ -1725,7 +1792,7 @@ void __fastcall GetInstrutionsTheme(
     }
     if (GetThemeColor(Theme, TEXT_MAININSTRUCTION, 0, TMT_TEXTCOLOR, &AColor) == S_OK)
     {
-      MainInstructionColor = (TColor)AColor;
+      MainInstructionColor = static_cast<TColor>(AColor);
     }
 
     memset(&AFont, 0, sizeof(AFont));
@@ -1866,7 +1933,7 @@ static int __fastcall NeedImagesModule(TControl * Control)
   if (AnimationsImages.find(PixelsPerInch) == AnimationsImages.end())
   {
     TDataModule * ImagesModule;
-    HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
+    HMODULE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
     try
     {
       if (PixelsPerInch == 192)
@@ -2163,7 +2230,7 @@ bool __fastcall TScreenTipHintWindow::UseBoldShortHint(TControl * HintControl)
   return
     (dynamic_cast<TTBCustomDockableWindow *>(HintControl) != NULL) ||
     (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL) ||
-    (HintControl->Perform(WM_WANTS_SCREEN_TIPS, 0, 0) == 1);
+    (HintControl->Perform(WM_WANTS_SCREEN_TIPS, 0, NativeInt(0)) == 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScreenTipHintWindow::IsPathLabel(TControl * HintControl)
@@ -2223,7 +2290,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
   Canvas->Font->Assign(GetFont(HintControl, AHint));
 
   // from XE6 Vcl.ScreenTips.pas, but absent in 11
-  const cScreenTipTextOnlyWidth = 210;
+  const int cScreenTipTextOnlyWidth = 210;
   const int ScreenTipTextOnlyWidth = ScaleByTextHeight(HintControl, cScreenTipTextOnlyWidth);
 
   int LongHintMargin = 0; // shut up
@@ -2408,7 +2475,7 @@ static int HideAccelFlag(TControl * Control)
     Control = Control->Parent;
   }
   int Result;
-  if (FLAGSET(Control->Perform(WM_QUERYUISTATE, 0, 0), UISF_HIDEACCEL))
+  if (FLAGSET(Control->Perform(WM_QUERYUISTATE, 0, NativeInt(0)), UISF_HIDEACCEL))
   {
     Result = DT_HIDEPREFIX;
   }
@@ -2417,6 +2484,229 @@ static int HideAccelFlag(TControl * Control)
     Result = 0;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TDarkUxThemeStyle : public TUxThemeStyle
+{
+public:
+  static TDarkUxThemeStyle * Instance();
+
+protected:
+  virtual bool __fastcall DoDrawText(
+    HDC DC, const TThemedElementDetails & Details, const UnicodeString S, TRect & R, TTextFormat Flags,
+    const TStyleTextOptions & Options, int DPI);
+
+private:
+  static std::unique_ptr<TDarkUxThemeStyle> FInstance;
+};
+//---------------------------------------------------------------------------
+std::unique_ptr<TDarkUxThemeStyle> TDarkUxThemeStyle::FInstance;
+//---------------------------------------------------------------------------
+TDarkUxThemeStyle * TDarkUxThemeStyle::Instance()
+{
+  if (FInstance.get() == NULL)
+  {
+    FInstance.reset(new TDarkUxThemeStyle());
+  }
+  return FInstance.get();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TDarkUxThemeStyle::DoDrawText(
+  HDC DC, const TThemedElementDetails & Details, const UnicodeString S, TRect & R, TTextFormat Flags,
+  const TStyleTextOptions & AOptions, int DPI)
+{
+  TStyleTextOptions Options = AOptions;
+  Options.TextColor = GetWindowTextColor(GetBtnFaceColor());
+  Options.Flags << stfTextColor;
+  return TUxThemeStyle::DoDrawText(DC, Details, S, R, Flags, Options, DPI);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// For controls that need both custom VCL theme style and custom Windows theme.
+// Currently the checkbox (custom VCL theme for light caption and custom Windows theme for dark more checkbox bitmaps).
+// Current this handles only "button" theme.
+// It's a singleton and can be used only for controls that share the same Windows theme (curently used with "explorer").
+class TDarkExplorerUxThemeStyle : public TDarkUxThemeStyle
+{
+public:
+  static const UnicodeString ThemeName;
+
+  virtual __fastcall TDarkExplorerUxThemeStyle();
+  virtual __fastcall ~TDarkExplorerUxThemeStyle();
+  void SetControl(TWinControl * Control);
+
+protected:
+  virtual NativeUInt __fastcall GetTheme(TThemedElement Element);
+  virtual NativeUInt __fastcall GetThemeForDPI(TThemedElement Element, int DPI);
+  virtual void __fastcall UpdateThemes();
+  virtual bool __fastcall DoDrawText(
+    HDC DC, const TThemedElementDetails & Details, const UnicodeString S, TRect & R, TTextFormat Flags,
+    const TStyleTextOptions & Options, int DPI);
+
+protected:
+  typedef std::map<int, NativeUInt> TThemes;
+  TThemes FThemes;
+  bool FInitialized;
+  HWND FControlHandle;
+  int FTextFlags;
+
+  bool DoGetTheme(TThemedElement Element, int DPI, NativeUInt & Result);
+  void Clear();
+};
+//---------------------------------------------------------------------------
+const UnicodeString TDarkExplorerUxThemeStyle::ThemeName = L"explorer";
+//---------------------------------------------------------------------------
+__fastcall TDarkExplorerUxThemeStyle::TDarkExplorerUxThemeStyle()
+{
+  FControlHandle = NULL;
+  FTextFlags = 0;
+  FInitialized = true;
+}
+//---------------------------------------------------------------------------
+__fastcall TDarkExplorerUxThemeStyle::~TDarkExplorerUxThemeStyle()
+{
+  Clear();
+}
+//---------------------------------------------------------------------------
+void TDarkExplorerUxThemeStyle::SetControl(TWinControl * Control)
+{
+  // Handle is safer than a pointer
+  if (Control->HandleAllocated())
+  {
+    FControlHandle = Control->Handle;
+    // WORKAROUND - VCL does not hide accelerator of custom-styled (at least) checkboxes
+    FTextFlags = HideAccelFlag(Control);
+  }
+  else
+  {
+    FControlHandle = 0;
+    FTextFlags = 0;
+  }
+}
+//---------------------------------------------------------------------------
+NativeUInt __fastcall TDarkExplorerUxThemeStyle::GetTheme(TThemedElement Element)
+{
+  NativeUInt Result;
+  if (!DoGetTheme(Element, 0, Result))
+  {
+    Result = TDarkUxThemeStyle::GetTheme(Element);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+NativeUInt __fastcall TDarkExplorerUxThemeStyle::GetThemeForDPI(TThemedElement Element, int DPI)
+{
+  NativeUInt Result;
+  if (!DoGetTheme(Element, DPI, Result))
+  {
+    Result = TDarkUxThemeStyle::GetThemeForDPI(Element, DPI);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TDarkExplorerUxThemeStyle::DoGetTheme(TThemedElement Element, int DPI, NativeUInt & Result)
+{
+  bool Handle = DebugAlwaysTrue(FControlHandle != 0) && DebugAlwaysTrue(Element == teButton);
+  if (Handle)
+  {
+    if (DPI == 0)
+    {
+      DPI = Screen->PixelsPerInch;
+    }
+
+    TThemes::const_iterator ITheme = FThemes.find(DPI);
+    if (ITheme != FThemes.end())
+    {
+      Result = ITheme->second;
+    }
+    else
+    {
+      if (!UseThemes())
+      {
+        Result = 0;
+      }
+      else
+      {
+        HTHEME Theme;
+        const wchar_t * ClassName = L"button";
+        if (!IsWin10() || !IsWin10Build(15063) || (DPI == Screen->PixelsPerInch))
+        {
+          Theme = OpenThemeData(FControlHandle, ClassName);
+        }
+        else
+        {
+          Theme = OpenThemeDataForDpi(FControlHandle, ClassName, DPI);
+        }
+        Result = reinterpret_cast<NativeUInt>(Theme);
+      }
+
+      FThemes.insert(std::make_pair(DPI, Result));
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TDarkExplorerUxThemeStyle::Clear()
+{
+  TThemes Themes;
+  // TUxThemeStyle.UnloadThemeData implementation (FThemeDataUnLoading) imply
+  // that GetTheme might be called while unloading, so protecting against that
+  FThemes.swap(Themes);
+
+  TThemes::iterator I = Themes.begin();
+  while (I != Themes.end())
+  {
+    CloseThemeData(reinterpret_cast<HTHEME>(I->second));
+    ++I;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TDarkExplorerUxThemeStyle::UpdateThemes()
+{
+  TDarkUxThemeStyle::UpdateThemes();
+  // This is only ever called from the constructor, where FThemes is not initialized yet.
+  // It's not called for theme updates, as it is called only for the detault global app theme instance.
+  if (DebugAlwaysFalse(FInitialized))
+  {
+    Clear();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TDarkExplorerUxThemeStyle::DoDrawText(
+  HDC DC, const TThemedElementDetails & Details, const UnicodeString S, TRect & R, TTextFormat Flags,
+  const TStyleTextOptions & Options, int DPI)
+{
+  int TextFlags = FTextFlags;
+  if (FLAGSET(TextFlags, DT_HIDEPREFIX))
+  {
+    TextFlags -= DT_HIDEPREFIX;
+    Flags << tfHidePrefix;
+  }
+  DebugAssert(TextFlags == 0);
+  DebugUsedParam(TextFlags);
+  return TDarkUxThemeStyle::DoDrawText(DC, Details, S, R, Flags, Options, DPI);
+}
+//---------------------------------------------------------------------------
+static std::unique_ptr<TDarkExplorerUxThemeStyle> DarkExplorerUxThemeStyle;
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// Based on:
+// https://stackoverflow.com/q/6912424/850848
+// https://stackoverflow.com/q/4685863/850848
+class TUIStateAwareLabel : public TLabel
+{
+public:
+  __fastcall virtual TUIStateAwareLabel(TComponent * AOwner);
+
+protected:
+  DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
+  virtual void __fastcall Dispatch(void * AMessage);
+};
+//---------------------------------------------------------------------------
+TLabel * CreateLabel(TComponent * AOwner)
+{
+  return new TUIStateAwareLabel(AOwner);
 }
 //---------------------------------------------------------------------------
 __fastcall TUIStateAwareLabel::TUIStateAwareLabel(TComponent * AOwner) :
@@ -2448,7 +2738,7 @@ void __fastcall TUIStateAwareLabel::Dispatch(void * AMessage)
       TCustomForm * ParentForm = GetParentForm(this);
       if (ParentForm != NULL)
       {
-        ParentForm->Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+        ParentForm->Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), NativeInt(0));
       }
     }
   }
@@ -2457,6 +2747,233 @@ void __fastcall TUIStateAwareLabel::Dispatch(void * AMessage)
     TLabel::Dispatch(AMessage);
   }
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+template<typename T>
+bool HandleMessageByDarkStyleHook(TMessage & Msg, TWinControl * Control, std::unique_ptr<T> & StyleHook)
+{
+  bool Result = false;
+  if (Control->HandleAllocated() &&
+      !Control->ComponentState.Contains(csDestroying) &&
+      !Control->ControlState.Contains(csDestroyingHandle) &&
+      !Control->ControlStyle.Contains(csOverrideStylePaint) &&
+      UseDarkModeForControl(Control))
+  {
+    if (StyleHook.get() == NULL)
+    {
+      StyleHook.reset(new T(Control));
+    }
+    Result = StyleHook->HandleMessage(Msg);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void SetColorModeTheme(TWinControl * Control, const UnicodeString & DarkSubAppName)
+{
+  if (UseDarkModeForControl(Control))
+  {
+    SetDarkModeTheme(Control, DarkSubAppName);
+  }
+}
+//---------------------------------------------------------------------------
+void SetExplorerTheme(TWinControl * Button)
+{
+  SetColorModeTheme(Button, TDarkExplorerUxThemeStyle::ThemeName);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TDarkGroupBoxStyleHook : public TGroupBoxStyleHook
+{
+public:
+  __fastcall virtual TDarkGroupBoxStyleHook(TWinControl * AControl) :
+    TGroupBoxStyleHook(AControl)
+  {
+  }
+
+protected:
+  virtual TCustomStyleServices * __fastcall StyleServices()
+  {
+    return TDarkUxThemeStyle::Instance();
+  }
+};
+//---------------------------------------------------------------------------
+class TGroupBoxEx : public TGroupBox
+{
+protected:
+  virtual void __fastcall PaintWindow(HDC DC);
+  virtual void __fastcall WndProc(TMessage & Msg);
+private:
+  std::unique_ptr<TDarkGroupBoxStyleHook> FStyleHook;
+};
+//---------------------------------------------------------------------------
+void __fastcall TGroupBoxEx::WndProc(TMessage & Msg)
+{
+  if (!HandleMessageByDarkStyleHook(Msg, this, FStyleHook))
+  {
+    TGroupBox::WndProc(Msg);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TGroupBoxEx::PaintWindow(HDC DC)
+{
+  if (UseDarkModeForControl(this))
+  {
+    std::unique_ptr<TCanvas> Canvas(new TCanvas());
+    Canvas->Handle = DC;
+    Canvas->Font = Font;
+
+    TRect Rect = ClientRect;
+    Canvas->Brush->Style = bsSolid;
+    Canvas->Brush->Color = GetBtnFaceColor();
+    Canvas->FillRect(Rect);
+  }
+
+  TGroupBox::PaintWindow(DC);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TDarkCheckBoxStyleHook : public TCheckBoxStyleHook
+{
+public:
+  __fastcall virtual TDarkCheckBoxStyleHook(TWinControl * AControl);
+protected:
+  virtual void __fastcall PaintBackground(TCanvas * Canvas);
+  virtual TCustomStyleServices * __fastcall StyleServices();
+};
+//---------------------------------------------------------------------------
+class TCheckBoxEx : public TCheckBox
+{
+public:
+  __fastcall virtual TCheckBoxEx(TComponent * AOwner);
+protected:
+  virtual void __fastcall WndProc(TMessage & Msg);
+  virtual void __fastcall CreateWnd();
+private:
+  std::unique_ptr<TDarkCheckBoxStyleHook> FStyleHook;
+};
+//---------------------------------------------------------------------------
+TCheckBox * CreateCheckBox(TComponent * AOwner)
+{
+  return new TCheckBoxEx(AOwner);
+}
+//---------------------------------------------------------------------------
+__fastcall TDarkCheckBoxStyleHook::TDarkCheckBoxStyleHook(TWinControl * AControl) :
+  TCheckBoxStyleHook(AControl)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TDarkCheckBoxStyleHook::PaintBackground(TCanvas * Canvas)
+{
+  Canvas->Brush->Style = bsSolid;
+  Canvas->Brush->Color = GetBtnFaceColor();
+  Canvas->FillRect(Rect(0, 0, Control->Width, Control->Height));
+}
+//---------------------------------------------------------------------------
+TCustomStyleServices * __fastcall TDarkCheckBoxStyleHook::StyleServices()
+{
+  if (DarkExplorerUxThemeStyle.get() == NULL)
+  {
+    DarkExplorerUxThemeStyle.reset(new TDarkExplorerUxThemeStyle());
+  }
+  DarkExplorerUxThemeStyle->SetControl(Control);
+  return DarkExplorerUxThemeStyle.get();
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TCheckBoxEx::TCheckBoxEx(TComponent * AOwner) :
+  TCheckBox(AOwner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TCheckBoxEx::CreateWnd()
+{
+  TCheckBox::CreateWnd();
+  SetColorModeTheme(this, TDarkExplorerUxThemeStyle::ThemeName);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCheckBoxEx::WndProc(TMessage & Msg)
+{
+  if (!HandleMessageByDarkStyleHook(Msg, this, FStyleHook))
+  {
+    TCheckBox::WndProc(Msg);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TButtonEx : public TButton
+{
+public:
+  __fastcall virtual TButtonEx(TComponent * AOwner);
+protected:
+  virtual void __fastcall CreateWnd();
+};
+//---------------------------------------------------------------------------
+__fastcall TButtonEx::TButtonEx(TComponent * AOwner) :
+  TButton(AOwner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TButtonEx::CreateWnd()
+{
+  TButton::CreateWnd();
+  SetExplorerTheme(this);
+}
+//---------------------------------------------------------------------------
+TButton * CreateButton(TComponent * AOwner)
+{
+  return new TButtonEx(AOwner);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TEditEx : public TEdit
+{
+public:
+  __fastcall virtual TEditEx(TComponent * AOwner);
+protected:
+  virtual void __fastcall CreateWnd();
+};
+//---------------------------------------------------------------------------
+__fastcall TEditEx::TEditEx(TComponent * AOwner) :
+  TEdit(AOwner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditEx::CreateWnd()
+{
+  TEdit::CreateWnd();
+  SetColorModeTheme(this, L"CFD");
+}
+//---------------------------------------------------------------------------
+TEdit * CreateEdit(TComponent * AOwner)
+{
+  return new TEditEx(AOwner);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TMemoEx : public TMemo
+{
+public:
+  __fastcall virtual TMemoEx(TComponent * AOwner);
+protected:
+  virtual void __fastcall CreateWnd();
+};
+//---------------------------------------------------------------------------
+__fastcall TMemoEx::TMemoEx(TComponent * AOwner) :
+  TMemo(AOwner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TMemoEx::CreateWnd()
+{
+  TMemo::CreateWnd();
+  SetColorModeTheme(this, L"CFD");
+}
+//---------------------------------------------------------------------------
+TMemo * CreateMemo(TComponent * AOwner)
+{
+  return new TMemoEx(AOwner);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 void __fastcall FindComponentClass(
   void *, TReader *, const UnicodeString DebugUsedArg(ClassName), TComponentClass & ComponentClass)
@@ -2468,6 +2985,26 @@ void __fastcall FindComponentClass(
   else if (ComponentClass == __classid(TComboBox))
   {
     ComponentClass = __classid(TUIStateAwareComboBox);
+  }
+  else if (ComponentClass == __classid(TGroupBox))
+  {
+    ComponentClass = __classid(TGroupBoxEx);
+  }
+  else if (ComponentClass == __classid(TCheckBox))
+  {
+    ComponentClass = __classid(TCheckBoxEx);
+  }
+  else if (ComponentClass == __classid(TButton))
+  {
+    ComponentClass = __classid(TButtonEx);
+  }
+  else if (ComponentClass == __classid(TEdit))
+  {
+    ComponentClass = __classid(TEditEx);
+  }
+  else if (ComponentClass == __classid(TMemo))
+  {
+    ComponentClass = __classid(TMemoEx);
   }
 }
 //---------------------------------------------------------------------------
@@ -2489,8 +3026,8 @@ private:
   TDateTime FLastRequired;
 };
 //---------------------------------------------------------------------------
-std::unique_ptr<TCriticalSection> SystemRequiredThreadSection(TraceInitPtr(new TCriticalSection()));
-TSystemRequiredThread * SystemRequiredThread = NULL;
+static std::unique_ptr<TCriticalSection> SystemRequiredThreadSection(TraceInitPtr(new TCriticalSection()));
+static TSystemRequiredThread * SystemRequiredThread = NULL;
 //---------------------------------------------------------------------------
 TSystemRequiredThread::TSystemRequiredThread() :
   TSignalThread(true), FRequired(false)

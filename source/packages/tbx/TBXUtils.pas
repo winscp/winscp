@@ -8,8 +8,6 @@ unit TBXUtils;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, Classes, SysUtils, Graphics, Controls, Forms, ImgList;
 
@@ -18,7 +16,6 @@ function  ColorIntensity(C: TColor): Integer;
 function  IsDarkColor(C: TColor; Threshold: Integer = 100): Boolean;
 function  Blend(C1, C2: TColor; W1: Integer): TColor;
 procedure SetContrast(var Color: TColor; BkgndColor: TColor; Threshold: Integer);
-function  GetBGR(C: TColorRef): Cardinal;
 
 function TBXScaleByTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
 
@@ -323,16 +320,6 @@ end;
 
 { Drawing routines }
 
-function GetBGR(C: TColorRef): Cardinal;
-asm
-        MOV     ECX,EAX         // this function swaps R and B bytes in ABGR
-        SHR     EAX,16
-        XCHG    AL,CL
-        MOV     AH,$00          // and writes $FF into A component
-        SHL     EAX,16
-        MOV     AX,CX
-end;
-
 function CreatePenEx(Color: TColor): HPen;
 begin
   if Color = clNone then Result := CreatePen(PS_NULL, 1, 0)
@@ -468,33 +455,41 @@ begin
 end;
 
 procedure FillLongword(var X; Count: Integer; Value: Longword);
-asm
-// EAX = X;  EDX = Count; ECX = Value
-        PUSH    EDI
-        MOV     EDI,EAX  // Point EDI to destination
-        MOV     EAX,ECX
-        MOV     ECX,EDX
-        TEST    ECX,ECX
-        JS      @exit
-        REP     STOSD    // Fill count dwords
-@exit:
-        POP     EDI
+var
+  P: PLongword;
+  I: Integer;
+begin
+  if Count <= 0 then
+    Exit;
+
+  P := @X;
+  for I := 0 to Count - 1 do
+  begin
+    P^ := Value;
+    Inc(P);
+  end;
 end;
 
 procedure MoveLongword(const Source; var Dest; Count: Integer);
-asm
-// EAX = Source; EDX = Dest; ECX = Count
-        PUSH    ESI
-        PUSH    EDI
-        MOV     ESI,EAX         // Source
-        MOV     EDI,EDX         // Destination
-        MOV     EAX,ECX         // Counter
-        CMP     EDI,ESI
-        JE      @exit
-        REP     MOVSD
-@exit:
-        POP     EDI
-        POP     ESI
+var
+  Src, Dst: PLongword;
+  I: Integer;
+begin
+  if Count <= 0 then
+    Exit;
+
+  Src := @Source;
+  Dst := @Dest;
+
+  if Src = Dst then
+    Exit;
+
+  for I := 0 to Count - 1 do
+  begin
+    Dst^ := Src^;
+    Inc(Dst);
+    Inc(Src);
+  end;
 end;
 
 procedure DrawTBXIcon(Canvas: TCanvas; const R: TRect;

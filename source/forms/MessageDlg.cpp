@@ -1,26 +1,13 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Consts.hpp>
-#include <GUITools.h>
-
-#include <Common.h>
-#include <VCLCommon.h>
-#include <CoreMain.h>
-#include <WinInterface.h>
-#include <Tools.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <Vcl.Imaging.pngimage.hpp>
-#include <StrUtils.hpp>
-#include <PasTools.hpp>
-#include <Math.hpp>
 #include <WebBrowserEx.hpp>
 #include <RegularExpressions.hpp>
 #include <Setup.h>
 #include <WinApi.h>
 #include "MessageDlg.h"
+#include <Winapi.oleacc.hpp>
 //---------------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -36,6 +23,7 @@ public:
   __fastcall TMessageButton(TComponent * Owner);
 protected:
   virtual void __fastcall Dispatch(void * Message);
+  virtual void __fastcall CreateWnd();
 private:
   void __fastcall WMGetDlgCode(TWMGetDlgCode & Message);
 };
@@ -50,7 +38,7 @@ void __fastcall TMessageButton::Dispatch(void * Message)
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   if (M->Msg == WM_GETDLGCODE)
   {
-    WMGetDlgCode(*((TWMGetDlgCode *)Message));
+    WMGetDlgCode(*static_cast<TWMGetDlgCode *>(Message));
   }
   else
   {
@@ -67,6 +55,12 @@ void __fastcall TMessageButton::WMGetDlgCode(TWMGetDlgCode & Message)
   // Overrwide that. Though note that we need to pass the up/down keys back to button
   // to allow drop down, see TMessageForm::CMDialogKey
   Message.Result = Message.Result & ~DLGC_WANTARROWS;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageButton::CreateWnd()
+{
+  TButton::CreateWnd();
+  SetExplorerTheme(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner)
@@ -128,7 +122,7 @@ void __fastcall TMessageForm::UpdateForShiftState()
         for (int ItemIndex = 0; ItemIndex < MenuItems->Count; ItemIndex++)
         {
           TMenuItem * Item = MenuItems->Items[ItemIndex];
-          TShiftState GrouppedShiftState(Item->Tag >> 16);
+          TShiftState GrouppedShiftState(SizeToIntChecked(Item->Tag >> 16));
           if (Item->Enabled &&
               ((ShiftState.Empty() && Item->Default) ||
                (!ShiftState.Empty() && (ShiftState == GrouppedShiftState))))
@@ -257,12 +251,6 @@ UnicodeString __fastcall TMessageForm::GetReportText()
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::CMDialogKey(TWMKeyDown & Message)
 {
-  // this gets used in WinInterface.cpp SetTimeoutEvents
-  if (OnKeyDown != NULL)
-  {
-    OnKeyDown(this, Message.CharCode, KeyDataToShiftState(Message.KeyData));
-  }
-
   if (Message.CharCode == VK_MENU)
   {
     bool AnyButtonWithGrouppedCommandsWithShiftState = false;
@@ -342,16 +330,44 @@ void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
+void TMessageForm::WMGetObject(TMessage & Message)
+{
+  TLabel * Label1 = (MainMessageLabel != nullptr) ? MainMessageLabel : DebugNotNull(MessageLabel);
+
+  if (MessageStaticText == nullptr)
+  {
+    MessageStaticText = new TStaticText(this);
+    MessageStaticText->Parent = Label1->Parent;
+    MessageStaticText->TabOrder = 0;
+    MessageStaticText->Caption = EmptyStr;
+    SetAccessibleName(MessageStaticText, NormalizeNewLines(MessageText));
+  }
+
+  // Make Narrator display rectangle around the text it is reading
+  TRect R = Label1->BoundsRect;
+  if ((MainMessageLabel != nullptr) && (MessageLabel != nullptr))
+  {
+    R.Union(MessageLabel->BoundsRect);
+  }
+  MessageStaticText->BoundsRect = R;
+
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else if (M->Msg == CM_SHOWINGCHANGED)
   {
     CMShowingChanged(*M);
+  }
+  else if (M->Msg == WM_GETOBJECT)
+  {
+    WMGetObject(*M);
   }
   else
   {
@@ -380,6 +396,14 @@ void __fastcall TMessageForm::CreateParams(TCreateParams & Params)
   {
     Params.WndParent = Screen->ActiveForm->Handle;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
+  // This makes Narrator read comlete window, including the message text (created in WMGetObject)
+  SetAccessibleRole(this, ROLE_SYSTEM_DIALOG);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::LoadMessageBrowser()
@@ -447,9 +471,9 @@ void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
+static const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
   &_SMsgDlgConfirm, NULL };
-const wchar_t * ImageNames[] = { L"Warning", L"Error", L"Information",
+static const wchar_t * ImageNames[] = { L"Warning", L"Error", L"Information",
   L"Help Blue", NULL };
 const int mcHorzMargin = 8;
 const int mcVertMargin = 13;
@@ -469,7 +493,7 @@ static UnicodeString __fastcall GetKeyNameStr(int Key)
   wchar_t Buf[MAX_PATH];
   LONG VirtualKey = MapVirtualKey(Key, MAPVK_VK_TO_VSC);
   VirtualKey <<= 16;
-  if (GetKeyNameText(VirtualKey, Buf, LENOF(Buf)) > 0)
+  if (GetKeyNameText(VirtualKey, Buf, std::size(Buf)) > 0)
   {
     NULL_TERMINATE(Buf);
   }
@@ -623,12 +647,17 @@ TButton * __fastcall TMessageForm::CreateButton(
   return Button;
 }
 //---------------------------------------------------------------------------
+TControl * TMessageForm::GetContentsControls()
+{
+  return static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
 {
   if (DebugAlwaysTrue(MessageBrowser != NULL))
   {
     // we currently use this for updates message box only
-    TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
+    TControl * ContentsControl = GetContentsControls();
 
     Panel->Parent = ContentsPanel;
     Panel->Width = ContentsControl->Width;
@@ -650,8 +679,18 @@ int __fastcall TMessageForm::GetContentWidth()
   if (DebugAlwaysTrue(MessageBrowser != NULL))
   {
     // we currently use this for updates message box only
-    TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
-    Result = ContentsControl->Width;
+    Result = GetContentsControls()->Width;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static UnicodeString UrlColor(TColor Color)
+{
+  UnicodeString Result = ColorToWebColorStr(Color);
+  DebugAssert(Result.Length() == 7);
+  if (DebugAlwaysTrue(StartsStr(L"#", Result)))
+  {
+    Result.Delete(1, 1);
   }
   return Result;
 }
@@ -660,8 +699,9 @@ void __fastcall TMessageForm::NavigateToUrl(const UnicodeString & Url)
 {
   if (DebugAlwaysTrue(MessageBrowser != NULL))
   {
-    UnicodeString FontSizeParam = FORMAT(L"fontsize=%d", (Font->Size));
-    UnicodeString FullUrl = AppendUrlParams(Url, FontSizeParam);
+    UnicodeString StyleParams =
+      FORMAT(L"fontsize=%d&textcolor=%s&backcolor=%s", (Font->Size, UrlColor(Font->Color), UrlColor(GetControlColor(GetContentsControls()))));
+    UnicodeString FullUrl = AppendUrlParams(Url, StyleParams);
     NavigateBrowserToUrl(MessageBrowser, FullUrl);
   }
 }
@@ -760,13 +800,16 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   TSize MoreMessagesSize, const UnicodeString & CustomCaption)
 {
   unsigned int DefaultAnswer;
-  if (FLAGSET(Answers, qaOK))
-  {
-    DefaultAnswer = qaOK;
-  }
-  else if (FLAGSET(Answers, qaYes))
+  // In general, we should not have Yes and OK on the same query.
+  // But we do for "hostkey" prompt, where they are aliased and OK is groupped with Yes.
+  // There we need Yes to be the default.
+  if (FLAGSET(Answers, qaYes))
   {
     DefaultAnswer = qaYes;
+  }
+  else if (FLAGSET(Answers, qaOK))
+  {
+    DefaultAnswer = qaOK;
   }
   else
   {
@@ -780,12 +823,19 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     *TimeoutButton = NULL;
   }
 
+  TMessageForm * Result = SafeFormCreate<TMessageForm>();
+
   TColor MainInstructionColor;
   HFONT MainInstructionFont;
   HFONT InstructionFont;
   GetInstrutionsTheme(MainInstructionColor, MainInstructionFont, InstructionFont);
 
-  TMessageForm * Result = SafeFormCreate<TMessageForm>();
+  // There is probably some theme we can load the load dark mode color from
+  if (UseDarkModeForControl(Result))
+  {
+    MainInstructionColor = GetLinkColor(Result);
+  }
+
   if (InstructionFont != 0)
   {
     Result->Font->Handle = InstructionFont;
@@ -800,6 +850,15 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   {
     Configuration->Usage->Set(L"ThemeMessageFontSize", Result->Font->Size);
   }
+
+  // create before buttons for correct tab order
+  TPanel * Panel = CreateBlankPanel(Result);
+  Result->ContentsPanel = Panel;
+  Panel->Name = MessagePanelName;
+  Panel->Parent = Result;
+  Panel->ParentBackground = false;
+  Panel->Anchors = TAnchors() << akLeft << akRight << akTop;
+  Panel->Caption = L"";
 
   // make sure we consider sizes of the monitor,
   // that is set in DoFormWindowProc(CM_SHOWINGCHANGED) later.
@@ -879,8 +938,8 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         if (GroupWith >= 0)
         {
           if (DebugAlwaysFalse(GroupWith >= static_cast<int>(Answer)) ||
-              DebugAlwaysFalse(Answer == TimeoutAnswer) &&
-              DebugAlwaysFalse(Answer == DefaultAnswer) &&
+              DebugAlwaysFalse(Answer == TimeoutAnswer) ||
+              DebugAlwaysFalse(Answer == DefaultAnswer) ||
               DebugAlwaysFalse(Answer == CancelAnswer))
           {
             GroupWith = -1;
@@ -908,6 +967,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
         if (Button != NULL)
         {
+          if (ButtonControls.empty())
+          {
+            Result->ActiveControl = Button;
+          }
           ButtonControls.push_back(Button);
 
           Button->Default = (Answer == DefaultAnswer);
@@ -947,23 +1010,15 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
   DebugAssert((ButtonHeight > 0) && (ButtonWidths > 0));
 
-  TPanel * Panel = CreateBlankPanel(Result);
-  Result->ContentsPanel = Panel;
-  Panel->Name = MessagePanelName;
-  Panel->Parent = Result;
-  Panel->Color = clWindow;
-  Panel->ParentBackground = false;
-  Panel->Anchors = TAnchors() << akLeft << akRight << akTop;
-  Panel->Caption = L"";
-
   int IconWidth = 0;
   int IconHeight = 0;
 
   UnicodeString ImageName = AImageName;
+  int DlgTypeIndex = static_cast<int>(DlgType);
   if (ImageName.IsEmpty() &&
-      DebugAlwaysTrue(ImageNames[DlgType] != NULL))
+      DebugAlwaysTrue(ImageNames[DlgTypeIndex] != NULL))
   {
-    ImageName = ImageNames[DlgType];
+    ImageName = ImageNames[DlgTypeIndex];
   }
 
   if (DebugAlwaysTrue(!ImageName.IsEmpty()))
@@ -980,7 +1035,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int MaxTextWidth = ScaleByTextHeightRunTime(Result, mcMaxDialogWidth);
   // If the message contains SHA-256 hex fingerprint (CERT_TEXT2 on TLS/SSL certificate verification dialog),
   // allow wider box to fit it
-  if (TRegEx::IsMatch(Msg, L"([0-9a-fA-F]{2}[:\-]){31}[0-9a-fA-F]{2}"))
+  if (TRegEx::IsMatch(Msg, L"([0-9a-fA-F]{2}[:\\-]){31}[0-9a-fA-F]{2}"))
   {
     MaxTextWidth = MaxTextWidth * 3 / 2;
   }
@@ -1003,21 +1058,16 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   {
     Result->MessageText = BodyMsg;
   }
+  Result->MessageStaticText = nullptr;
 
   ApplyTabs(Result->MessageText, L' ', NULL, NULL);
 
-  // Windows XP (not sure about Vista) does not support Hair space.
-  // For Windows XP, we still keep the existing hack by using hard-coded spaces
-  // in resource string
-  if (IsWin7())
-  {
-    // Have to be padding with spaces (the smallest space defined, hair space = 1px),
-    // as tabs actually do not tab, just expand to 8 spaces.
-    // Otherwise we would have to do custom drawing
-    // (using GetTabbedTextExtent and TabbedTextOut)
-    const wchar_t HairSpace = L'\x200A';
-    ApplyTabs(BodyMsg, HairSpace, CalculateWidthOnCanvas, Result->Canvas);
-  }
+  // Have to be padding with spaces (the smallest space defined, hair space = 1px),
+  // as tabs actually do not tab, just expand to 8 spaces.
+  // Otherwise we would have to do custom drawing
+  // (using GetTabbedTextExtent and TabbedTextOut)
+  const wchar_t HairSpace = L'\x200A';
+  ApplyTabs(BodyMsg, HairSpace, CalculateWidthOnCanvas, Result->Canvas);
 
   DebugAssert(MainMsg.Pos(L"\t") == 0);
 
@@ -1025,24 +1075,36 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int IconTextHeight = 0;
   int ALeft = IconWidth + HorzMargin;
 
+  HFONT MainInstructionFontOwner = MainInstructionFont;
+
   for (int MessageIndex = 0; MessageIndex <= 1; MessageIndex++)
   {
     UnicodeString LabelMsg;
     UnicodeString LabelName;
     TColor LabelColor = Graphics::clNone;
     HFONT LabelFont = 0;
+    TLabel ** LabelStore = nullptr;
     switch (MessageIndex)
     {
       case 0:
         LabelMsg = MainMsg;
-        LabelName = MainMessageLabelName;
-        LabelColor = MainInstructionColor;
-        LabelFont = MainInstructionFont;
+        if (!LabelMsg.IsEmpty())
+        {
+          LabelName = MainMessageLabelName;
+          LabelColor = MainInstructionColor;
+          LabelFont = MainInstructionFont;
+          MainInstructionFontOwner = 0;
+        }
+        LabelStore = &Result->MainMessageLabel;
         break;
 
       case 1:
         LabelMsg = BodyMsg;
-        LabelName = MessageLabelName;
+        if (!LabelMsg.IsEmpty())
+        {
+          LabelName = MessageLabelName;
+        }
+        LabelStore = &Result->MessageLabel;
         break;
 
       default:
@@ -1050,9 +1112,14 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         break;
     }
 
-    if (!LabelMsg.IsEmpty())
+    if (LabelMsg.IsEmpty())
+    {
+      *LabelStore = nullptr;
+    }
+    else
     {
       TLabel * Message = new TLabel(Panel);
+      *LabelStore = Message;
       Message->Parent = Panel;
       Message->Name = LabelName;
       Message->WordWrap = true;
@@ -1076,27 +1143,29 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         Message->Font->Color = LabelColor;
       }
 
-      TRect TextRect;
-      SetRect(&TextRect, 0, 0, MaxTextWidth, 0);
-      DrawText(Message->Canvas->Handle, LabelMsg.c_str(), LabelMsg.Length() + 1, &TextRect,
-        DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
-        Result->DrawTextBiDiModeFlagsReadingOnly());
+      int TextFlags = DT_EXPANDTABS | DT_NOPREFIX | Message->DrawTextBiDiModeFlagsReadingOnly();
+      TSize TextSize = CalculateLabelSize(Message->Canvas, MaxTextWidth, LabelMsg, TextFlags);
       int MaxWidth = Monitor->Width - HorzMargin * 2 - IconWidth - 30;
       // 5% buffer for potential WM_DPICHANGED, as after re-scaling the text can otherwise narrowly not fit in.
       // Though note that the buffer is lost on the first re-scale due to the AutoSize
-      TextRect.right = MulDiv(TextRect.right, 105, 100);
+      TextSize.Width = MulDiv(TextSize.Width, 105, 100);
       // this will truncate the text, we should implement something smarter eventually
-      TextRect.right = Min(TextRect.right, MaxWidth);
+      TextSize.Width = Min(TextSize.Width, MaxWidth);
 
-      IconTextWidth = Max(IconTextWidth, IconWidth + TextRect.Right);
+      IconTextWidth = Max(IconTextWidth, IconWidth + TextSize.Width);
 
       if (IconTextHeight > 0)
       {
         IconTextHeight += VertMargin;
       }
-      Message->SetBounds(ALeft, VertMargin + IconTextHeight, TextRect.Right, TextRect.Bottom);
-      IconTextHeight += TextRect.Bottom;
+      Message->SetBounds(ALeft, VertMargin + IconTextHeight, TextSize.Width, TextSize.Height);
+      IconTextHeight += TextSize.Height;
     }
+  }
+
+  if (MainInstructionFontOwner != 0)
+  {
+    DeleteObject(MainInstructionFontOwner);
   }
 
   if (LinkControl != NULL)
@@ -1125,7 +1194,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     {
       DebugAssert(MoreMessagesUrl.IsEmpty());
 
-      TMemo * MessageMemo = new TMemo(Panel);
+      TMemo * MessageMemo = CreateMemo(Panel);
       MoreMessagesControl = MessageMemo;
       MessageMemo->Name = L"MessageMemo";
       MessageMemo->Parent = Panel;
@@ -1169,7 +1238,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   }
   else if (DebugAlwaysTrue(DlgType != mtCustom))
   {
-    Result->Caption = LoadResourceString(Captions[DlgType]);
+    Result->Caption = LoadResourceString(Captions[DlgTypeIndex]);
   }
   else
   {
@@ -1197,7 +1266,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   if (!NeverAskAgainCaption.IsEmpty() &&
       !ButtonControls.empty())
   {
-    Result->NeverAskAgainCheck = new TCheckBox(Result);
+    Result->NeverAskAgainCheck = CreateCheckBox(Result);
     Result->NeverAskAgainCheck->Name = L"NeverAskAgainCheck";
     Result->NeverAskAgainCheck->Parent = Result;
     Result->NeverAskAgainCheck->Caption = NeverAskAgainCaption;

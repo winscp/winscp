@@ -28,8 +28,6 @@ unit TB2DsgnConverter;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, SysUtils, Classes, Controls, Forms, Menus, StdCtrls,
   TB2Item;

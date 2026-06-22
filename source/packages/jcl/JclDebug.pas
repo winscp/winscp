@@ -103,7 +103,7 @@ type
     FDynamicBuild: Boolean;
     FSystemModulesOnly: Boolean;
     FRefCount: Integer;
-    function GetItems(Index: Integer): TJclModuleInfo;
+    function GetItems(Index: TJclListSize): TJclModuleInfo;
     function GetModuleFromAddress(Addr: Pointer): TJclModuleInfo;
   protected
     procedure BuildModulesList;
@@ -114,7 +114,7 @@ type
     function IsSystemModuleAddress(Addr: Pointer): Boolean;
     function IsValidModuleAddress(Addr: Pointer): Boolean;
     property DynamicBuild: Boolean read FDynamicBuild;
-    property Items[Index: Integer]: TJclModuleInfo read GetItems;
+    property Items[Index: TJclListSize]: TJclModuleInfo read GetItems;
     property ModuleFromAddress[Addr: Pointer]: TJclModuleInfo read GetModuleFromAddress;
   end;
 
@@ -499,7 +499,7 @@ type
   TJclDebugInfoList = class(TObjectList)
   private
     function GetItemFromModule(const Module: HMODULE): TJclDebugInfoSource;
-    function GetItems(Index: Integer): TJclDebugInfoSource;
+    function GetItems(Index: TJclListSize): TJclDebugInfoSource;
   protected
     function CreateDebugInfo(const Module: HMODULE): TJclDebugInfoSource;
   public
@@ -512,7 +512,7 @@ type
     class procedure NeedInfoSourceClassList;
     function GetLocationInfo(const Addr: Pointer; out Info: TJclLocationInfo): Boolean;
     property ItemFromModule[const Module: HMODULE]: TJclDebugInfoSource read GetItemFromModule;
-    property Items[Index: Integer]: TJclDebugInfoSource read GetItems;
+    property Items[Index: TJclListSize]: TJclDebugInfoSource read GetItems;
   end;
 
   // Various source location implementations
@@ -694,7 +694,7 @@ type
     {$IFDEF CPU64}
     procedure CaptureBackTrace;
     {$ENDIF CPU64}
-    function GetItems(Index: Integer): TJclStackInfoItem;
+    function GetItems(Index: TJclListSize): TJclStackInfoItem;
     function NextStackFrame(var StackFrame: PStackFrame; var StackInfo: TStackInfo): Boolean;
     procedure StoreToList(const StackInfo: TStackInfo);
     procedure TraceStackFrames;
@@ -721,7 +721,7 @@ type
       IncludeAddressOffset: Boolean = False; IncludeStartProcLineOffset: Boolean = False;
       IncludeVAddress: Boolean = False);
     property DelayedTrace: Boolean read FDelayedTrace;
-    property Items[Index: Integer]: TJclStackInfoItem read GetItems; default;
+    property Items[Index: TJclListSize]: TJclStackInfoItem read GetItems; default;
     property IgnoreLevels: Integer read FIgnoreLevels;
     property Count: Integer read GetCount;
     property Raw: Boolean read FRaw;
@@ -824,13 +824,13 @@ type
   TJclExceptFrameList = class(TJclStackBaseList)
   private
     FIgnoreLevels: Integer;
-    function GetItems(Index: Integer): TJclExceptFrame;
+    function GetItems(Index: TJclListSize): TJclExceptFrame;
   protected
     function AddFrame(AFrame: PExcFrame): TJclExceptFrame;
   public
     constructor Create(AIgnoreLevels: Integer);
     procedure TraceExceptionFrames;
-    property Items[Index: Integer]: TJclExceptFrame read GetItems;
+    property Items[Index: TJclListSize]: TJclExceptFrame read GetItems;
     property IgnoreLevels: Integer read FIgnoreLevels write FIgnoreLevels;
   end;
 
@@ -1323,7 +1323,7 @@ begin
     Add(Result);
 end;
 
-function TJclModuleInfoList.GetItems(Index: Integer): TJclModuleInfo;
+function TJclModuleInfoList.GetItems(Index: TJclListSize): TJclModuleInfo;
 begin
   Result := TJclModuleInfo(Get(Index));
 end;
@@ -1766,7 +1766,11 @@ begin
         ReadAddress(A);
         SkipWhiteSpace;
         L := ReadHexValue;
+        {$IFDEF CPU64} // WINSCP
+        FindParam('S');
+        {$ELSE}
         FindParam('C');
+        {$ENDIF}
         P1 := ReadString;
         FindParam('M');
         P2 := ReadString;
@@ -4007,7 +4011,7 @@ begin
   end;
 end;
 
-function TJclDebugInfoList.GetItems(Index: Integer): TJclDebugInfoSource;
+function TJclDebugInfoList.GetItems(Index: TJclListSize): TJclDebugInfoSource;
 begin
   Result := TJclDebugInfoSource(Get(Index));
 end;
@@ -5635,7 +5639,9 @@ var
   TBI: THREAD_BASIC_INFORMATION;
   ReturnedLength: ULONG;
 begin
+  {$IFNDEF SUPPORTS_NORETURN}
   Result := 0;
+  {$ENDIF ~SUPPORTS_NORETURN}
   ReturnedLength := 0;
   if (NtQueryInformationThread(ThreadHandle, ThreadBasicInformation, @TBI, SizeOf(TBI), @ReturnedLength) < $80000000) and
      (ReturnedLength = SizeOf(TBI)) then
@@ -5649,10 +5655,30 @@ begin
     RaiseLastOSError;
 end;
 
+{$IFDEF CPU64}
+function RtlLookupFunctionEntry(
+  ControlPc: ULONG64; out ImageBase: ULONG64; HistoryTable: Pointer): PImageRuntimeFunctionEntry; stdcall;
+  external kernel32 name 'RtlLookupFunctionEntry';
+type
+  TRtlVirtualUnwind = function(
+    HandlerType: DWORD; ImageBase: ULONG64; ControlPc: ULONG64; FunctionEntry: PImageRuntimeFunctionEntry;
+    ContextRecord: PContext; out HandlerData: PVOID; out EstablisherFrame: ULONG64; ContextPointers: Pointer): Pointer; stdcall;
+{$ENDIF CPU64}
+
 function JclCreateThreadStackTrace(Raw: Boolean; const ThreadHandle: THandle): TJclStackInfoList;
 var
   ContextMemory: Pointer;
   AlignedContext: PContext;
+  {$IFDEF CPU64}
+  ContextRecord: TContext;
+  RuntimeFunction: PImageRuntimeFunctionEntry;
+  ImageBase: ULONG64;
+  EstablisherFrame: ULONG64;
+  HandlerData: PVOID;
+  StackInfo: TStackInfo;
+  Kernel32Handle: THandle;
+  RtlVirtualUnwindFunc: TRtlVirtualUnwind;
+  {$ENDIF CPU64}
 begin
   Result := nil;
   ContextMemory := AllocMem(SizeOf(TContext) + 15);
@@ -5670,10 +5696,47 @@ begin
                   Pointer(GetThreadTopOfStack(ThreadHandle)));
     end;
     {$ENDIF CPU32}
+    // Fixed for WINSCP. Code mostly generated by Gemini based on .map files from C++ Builder 11.
     {$IFDEF CPU64}
-    if GetThreadContext(ThreadHandle, AlignedContext^) then
-      Result := JclCreateStackList(Raw, -1, Pointer(AlignedContext^.Rip), False, Pointer(AlignedContext^.Rbp),
-                  Pointer(GetThreadTopOfStack(ThreadHandle)));
+    Kernel32Handle := GetModuleHandle(kernel32);
+    RtlVirtualUnwindFunc := GetProcAddress(Kernel32Handle, 'RtlVirtualUnwind');
+    if Assigned(RtlVirtualUnwindFunc) and GetThreadContext(ThreadHandle, AlignedContext^) then
+    begin
+      // 1. Create the list. JCL's constructor will wrongly capture the current thread.
+      Result := JclCreateStackList(Raw, -1, nil, False, nil, nil);
+      Result.Clear; // Clear the incorrect trace
+
+      // 2. Set up the actual target thread context
+      ContextRecord := AlignedContext^;
+      ResetMemory(StackInfo, SizeOf(StackInfo));
+      StackInfo.CallerAddr := ContextRecord.Rip;
+      StackInfo.Level := 0;
+      Result.StoreToList(StackInfo);
+
+      // 3. Unwind the 64-bit stack manually
+      while True do
+      begin
+        RuntimeFunction := RtlLookupFunctionEntry(ContextRecord.Rip, ImageBase, nil);
+        if Assigned(RuntimeFunction) then
+        begin
+          // UNW_FLAG_NHANDLER is 0
+          RtlVirtualUnwindFunc(0, ImageBase, ContextRecord.Rip, RuntimeFunction, @ContextRecord, HandlerData, EstablisherFrame, nil);
+        end
+          else
+        begin
+          // Leaf function (no exception frame), pop the return address manually
+          ContextRecord.Rip := PULONG64(ContextRecord.Rsp)^;
+          ContextRecord.Rsp := ContextRecord.Rsp + 8;
+        end;
+
+        if ContextRecord.Rip = 0 then
+          Break;
+
+        Inc(StackInfo.Level);
+        StackInfo.CallerAddr := ContextRecord.Rip;
+        Result.StoreToList(StackInfo);
+      end;
+    end;
     {$ENDIF CPU64}
   finally
     FreeMem(ContextMemory);
@@ -5880,7 +5943,7 @@ begin
   end;
 end;
 
-function TJclStackInfoList.GetItems(Index: Integer): TJclStackInfoItem;
+function TJclStackInfoList.GetItems(Index: TJclListSize): TJclStackInfoItem;
 begin
   ForceStackTracing;
   Result := TJclStackInfoItem(Get(Index));
@@ -6677,10 +6740,12 @@ begin
           // 7 bytes, "CALL NEAR [EAX+EAX+$1234567]" (FF /2) where Reg = 010, Mod = 10 and RM = 100
           CallInstructionSize := 7
         else
+{$IFNDEF CPUX64} //The 9A cp call opcode is not valid in 64-bit mode
         if ((CodeDWORD8 and $0000FF00) = $00009A00) then
           // 7 bytes, "CALL FAR $1234:12345678" (9A ptr16:32)
           CallInstructionSize := 7
         else
+{$ENDIF}
           Result := False;
         // Because we're not doing a complete disassembly, we will potentially report
         // false positives. If there is odd code that uses the CALL 16:32 format, we
@@ -6897,7 +6962,7 @@ begin
   Add(Result);
 end;
 
-function TJclExceptFrameList.GetItems(Index: Integer): TJclExceptFrame;
+function TJclExceptFrameList.GetItems(Index: TJclListSize): TJclExceptFrame;
 begin
   Result := TJclExceptFrame(Get(Index));
 end;

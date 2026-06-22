@@ -2,13 +2,19 @@ unit PngComponentsRegister;
 
 interface
 
+{$IFDEF CPUX86}
+
 uses
   Classes, DesignIntf, TypInfo,
   PngSpeedButton, PngBitBtn, PngImageList, PngCheckListBox, PngComponentEditors;
 
 procedure Register;
 
+{$ENDIF}
+
 implementation
+
+{$IFDEF CPUX86}
 
 const
   SPageName = 'Png';
@@ -37,5 +43,7 @@ begin
   UnlistPublishedProperty(TPngBitBtn, 'NumGlyphs'); // do not localize
   UnlistPublishedProperty(TPngBitBtn, 'Glyph'); // do not localize
 end;
+
+{$ENDIF}
 
 end.

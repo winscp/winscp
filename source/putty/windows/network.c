@@ -18,7 +18,30 @@
 #include "tree234.h"
 #include "ssh.h"
 
+#if defined(WINSCP) && defined(_WIN64) && defined(_DEBUG)
+#define IN6_IS_ADDR_LOOPBACK IN6_IS_ADDR_LOOPBACK_ORIGINAL
 #include <ws2tcpip.h>
+// WORKAROUND: The definition in ws2ipdef.h is inline, but bcc64c seems to ignore the inline and
+// there's no implementation in any of the libs, so linker fails to find the symbol
+#undef IN6_IS_ADDR_LOOPBACK
+static BOOLEAN IN6_IS_ADDR_LOOPBACK(CONST IN6_ADDR *a)
+{
+    //
+    // We can't use the in6addr_loopback variable, since that would
+    // require existing callers to link with a specific library.
+    //
+    return (BOOLEAN)((a->s6_words[0] == 0) &&
+                     (a->s6_words[1] == 0) &&
+                     (a->s6_words[2] == 0) &&
+                     (a->s6_words[3] == 0) &&
+                     (a->s6_words[4] == 0) &&
+                     (a->s6_words[5] == 0) &&
+                     (a->s6_words[6] == 0) &&
+                     (a->s6_words[7] == 0x0100));
+}
+#else
+#include <ws2tcpip.h>
+#endif
 
 #if HAVE_AFUNIX_H
 #include <afunix.h>
@@ -357,6 +380,12 @@ void sk_init(void)
     sktree = newtree234(cmpfortree);
 }
 
+static void closesocket_wrap(SOCKET skt)
+{
+    p_closesocket(skt);
+    done_with_socket(skt);
+}
+
 void sk_cleanup(void)
 {
     NetSocket *s;
@@ -364,7 +393,7 @@ void sk_cleanup(void)
 
     if (sktree) {
         for (i = 0; (s = index234(sktree, i)) != NULL; i++) {
-            p_closesocket(s->s);
+            closesocket_wrap(s->s);
         }
         freetree234(sktree);
         sktree = NULL;
@@ -483,7 +512,6 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
 {
     *canonicalname = NULL;
 
-    { // WINSCP
     SockAddr *addr = snew(SockAddr);
     memset(addr, 0, sizeof(SockAddr));
     addr->superfamily = UNRESOLVED;
@@ -505,7 +533,6 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
         hints.ai_socktype = SOCK_STREAM;
 
         /* strip [] on IPv6 address literals */
-        { // WINSCP
         char *trimmed_host = host_strduptrim(host);
         int err = p_getaddrinfo(trimmed_host, NULL, &hints, &addr->ais);
         sfree(trimmed_host);
@@ -520,7 +547,6 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
             addr->error = namelookup_strerror(err);
         }
         return addr;
-        } // WINSCP
     }
 #endif
 
@@ -530,7 +556,6 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
      * old-fashioned approach, which is to start by manually checking
      * for an IPv4 literal and then use gethostbyname.
      */
-    { // WINSCP
     unsigned long a = p_inet_addr(host);
     if (a != (unsigned long) INADDR_NONE) {
         addr->addresses = snew(unsigned long);
@@ -541,12 +566,10 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
         return addr;
     }
 
-    { // WINSCP
     struct hostent *h = p_gethostbyname(host);
     if (h) {
         addr->superfamily = IP;
 
-        { // WINSCP
         size_t n;
         for (n = 0; h->h_addr_list[n]; n++);
         addr->addresses = snewn(n, unsigned long);
@@ -558,15 +581,11 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
         }
 
         *canonicalname = dupstr(h->h_name);
-        } // WINSCP
     } else {
         DWORD err = p_WSAGetLastError();
         addr->error = namelookup_strerror(err);
     }
     return addr;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 static SockAddr *sk_special_addr(SuperFamily superfamily, const char *name)
@@ -848,15 +867,14 @@ static const char *sk_net_socket_error(Socket *s);
 static SocketEndpointInfo *sk_net_endpoint_info(Socket *s, bool peer);
 
 static const SocketVtable NetSocket_sockvt = {
-    // WINSCP
-    /*.plug =*/ sk_net_plug,
-    /*.close =*/ sk_net_close,
-    /*.write =*/ sk_net_write,
-    /*.write_oob =*/ sk_net_write_oob,
-    /*.write_eof =*/ sk_net_write_eof,
-    /*.set_frozen =*/ sk_net_set_frozen,
-    /*.socket_error =*/ sk_net_socket_error,
-    /*.endpoint_info =*/ sk_net_endpoint_info,
+    .plug = sk_net_plug,
+    .close = sk_net_close,
+    .write = sk_net_write,
+    .write_oob = sk_net_write_oob,
+    .write_eof = sk_net_write_eof,
+    .set_frozen = sk_net_set_frozen,
+    .socket_error = sk_net_socket_error,
+    .endpoint_info = sk_net_endpoint_info,
 };
 
 static Socket *sk_net_accept(accept_ctx_t ctx, Plug *plug)
@@ -939,7 +957,7 @@ static DWORD try_connect(NetSocket *sock,
 #else
         do_select(sock->s, false);
 #endif
-        p_closesocket(sock->s);
+        closesocket_wrap(sock->s);
     }
 
     {
@@ -1145,11 +1163,9 @@ static DWORD try_connect(NetSocket *sock,
          * and we should set the socket as writable.
          */
         sock->writable = true;
-        { // WINSCP
         SockAddr thisaddr = sk_extractaddr_tmp(sock->addr, &sock->step);
         plug_log(sock->plug, &sock->sock, PLUGLOG_CONNECT_SUCCESS,
                  &thisaddr, sock->port, NULL, 0);
-        } // WINSCP
     }
 
 #ifdef MPEXT
@@ -1403,14 +1419,14 @@ static Socket *sk_newlistener_internal(
     }
 
     if (err) {
-        p_closesocket(sk);
+        closesocket_wrap(sk);
         s->error = winsock_error_string(err);
         return &s->sock;
     }
 
 
     if (p_listen(sk, SOMAXCONN) == SOCKET_ERROR) {
-        p_closesocket(sk);
+        closesocket_wrap(sk);
         s->error = winsock_error_string(p_WSAGetLastError());
         return &s->sock;
     }
@@ -1423,7 +1439,7 @@ static Socket *sk_newlistener_internal(
     errstr = do_select(sk, true);
 #endif
     if (errstr) {
-        p_closesocket(sk);
+        closesocket_wrap(sk);
         s->error = errstr;
         return &s->sock;
     }
@@ -1500,7 +1516,7 @@ static void sk_net_close(Socket *sock)
 #else
     do_select(s->s, false);
 #endif
-    p_closesocket(s->s);
+    closesocket_wrap(s->s);
     if (s->addr)
         sk_addr_free(s->addr);
     delete_callbacks_for_context(get_callback_set(s->plug), s);
@@ -1531,9 +1547,8 @@ static void socket_error_callback(void *vs)
      * Just in case other socket work has caused this socket to vanish
      * or become somehow non-erroneous before this callback arrived...
      */
-    int nr;
     WINSCP_PUTTY_SECTION_ENTER;
-    nr = !find234(sktree, s, NULL) || !s->pending_error;
+    int nr = !find234(sktree, s, NULL) || !s->pending_error;
     WINSCP_PUTTY_SECTION_LEAVE;
     if (nr)
         return;
@@ -1563,11 +1578,9 @@ static void try_send(NetSocket *s)
             data = &s->oobdata;
         } else {
             urgentflag = 0;
-            { // WINSCP
             ptrlen bufdata = bufchain_prefix(&s->output_data);
             data = bufdata.ptr;
             len = bufdata.len;
-            } // WINSCP
         }
         len = min(len, INT_MAX);       /* WinSock send() takes an int */
         nsent = p_send(s->s, data, len, urgentflag);
@@ -1869,9 +1882,9 @@ void select_result(WPARAM wParam, LPARAM lParam)
         if (s->localhost_only && !ipv4_is_local_addr(isa.sin_addr))
 #endif
         {
-            p_closesocket(t);      /* dodgy WinSock let nonlocal through */
+            closesocket_wrap(t);  /* dodgy WinSock let nonlocal through */
         } else if (plug_accepting(s->plug, sk_net_accept, actx)) {
-            p_closesocket(t);      /* denied or error */
+            closesocket_wrap(t);  /* denied or error */
         }
         break;
       }

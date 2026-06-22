@@ -221,7 +221,6 @@ object ProgressForm: TProgressForm
       Width = 302
       Height = 27
       AllowDrag = False
-      Color = clWindow
       object Toolbar: TTBXToolbar
         Left = 0
         Top = 0
@@ -232,7 +231,6 @@ object ProgressForm: TProgressForm
         ProcessShortCuts = True
         ShowHint = True
         TabOrder = 0
-        Color = clWindow
         object CancelItem: TTBXItem
           Caption = '&CancelX'
           ImageIndex = 0

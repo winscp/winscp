@@ -143,8 +143,7 @@ static void proxy_socks5_process_queue(ProxyNegotiator *pn)
 
         {
             bool found = false;
-            size_t i; // WINSCP
-            for (i = 0; i < s->auth_methods_offered->len; i++)
+            for (size_t i = 0; i < s->auth_methods_offered->len; i++)
                 if (s->auth_methods_offered->u[i] == data[1]) {
                     found = true;
                     break;
@@ -253,7 +252,6 @@ static void proxy_socks5_process_queue(ProxyNegotiator *pn)
          *   byte      version
          *   byte      0 for success, >0 for failure
          */
-        { // WINSCP
         unsigned char data[2];
         crMaybeWaitUntilV(bufchain_try_fetch_consume(pn->input, data, 2));
 
@@ -268,7 +266,6 @@ static void proxy_socks5_process_queue(ProxyNegotiator *pn)
             pn->error = dupstr("SOCKS 5 server rejected our password");
             crStopV;
         }
-        } // WINSCP
     } else if (s->auth_method == SOCKS5_AUTH_CHAP) {
         assert(socks5_chap_available);
 
@@ -398,28 +395,23 @@ static void proxy_socks5_process_queue(ProxyNegotiator *pn)
       case ADDRTYPE_IPV4: {
         /* IPv4: address is 4 raw bytes */
         put_byte(pn->output, SOCKS5_ADDR_IPV4);
-        { // WINSCP
         char buf[4];
         sk_addrcopy(pn->ps->remote_addr, buf);
         put_data(pn->output, buf, sizeof(buf));
         break;
-        } // WINSCP
       }
       case ADDRTYPE_IPV6: {
         /* IPv6: address is 16 raw bytes */
         put_byte(pn->output, SOCKS5_ADDR_IPV6);
-        { // WINSCP
         char buf[16];
         sk_addrcopy(pn->ps->remote_addr, buf);
         put_data(pn->output, buf, sizeof(buf));
         break;
-        } // WINSCP
       }
       case ADDRTYPE_NAME: {
         /* Hostname: address is a pstring (Pascal-style string,
          * unterminated but with a one-byte prefix length) */
         put_byte(pn->output, SOCKS5_ADDR_HOSTNAME);
-        { // WINSCP
         char hostname[512];
         sk_getaddr(pn->ps->remote_addr, hostname, lenof(hostname));
         if (!put_pstring(pn->output, hostname)) {
@@ -427,7 +419,6 @@ static void proxy_socks5_process_queue(ProxyNegotiator *pn)
                 "SOCKS 5 cannot support host names longer than 255 chars");
             crStopV;
         }
-        } // WINSCP
         break;
       }
       default:
@@ -500,9 +491,8 @@ static void proxy_socks5_process_queue(ProxyNegotiator *pn)
 }
 
 const struct ProxyNegotiatorVT socks5_proxy_negotiator_vt = {
-    // WINSCP
-    /*.new =*/ proxy_socks5_new,
-    /*.process_queue =*/ proxy_socks5_process_queue,
-    /*.free =*/ proxy_socks5_free,
-    /*.type =*/ "SOCKS 5",
+    .new = proxy_socks5_new,
+    .free = proxy_socks5_free,
+    .process_queue = proxy_socks5_process_queue,
+    .type = "SOCKS 5",
 };

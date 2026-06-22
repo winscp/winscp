@@ -137,7 +137,7 @@ begin
     WM_CREATE:
       begin
         CM2 := IContextMenu2(PCreateStruct(lParam).lpCreateParams);
-        SetWindowLong(Wnd, GWL_USERDATA, LongInt(CM2));
+        SetWindowLongPtr(Wnd, GWLP_USERDATA, NativeInt(CM2));
         Result := DefWindowProc(Wnd, Msg, wParam, lParam);
       end;
 
@@ -148,7 +148,7 @@ begin
     WM_INITMENUPOPUP:
       begin
         begin
-          CM2 := IContextMenu2(GetWindowLong(Wnd, GWL_USERDATA));
+          CM2 := IContextMenu2(GetWindowLongPtr(Wnd, GWLP_USERDATA));
           Assert(CM2 <> NIL, 'NIL Context Menu!');
           CM2.HandleMenuMsg(Msg, wParam, lParam);
         end;

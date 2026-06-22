@@ -1,19 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include <FileMasks.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <Tools.h>
-#include <VCLCommon.h>
-
 #include "SelectMask.h"
-#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -137,14 +128,12 @@ bool __fastcall TSelectMaskDialog::Execute(TFileFilter & FileFilter, TColor & Co
 {
   ApplyToDirectoriesCheck->Checked = FileFilter.Directories;
   MaskEdit->Text = FileFilter.Masks;
-  MaskEdit->Items = WinConfiguration->History[L"Mask"];
   ActiveControl = MaskEdit;
   FColor = Color;
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     MaskEdit->SaveToHistory();
-    WinConfiguration->History[L"Mask"] = MaskEdit->Items;
     FileFilter.Directories = ApplyToDirectoriesCheck->Checked;
     FileFilter.Masks = MaskEdit->Text;
     Color = FColor;
@@ -186,7 +175,9 @@ void __fastcall TSelectMaskDialog::FormShow(TObject * /*Sender*/)
   if (FParent != NULL)
   {
     // Only now it is scaled
-    CenterFormOn(this, FParent);
+    TRect Bounds = BoundsRect;
+    CenterFormOn(Bounds, FParent, nullptr);
+    BoundsRect = Bounds;
   }
   UpdateControls();
 }

@@ -6,7 +6,7 @@ class CServerPath
 {
 public:
   BOOL AddSubdir(CString subdir);
-  const BOOL IsEmpty() const;
+  BOOL IsEmpty() const;
   CServerPath GetParent() const;
   BOOL HasParent() const;
   CString GetLastSegment() const;
@@ -25,8 +25,8 @@ public:
 
   CServerPath & operator=(const CServerPath & op);
 
-  const bool operator==(const CServerPath & op) const;
-  const bool operator!=(const CServerPath & op) const;
+  bool operator==(const CServerPath & op) const;
+  bool operator!=(const CServerPath & op) const;
 
   CString FormatFilename(CString fn, bool omitPath = false) const;
 

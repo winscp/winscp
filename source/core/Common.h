@@ -3,28 +3,41 @@
 #define CommonH
 //---------------------------------------------------------------------------
 #include <vector>
+#include <limits>
 #include "Global.h"
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, L"")
 #define THROWOSIFFALSE(C) { if (!(C)) RaiseLastOSError(); }
 #define SAFE_DESTROY_EX(CLASS, OBJ) { CLASS * PObj = OBJ; OBJ = NULL; delete PObj; }
 #define SAFE_DESTROY(OBJ) SAFE_DESTROY_EX(TObject, OBJ)
-#define NULL_TERMINATE(S) S[LENOF(S) - 1] = L'\0'
+#define NULL_TERMINATE(S) S[std::size(S) - 1] = L'\0'
 #define ASCOPY(dest, source) \
   { \
     AnsiString CopyBuf = source; \
-    strncpy(dest, CopyBuf.c_str(), LENOF(dest)); \
-    dest[LENOF(dest)-1] = '\0'; \
+    strncpy(dest, CopyBuf.c_str(), std::size(dest)); \
+    dest[std::size(dest)-1] = '\0'; \
   }
 #define SWAP(TYPE, FIRST, SECOND) \
   { TYPE __Backup = FIRST; FIRST = SECOND; SECOND = __Backup; }
+//---------------------------------------------------------------------------
+template <typename T, typename S>
+constexpr T CheckedCast(S N)
+{
+  if (N > std::numeric_limits<T>::max())
+  {
+    throw Exception(L"Overflow");
+  }
+  return static_cast<T>(N);
+}
+template <typename S> constexpr int SizeToIntChecked(S n) { return CheckedCast<int, S>(n); }
+template <typename S> constexpr unsigned int SizeToUIntChecked(S n) { return CheckedCast<unsigned int, S>(n); }
 //---------------------------------------------------------------------------
 #define PARENTDIRECTORY L".."
 #define THISDIRECTORY L"."
 //---------------------------------------------------------------------------
 extern const UnicodeString AnyMask;
 extern const wchar_t EngShortMonthNames[12][4];
-extern const char Bom[4];
+extern const RawByteString Bom;
 extern const UnicodeString XmlDeclaration;
 extern const wchar_t TokenPrefix;
 extern const wchar_t NoReplacement;
@@ -33,6 +46,7 @@ extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
 extern const UnicodeString Ellipsis;
 extern const UnicodeString TitleSeparator;
+extern const wchar_t HostKeyDelimiter;
 //---------------------------------------------------------------------------
 extern const UnicodeString HttpProtocol;
 extern const UnicodeString HttpsProtocol;
@@ -113,7 +127,8 @@ int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
-bool IsWideChar(wchar_t Ch) { return (Ch >= L'\x80'); }
+// Classic compiler does not support inlines in PCH, so macro is used. With Clang, we can return to inline.
+#define IsWideChar(Ch) (static_cast<wchar_t>(Ch) >= L'\x80')
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
 UnicodeString __fastcall ByteToHex(unsigned char B, bool UpperCase = true);
 UnicodeString __fastcall BytesToHex(const unsigned char * B, size_t Length, bool UpperCase = true, wchar_t Separator = L'\0');
@@ -149,7 +164,6 @@ bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value);
 bool IsWin64();
-bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
 bool IsWin10Build(int BuildNumber);
@@ -207,10 +221,14 @@ UnicodeString GetEnvironmentInfo();
 void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
 UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
 UnicodeString GetAncestorProcessNames();
+void LogModules();
 NORETURN void NotSupported();
 NORETURN void NotImplemented();
 UnicodeString GetDividerLine();
 TStrings * ProcessFeatures(TStrings * Features, const UnicodeString & FeaturesOverride);
+int TensOfSecondBetween(TDateTime ANow, TDateTime AThen);
+extern UnicodeString StartupSequence;
+void AddStartupSequence(const UnicodeString & Tag);
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {
@@ -256,9 +274,8 @@ enum TDSTMode
 {
   dstmWin =  0, //
   dstmUnix = 1, // adjust UTC time to Windows "bug"
-  dstmKeep = 2
+  dstmKeep = 2  // deprecated, behaves like dstmUnix
 };
-bool __fastcall UsesDaylightHack();
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day);
 TDateTime __fastcall EncodeTimeVerbose(Word Hour, Word Min, Word Sec, Word MSec);
 double __fastcall DSTDifferenceForTime(TDateTime DateTime);
@@ -282,6 +299,7 @@ UnicodeString __fastcall FormatTimeZone(long Sec);
 UnicodeString __fastcall GetTimeZoneLogString();
 bool __fastcall AdjustClockForDSTEnabled();
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
+// All three to be used for "short" times only (basically for times that should have been time spans)
 int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
@@ -289,13 +307,11 @@ UnicodeString FormatDateTimeSpan(const TDateTime & DateTime);
 UnicodeString FormatRelativeTime(const TDateTime & ANow, const TDateTime & AThen, bool DateOnly);
 TStrings * TlsCipherList();
 //---------------------------------------------------------------------------
-template<class MethodT>
-MethodT __fastcall MakeMethod(void * Data, void * Code)
+template<typename MethodT, typename FuncT>
+MethodT __fastcall MakeMethod(void * Data, FuncT Code)
 {
-  MethodT Method;
-  ((TMethod*)&Method)->Data = Data;
-  ((TMethod*)&Method)->Code = Code;
-  return Method;
+  TMethod Method = { .Data = Data, .Code = reinterpret_cast<void *>(Code) };
+  return *reinterpret_cast<MethodT*>(&Method);
 }
 //---------------------------------------------------------------------------
 enum TAssemblyLanguage { alCSharp, alVBNET, alPowerShell };
@@ -387,10 +403,48 @@ public:
     Release();
   }
 
+  void Set(const T & Value)
+  {
+    DebugAssert(FArmed);
+    FTarget = Value;
+  }
+
 protected:
   T & FTarget;
   T FValue;
   bool FArmed;
+};
+//---------------------------------------------------------------------------
+template<class T>
+class TObjectReleaser
+{
+public:
+  TObjectReleaser(T *& Target, T * Value) :
+    FPtr(Value),
+    FRestorer(Target, Value)
+  {
+  }
+
+  TObjectReleaser(T *& Target) :
+    FRestorer(Target)
+  {
+  }
+
+  void Set(T * Value)
+  {
+    FPtr.reset(Value);
+    FRestorer.Set(Value);
+  }
+
+  void Reset()
+  {
+    FPtr.reset(NULL);
+    FRestorer.Release();
+  }
+
+private:
+  std::unique_ptr<T> FPtr;
+  TValueRestorer<T *> FRestorer;
 };
 //---------------------------------------------------------------------------
 class TAutoNestingCounter : public TValueRestorer<int>
@@ -545,6 +599,72 @@ private:
     return std::find(FEventHandlers.begin(), FEventHandlers.end(), EventHandler);
   }
 
+};
+//---------------------------------------------------------------------------
+// to avoid including ComObj.hpp
+namespace System { namespace Win { namespace Comobj {
+extern DELPHI_PACKAGE void __fastcall OleCheck(HRESULT Result);
+}}}
+//---------------------------------------------------------------------------
+template <typename T>
+class TComPtr
+{
+public:
+  TComPtr(T * P = nullptr) : FP(P)
+  {
+  }
+
+  ~TComPtr()
+  {
+    Reset(nullptr);
+  }
+
+  bool TryCreate(REFCLSID RClsId, DWORD ClsContext)
+  {
+    return SUCCEEDED(DoCreate(RClsId, ClsContext));
+  }
+
+  void Create(REFCLSID RClsId, DWORD ClsContext)
+  {
+    System::Win::Comobj::OleCheck(DoCreate(RClsId, ClsContext));
+  }
+
+  void Reset(T * P)
+  {
+    if (FP != nullptr)
+    {
+      FP->Release();
+    }
+    FP = P;
+  }
+
+  T * Detach()
+  {
+    T * Result = FP;
+    FP = nullptr;
+    return Result;
+  }
+
+  // Address-of operator for out parameters
+  T** operator&()
+  {
+    Reset(nullptr); // ensures no leak if reused
+    return &FP;
+  }
+
+  // Accessors
+  T * operator->() const { return FP; }
+  T * Get() const { return FP; }
+  explicit operator bool() const { return FP != nullptr; }
+
+private:
+  T * FP;
+
+  HRESULT DoCreate(REFCLSID RClsId, DWORD ClsContext)
+  {
+    Reset(nullptr);
+    return CoCreateInstance(RClsId, NULL, ClsContext, IID_PPV_ARGS(&FP));
+  }
 };
 //---------------------------------------------------------------------------
 typedef std::vector<UnicodeString> TUnicodeStringVector;

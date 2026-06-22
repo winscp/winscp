@@ -1,0 +1,72 @@
+<refentry id="reflower">
+
+  <refmeta>
+    <refentrytitle>ne_strlower</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname id="ne_strlower">ne_strlower</refname>
+    <refname id="ne_tolower">ne_tolower</refname>
+    <refname id="ne_tolower_array">ne_tolower_array</refname>
+    <refpurpose>convert string or characters to lower-case</refpurpose>
+  </refnamediv>
+  
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+
+      <funcsynopsisinfo>#include &lt;ne_string.h&gt;
+
+const unsigned char *ne_tolower_array(void);
+#define ne_tolower(c) (...)</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>char *<function>ne_strlower</function></funcdef>
+        <paramdef>char *<parameter>str</parameter></paramdef>
+      </funcprototype>
+
+    </funcsynopsis>
+    
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>The <function>ne_strlower</function> function modifies every
+    character in the <parameter>str</parameter> parameter to
+    lower-case equivalent in-place, and returns
+    <parameter>str</parameter>.</para>
+
+    <para>The <function>ne_tolower</function> macro returns a
+    lower-case equivalent of <type>char</type>
+    <parameter>c</parameter>. The
+    <function>ne_tolower_array</function> returns a character mapping
+    table which is an implementation detail of this macro.</para>
+
+    <para>All the above operate on ASCII characters, independent of
+    the locale.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>Return value</title>
+
+    <para><function>ne_strlower</function> returns the
+    <parameter>str</parameter> parameter.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para>The <function>ne_strlower</function> function is available in &neon; 0.37.0 and later.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+
+    <para><xref linkend="ne_strdup"/></para>
+  </refsect1>
+
+</refentry>

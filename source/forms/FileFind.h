@@ -6,7 +6,7 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 
 #include <WinInterface.h>
 #include <GUITools.h>
@@ -14,9 +14,7 @@
 #include <ExtCtrls.hpp>
 #include "IEListView.hpp"
 #include "NortonLikeListView.hpp"
-#include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.ImgList.hpp>
-#include "PngImageList.hpp"
 #include <System.Actions.hpp>
 #include <Vcl.ActnList.hpp>
 #include <Vcl.Menus.hpp>
@@ -31,7 +29,7 @@ __published:
   THistoryComboBox *MaskEdit;
   TButton *StartStopButton;
   TButton *HelpButton;
-  TIEListView *FileView;
+  TIEListView *FileView2;
   TStatusBar *StatusBar;
   TButton *FocusButton;
   TStaticText *MaskHintText;
@@ -68,19 +66,19 @@ __published:
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
   void __fastcall MaskEditExit(TObject *Sender);
-  void __fastcall FileViewDblClick(TObject *Sender);
-  void __fastcall FileViewSelectItem(TObject *Sender, TListItem *Item,
+  void __fastcall FileView2DblClick(TObject *Sender);
+  void __fastcall FileView2SelectItem(TObject *Sender, TListItem *Item,
           bool Selected);
   void __fastcall MaskButtonClick(TObject *Sender);
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
-  void __fastcall FileViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall FileView2ContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall DeleteActionExecute(TObject *Sender);
   void __fastcall CopyActionExecute(TObject *Sender);
   void __fastcall FocusActionExecute(TObject *Sender);
   void __fastcall SelectAllActionExecute(TObject *Sender);
   void __fastcall DownloadActionExecute(TObject *Sender);
   void __fastcall EditActionExecute(TObject *Sender);
-  void __fastcall FileViewCompare(TObject *Sender, TListItem *Item1, TListItem *Item2, int Data, int &Compare);
+  void __fastcall FileView2Compare(TObject *Sender, TListItem *Item1, TListItem *Item2, int Data, int &Compare);
   void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 public:
@@ -140,7 +138,7 @@ private:
   TIEListViewColProperties * GetColProperties();
   int FilesCompare(const TRemoteFile * File1, const TRemoteFile * File2);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

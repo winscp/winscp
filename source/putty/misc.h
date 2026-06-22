@@ -190,12 +190,10 @@ static inline ptrlen make_ptrlen_startend(const void *startv, const void *endv)
 {
     const char *start = (const char *)startv, *end = (const char *)endv;
     assert(end >= start);
-    { // WINSCP
     ptrlen pl;
     pl.ptr = start;
     pl.len = end - start;
     return pl;
-    } // WINSCP
 }
 
 static inline ptrlen ptrlen_from_asciz(const char *str)
@@ -360,7 +358,11 @@ const char *conf_id(int key);
 #endif
 
 #ifndef lenof
+#if HAVE_COUNTOF
+#define lenof(x) _Countof(x)
+#else
 #define lenof(x) ( (sizeof((x))) / (sizeof(*(x))))
+#endif
 #endif
 
 #ifndef min
@@ -525,12 +527,6 @@ static inline char *stripctrl_string(StripCtrlChars *sccpub, const char *str)
 }
 #endif
 
-#ifdef MPEXT
-// Recent PuTTY code uses C99 standard that allows code before initialization.
-// Frequently that code are assertions. This assert implementation allows being used before code.
-#define pinitassert(P) const int __assert_dummy = 1/((int)(P))
-#endif
-
 /*
  * A mechanism for loading a file from disk into a memory buffer where
  * it can be picked apart as a BinarySource.
@@ -574,5 +570,19 @@ CertExprBuilder *cert_expr_builder_new(void);
 void cert_expr_builder_free(CertExprBuilder *eb);
 void cert_expr_builder_add(CertExprBuilder *eb, const char *wildcard);
 char *cert_expr_expression(CertExprBuilder *eb);
+
+/*
+ * This may be reused by local-command proxies on individual
+ * platforms, and also pre-connection hooks.
+ */
+#define TELNET_CMD_MISSING_USERNAME 0x0001
+#define TELNET_CMD_MISSING_PASSWORD 0x0002
+char *format_connection_setup_command(
+    const char *fmt, SockAddr *addr, int port, Conf *conf,
+    unsigned *flags_out);
+
+/* Execute a command hook (synchronous execution with logging) */
+void execute_command_hook(LogContext *logctx, const char *command,
+                          SockAddr *addr, int port, Conf *conf);
 
 #endif

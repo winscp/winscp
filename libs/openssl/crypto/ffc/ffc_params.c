@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -27,11 +27,19 @@ void ossl_ffc_params_init(FFC_PARAMS *params)
 
 void ossl_ffc_params_cleanup(FFC_PARAMS *params)
 {
+#ifdef OPENSSL_PEDANTIC_ZEROIZATION
+    BN_clear_free(params->p);
+    BN_clear_free(params->q);
+    BN_clear_free(params->g);
+    BN_clear_free(params->j);
+    OPENSSL_clear_free(params->seed, params->seedlen);
+#else
     BN_free(params->p);
     BN_free(params->q);
     BN_free(params->g);
     BN_free(params->j);
     OPENSSL_free(params->seed);
+#endif
     ossl_ffc_params_init(params);
 }
 
@@ -174,8 +182,10 @@ int ossl_ffc_params_copy(FFC_PARAMS *dst, const FFC_PARAMS *src)
     if (!ffc_bn_cpy(&dst->p, src->p)
         || !ffc_bn_cpy(&dst->g, src->g)
         || !ffc_bn_cpy(&dst->q, src->q)
-        || !ffc_bn_cpy(&dst->j, src->j))
+        || !ffc_bn_cpy(&dst->j, src->j)) {
+        ossl_ffc_params_cleanup(dst);
         return 0;
+    }
 
     dst->mdname = src->mdname;
     dst->mdprops = src->mdprops;
@@ -183,8 +193,10 @@ int ossl_ffc_params_copy(FFC_PARAMS *dst, const FFC_PARAMS *src)
     dst->seedlen = src->seedlen;
     if (src->seed != NULL) {
         dst->seed = OPENSSL_memdup(src->seed, src->seedlen);
-        if (dst->seed == NULL)
+        if (dst->seed == NULL) {
+            ossl_ffc_params_cleanup(dst);
             return 0;
+        }
     } else {
         dst->seed = NULL;
     }

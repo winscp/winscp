@@ -1,16 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "PuttyIntf.h"
-#include "Exceptions.h"
-#include "Interface.h"
 #include "SecureShell.h"
-#include "TextsCore.h"
-#include "HelpCore.h"
-#include "CoreMain.h"
-#include <StrUtils.hpp>
 #include <Consts.hpp>
 
 #ifndef AUTO_WINSOCK
@@ -18,17 +11,13 @@
 #endif
 #include <ws2ipdef.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 #define MAX_BUFSIZE 32768
-//---------------------------------------------------------------------------
-const wchar_t HostKeyDelimiter = L';';
 //---------------------------------------------------------------------------
 struct TPuttyTranslation
 {
   const wchar_t * Original;
   int Translation;
-  UnicodeString HelpKeyword;
+  UnicodeString HelpKeyword = UnicodeString();
 };
 //---------------------------------------------------------------------------
 struct ScpLogPolicy : public LogPolicy
@@ -555,10 +544,10 @@ bool __fastcall TSecureShell::TryFtp()
           Address.sin_family = AF_INET;
           int Port = FtpPortNumber;
           Address.sin_port = htons(static_cast<short>(Port));
-          Address.sin_addr.s_addr = *((unsigned long *)*HostEntry->h_addr_list);
+          Address.sin_addr.s_addr = *(reinterpret_cast<unsigned long *>(*HostEntry->h_addr_list));
 
           HANDLE Event = CreateEvent(NULL, false, false, NULL);
-          Result = (WSAEventSelect(Socket, (WSAEVENT)Event, FD_CONNECT | FD_CLOSE) != SOCKET_ERROR);
+          Result = (WSAEventSelect(Socket, static_cast<WSAEVENT>(Event), FD_CONNECT | FD_CLOSE) != SOCKET_ERROR);
 
           if (Result)
           {
@@ -637,13 +626,13 @@ struct callback_set * TSecureShell::GetCallbackSet()
   return FCallbackSet;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Length)
+UnicodeString TSecureShell::ConvertFromPutty(const char * Str, size_t Length)
 {
-  int BomLength = strlen(WINSCP_BOM);
+  size_t BomLength = std::size(WINSCP_BOM) - 1;
   if ((Length >= BomLength) &&
       (strncmp(Str, WINSCP_BOM, BomLength) == 0))
   {
-    return UTF8ArrayToString(Str + BomLength, Length - BomLength - 1);
+    return UTF8ArrayToString(Str + BomLength, SizeToIntChecked(Length - BomLength - 1));
   }
   else
   {
@@ -690,7 +679,7 @@ void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
         { L"Administratively prohibited [%]", PFWD_TRANSL_ADMIN },
         { L"Connect failed [%]", PFWD_TRANSL_CONNECT },
       };
-      TranslatePuttyMessage(Translation, LENOF(Translation), FLastTunnelError);
+      TranslatePuttyMessage(Translation, std::size(Translation), FLastTunnelError);
     }
   }
   else if (StartsStr(LocalPortMsg, Str) && ContainsStr(Str, ForwadingToMsg) && ContainsStr(Str, FailedMsg))
@@ -716,7 +705,7 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
     { L"HTTP proxy authentication", PROXY_AUTH_TITLE },
   };
 
-  int Index = TranslatePuttyMessage(NameTranslation, LENOF(NameTranslation), Name);
+  int Index = TranslatePuttyMessage(NameTranslation, std::size(NameTranslation), Name);
 
   TPromptKind PromptKind;
   if (Index == 0) // username
@@ -852,7 +841,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       { L"Confirm new password: ", NEW_PASSWORD_CONFIRM_PROMPT },
     };
     PromptTranslation = NewPasswordPromptTranslation;
-    PromptTranslationCount = LENOF(NewPasswordPromptTranslation);
+    PromptTranslationCount = std::size(NewPasswordPromptTranslation);
     PromptDesc = L"new password";
   }
   else if (PromptKind == pkProxyAuth)
@@ -862,7 +851,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       { L"Proxy password: ", PROXY_AUTH_PASSWORD_PROMPT },
     };
     PromptTranslation = ProxyAuthPromptTranslation;
-    PromptTranslationCount = LENOF(ProxyAuthPromptTranslation);
+    PromptTranslationCount = std::size(ProxyAuthPromptTranslation);
     PromptDesc = L"proxy authentication";
   }
   else
@@ -1061,7 +1050,7 @@ void __fastcall TSecureShell::FromBackend(const unsigned char * Data, size_t Len
   // Following is taken from scp.c from_backend() and modified
 
   const unsigned char *p = Data;
-  unsigned Len = Length;
+  unsigned Len = SizeToUIntChecked(Length);
 
   // with event-select mechanism we can now receive data even before we
   // actually expect them (OutPtr can be NULL)
@@ -1080,8 +1069,8 @@ void __fastcall TSecureShell::FromBackend(const unsigned char * Data, size_t Len
     if (PendSize < PendLen + Len)
     {
       PendSize = PendLen + Len + 4096;
-      Pending = (unsigned char *)
-        (Pending ? srealloc(Pending, PendSize) : smalloc(PendSize));
+      Pending = static_cast<unsigned char *>(
+        Pending ? srealloc(Pending, PendSize) : smalloc(PendSize));
       if (!Pending) FatalError(L"Out of memory");
     }
     memmove(Pending + PendLen, p, Len);
@@ -1205,7 +1194,7 @@ UnicodeString __fastcall TSecureShell::ReceiveLine()
       {
         Index++;
       }
-      EOL = (Boolean)(Index && (Pending[Index-1] == '\n'));
+      EOL = static_cast<Boolean>(Index && (Pending[Index-1] == '\n'));
       Integer PrevLen = Line.Length();
       Line.SetLength(PrevLen + Index);
       Receive(reinterpret_cast<unsigned char *>(Line.c_str()) + PrevLen, Index);
@@ -1253,7 +1242,7 @@ void __fastcall TSecureShell::SendSpecial(int Code)
     LogEvent(FORMAT(L"Sending special code: %d", (Code)));
   }
   CheckConnection();
-  backend_special(FBackendHandle, (SessionSpecialCode)Code, 0);
+  backend_special(FBackendHandle, static_cast<SessionSpecialCode>(Code), 0);
   CheckConnection();
   FLastDataSent = Now();
 }
@@ -1343,7 +1332,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
         (BufSize, BufSize - MAX_BUFSIZE)));
     }
     EventSelectLoop(100, false, NULL);
-    BufSize = backend_sendbuffer(FBackendHandle);
+    BufSize = SizeToIntChecked(backend_sendbuffer(FBackendHandle));
     if (Configuration->ActualLogProtocol >= 1)
     {
       LogEvent(FORMAT(L"There are %u bytes remaining in the send buffer", (BufSize)));
@@ -1381,7 +1370,7 @@ void __fastcall TSecureShell::Send(const unsigned char * Buf, Integer Len)
 {
   CheckConnection();
   backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
-  int BufSize = backend_sendbuffer(FBackendHandle);
+  int BufSize = SizeToIntChecked(backend_sendbuffer(FBackendHandle));
   if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT(L"Sent %u bytes", (static_cast<int>(Len))));
@@ -1443,10 +1432,10 @@ int __fastcall TSecureShell::TranslatePuttyMessage(
     }
     else
     {
-      size_t OriginalLen = wcslen(Original);
-      size_t PrefixLen = Div - Original;
-      size_t SuffixLen = OriginalLen - PrefixLen - 1;
-      if (((size_t)Message.Length() >= OriginalLen - 1) &&
+      int OriginalLen = SizeToIntChecked(wcslen(Original));
+      int PrefixLen = SizeToIntChecked(Div - Original);
+      int SuffixLen = OriginalLen - PrefixLen - 1;
+      if ((Message.Length() >= OriginalLen - 1) &&
           (wcsncmp(Message.c_str(), Original, PrefixLen) == 0) &&
           (wcsncmp(Message.c_str() + Message.Length() - SuffixLen, Div + 1, SuffixLen) == 0))
       {
@@ -1483,7 +1472,7 @@ int __fastcall TSecureShell::TranslateAuthenticationMessage(
     { L"Server refused our key", AUTH_TRANSL_KEY_REFUSED, HELP_AUTH_TRANSL_KEY_REFUSED }
   };
 
-  int Result = TranslatePuttyMessage(Translation, LENOF(Translation), Message, HelpKeyword);
+  int Result = TranslatePuttyMessage(Translation, std::size(Translation), Message, HelpKeyword);
 
   if ((Result == 2) || (Result == 3) || (Result == 4))
   {
@@ -1495,7 +1484,7 @@ int __fastcall TSecureShell::TranslateAuthenticationMessage(
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::AddStdError(const char * Data, size_t Length)
 {
-  UnicodeString Str = ConvertInput(RawByteString(Data, Length));
+  UnicodeString Str = ConvertInput(RawByteString(Data, SizeToIntChecked(Length)));
   FStdError += Str;
 
   Integer P;
@@ -1567,7 +1556,7 @@ int __fastcall TSecureShell::TranslateErrorMessage(
     { L"Incoming packet was garbled on decryption", NET_TRANSL_PACKET_GARBLED, HELP_NET_TRANSL_PACKET_GARBLED },
   };
 
-  int Index = TranslatePuttyMessage(Translation, LENOF(Translation), Message, HelpKeyword);
+  int Index = TranslatePuttyMessage(Translation, std::size(Translation), Message, HelpKeyword);
 
   if ((Index == 0) || (Index == 1) || (Index == 2) || (Index == 3))
   {
@@ -1624,7 +1613,7 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
     LogEvent(FORMAT(L"Selecting events %d for socket %d", (int(Events), int(Socket))));
   }
 
-  if (WSAEventSelect(Socket, (WSAEVENT)Event, Events) == SOCKET_ERROR)
+  if (WSAEventSelect(Socket, static_cast<WSAEVENT>(Event), Events) == SOCKET_ERROR)
   {
     if (Configuration->ActualLogProtocol >= 2)
     {
@@ -1865,7 +1854,7 @@ void __fastcall TSecureShell::PoolForData(WSANETWORKEVENTS & Events, unsigned in
     {
       if (Configuration->ActualLogProtocol >= 2)
       {
-        LogEvent(L"Pooling for data in case they finally arrives");
+        LogEvent(L"Polling for data in case it finally arrives");
       }
 
       // in extreme condition it may happen that send buffer is full, but there
@@ -1977,7 +1966,7 @@ bool __fastcall TSecureShell::EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS 
   WSANETWORKEVENTS AEvents;
   if (WSAEnumNetworkEvents(Socket, NULL, &AEvents) == 0)
   {
-    noise_ultralight(NOISE_SOURCE_IOID, Socket);
+    noise_ultralight(NOISE_SOURCE_IOID, static_cast<unsigned long>(Socket));
     noise_ultralight(NOISE_SOURCE_IOID, AEvents.lNetworkEvents);
 
     Events.lNetworkEvents |= AEvents.lNetworkEvents;
@@ -2023,7 +2012,7 @@ void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENT
     { FD_READ_BIT, FD_READ, L"read" },
   };
 
-  for (unsigned int Event = 0; Event < LENOF(EventTypes); Event++)
+  for (unsigned int Event = 0; Event < std::size(EventTypes); Event++)
   {
     if (FLAGSET(Events.lNetworkEvents, EventTypes[Event].Mask))
     {
@@ -2036,7 +2025,7 @@ void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENT
       #pragma option push -w-prc
       LPARAM SelectEvent = WSAMAKESELECTREPLY(EventTypes[Event].Mask, Err);
       #pragma option pop
-      select_result((WPARAM)Socket, SelectEvent);
+      select_result(static_cast<WPARAM>(Socket), SelectEvent);
       CheckConnection();
     }
   }
@@ -2684,7 +2673,7 @@ void __fastcall TSecureShell::VerifyHostKey(
         Params.NoBatchAnswers = qaYes | qaNo | qaRetry | qaIgnore | qaOK;
         Params.HelpKeyword = (Unknown ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
         Params.Aliases = &Aliases[0];
-        Params.AliasesCount = Aliases.size();
+        Params.AliasesCount = SizeToUIntChecked(Aliases.size());
 
         UnicodeString NewLine = L"\n";
         UnicodeString Para = NewLine + NewLine;
@@ -2867,7 +2856,7 @@ void TSecureShell::AskAlg(const UnicodeString & AAlgType, const UnicodeString & 
   };
 
   UnicodeString AlgType = AAlgType;
-  TranslatePuttyMessage(AlgTranslation, LENOF(AlgTranslation), AlgType);
+  TranslatePuttyMessage(AlgTranslation, std::size(AlgTranslation), AlgType);
 
   UnicodeString Msg;
   UnicodeString NewLine = UnicodeString(sLineBreak);

@@ -2,8 +2,11 @@
 #ifndef NeonIntfH
 #define NeonIntfH
 //---------------------------------------------------------------------------
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <ne_uri.h>
 #include <ne_session.h>
+#pragma clang diagnostic pop
 #include <SessionData.h>
 //---------------------------------------------------------------------------
 #define StrToNeon(S) UTF8String(S).c_str()
@@ -25,9 +28,16 @@ struct TNeonCertificateData
   int Failures;
 };
 //---------------------------------------------------------------------------
-void NeonParseUrl(const UnicodeString & Url, ne_uri & uri);
-bool IsTlsUri(const ne_uri & uri);
-ne_session * CreateNeonSession(const ne_uri & uri);
+struct TNeonUri : public ne_uri
+{
+  TNeonUri();
+  TNeonUri(const UnicodeString & Url);
+  ~TNeonUri();
+  bool IsTls() const;
+  UnicodeString GetHost() const;
+};
+//---------------------------------------------------------------------------
+ne_session * CreateNeonSession(const TNeonUri & Uri);
 void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const UnicodeString & ProxyHost,
   int ProxyPort, const UnicodeString & ProxyUsername, const UnicodeString & ProxyPassword, TTerminal * Terminal);
 void DestroyNeonSession(ne_session * Session);
@@ -54,7 +64,8 @@ void __fastcall RequireNeon(TTerminal * Terminal);
 void __fastcall RetrieveNeonCertificateData(
   int Failures, const ne_ssl_certificate * Certificate, TNeonCertificateData & Data);
 UnicodeString __fastcall CertificateVerificationMessage(const TNeonCertificateData & Data);
-UnicodeString __fastcall CertificateSummary(const TNeonCertificateData & Data, const UnicodeString & HostName);
+UnicodeString CertificateSummary(
+  const TNeonCertificateData & Data, const UnicodeString & HostName, const UnicodeString & SummaryOverride = UnicodeString());
 struct TSessionInfo;
 UnicodeString __fastcall NeonTlsSessionInfo(
   ne_session * Session, TSessionInfo & FSessionInfo, UnicodeString & TlsVersionStr);

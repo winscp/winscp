@@ -60,7 +60,6 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Top = 87
       Width = 460
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 2
@@ -72,12 +71,12 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Top = 40
       Width = 374
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 0
       Text = 'LocalDirectoryEdit'
       OnChange = ControlChange
+      HistoryKey = 'LocalDirectory'
     end
     object LocalDirectoryBrowseButton: TButton
       Left = 429
@@ -88,6 +87,16 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Caption = 'Bro&wse...'
       TabOrder = 1
       OnClick = LocalDirectoryBrowseButtonClick
+    end
+    object OtherLocalDirectoryBrowseButton: TButton
+      Left = 429
+      Top = 86
+      Width = 80
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = 'Brows&e...'
+      TabOrder = 3
+      OnClick = OtherLocalDirectoryBrowseButtonClick
     end
   end
   object OkButton: TButton
@@ -261,7 +270,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Width = 232
       Height = 17
       Anchors = [akLeft, akTop, akRight]
-      Caption = 'C&hecksum'
+      Caption = 'Checks&um'
       TabOrder = 2
       OnClick = ControlChange
     end

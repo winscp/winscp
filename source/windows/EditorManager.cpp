@@ -1,17 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
 #include <SessionData.h>
-#include "WinConfiguration.h"
 #include "EditorManager.h"
-#include <algorithm>
-#include <DateUtils.hpp>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 TEditedFileData::TEditedFileData()
 {
@@ -36,7 +28,8 @@ __fastcall TEditorManager::TEditorManager()
 //---------------------------------------------------------------------------
 __fastcall TEditorManager::~TEditorManager()
 {
-  for (unsigned int i = FFiles.size(); i > 0; i--)
+  unsigned int Count = SizeToUIntChecked(FFiles.size());
+  for (unsigned int i = Count; i > 0; i--)
   {
     int Index = i - 1;
     TFileData * FileData = &FFiles[Index];
@@ -182,7 +175,7 @@ bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
   // Traverse from end, as closing internal editor causes deletion of
   // respective file vector element.
   TObject * PrevToken = NULL;
-  for (unsigned int i = FFiles.size(); i > 0; i--)
+  for (unsigned int i = SizeToUIntChecked(FFiles.size()); i > 0; i--)
   {
     // Note that element may be deleted by external cause (like if external editor
     // is closed while "save confirmation" message is displayed).
@@ -217,7 +210,7 @@ bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
 bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
 {
   TGuard Guard(FSection);
-  for (unsigned int i = FFiles.size(); i > 0; i--)
+  for (unsigned int i = SizeToUIntChecked(FFiles.size()); i > 0; i--)
   {
     TFileData * FileData = &FFiles[i - 1];
 
@@ -289,7 +282,7 @@ void __fastcall TEditorManager::Check()
   {
     do
     {
-      Index = WaitFor(FProcesses.size(), &(FProcesses[0]), PROCESS);
+      Index = WaitFor(SizeToUIntChecked(FProcesses.size()), &(FProcesses[0]), PROCESS);
 
       if (Index >= 0)
       {
@@ -315,12 +308,11 @@ void __fastcall TEditorManager::Check()
   {
     do
     {
-      Index = WaitFor(FUploadCompleteEvents.size(), &(FUploadCompleteEvents[0]),
-        EVENT);
+      Index = WaitFor(SizeToUIntChecked(FUploadCompleteEvents.size()), &(FUploadCompleteEvents[0]), EVENT);
 
       if (Index >= 0)
       {
-        UploadComplete(Index);
+        UploadComplete(Index, false);
       }
     }
     while ((Index >= 0) && (FUploadCompleteEvents.size() > 0));
@@ -405,7 +397,7 @@ void __fastcall TEditorManager::AddFile(TFileData & FileData, TEditedFileData * 
   Data.release(); // ownership passed
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::UploadComplete(int Index)
+void TEditorManager::UploadComplete(int Index, bool Retry)
 {
   TFileData * FileData = &FFiles[Index];
 
@@ -427,7 +419,9 @@ void __fastcall TEditorManager::UploadComplete(int Index)
       FileData->Reupload = false;
       CheckFileChange(Index, true);
     }
-    else if ((FileData->Token != NULL) && (FOnFileUploadComplete != NULL))
+    // so far used only to signal to the internal editor that saving was complete,
+    // so we do signal once an actual upload is done only
+    else if ((FileData->Token != NULL) && (FOnFileUploadComplete != NULL) && !Retry)
     {
       FOnFileUploadComplete(FileData->Token);
     }
@@ -583,11 +577,11 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
           DebugAssert(OnFileChange != NULL);
           bool Retry = false;
           AppLogFmt(L"Uploading opened/edited file \"%s\".", (FileData->FileName));
-          OnFileChange(FileData->FileName, FileData->Data, FileData->UploadCompleteEvent, Retry);
+          OnFileChange(FileData->FileName, FileData->Timestamp, FileData->Data, FileData->UploadCompleteEvent, Retry);
           if (Retry)
           {
             AppLogFmt(L"Will retry uploading opened/edited file \"%s\".", (FileData->FileName));
-            UploadComplete(Index);
+            UploadComplete(Index, true);
             FileData->Timestamp = PrevTimestamp;
           }
         }
@@ -597,7 +591,7 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
           // upload failed (was not even started)
           if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
           {
-            UploadComplete(Index);
+            UploadComplete(Index, false);
           }
           throw;
         }

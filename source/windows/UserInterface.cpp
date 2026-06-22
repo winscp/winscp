@@ -1,30 +1,14 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include "ScpCommander.h"
 #include "ScpExplorer.h"
 
-#include <CoreMain.h>
-#include <Common.h>
-#include <Exceptions.h>
 #include <Cryptography.h>
-#include "ProgParams.h"
-#include "VCLCommon.h"
-#include "WinConfiguration.h"
 #include "TerminalManager.h"
-#include "TextsWin.h"
-#include "WinInterface.h"
-#include "PasswordEdit.hpp"
 #include "ProgParams.h"
-#include "Tools.h"
 #include "Custom.h"
-#include "HelpWin.h"
-#include <Math.hpp>
-#include <PasTools.hpp>
-#include <GUITools.h>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 const UnicodeString AppName = L"WinSCP";
 //---------------------------------------------------------------------------
@@ -207,19 +191,21 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       }
     }
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     // swallow
   }
 
+  UnicodeString DisconnectError;
   TTerminalManager * Manager = TTerminalManager::Instance(false);
   if (!DoNotDisplay)
   {
     ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
     bool CloseOnCompletion = (Terminate != NULL);
 
+    EFatal * FatalException = dynamic_cast<EFatal *>(E);
     bool ForActiveTerminal =
-      E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+      (FatalException != NULL) && (Terminal != NULL) &&
       (Manager != NULL) && (Manager->ActiveTerminal == Terminal);
 
     unsigned int Result;
@@ -260,7 +246,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
           Aliases[0].MenuButton = true;
           Answers |= Aliases[0].Button;
           Params.Aliases = Aliases;
-          Params.AliasesCount = LENOF(Aliases);
+          Params.AliasesCount = std::size(Aliases);
         }
 
         if (ForActiveTerminal)
@@ -281,6 +267,12 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
           Result =
             ExceptionMessageDialog(E, qtInformation, L"", Answers | qaOK, HELP_NONE, &Params);
         }
+
+        if (Result == qaNeverAskAgain)
+        {
+          Result = qaYes;
+          WinConfiguration->ConfirmExitOnCompletion = false;
+        }
       }
       else
       {
@@ -293,28 +285,66 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       {
         if (ForActiveTerminal)
         {
-          bool HookedDialog = false;
-          try
-          {
-            TMessageParams Params;
-            if (DebugAlwaysTrue(Manager->ActiveTerminal != NULL) &&
-                ((Configuration->SessionReopenTimeout == 0) ||
-                 ((double)Manager->ActiveTerminal->ReopenStart == 0) ||
-                 (int(double(Now() - Manager->ActiveTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
-            {
-              Params.Timeout = GUIConfiguration->SessionReopenAutoIdle;
-              Params.TimeoutAnswer = qaRetry;
-              Params.TimeoutResponse = Params.TimeoutAnswer;
-              HookedDialog = Manager->HookFatalExceptionMessageDialog(Params);
-            }
+          bool InactiveTerminationMessage = (FatalException != NULL) && FatalException->InactiveTerminationMessage;
 
-            Result = FatalExceptionMessageDialog(E, qtError, EmptyStr, qaOK, EmptyStr, &Params);
-          }
-          __finally
+          if (!InactiveTerminationMessage && GUIConfiguration->SessionSilentDisconnect)
           {
-            if (HookedDialog)
+            Result = qaOK;
+            DisconnectError = E->Message;
+          }
+          else
+          {
+            bool HookedDialog = false;
+            try
             {
-              Manager->UnhookFatalExceptionMessageDialog();
+              TMessageParams Params;
+              if (DebugAlwaysTrue(Manager->ActiveTerminal != NULL) &&
+                  ((Configuration->SessionReopenTimeout == 0) ||
+                   (Manager->ActiveTerminal->ReopenStart == TDateTime()) ||
+                   (int(double(Now() - Manager->ActiveTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
+              {
+                Params.Timeout = GUIConfiguration->SessionReopenAutoIdleOn ? GUIConfiguration->SessionReopenAutoIdle : 0;
+                Params.TimeoutAnswer = qaRetry;
+                Params.TimeoutResponse = Params.TimeoutAnswer;
+                HookedDialog = Manager->HookFatalExceptionMessageDialog(Params);
+              }
+
+              bool PermanentTerminal = DebugAlwaysTrue(Manager->ActiveTerminal != NULL) && Manager->ActiveTerminal->Permanent;
+              if (InactiveTerminationMessage)
+              {
+                Params.Params |= mpNeverAskAgainCheck;
+                Params.NeverAskAgainTitle = LoadStr(ALWAYS_RECONNECT);
+                Params.NeverAskAgainAnswer = qaRetry;
+              }
+              // For now - maybe it is worth doing even for non-permanent sessions
+              else if (PermanentTerminal)
+              {
+                Params.Params |= mpNeverAskAgainCheck;
+                Params.NeverAskAgainTitle = LoadStr(NEVER_POPUP_DISCONNECT);
+                Params.NeverAskAgainAnswer = qaOK;
+              }
+
+              Result = FatalExceptionMessageDialog(E, qtError, EmptyStr, qaOK, EmptyStr, &Params);
+
+              if (Result == qaNeverAskAgain)
+              {
+                Result = Params.NeverAskAgainAnswer;
+                if (InactiveTerminationMessage)
+                {
+                  GUIConfiguration->SessionReopenAutoInactive = true;
+                }
+                else if (DebugAlwaysTrue(PermanentTerminal))
+                {
+                  GUIConfiguration->SessionSilentDisconnect = true;
+                }
+              }
+            }
+            __finally
+            {
+              if (HookedDialog)
+              {
+                Manager->UnhookFatalExceptionMessageDialog();
+              }
             }
           }
         }
@@ -327,13 +357,6 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       {
         Result = qaOK;
       }
-    }
-
-    if (Result == qaNeverAskAgain)
-    {
-      DebugAssert(CloseOnCompletion);
-      Result = qaYes;
-      WinConfiguration->ConfirmExitOnCompletion = false;
     }
 
     if (Result == qaYes)
@@ -372,7 +395,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     {
       if (ForActiveTerminal)
       {
-        Manager->DisconnectActiveTerminalIfPermanentFreeOtherwise();
+        Manager->DisconnectActiveTerminalIfPermanentFreeOtherwise(DisconnectError);
       }
     }
   }
@@ -857,8 +880,7 @@ __fastcall TColorChangeData::TColorChangeData(
 TColorChangeData * __fastcall TColorChangeData::Retrieve(TObject * Object)
 {
   TComponent * Component = DebugNotNull(dynamic_cast<TComponent *>(Object));
-  TComponent * ColorChangeDataComponent = Component->FindComponent(QualifiedClassName());
-  return DebugNotNull(dynamic_cast<TColorChangeData *>(ColorChangeDataComponent));
+  return FindComponentInstance<TColorChangeData>(Component);
 }
 //---------------------------------------------------------------------------
 static void SaveCustomColors(bool SessionColors, const UnicodeString & Colors)
@@ -1038,7 +1060,7 @@ void __fastcall CreateColorPalette(TTBCustomItem * Owner, TColor Color, int Rows
     ColorSet->ColCount = ColorCols;
     ColorSet->RowCount = Rows;
     ColorSet->OnGetColorInfo = OnGetColorInfo;
-    ColorSet->Tag = static_cast<int>(SessionColors);
+    ColorSet->Tag = static_cast<NativeInt>(SessionColors);
   }
 
   // clNone = no selection, see also ColorChange
@@ -1160,9 +1182,9 @@ static int __fastcall ThreadProc(void * AParam)
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
-  TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
-  TThreadID & ThreadId)
+THandle StartThread(
+  void * SecurityAttributes, unsigned StackSize, TThreadFunc ThreadFunc, void * Parameter,
+  unsigned CreationFlags, TThreadID & ThreadId)
 {
   TThreadParam * Param = new TThreadParam;
   Param->ThreadFunc = ThreadFunc;
@@ -1210,7 +1232,7 @@ void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
   }
 
   ComboBox->Style = csDropDownList;
-  ComboBox->DropDownCount = Max(ComboBox->DropDownCount, 16);
+  ComboBox->DropDownCount = Max(ComboBox->DropDownCount, DefaultHistoryDropDownCount);
 }
 //---------------------------------------------------------------------------
 void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value)
@@ -1270,15 +1292,28 @@ protected:
   virtual void __fastcall DoChange(bool & CanSubmit);
 
 private:
-  TPasswordEdit * CurrentEdit;
-  TPasswordEdit * NewEdit;
-  TPasswordEdit * ConfirmEdit;
+  TEdit * CurrentEdit;
+  TEdit * NewEdit;
+  TEdit * ConfirmEdit;
+
+  TEdit * CreatePasswordEdit(int Label);
 };
 //---------------------------------------------------------------------------
 // Need to have an Owner argument for SafeFormCreate
 __fastcall TMasterPasswordDialog::TMasterPasswordDialog(TComponent *) :
-  TCustomDialog(EmptyStr)
+  // HelpKeyword is provisional, and will be overridein in Init.
+  // It's provided here only to enable the Help button.
+  TCustomDialog(HELP_MASTER_PASSWORD_CURRENT)
 {
+}
+//---------------------------------------------------------------------------
+TEdit * TMasterPasswordDialog::CreatePasswordEdit(int Label)
+{
+  TEdit * Result = new TEdit(this);
+  SetEditPasswordMode(Result);
+  AddEdit(Result, CreateLabel(LoadStr(Label)));
+  Result->MaxLength = PasswordMaxLength();
+  return Result;
 }
 //---------------------------------------------------------------------------
 void TMasterPasswordDialog::Init(bool Current)
@@ -1286,25 +1321,19 @@ void TMasterPasswordDialog::Init(bool Current)
   HelpKeyword = Current ? HELP_MASTER_PASSWORD_CURRENT : HELP_MASTER_PASSWORD_CHANGE;
   Caption = LoadStr(MASTER_PASSWORD_CAPTION);
 
-  CurrentEdit = new TPasswordEdit(this);
-  AddEdit(CurrentEdit, CreateLabel(LoadStr(MASTER_PASSWORD_CURRENT)));
+  CurrentEdit = CreatePasswordEdit(MASTER_PASSWORD_CURRENT);
   EnableControl(CurrentEdit, Current || WinConfiguration->UseMasterPassword);
-  CurrentEdit->MaxLength = PasswordMaxLength();
 
   if (!Current)
   {
-    NewEdit = new TPasswordEdit(this);
-    AddEdit(NewEdit, CreateLabel(LoadStr(MASTER_PASSWORD_NEW)));
-    NewEdit->MaxLength = CurrentEdit->MaxLength;
+    NewEdit = CreatePasswordEdit(MASTER_PASSWORD_NEW);
 
     if (!WinConfiguration->UseMasterPassword)
     {
       ActiveControl = NewEdit;
     }
 
-    ConfirmEdit = new TPasswordEdit(this);
-    AddEdit(ConfirmEdit, CreateLabel(LoadStr(MASTER_PASSWORD_CONFIRM)));
-    ConfirmEdit->MaxLength = CurrentEdit->MaxLength;
+    ConfirmEdit = CreatePasswordEdit(MASTER_PASSWORD_CONFIRM);
   }
   else
   {

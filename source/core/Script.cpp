@@ -1,18 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include <SysUtils.hpp>
-
-#include "Common.h"
-#include "Exceptions.h"
-#include "TextsCore.h"
 #include "Script.h"
 #include "Terminal.h"
 #include "SessionData.h"
-#include "CoreMain.h"
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 const wchar_t * ToggleNames[] = { L"off", L"on" };
 const UnicodeString InOutParam(TraceInitStr(L"-"));
@@ -1039,8 +1031,7 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
 
   if (Parameters->FindSwitch(RESUMESUPPORT_SWITCH, Value))
   {
-    int ToggleValue = TScriptCommands::FindCommand(ToggleNames,
-      LENOF(ToggleNames), Value);
+    int ToggleValue = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), Value);
     if (ToggleValue >= 0)
     {
       switch (ToggleValue)
@@ -1343,7 +1334,7 @@ void __fastcall TScript::RmProc(TScriptProcParams * Parameters)
   bool OnlyFile = Parameters->FindSwitch(L"onlyfile");
   TStrings * FileList = CreateFileList(
     Parameters, 1, Parameters->ParamCount,
-    (TFileListType)(fltQueryServer | fltMask| FLAGMASK(OnlyFile, fltOnlyFile)));
+    static_cast<TFileListType>(fltQueryServer | fltMask| FLAGMASK(OnlyFile, fltOnlyFile)));
   try
   {
     CheckParams(Parameters);
@@ -1485,7 +1476,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     OnlyFile = true;
   }
   TStrings * FileList = CreateFileList(Parameters, 1, LastFileParam,
-    (TFileListType)(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest) | FLAGMASK(OnlyFile, fltOnlyFile)));
+    static_cast<TFileListType>(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest) | FLAGMASK(OnlyFile, fltOnlyFile)));
   try
   {
     UnicodeString TargetDirectory;
@@ -1550,7 +1541,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
   }
   else
   {
-    FileList = CreateLocalFileList(Parameters, 1, LastFileParam, (TFileListType)(fltMask | FLAGMASK(Latest, fltLatest)));
+    FileList = CreateLocalFileList(Parameters, 1, LastFileParam, static_cast<TFileListType>(fltMask | FLAGMASK(Latest, fltLatest)));
   }
   try
   {
@@ -1604,7 +1595,7 @@ TTransferMode __fastcall TScript::ParseTransferModeName(UnicodeString Name)
     throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (L"transfer", Name)));
   }
 
-  return (TTransferMode)Value;
+  return static_cast<TTransferMode>(Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString ValueName)
@@ -1619,7 +1610,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   int Option = -1;
   if (!OptionName.IsEmpty())
   {
-    Option = TScriptCommands::FindCommand(Names, LENOF(Names), OptionName);
+    Option = TScriptCommands::FindCommand(Names, std::size(Names), OptionName);
     if (Option < 0)
     {
       throw Exception(FMTLOAD(SCRIPT_OPTION_UNKNOWN, (OptionName)));
@@ -1639,7 +1630,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1654,12 +1645,12 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(BatchModeNames, LENOF(BatchModeNames), ValueName);
+      int Value = TScriptCommands::FindCommand(BatchModeNames, std::size(BatchModeNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
       }
-      FBatch = (TBatchMode)Value;
+      FBatch = static_cast<TBatchMode>(Value);
       FInteractiveBatch = FBatch;
 
       if (SetValue && (FBatch != BatchOff) && (FSessionReopenTimeout == 0))
@@ -1677,7 +1668,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1697,7 +1688,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
       FCopyParam.TransferMode = ParseTransferModeName(ValueName);
     }
 
-    DebugAssert(FCopyParam.TransferMode < (TTransferMode)TransferModeNamesCount);
+    DebugAssert(FCopyParam.TransferMode < static_cast<TTransferMode>(TransferModeNamesCount));
     const wchar_t * Value = TransferModeNames[FCopyParam.TransferMode];
     PrintLine(FORMAT(ListFormat, (Names[Transfer], Value)));
   }
@@ -1707,7 +1698,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1789,7 +1780,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(ToggleNames, std::size(ToggleNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
@@ -1856,17 +1847,8 @@ void __fastcall TScript::SynchronizeDirectories(TScriptProcParams * Parameters,
 UnicodeString __fastcall TScript::SynchronizeFileRecord(
   const UnicodeString & RootDirectory, const TSynchronizeChecklist::TItem * Item, bool Local)
 {
-  const TSynchronizeChecklist::TItem::TFileInfo & FileInfo =
-    Local ? Item->Local : Item->Remote;
-  UnicodeString Path;
-  if (Local)
-  {
-    Path = IncludeTrailingBackslash(FileInfo.Directory) + FileInfo.FileName;
-  }
-  else
-  {
-    Path = UnixIncludeTrailingBackslash(FileInfo.Directory) + FileInfo.FileName;
-  }
+  const TSynchronizeChecklist::TItem::TFileInfo & FileInfo = Local ? Item->Info1 : Item->Info2;
+  UnicodeString Path = UniversalIncludeTrailingBackslash(!Local, FileInfo.Directory) + FileInfo.FileName;
 
   if (SameText(RootDirectory, Path.SubString(1, RootDirectory.Length())))
   {
@@ -1877,14 +1859,7 @@ UnicodeString __fastcall TScript::SynchronizeFileRecord(
   UnicodeString Result;
   if (Item->IsDirectory)
   {
-    if (Local)
-    {
-      Result = IncludeTrailingBackslash(Path);
-    }
-    else
-    {
-      Result = UnixIncludeTrailingBackslash(Path);
-    }
+    Result = UniversalIncludeTrailingBackslash(!Local, Path);
   }
   else
   {
@@ -1973,7 +1948,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
   }
   UnicodeString ModeName = Parameters->Param[1];
   DebugAssert(FSynchronizeMode < 0);
-  FSynchronizeMode = TScriptCommands::FindCommand(ModeNames, LENOF(ModeNames), ModeName);
+  FSynchronizeMode = TScriptCommands::FindCommand(ModeNames, std::size(ModeNames), ModeName);
 
   try
   {
@@ -2005,7 +1980,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     {
       enum { None, Either, EitherBoth };
       static const wchar_t * CriteriaNames[] = { L"none", L"either", L"both" };
-      int Criteria = TScriptCommands::FindCommand(CriteriaNames, LENOF(CriteriaNames), Value);
+      int Criteria = TScriptCommands::FindCommand(CriteriaNames, std::size(CriteriaNames), Value);
       if (Criteria >= 0)
       {
         switch (Criteria)
@@ -2030,7 +2005,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
           UnicodeString Token = CutToChar(Value, L',', true);
           enum { Time, Size, Checksum };
           static const wchar_t * CriteriaNames[] = { L"time", L"size", L"checksum" };
-          int Criteria = TScriptCommands::FindCommand(CriteriaNames, LENOF(CriteriaNames), Token);
+          int Criteria = TScriptCommands::FindCommand(CriteriaNames, std::size(CriteriaNames), Token);
           switch (Criteria)
           {
             case Time:
@@ -2368,15 +2343,8 @@ void __fastcall TManagementScript::TerminalOperationProgress(
     {
       bool DoPrint = false;
       bool First = false;
-      UnicodeString ProgressFileName = ProgressData.FileName;
-      if (ProgressData.Side == osLocal)
-      {
-        ProgressFileName = ExcludeTrailingBackslash(ProgressFileName);
-      }
-      else
-      {
-        ProgressFileName = UnixExcludeTrailingBackslash(ProgressFileName);
-      }
+      UnicodeString ProgressFileName =
+        UniversalExcludeTrailingBackslash((ProgressData.Side != osLocal), ProgressData.FileName);
 
       if (ProgressFileName != FLastProgressFile)
       {
@@ -2683,9 +2651,9 @@ void __fastcall TManagementScript::MaskPasswordInCommandLine(UnicodeString & Com
 
     if (!Url.IsEmpty())
     {
-      bool DefaultsOnly;
+      int ParsedInfo;
       std::unique_ptr<TSessionData> Data(
-        StoredSessions->ParseUrl(Url, &Options, DefaultsOnly, NULL, NULL, &MaskedUrl));
+        StoredSessions->ParseUrl(Url, &Options, ParsedInfo, NULL, &MaskedUrl));
     }
 
     if ((Url != MaskedUrl) || AnyMaskedParam)
@@ -2756,7 +2724,9 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         throw Exception(LoadStr(CANNOT_OPEN_SESSION_FOLDER));
       }
 
-      Data = FStoredSessions->ParseUrl(Session, Options, DefaultsOnly);
+      int ParsedInfo;
+      Data = FStoredSessions->ParseUrl(Session, Options, ParsedInfo);
+      DefaultsOnly = FLAGSET(ParsedInfo, piDefaultsOnly);
     }
 
     try

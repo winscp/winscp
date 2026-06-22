@@ -1,36 +1,47 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include "WinInterface.h"
-#include "VCLCommon.h"
-
-#include <Common.h>
-#include <TextsWin.h>
 #include <RemoteFiles.h>
-#include <GUITools.h>
-#include <Tools.h>
-#include <CustomWinConfiguration.h>
-#include <CoreMain.h>
 
 #include <Vcl.StdActns.hpp>
-#include <PasswordEdit.hpp>
 #include <FileCtrl.hpp>
 #include <PathLabel.hpp>
-#include <PasTools.hpp>
-#include <StrUtils.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
-#include <Math.hpp>
 #include <TB2ExtItems.hpp>
 #include <TBXExtItems.hpp>
 #include <IEListView.hpp>
+#include <UpDownEdit.hpp>
 #include <WinApi.h>
 #include <vssym32.h>
+#include <ComboEdit.hpp>
+#include <GUITools.h>
+#include <initguid.h> // to define the GUIDs in the header below
+#include <Winapi.oleacc.hpp>
 //---------------------------------------------------------------------------
 const UnicodeString ContextSeparator(TraceInitStr(L"\x00BB"));
 const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextSeparator));
+const UnicodeString InfoLabelMark(TraceInitStr(L"\xD83D\xDEC8"));
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
+class TFormCustomizationComponent : public TComponent
+{
+public:
+  __fastcall TFormCustomizationComponent() :
+    TComponent(NULL)
+  {
+    WindowStateBeforeMimimize = wsNormal;
+    DarkMode = false;
+    DarkModeCustom = false;
+  }
+
+  TWindowState WindowStateBeforeMimimize;
+  bool DarkMode;
+  bool DarkModeCustom;
+};
+//---------------------------------------------------------------------------
+static TFormCustomizationComponent * GetFormCustomizationComponent(TCustomForm * Form)
+{
+  return GetComponentInstance<TFormCustomizationComponent>(Form);
+}
 //---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index)
 {
@@ -202,44 +213,28 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall SetParentColor(TControl * Control)
+bool IsWindowColorControl(TControl * Control)
 {
-  TColor Color = clBtnFace;
-  if (UseThemes)
+  return
+    (dynamic_cast<TCustomEdit *>(Control) != NULL) ||
+    (dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
+    (dynamic_cast<TCustomListView *>(Control) != NULL) ||
+    (dynamic_cast<TCustomTreeView *>(Control) != NULL) ||
+    (dynamic_cast<TCustomListBox *>(Control) != NULL);
+}
+//---------------------------------------------------------------------------
+bool UseDarkModeForControl(TControl * Control)
+{
+  bool Result = WinConfiguration->UseDarkTheme();
+  if (Result)
   {
-    bool OnTabSheet = false;
-    TWinControl * Parent = Control->Parent;
-    while ((Parent != NULL) && !OnTabSheet)
-    {
-      TTabSheet * TabSheet = dynamic_cast<TTabSheet *>(Parent);
-      OnTabSheet = (TabSheet != NULL) && TabSheet->TabVisible;
-      Parent = Parent->Parent;
-    }
-
-    if (OnTabSheet)
-    {
-      HTHEME Theme = OpenThemeData(NULL, L"tab");
-      if (Theme != NULL)
-      {
-        COLORREF RGB;
-        // XP with classic theme: Does not get past OpenThemeData, clBtnFace is exact color
-        // XP with XP theme: not the exact color (probably same as clBtnFace), but close
-        // Vista - ok
-        // 2016 without desktop - ok
-        // 7 with classic and high contrast themes: Do not get past OpenThemeData, clBtnFace is exact color
-        // 7 with 7 and basic themes - ok
-        // 10 with high contrast themes - ok (note the difference to 7 with high contract themes)
-        // 10 - ok
-        if (GetThemeColor(Theme, TABP_AEROWIZARDBODY, TIS_NORMAL, TMT_FILLCOLOR, &RGB) == S_OK)
-        {
-          Color = static_cast<TColor>(RGB);
-        }
-        CloseThemeData(Theme);
-      }
-    }
+    TCustomForm * ParentForm = GetParentForm(Control);
+    Result =
+      // Might be null temporarily if the control is part of frame
+      (ParentForm != NULL) &&
+      GetFormCustomizationComponent(ParentForm)->DarkMode;
   }
-
-  ((TEdit*)Control)->Color = Color;
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall EnableControl(TControl * Control, bool Enable)
@@ -258,24 +253,23 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
     Control->Enabled = Enable;
   }
 
-  if ((dynamic_cast<TCustomEdit *>(Control) != NULL) ||
-      (dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
-      (dynamic_cast<TCustomListView *>(Control) != NULL) ||
-      (dynamic_cast<TCustomTreeView *>(Control) != NULL))
+  if (IsWindowColorControl(Control))
   {
+    bool DarkMode = UseDarkModeForControl(Control);
+    TColor Color;
     if (Enable)
     {
-      ((TEdit*)Control)->Color = clWindow;
+      Color = DarkMode ? GetWindowColor() : clWindow;
     }
     else
     {
-      // This does not work for list view with
-      // LVS_EX_DOUBLEBUFFER (TCustomDirView).
-      // It automatically gets gray background.
-      // Though on Windows 7, the control has to be disabled
-      // only after it is showing already (see TCustomScpExplorerForm::UpdateControls())
-      ((TEdit*)Control)->Color = clBtnFace;
+      // This does not work for list view with LVS_EX_DOUBLEBUFFER (TCustomDirView).
+      // It automatically gets gray background. Though on Windows 7, the control has to be disabled
+      // only after it is showing already (see TCustomScpExplorerForm::UpdateControls()).
+      // But we do not use this code anymore for the main window anyway.
+      Color = DarkMode ? GetBtnFaceColor() : clBtnFace;
     }
+    static_cast<TEdit*>(Control)->Color = Color;
   }
 };
 //---------------------------------------------------------------------------
@@ -319,26 +313,92 @@ TWndMethod __fastcall ControlWndProc(TWinControl * Control)
   return &PublicWinControl->WndProc;
 }
 //---------------------------------------------------------------------------
+class TBrushComponent : public TComponent
+{
+public:
+  __fastcall TBrushComponent() : TComponent(nullptr)
+  {
+    Brush = 0;
+  }
+
+  void ReleaseBrush()
+  {
+    if (Brush != 0)
+    {
+      DeleteObject(Brush);
+      Brush = 0;
+    }
+  }
+
+  virtual __fastcall ~TBrushComponent()
+  {
+    ReleaseBrush();
+  }
+
+  HBRUSH Brush;
+};
+//---------------------------------------------------------------------------
 static void __fastcall ReadOnlyEditWindowProc(void * Data, TMessage & Message)
 {
   TCustomEdit * Edit = static_cast<TCustomEdit *>(Data);
-  TCustomStyleServices * AStyleServices;
-  if ((Message.Msg == CN_CTLCOLORSTATIC) && Edit->ReadOnly && (AStyleServices = StyleServices(Edit))->Enabled)
+  if (((Message.Msg == WM_WINDOWPOSCHANGED) || (Message.Msg == CN_CTLCOLORSTATIC)) &&
+      Edit->ReadOnly)
   {
-    // VCL_COPY Based on TCustomStaticText.CNCtlColorStatic
-
-    // Pure Win32 alternative can be seen at:
     // https://stackoverflow.com/q/75759034/850848#75764544
     // (see my comment to the answer)
 
-    HDC ControlDC = reinterpret_cast<HDC>(Message.WParam);
-    HWND ControlHandle = reinterpret_cast<HWND>(Message.LParam);
-    DebugAssert(ControlHandle == Edit->Handle);
+    auto BrushComponent = GetComponentInstance<TBrushComponent>(Edit);
 
-    SetBkMode(ControlDC, TRANSPARENT);
-    AStyleServices->DrawParentBackground(ControlHandle, ControlDC, NULL, false);
+    if (Message.Msg == WM_WINDOWPOSCHANGED)
+    {
+      BrushComponent->ReleaseBrush();
+      ControlWndProc(Edit)(Message);
+    }
+    else
+    {
+      DebugAssert(reinterpret_cast<HWND>(Message.LParam) == Edit->Handle);
 
-    Message.Result = reinterpret_cast<LRESULT>(GetStockObject(NULL_BRUSH));
+      TWinControl * Parent = Edit->Parent;
+      while (Parent != NULL)
+      {
+        if (dynamic_cast<TPageControl *>(Parent) != nullptr)
+        {
+          break;
+        }
+        Parent = Parent->Parent;
+      }
+
+      if (Parent != nullptr)
+      {
+        if (BrushComponent->Brush == 0)
+        {
+          HDC DC = GetDC(Parent->Handle);
+          HDC DCNew = CreateCompatibleDC(DC);
+          HBITMAP Bitmap = CreateCompatibleBitmap(DC, Parent->Width, Parent->Height);
+          HBITMAP BitmapOld = static_cast<HBITMAP>(SelectObject(DCNew, Bitmap));
+
+          Parent->Perform(WM_PRINTCLIENT, reinterpret_cast<WPARAM>(DCNew), static_cast<LPARAM>(PRF_ERASEBKGND | PRF_CLIENT | PRF_NONCLIENT));
+          BrushComponent->Brush = CreatePatternBrush(Bitmap);
+          SelectObject(DCNew, BitmapOld);
+
+          DeleteObject(Bitmap);
+          DeleteDC(DCNew);
+          ReleaseDC(Parent->Handle, DC);
+        }
+
+        HDC EditDC = reinterpret_cast<HDC>(Message.WParam);
+        SetBkMode(EditDC, TRANSPARENT);
+
+        TPoint P = Edit->ClientToParent(TPoint(), Parent);
+        SetBrushOrgEx(EditDC, -P.X, -P.Y, nullptr);
+
+        Message.Result = reinterpret_cast<LRESULT>(BrushComponent->Brush);
+      }
+      else
+      {
+        ControlWndProc(Edit)(Message);
+      }
+    }
   }
   else
   {
@@ -350,6 +410,7 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
 {
   if (dynamic_cast<TCustomEdit *>(Control) != NULL)
   {
+    bool DarkMode = UseDarkModeForControl(Control);
     TEdit * Edit = static_cast<TEdit *>(Control);
     Edit->ReadOnly = ReadOnly;
     TMemo * Memo = dynamic_cast<TMemo *>(Control);
@@ -357,7 +418,6 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
     TWinControl * Parent = Edit->Parent;
     while (Parent != NULL)
     {
-      // Not necessary, just to limit impact and conflicts
       if (dynamic_cast<TTabSheet *>(Parent) != NULL)
       {
         TWndMethod WindowProc = MakeMethod<TWndMethod>(Edit, ReadOnlyEditWindowProc);
@@ -374,7 +434,7 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
     {
       if (Color)
       {
-        SetParentColor(Control);
+        Edit->Color = DarkMode ? GetBtnFaceColor() : clBtnFace;
       }
       if (Memo != NULL)
       {
@@ -384,7 +444,7 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
         Memo->WantReturns = false;
       }
 
-      if ((Edit->PopupMenu == NULL) && (dynamic_cast<TPasswordEdit *>(Control) == NULL))
+      if ((Edit->PopupMenu == NULL) && (Edit->PasswordChar == L'\0'))
       {
         std::unique_ptr<TPopupMenu> PopupMenu(new TPopupMenu(Edit));
 
@@ -408,7 +468,7 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
     {
       if (Color)
       {
-        Edit->Color = clWindow;
+        Edit->Color = DarkMode ? GetWindowColor() : clWindow;
       }
       // not supported atm, we need to persist previous value of WantReturns
       DebugAssert(Memo == NULL);
@@ -433,6 +493,11 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
 {
   DoReadOnlyControl(Control, ReadOnly, true);
+}
+//---------------------------------------------------------------------------
+void SetEditPasswordMode(TEdit * Edit, bool Password)
+{
+  Edit->PasswordChar = (Password ? L'*' : L'\0');
 }
 //---------------------------------------------------------------------------
 int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption)
@@ -472,7 +537,7 @@ bool __fastcall IsMainFormHidden()
   {
     Result =
       !MainForm->Visible ||
-      (MainForm->Perform(WM_IS_HIDDEN, 0, 0) == 1);
+      (MainForm->Perform(WM_IS_HIDDEN, 0, NativeInt(0)) == 1);
   }
   // we do not expect this to return true when MainLikeForm is set
   DebugAssert(!Result || (MainLikeForm == NULL));
@@ -526,8 +591,9 @@ UnicodeString __fastcall FormatFormCaption(
 class TPublicControl : public TControl
 {
 friend void __fastcall RealignControl(TControl * Control);
-friend void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc, TMessage & Message);
 friend TCanvas * CreateControlCanvas(TControl * Control);
+friend void ApplyDarkModeOnControl(TControl * Control);
+friend TColor GetControlColor(TControl * Control);
 };
 //---------------------------------------------------------------------
 class TPublicForm : public TForm
@@ -573,8 +639,7 @@ void __fastcall SetRescaleFunction(
   TComponent * Component, TRescaleEvent OnRescale, TObject * Token, bool OwnsToken)
 {
   TRescaleComponent * RescaleComponent = new TRescaleComponent(OnRescale, Token, OwnsToken);
-  RescaleComponent->Name = TRescaleComponent::QualifiedClassName();
-  Component->InsertComponent(RescaleComponent);
+  InsertComponentInstance(Component, RescaleComponent);
 }
 //---------------------------------------------------------------------------
 static void __fastcall ChangeControlScale(TControl * Control)
@@ -600,50 +665,60 @@ static void __fastcall ChangeControlScale(TControl * Control)
       ChangeControlScale(ChildControl);
     }
 
-    TRescaleComponent * RescaleComponent =
-      dynamic_cast<TRescaleComponent *>(Component->FindComponent(TRescaleComponent::QualifiedClassName()));
+    TRescaleComponent * RescaleComponent = FindComponentInstance<TRescaleComponent>(Component);
     if (RescaleComponent != NULL)
     {
       RescaleComponent->OnRescale(Component, RescaleComponent->Token);
     }
   }
 
-  Control->Perform(CM_DPICHANGED, 0, 0);
+  Control->Perform(CM_DPICHANGED, 0, NativeInt(0));
 }
 //---------------------------------------------------------------------------
 typedef std::pair<int, int> TRatio;
 typedef std::map<TRatio, TRatio > TRatioMap;
-//---------------------------------------------------------------------------
-class TFormCustomizationComponent : public TComponent
-{
-public:
-  __fastcall TFormCustomizationComponent() :
-    TComponent(NULL)
-  {
-    WindowStateBeforeMimimize = wsNormal;
-  }
-
-  TWindowState WindowStateBeforeMimimize;
-};
-//---------------------------------------------------------------------------
-static TFormCustomizationComponent * GetFormCustomizationComponent(TForm * Form)
-{
-  TFormCustomizationComponent * FormCustomizationComponent =
-    dynamic_cast<TFormCustomizationComponent *>(Form->FindComponent(TFormCustomizationComponent::QualifiedClassName()));
-  if (FormCustomizationComponent == NULL)
-  {
-    FormCustomizationComponent = new TFormCustomizationComponent();
-    FormCustomizationComponent->Name = TFormCustomizationComponent::QualifiedClassName();
-    Form->InsertComponent(FormCustomizationComponent);
-  }
-  return FormCustomizationComponent;
-}
 //---------------------------------------------------------------------------
 static void __fastcall ChangeFormPixelsPerInch(TForm * Form)
 {
 
   AppLogFmt(L"Scaling window %s", (Form->Caption));
   ChangeControlScale(Form);
+}
+//---------------------------------------------------------------------------
+void CollectFormUsage(TForm * Form)
+{
+  if (WinConfiguration->UseDarkTheme())
+  {
+    TFormCustomizationComponent * CustomizationComponent = GetFormCustomizationComponent(Form);
+    if (!CustomizationComponent->DarkMode && !CustomizationComponent->DarkModeCustom)
+    {
+      const UnicodeString CounterName = L"UnsupportedDarkThemeWindows";
+      std::unique_ptr<TStrings> Windows(CommaTextToStringList(Configuration->Usage->Get(CounterName)));
+
+      UnicodeString ClassName = Form->ClassName();
+      ClassName = RemoveSuffix(ClassName, L"Dialog");
+      UnicodeString TPrefix = L"T";
+      if (StartsStr(TPrefix, ClassName))
+      {
+        ClassName.Delete(1, TPrefix.Length());
+      }
+
+      int Index = Windows->IndexOf(ClassName);
+      if (Index >= 0)
+      {
+        Windows->Delete(Index);
+      }
+
+      Windows->Insert(0, ClassName);
+
+      while (Windows->Count > 4)
+      {
+        Windows->Delete(Windows->Count - 1);
+      }
+
+      Configuration->Usage->Set(CounterName, Windows->CommaText);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMessage & Message)
@@ -675,11 +750,11 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
         }
       }
 
-      if (Form->Perform(WM_MANAGES_CAPTION, 0, 0) == 0)
+      if (Form->Perform(WM_MANAGES_CAPTION, 0, NativeInt(0)) == 0)
       {
         Form->Caption = FormatFormCaption(Form, Form->Caption);
       }
-      SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<long>(Application->Icon->Handle));
+      SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(Application->Icon->Handle));
     }
     else
     {
@@ -787,6 +862,11 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
         SWP_NOZORDER + SWP_NOACTIVATE);
     }
   }
+
+  if (Form->Showing && Configuration->Usage->Collect)
+  {
+    CollectFormUsage(Form);
+  }
 }
 //---------------------------------------------------------------------------
 TWindowState GetWindowStateBeforeMimimize(TForm * Form)
@@ -882,6 +962,149 @@ static void __fastcall AfterMonitorDpiChanged(void * AData, TObject * Sender, in
   }
 }
 //---------------------------------------------------------------------------
+static TComPtr<IAccPropServices> AccPropServices;
+//---------------------------------------------------------------------------
+void SetAccessibleName(TWinControl * Control, const UnicodeString & AccName)
+{
+  DebugAssert(Control->HandleAllocated());
+  OleCheck(AccPropServices->SetHwndPropStr(Control->Handle, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_NAME, AccName.c_str()));
+}
+//---------------------------------------------------------------------------
+void SetAccessibleRole(TWinControl * Control, int Role)
+{
+  DebugAssert(Control->HandleAllocated());
+  VARIANT RoleVariant = { .vt = VT_I4, .lVal = Role };
+  OleCheck(AccPropServices->SetHwndProp(Control->Handle, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_ROLE, RoleVariant));
+}
+//---------------------------------------------------------------------------
+static void ControlExposeLabels(TWinControl * Control)
+{
+  std::map<TWinControl *, TLabel *> ControlLabels;
+  for (int Index = 0; Index < Control->ControlCount; Index++)
+  {
+    TControl * Child = Control->Controls[Index];
+    TLabel * Label = dynamic_cast<TLabel *>(Child);
+    if ((Label != nullptr) &&
+        (Label->FocusControl != nullptr))
+    {
+      TWinControl * FocusControl = Label->FocusControl;
+      if (FocusControl->HandleAllocated() &&
+          DebugAlwaysTrue(Label->Parent == FocusControl->Parent))
+      {
+        auto I = ControlLabels.find(FocusControl);
+        if ((Label->Left < FocusControl->Left) ||
+            (Label->Top < FocusControl->Top))
+        {
+          if (DebugAlwaysTrue((I == ControlLabels.end()) || (I->second == nullptr)))
+          {
+            ControlLabels[FocusControl] = Label;
+          }
+        }
+        else
+        {
+          if (I == ControlLabels.end())
+          {
+            ControlLabels.insert(std::make_pair(FocusControl, Label));
+          }
+        }
+      }
+    }
+
+    TWinControl * WinChild = dynamic_cast<TWinControl *>(Child);
+    if (WinChild != nullptr)
+    {
+      ControlExposeLabels(WinChild);
+    }
+  }
+
+  if (!ControlLabels.empty())
+  {
+    for (auto I = ControlLabels.begin(); I != ControlLabels.end(); ++I)
+    {
+      if (DebugAlwaysTrue(I->second != nullptr))
+      {
+        TLabel * Label = I->second;
+        UnicodeString AccName = Label->Caption;
+        if (Label->ShowAccelChar)
+        {
+          AccName = StripHotkey(AccName);
+        }
+        SetAccessibleName(I->first, AccName);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall FormGetObject(TForm * Form, TWndMethod WndProc, TMessage & Message)
+{
+  if (AccPropServices.Get() != nullptr)
+  {
+    ControlExposeLabels(Form);
+
+    // Control ZOrder must be in logical order (we use Tab order for that),
+    // otherwise Narrator tends to read controls which are completelly irrelevant.
+    // It does not solve all Narrator problems, but it's way better.
+    std::unique_ptr<TList> TabControlList(new TList());
+    Form->GetTabControlList(TabControlList.get());
+
+    if ((TabControlList->Count >= 2) && (Form->BorderStyle == bsDialog))
+    {
+      std::vector<HWND> HandlesOrder;
+      HWND Handle = GetWindow(Form->Handle, GW_CHILD);
+      while (Handle != NULL)
+      {
+        HandlesOrder.push_back(Handle);
+        Handle = GetNextWindow(Handle, GW_HWNDNEXT);
+      }
+
+      bool Reorder = false;
+      TWinControl * Control1 = static_cast<TWinControl *>(TabControlList->Items[0]);
+      auto I = std::find(HandlesOrder.begin(), HandlesOrder.end(), Control1->Handle);
+      if (I != HandlesOrder.end())
+      {
+        int Order1 = SizeToIntChecked(I - HandlesOrder.begin());
+        int Index = 1;
+        while (Index < TabControlList->Count)
+        {
+          TWinControl * Control2 = static_cast<TWinControl *>(TabControlList->Items[Index]);
+          I = std::find(HandlesOrder.begin(), HandlesOrder.end(), Control2->Handle);
+          if (I != HandlesOrder.end())
+          {
+            int Order2 = SizeToIntChecked(I - HandlesOrder.begin());
+            if (Order1 > Order2)
+            {
+              Reorder = true;
+              break;
+            }
+
+            Order1 = Order2;
+            Control1 = Control2;
+            ++Index;
+          }
+          else
+          {
+            break;
+          }
+        }
+      }
+
+      if (Reorder)
+      {
+        // Won't dare to use SetWindowPos to reorder just the pairs of controls not in the right order,
+        // as I'm not sure VCL's internal order cache gets synchronized with that.
+        // Instead we reorder all controls using the only available VCL API.
+        // This would flash main window, had we reordered that (bsDialog check above).
+        for (int Index = 0; Index < TabControlList->Count; Index++)
+        {
+          TWinControl * Control = static_cast<TWinControl *>(TabControlList->Items[Index]);
+          Control->SendToBack();
+        }
+      }
+    }
+  }
+  WndProc(Message);
+}
+//---------------------------------------------------------------------------
 static void __fastcall FormWindowProc(void * Data, TMessage & Message)
 {
   TForm * AForm = static_cast<TForm *>(Data);
@@ -938,6 +1161,15 @@ static void __fastcall FormWindowProc(void * Data, TMessage & Message)
     CountClicksForWindowPrint(AForm);
     WndProc(Message);
   }
+  else if (Message.Msg == WM_ACTIVATE)
+  {
+    CheckOperationStatusWindow();
+    WndProc(Message);
+  }
+  else if (Message.Msg == WM_GETOBJECT)
+  {
+    FormGetObject(AForm, WndProc, Message);
+  }
   else
   {
     WndProc(Message);
@@ -946,10 +1178,12 @@ static void __fastcall FormWindowProc(void * Data, TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall InitializeSystemSettings()
 {
+  AccPropServices.TryCreate(CLSID_AccPropServices, CLSCTX_ALL);
 }
 //---------------------------------------------------------------------------
 void __fastcall FinalizeSystemSettings()
 {
+  AccPropServices.Reset(nullptr);
 }
 //---------------------------------------------------------------------------
 #ifdef _DEBUG
@@ -1005,21 +1239,16 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   // See https://stackoverflow.com/q/15750842/850848
   if (NortonLikeListView != NULL)
   {
-    // It should not be a problem to call the LVM_QUERYINTERFACE
-    // on earlier versions of Windows. It should be noop.
-    if (IsWin7())
+    IListView_Win7 * ListViewIntf = NULL;
+    SendMessage(NortonLikeListView->Handle, LVM_QUERYINTERFACE, reinterpret_cast<WPARAM>(&IID_IListView_Win7), reinterpret_cast<LPARAM>(&ListViewIntf));
+    if (ListViewIntf != NULL)
     {
-      IListView_Win7 * ListViewIntf = NULL;
-      SendMessage(NortonLikeListView->Handle, LVM_QUERYINTERFACE, reinterpret_cast<WPARAM>(&IID_IListView_Win7), reinterpret_cast<LPARAM>(&ListViewIntf));
-      if (ListViewIntf != NULL)
-      {
-        ListViewIntf->SetSelectionFlags(1, 1);
-        ListViewIntf->Release();
-      }
-      else
-      {
-        DebugAssert(IsWine());
-      }
+      ListViewIntf->SetSelectionFlags(1, 1);
+      ListViewIntf->Release();
+    }
+    else
+    {
+      DebugAssert(IsWine());
     }
   }
 
@@ -1038,10 +1267,7 @@ void __fastcall UseSystemSettingsPre(TForm * Control)
 {
   LocalSystemSettings(Control);
 
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = Control;
-  ((TMethod*)&WindowProc)->Code = FormWindowProc;
-  Control->WindowProc = WindowProc;
+  Control->WindowProc = MakeMethod<TWndMethod>(Control, FormWindowProc);
 
   if (Control->HelpKeyword.IsEmpty())
   {
@@ -1110,6 +1336,106 @@ void __fastcall ResetSystemSettings(TForm * /*Control*/)
 {
   // noop
 }
+//---------------------------------------------------------------------------
+TColor GetControlColor(TControl * Control)
+{
+  return static_cast<TPublicControl *>(Control)->Color;
+}
+//---------------------------------------------------------------------------
+void ApplyDarkModeOnControl(TControl * Control)
+{
+  TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
+  if (WinControl != NULL)
+  {
+    TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
+
+    TColor BtnFaceColor = GetBtnFaceColor();
+    TColor WindowColor = GetWindowColor();
+
+    bool IsForm = (dynamic_cast<TForm *>(Control) != NULL);
+    bool IsPanel = (dynamic_cast<TPanel *>(Control) != NULL);
+    if (IsWindowColorControl(Control) || IsForm || IsPanel)
+    {
+      if (PublicControl->ParentColor)
+      {
+        DebugAssert(IsPanel);
+      }
+      else
+      {
+        if ((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor))
+        {
+          PublicControl->Color = WindowColor;
+        }
+        else if (DebugAlwaysTrue((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor)))
+        {
+          PublicControl->Color = BtnFaceColor;
+        }
+      }
+    }
+
+    if (IsForm)
+    {
+      PublicControl->Font->Color = GetWindowTextColor(PublicControl->Color);
+    }
+    else if (dynamic_cast<TTreeView *>(WinControl) != NULL)
+    {
+      // for dark scrollbars
+      WinControl->HandleNeeded();
+      AllowDarkModeForWindow(WinControl, true);
+    }
+    else if (dynamic_cast<TUpDownEdit *>(WinControl) != NULL)
+    {
+      dynamic_cast<TUpDownEdit *>(WinControl)->DarkMode = true;
+    }
+    else if (dynamic_cast<TUIStateAwareComboBox *>(WinControl) != NULL)
+    {
+      dynamic_cast<TUIStateAwareComboBox *>(WinControl)->DarkMode = true;
+    }
+
+    for (int Index = 0; Index < WinControl->ControlCount; Index++)
+    {
+      ApplyDarkModeOnControl(WinControl->Controls[Index]);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void UseDarkMode(TForm * Form)
+{
+  if (IsWin10Build(19041))
+  {
+    BOOL DarkMode = WinConfiguration->UseDarkTheme() ? TRUE : FALSE;
+    const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    DebugAssert(Form->HandleAllocated());
+    DwmSetWindowAttribute(Form->Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkMode, sizeof(DarkMode));
+  }
+}
+//---------------------------------------------------------------------------
+void ApplyColorMode(TForm * Form)
+{
+  UseDarkMode(Form);
+  if (WinConfiguration->UseDarkTheme())
+  {
+    GetFormCustomizationComponent(Form)->DarkMode = true;
+    ApplyDarkModeOnControl(Form);
+  }
+}
+//---------------------------------------------------------------------------
+void UsesCustomColorMode(TForm * Form)
+{
+  if (WinConfiguration->UseDarkTheme())
+  {
+    GetFormCustomizationComponent(Form)->DarkModeCustom = true;
+  }
+}
+//---------------------------------------------------------------------------
+void ApplyColorModeOnControl(TControl * Control)
+{
+  if (UseDarkModeForControl(Control))
+  {
+    ApplyDarkModeOnControl(Control);
+  }
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 struct TShowAsModalStorage
 {
@@ -1224,51 +1550,11 @@ bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
-  bool PreserveFileName)
-{
-  bool Result;
-  unsigned int ErrorMode;
-  ErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
-
-  try
-  {
-    UnicodeString Directory;
-    UnicodeString FileName;
-    // We do not have any real use for the PreserveFileName
-    if (!PreserveFileName || DirectoryExists(ApiPath(Path)))
-    {
-      Directory = Path;
-    }
-    else
-    {
-      Directory = ExtractFilePath(Path);
-      FileName = ExtractFileName(Path);
-    }
-    TSelectDirExtOpts Opts = TSelectDirExtOpts() << sdNewUI;
-    Result = SelectDirectory(Prompt, EmptyStr, Directory, Opts);
-    if (Result)
-    {
-      Path = Directory;
-      if (!FileName.IsEmpty())
-      {
-        Path = IncludeTrailingBackslash(Path) + FileName;
-      }
-    }
-  }
-  __finally
-  {
-    SetErrorMode(ErrorMode);
-  }
-
-  return Result;
-}
-//---------------------------------------------------------------------------
 void SelectDirectoryForEdit(THistoryComboBox * Edit)
 {
   UnicodeString OriginalDirectory = ExpandEnvironmentVariables(Edit->Text);
   UnicodeString Directory = OriginalDirectory;
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true) &&
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY)) &&
       !SamePaths(OriginalDirectory, Directory))
   {
     Edit->Text = Directory;
@@ -1343,7 +1629,7 @@ void __fastcall ComboAutoSwitchLoad(TComboBox * ComboBox, TAutoSwitch Value)
 //---------------------------------------------------------------------------
 TAutoSwitch __fastcall ComboAutoSwitchSave(TComboBox * ComboBox)
 {
-  return (TAutoSwitch)(2 - ComboBox->ItemIndex);
+  return static_cast<TAutoSwitch>(2 - ComboBox->ItemIndex);
 }
 //---------------------------------------------------------------------------
 void __fastcall CheckBoxAutoSwitchLoad(TCheckBox * CheckBox, TAutoSwitch Value)
@@ -1426,7 +1712,7 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
       }
       else
       {
-        Result = P - ACh.c_str() + 1;
+        Result = SizeToIntChecked(P - ACh.c_str() + 1);
         // skip consecutive delimiters
         while ((Result < Len) &&
                IsPathWordDelimiter(ACh[Result + 1]))
@@ -1533,7 +1819,7 @@ void __fastcall InstallPathWordBreakProc(TWinControl * Control)
   {
     Wnd = Control->Handle;
   }
-  SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, (LPARAM)(EDITWORDBREAKPROC)PathWordBreakProc);
+  SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, reinterpret_cast<LPARAM>(static_cast<EDITWORDBREAKPROC>(PathWordBreakProc)));
 
   TPathWordBreakProcComponent * PathWordBreakProcComponent = new TPathWordBreakProcComponent();
   PathWordBreakProcComponent->Name = TPathWordBreakProcComponent::QualifiedClassName();
@@ -1674,6 +1960,39 @@ void __fastcall CutFormToDesktop(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
+TRect GetCenterRect(TControl * CenterControl, Forms::TMonitor * CenterMonitor)
+{
+  TRect Result;
+  if (CenterControl != NULL)
+  {
+    Result = CenterControl->BoundsRect;
+    TPoint P = CenterControl->BoundsRect.TopLeft();
+    if (CenterControl->Parent != nullptr)
+    {
+      P = CenterControl->Parent->ClientToScreen(P);
+    }
+    Result.SetLocation(P);
+  }
+  else
+  {
+    Result = CenterMonitor->BoundsRect;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void CenterFormOn(TRect & Bounds, const TRect & CenterRect)
+{
+  TRect DesktopRect = Screen->DesktopRect;
+  int X = std::max(DesktopRect.Left, ((CenterRect.Width() - Bounds.Width()) / 2) + CenterRect.Left);
+  int Y = std::max(DesktopRect.Top, ((CenterRect.Height() - Bounds.Height()) / 2) + CenterRect.Top);
+  Bounds.SetLocation(X, Y);
+}
+//---------------------------------------------------------------------------
+void CenterFormOn(TRect & Bounds, TControl * CenterControl, Forms::TMonitor * CenterMonitor)
+{
+  CenterFormOn(Bounds, GetCenterRect(CenterControl, CenterMonitor));
+}
+//---------------------------------------------------------------------------
 void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
 {
   if ((Position == poScreenCenter) ||
@@ -1693,36 +2012,14 @@ void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
     }
 
     TRect Bounds = Form->BoundsRect;
-    int X, Y;
-    if (CenterForm != NULL)
-    {
-      X = ((((TForm *)CenterForm)->Width - Bounds.Width()) / 2) +
-        ((TForm *)CenterForm)->Left;
-      Y = ((((TForm *)CenterForm)->Height - Bounds.Height()) / 2) +
-        ((TForm *)CenterForm)->Top;
-    }
-    else
-    {
-      X = (Form->Monitor->Width - Bounds.Width()) / 2;
-      Y = (Form->Monitor->Height - Bounds.Height()) / 2;
-    }
-
-    if (X < 0)
-    {
-      X = 0;
-    }
-    if (Y < 0)
-    {
-      Y = 0;
-    }
-
-    Form->SetBounds(X, Y, Bounds.Width(), Bounds.Height());
+    CenterFormOn(Bounds, CenterForm, Form->Monitor);
+    Form->SetBounds(Bounds.Left, Bounds.Top, Bounds.Width(), Bounds.Height());
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height)
 {
-  // This has to be called only after DoFormWindowProc(CM_SHOWINGCHANGED),
+  // This has to be called only after FormWindowProc(CM_SHOWINGCHANGED),
   // so that a correct monitor is considered.
   // Note that we cannot use LastMonitor(), as ResizeForm is also called from
   // TConsoleDialog::DoAdjustWindow, where we need to use the actual monitor
@@ -1804,7 +2101,17 @@ void __fastcall InvokeHelp(TWinControl * Control)
   HelpInfo.dwContextId = 0;
   HelpInfo.MousePos.x = 0;
   HelpInfo.MousePos.y = 0;
-  SendMessage(Control->Handle, WM_HELP, NULL, reinterpret_cast<long>(&HelpInfo));
+  SendMessage(Control->Handle, WM_HELP, NULL, reinterpret_cast<LPARAM>(&HelpInfo));
+}
+//---------------------------------------------------------------------------
+int OffsetToVerticallyCenterWith(TControl * Control, TControl * CenterWithControl)
+{
+  return ((CenterWithControl->Height - Control->Height) / 2);
+}
+//---------------------------------------------------------------------------
+void VerticallyCenterWith(TControl * Control, TControl * CenterWithControl)
+{
+  Control->Top = CenterWithControl->Top + OffsetToVerticallyCenterWith(Control, CenterWithControl);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -1838,12 +2145,8 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
     }
     else
     {
-      TRect TextRect;
-      SetRect(&TextRect, 0, 0, StaticText->Width, 0);
-      DrawText(Canvas->Handle, StaticText->Caption.c_str(), -1, &TextRect,
-        DT_CALCRECT | DT_WORDBREAK |
-        StaticText->DrawTextBiDiModeFlagsReadingOnly());
-      TextSize = TextRect.GetSize();
+      int Flags = StaticText->DrawTextBiDiModeFlagsReadingOnly();
+      TextSize = CalculateLabelSize(Canvas, StaticText->Width, StaticText->Caption, Flags);
     }
 
     R.Bottom = R.Top + TextSize.cy;
@@ -1946,8 +2249,9 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
       {
         Canvas->DrawFocusRect(R);
       }
-      else if ((StaticText->Font->Color != LinkColor) && // LinkActionLabel and LinkLabel
-               !EndsStr(LinkAppLabelMark, StaticText->Caption)) // LinkAppLabel
+      else if ((StaticText->Font->Color != GetLinkColor(StaticText)) && // LinkActionLabel and LinkLabel
+               !EndsStr(LinkAppLabelMark, StaticText->Caption) && // LinkAppLabel
+               (StaticText->Caption != InfoLabelMark))
       {
         Canvas->Pen->Style = psDot;
         Canvas->Brush->Style = bsClear;
@@ -2066,7 +2370,7 @@ static void __fastcall HintLabelWindowProc(void * Data, TMessage & Message)
 
   if (Message.Msg == CM_CANCELMODE)
   {
-    TCMCancelMode & CancelMessage = (TCMCancelMode&)Message;
+    TCMCancelMode & CancelMessage = reinterpret_cast<TCMCancelMode&>(Message);
     if ((CancelMessage.Sender != StaticText) &&
         (CancelMessage.Sender != PersistentHintWindow))
     {
@@ -2113,10 +2417,7 @@ void __fastcall HintLabel(TStaticText * StaticText, UnicodeString Hint)
   StaticText->ShowHint = true;
   StaticText->Cursor = crHandPoint;
 
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = StaticText;
-  ((TMethod*)&WindowProc)->Code = HintLabelWindowProc;
-  StaticText->WindowProc = WindowProc;
+  StaticText->WindowProc = MakeMethod<TWndMethod>(StaticText, HintLabelWindowProc);
 }
 //---------------------------------------------------------------------------
 static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
@@ -2151,10 +2452,7 @@ static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox)
 {
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = ComboBox;
-  ((TMethod*)&WindowProc)->Code = ComboBoxFixWindowProc;
-  ComboBox->WindowProc = WindowProc;
+  ComboBox->WindowProc = MakeMethod<TWndMethod>(ComboBox, ComboBoxFixWindowProc);
 }
 //---------------------------------------------------------------------------
 static void __fastcall LinkLabelClick(TStaticText * StaticText)
@@ -2239,10 +2537,7 @@ static void __fastcall DoLinkLabel(TStaticText * StaticText)
   StaticText->ParentFont = true;
   StaticText->Cursor = crHandPoint;
 
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = StaticText;
-  ((TMethod*)&WindowProc)->Code = LinkLabelWindowProc;
-  StaticText->WindowProc = WindowProc;
+  StaticText->WindowProc = MakeMethod<TWndMethod>(StaticText, LinkLabelWindowProc);
 }
 //---------------------------------------------------------------------------
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
@@ -2266,9 +2561,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
     StaticText->PopupMenu = new TPopupMenu(StaticText);
     try
     {
-      TNotifyEvent ContextMenuOnClick;
-      ((TMethod*)&ContextMenuOnClick)->Data = StaticText;
-      ((TMethod*)&ContextMenuOnClick)->Code = LinkLabelContextMenuClick;
+      TNotifyEvent ContextMenuOnClick = MakeMethod<TNotifyEvent>(StaticText, LinkLabelContextMenuClick);
 
       TMenuItem * Item;
 
@@ -2294,7 +2587,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
     }
   }
 
-  StaticText->Font->Color = LinkColor;
+  StaticText->Font->Color = GetLinkColor(StaticText);
 }
 //---------------------------------------------------------------------------
 void __fastcall LinkActionLabel(TStaticText * StaticText)
@@ -2303,7 +2596,7 @@ void __fastcall LinkActionLabel(TStaticText * StaticText)
   DebugAssert(StaticText->Parent != NULL);
   DoLinkLabel(StaticText);
 
-  StaticText->Font->Color = LinkColor;
+  StaticText->Font->Color = GetLinkColor(StaticText);
 }
 //---------------------------------------------------------------------------
 void __fastcall LinkAppLabel(TStaticText * StaticText)
@@ -2315,7 +2608,8 @@ void __fastcall LinkAppLabel(TStaticText * StaticText)
 //---------------------------------------------------------------------------
 static void __fastcall HotTrackLabelMouseEnter(void * /*Data*/, TObject * Sender)
 {
-  reinterpret_cast<TLabel *>(Sender)->Font->Color = clBlue;
+  TLabel * Label = reinterpret_cast<TLabel *>(Sender);
+  Label->Font->Color = GetLinkColor(Label);
 }
 //---------------------------------------------------------------------------
 static void __fastcall HotTrackLabelMouseLeave(void * /*Data*/, TObject * Sender)
@@ -2409,7 +2703,7 @@ TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
   // - Makes other forms (dialogs invoked from this one),
   // be placed on the same monitor (otherwise all new forms get placed
   // on primary monitor)
-  // - Triggers MainForm-specific code in DoFormWindowProc.
+  // - Triggers MainForm-specific code in FormWindowProc.
   // - Shows button on taskbar
   if (Application->MainForm == NULL)
   {
@@ -2671,7 +2965,7 @@ void __fastcall TDesktopFontManager::WndProc(TMessage & Message)
   Message.Result = DefWindowProc(FWindowHandle, Message.Msg, Message.WParam, Message.LParam);
 }
 //---------------------------------------------------------------------------
-std::unique_ptr<TDesktopFontManager> DesktopFontManager(new TDesktopFontManager());
+static std::unique_ptr<TDesktopFontManager> DesktopFontManager(new TDesktopFontManager());
 //---------------------------------------------------------------------------
 // This might be somewhat redundant now that at least the default Desktop font is actually the default VCL font
 void __fastcall UseDesktopFont(TControl * Control)
@@ -2779,21 +3073,12 @@ void __fastcall ShowFormNoActivate(TForm * Form)
     Form->SetBounds(X, Y, Form->Width, Form->Height);
     // We cannot call SetWindowToMonitor().
     // We cannot set FPosition = poDesigned, so workarea-checking code
-    // in DoFormWindowProc is not triggered
+    // in FormWindowProc is not triggered
 
     // If application is restored, dialog is not activated, do it manually.
     // Wait for application to be activated to activate ourself.
     HookFormActivation(Form);
   }
-}
-//---------------------------------------------------------------------------
-TPanel * __fastcall CreateBlankPanel(TComponent * Owner)
-{
-  TPanel * Panel = new TPanel(Owner);
-  Panel->BevelOuter = bvNone;
-  Panel->BevelInner = bvNone; // default
-  Panel->BevelKind = bkNone;
-  return Panel;
 }
 //---------------------------------------------------------------------------
 bool IsButtonBeingClicked(TButtonControl * Button)
@@ -2843,18 +3128,23 @@ void AutoSizeButton(TButton * Button)
   }
 }
 //---------------------------------------------------------------------------
+TSize CalculateLabelSize(TCanvas * Canvas, int Width, const UnicodeString & Caption, int Flags)
+{
+  TRect TextRect(0, 0, Width, 0);
+  Flags |= DT_CALCRECT | DT_WORDBREAK;
+  DrawText(Canvas->Handle, Caption.c_str(), -1, &TextRect, Flags);
+  return TextRect.GetSize();
+}
+//---------------------------------------------------------------------------
 template<class T>
 bool DoAutoSizeLabel(T * Label, TCanvas * Canvas)
 {
-  TRect TextRect;
-  SetRect(&TextRect, 0, 0, Label->Width, 0);
-  DrawText(Canvas->Handle, Label->Caption.c_str(), Label->Caption.Length() + 1, &TextRect,
-    DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
-    Label->DrawTextBiDiModeFlagsReadingOnly());
-  bool Result = (TextRect.Height() > Label->Height);
+  int Flags = DT_EXPANDTABS | DT_NOPREFIX | Label->DrawTextBiDiModeFlagsReadingOnly();
+  int Height = CalculateLabelSize(Canvas, Label->Width, Label->Caption, Flags).Height;
+  bool Result = (Height > Label->Height);
   if (Result)
   {
-    Label->Height = TextRect.Height();
+    Label->Height = Height;
     Label->AutoSize = false;
   }
   return Result;

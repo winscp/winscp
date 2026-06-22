@@ -6,15 +6,11 @@
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>StaticLibrary</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-        <Base_Win32>true</Base_Win32>
-        <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
@@ -29,49 +25,26 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <AllPackageLibs>rtl.lib</AllPackageLibs>
+        <BCC_AllWarnings>true</BCC_AllWarnings>
+        <BCC_EnableBatchCompilation>true</BCC_EnableBatchCompilation>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-        <BCC_wamb>true</BCC_wamb>
-        <BCC_wamp>true</BCC_wamp>
-        <BCC_wasm>true</BCC_wasm>
-        <BCC_waus>false</BCC_waus>
-        <BCC_wbbf>false</BCC_wbbf>
-        <BCC_wccc>false</BCC_wccc>
-        <BCC_wcln>true</BCC_wcln>
-        <BCC_wcsu>false</BCC_wcsu>
-        <BCC_wdef>true</BCC_wdef>
-        <BCC_weff>false</BCC_weff>
-        <BCC_wexc>true</BCC_wexc>
-        <BCC_wimp>true</BCC_wimp>
-        <BCC_wnak>true</BCC_wnak>
-        <BCC_wnod>true</BCC_wnod>
-        <BCC_wntn>true</BCC_wntn>
-        <BCC_wpad>true</BCC_wpad>
-        <BCC_wpar>false</BCC_wpar>
-        <BCC_wpch>false</BCC_wpch>
-        <BCC_wpia>false</BCC_wpia>
-        <BCC_wrch>false</BCC_wrch>
-        <BCC_wrvl>false</BCC_wrvl>
-        <BCC_wstl>true</BCC_wstl>
-        <BCC_wstv>true</BCC_wstv>
-        <BCC_wsus>false</BCC_wsus>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-typedef-redefinition -Wno-padded -Wno-cast-align -Wno-sign-compare -Wno-conversion -Wno-unused-macros -Wno-comma -Wno-covered-switch-default -Wno-cast-qual -Wno-language-extension-token -Wno-unused-parameter -Wno-c11-extensions -Wno-missing-field-initializers -Wno-shadow -Wno-unused-variable -Wno-missing-noreturn -Wno-unreachable-code -Wno-switch-enum -Wno-conditional-uninitialized -Wno-format-nonliteral</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <Defines>SECURITY_WIN32;WINSCP;MPEXT;PLATFORM_HAS_SMEMCLR;_WINDOWS;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <IncludePath>putty\windows\utils\;putty\utils\;putty\stubs\;putty\ssh\;putty\proxy\;putty\crypto\;putty\;putty\windows\;$(BDS)\include;$(IncludePath)</IncludePath>
         <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-        <Manifest_File>None</Manifest_File>
         <Multithreaded>true</Multithreaded>
         <OutputExt>lib</OutputExt>
         <ProjectType>CppStaticLibrary</ProjectType>
+        <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>Putty</SanitizedProjectName>
+        <SubProcessesNumber>8</SubProcessesNumber>
         <TLIB_PageSize>512</TLIB_PageSize>
-        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Base_Win32)'!=''">
-        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
@@ -111,6 +84,9 @@
         </CppCompile>
         <CppCompile Include="putty\crypto\aesgcm-sw.c">
             <BuildOrder>161</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\aes-ni.c">
+            <BuildOrder>176</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\crypto\aesold.c">
             <BuildOrder>150</BuildOrder>
@@ -249,6 +225,9 @@
         </CppCompile>
         <CppCompile Include="putty\proxy\local.c">
             <BuildOrder>47</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\proxy\newmain.c">
+            <BuildOrder>179</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\proxy\nosshproxy.c">
             <BuildOrder>48</BuildOrder>
@@ -442,6 +421,9 @@
         <CppCompile Include="putty\utils\encode_wide_string_as_utf8.c">
             <BuildOrder>173</BuildOrder>
         </CppCompile>
+        <CppCompile Include="putty\utils\format_connection_setup_command.c">
+            <BuildOrder>177</BuildOrder>
+        </CppCompile>
         <CppCompile Include="putty\utils\host_ca_new_free.c">
             <BuildOrder>148</BuildOrder>
         </CppCompile>
@@ -511,7 +493,7 @@
         <CppCompile Include="putty\utils\smemeq.c">
             <BuildOrder>110</BuildOrder>
         </CppCompile>
-        <CppCompile Include="putty\utils\spr_get_error_message.c">
+        <CppCompile Include="putty\utils\spr_get_err_message.c">
             <BuildOrder>111</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\ssh2_pick_fingerprint.c">
@@ -619,7 +601,7 @@
         <CppCompile Include="putty\windows\utils\security_p.c">
             <BuildOrder>150</BuildOrder>
         </CppCompile>
-        <CppCompile Include="putty\windows\utils\win_strerror.c">
+        <CppCompile Include="putty\windows\utils\win_strerr.c">
             <BuildOrder>152</BuildOrder>
         </CppCompile>
         <BuildConfiguration Include="Base">
@@ -634,7 +616,6 @@
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
     </ItemGroup>
-    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
     <ProjectExtensions>
         <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
         <Borland.ProjectType>CppStaticLibrary</Borland.ProjectType>
@@ -649,10 +630,11 @@
             </CPlusPlusBuilder.Personality>
             <Platforms>
                 <Platform value="Win32">True</Platform>
-                <Platform value="Win64">False</Platform>
+                <Platform value="Win64">True</Platform>
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
     </ProjectExtensions>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
     <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

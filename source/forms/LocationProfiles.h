@@ -2,7 +2,7 @@
 #ifndef LocationProfilesH
 #define LocationProfilesH
 //----------------------------------------------------------------------------
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include <System.Classes.hpp>
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Controls.hpp>
@@ -164,7 +164,7 @@ private:
   bool __fastcall ProfileMatch(TTreeNode * Node);
   UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

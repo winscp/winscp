@@ -19,15 +19,20 @@
    MA 02111-1307, USA
 
 */
+#ifndef NEON_CONFIG_H
+#define NEON_CONFIG_H
+
 #if defined(_WIN32) && !defined(WIN32)
 #define WIN32
 #endif
 
 #ifdef WIN32
 
-#define NEON_VERSION "0.34.2"
+#define NEON_VERSION "0.37.1"
 #define NE_VERSION_MAJOR (0)
-#define NE_VERSION_MINOR (34)
+#define NE_VERSION_MINOR (37)
+
+#define PACKAGE_NAME "neon"
 
 #define HAVE_ERRNO_H
 #define HAVE_LIMITS_H
@@ -131,5 +136,7 @@ typedef int socklen_t;
 
 #include <io.h>
 #define read _read
+
+#endif
 
 #endif

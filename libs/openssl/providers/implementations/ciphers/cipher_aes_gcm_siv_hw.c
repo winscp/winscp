@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -57,6 +57,9 @@ static int aes_gcm_siv_initkey(void *vctx)
 
     memset(&data, 0, sizeof(data));
     memcpy(&data.block[sizeof(data.counter)], ctx->nonce, NONCE_SIZE);
+
+    ctx->generated_tag = 0;
+    memset(ctx->tag, 0, TAG_SIZE);
 
     /* msg_auth_key is always 16 bytes in size, regardless of AES128/AES256 */
     /* counter is stored little-endian */
@@ -134,17 +137,6 @@ static int aes_gcm_siv_aad(PROV_AES_GCM_SIV_CTX *ctx,
     return 1;
 }
 
-static int aes_gcm_siv_finish(PROV_AES_GCM_SIV_CTX *ctx)
-{
-    int ret = 0;
-
-    if (ctx->enc)
-        return ctx->generated_tag;
-    ret = !CRYPTO_memcmp(ctx->tag, ctx->user_tag, sizeof(ctx->tag));
-    ret &= ctx->have_user_tag;
-    return ret;
-}
-
 static int aes_gcm_siv_encrypt(PROV_AES_GCM_SIV_CTX *ctx, const unsigned char *in,
     unsigned char *out, size_t len)
 {
@@ -162,7 +154,7 @@ static int aes_gcm_siv_encrypt(PROV_AES_GCM_SIV_CTX *ctx, const unsigned char *i
     if (!ctx->speed && ctx->used_enc)
         return 0;
     /* need to check the size of the input! */
-    if (len64 > ((int64_t)1 << 36) || len == 0)
+    if (len64 > ((int64_t)1 << 36))
         return 0;
 
     if (IS_LITTLE_ENDIAN) {
@@ -223,7 +215,7 @@ static int aes_gcm_siv_decrypt(PROV_AES_GCM_SIV_CTX *ctx, const unsigned char *i
     if (!ctx->speed && ctx->used_dec)
         return 0;
     /* need to check the size of the input! */
-    if (len64 > ((int64_t)1 << 36) || len == 0)
+    if (len64 > ((int64_t)1 << 36))
         return 0;
 
     memcpy(counter_block, ctx->user_tag, sizeof(counter_block));
@@ -269,6 +261,19 @@ static int aes_gcm_siv_decrypt(PROV_AES_GCM_SIV_CTX *ctx, const unsigned char *i
     /* Regardless of error */
     ctx->used_dec = 1;
     return !error;
+}
+
+static int aes_gcm_siv_finish(PROV_AES_GCM_SIV_CTX *ctx)
+{
+    int ret = 0;
+
+    if (ctx->enc)
+        return ctx->generated_tag;
+    if (!ctx->generated_tag)
+        aes_gcm_siv_decrypt(ctx, NULL, NULL, 0);
+    ret = !CRYPTO_memcmp(ctx->tag, ctx->user_tag, sizeof(ctx->tag));
+    ret &= ctx->have_user_tag;
+    return ret;
 }
 
 static int aes_gcm_siv_cipher(void *vctx, unsigned char *out,

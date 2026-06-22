@@ -48,9 +48,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WINSCP;WIN32;NDEBUG;_LIB;SECURITY_WIN32;WINSCP_VS;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <PreprocessorDefinitions>WINSCP;NDEBUG;_LIB;SECURITY_WIN32;WINSCP_VS;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\source\putty</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -81,9 +81,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\putty\crypto\aes-ni.c" />
-    <ClCompile Include="..\..\source\putty\crypto\aes-sw.c" />
-    <ClCompile Include="..\..\source\putty\crypto\argon2.c" />
-    <ClCompile Include="..\..\source\putty\crypto\sha256-sw.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

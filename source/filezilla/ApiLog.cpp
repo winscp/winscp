@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "ApiLog.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ bool CApiLog::LoggingMessageType(int nMessageType) const
     ((nMessageType-FZ_LOG_APIERROR) < FIntern->GetDebugLevel());
 }
 
-void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
+void CApiLog::LogMessage(int nMessageType, const wchar_t * pMsgFormat, ...) const
 {
   DebugAssert(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
   if (!LoggingMessageType(nMessageType))
@@ -50,7 +50,7 @@ void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
   SendLogMessage(nMessageType, text);
 }
 
-void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
+void CApiLog::LogMessageRaw(int nMessageType, const wchar_t * pMsg) const
 {
   DebugAssert(nMessageType>=FZ_LOG_STATUS && nMessageType<=FZ_LOG_DEBUG);
   if (!LoggingMessageType(nMessageType))
@@ -61,7 +61,7 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
   SendLogMessage(nMessageType, pMsg);
 }
 
-void CApiLog::SendLogMessage(int nMessageType, LPCTSTR pMsg) const
+void CApiLog::SendLogMessage(int nMessageType, const wchar_t * pMsg) const
 {
   if (!LoggingMessageType(nMessageType))
     return;
@@ -70,7 +70,7 @@ void CApiLog::SendLogMessage(int nMessageType, LPCTSTR pMsg) const
   pStatus->post = TRUE;
   pStatus->status = pMsg;
   pStatus->type = nMessageType;
-  if (!FIntern->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)pStatus))
+  if (!FIntern->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), reinterpret_cast<LPARAM>(pStatus)))
     delete pStatus;
 }
 
@@ -88,15 +88,6 @@ int CApiLog::GetOptionVal(int OptionID) const
 
 void CApiLog::LogError(int Error)
 {
-  wchar_t * Buffer;
-  int Len = FormatMessage(
-    FORMAT_MESSAGE_FROM_SYSTEM |
-    FORMAT_MESSAGE_IGNORE_INSERTS |
-    FORMAT_MESSAGE_ARGUMENT_ARRAY |
-    FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, Error, 0, (LPTSTR)&Buffer, 0, NULL);
-  if (Len > 0)
-  {
-    LogMessageRaw(FZ_LOG_ERROR, Buffer);
-    LocalFree(Buffer);
-  }
+  UnicodeString Message = SysErrorMessage(Error);
+  LogMessageRaw(FZ_LOG_ERROR, Message.c_str());
 }

@@ -127,7 +127,7 @@
           (rh) = MULADD_hi;                                               \
       } while (0)
 
-#elif (defined __GNUC__ || defined _LLP64 || __STDC__ >= 199901L) && BB_OK(5)
+#elif (defined __GNUC__ || defined _LLP64 || (defined __STDC__ && __STDC__ >= 199901L)) && BB_OK(5)
 
   /* 32-bit BignumInt, using C99 unsigned long long as BignumDblInt */
 

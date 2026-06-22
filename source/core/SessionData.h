@@ -16,7 +16,7 @@ enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipCha
 enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6, fsS3 = 7 };
 #define FSPROTOCOL_COUNT (fsS3+1)
 extern const wchar_t * ProxyMethodNames;
-enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
+enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd, pmSshTcpIp };
 enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGroup15, kexDHGroup16, kexDHGroup17, kexDHGroup18, kexDHGEx, kexRSA, kexECDH, kexNTRUHybrid, kexMLKEM25519Hybrid, kexMLKEMNISTHybrid, kexCount };
 #define KEX_COUNT (kexCount)
 enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkCount };
@@ -59,6 +59,12 @@ enum TParseUrlFlags
   pufUnsafe = 0x02,
   pufPreferProtocol = 0x04,
   pufParseOnly = 0x08,
+};
+enum TParsedInfoFlags
+{
+  piDefaultsOnly = 0x01,
+  piProtocolDefined = 0x02,
+  piUnsafeSettings = 0x04,
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
@@ -253,6 +259,8 @@ private:
   RawByteString FEncryptKey;
   bool FWebDavLiberalEscaping;
   bool FWebDavAuthLegacy;
+  bool FWebDavCrossDomainRedirects;
+  bool FWebDavUnencryptedRedirects;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -260,6 +268,7 @@ private:
   TSessionSource FSource;
   bool FSaveOnly;
   UnicodeString FLogicalHostName;
+  bool * FUnsafeSettings;
 
   void __fastcall SetHostName(UnicodeString value);
   UnicodeString __fastcall GetHostNameExpanded();
@@ -450,6 +459,8 @@ private:
   void __fastcall SetEncryptKey(UnicodeString value);
   void __fastcall SetWebDavLiberalEscaping(bool value);
   void __fastcall SetWebDavAuthLegacy(bool value);
+  void SetWebDavCrossDomainRedirects(bool value);
+  void SetWebDavUnencryptedRedirects(bool value);
 
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll);
@@ -457,7 +468,9 @@ private:
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
   UnicodeString __fastcall GetSourceName();
-  void __fastcall DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe, bool RespectDisablePasswordStoring);
+  void DoLoad(
+    THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword,
+    bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings);
   void __fastcall DoSave(THierarchicalStorage * Storage,
     bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords);
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
@@ -500,6 +513,8 @@ private:
   template<class AlgoT>
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
+  void DefaultProxy();
+  void ApplyRawSettings(TStrings * RawSettings, bool Unsafe, int & ParsedInfo);
   static void __fastcall Remove(THierarchicalStorage * Storage, const UnicodeString & Name);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };
@@ -512,8 +527,8 @@ public:
   void __fastcall DefaultSettings();
   void __fastcall NonPersistent();
   void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
-  void __fastcall ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
-  void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring);
+  void ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
+  void ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void ImportFromOpenssh(TStrings * Lines);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
@@ -532,9 +547,9 @@ public:
   void __fastcall CopyData(TSessionData * Source);
   void __fastcall CopyDataNoRecrypt(TSessionData * SourceData);
   void __fastcall CopyDirectoriesStateData(TSessionData * SourceData);
-  bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
-    TStoredSessionList * StoredSessions, bool & DefaultsOnly,
-    UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags);
+  bool ParseUrl(
+    const UnicodeString & Url, TOptions * Options, TStoredSessionList * StoredSessions, int & ParsedInfo,
+    UnicodeString * FileName, UnicodeString * MaskedUrl, int Flags);
   TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName, bool PuttyExport);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
@@ -739,6 +754,8 @@ public:
   __property UnicodeString EncryptKey = { read = GetEncryptKey, write = SetEncryptKey };
   __property bool WebDavLiberalEscaping = { read = FWebDavLiberalEscaping, write = SetWebDavLiberalEscaping };
   __property bool WebDavAuthLegacy = { read = FWebDavAuthLegacy, write = SetWebDavAuthLegacy };
+  __property bool WebDavCrossDomainRedirects = { read = FWebDavCrossDomainRedirects, write = SetWebDavCrossDomainRedirects };
+  __property bool WebDavUnencryptedRedirects = { read = FWebDavUnencryptedRedirects, write = SetWebDavUnencryptedRedirects };
 
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };
@@ -769,7 +786,7 @@ public:
   bool Import(TStoredSessionList * From, bool OnlySelected, TList * Imported);
   void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   TSessionData * __fastcall AtSession(int Index)
-    { return (TSessionData*)AtObject(Index); }
+    { return static_cast<TSessionData*>(AtObject(Index)); }
   void __fastcall SelectSessionsToImport(TStoredSessionList * Dest, bool SSHOnly);
   void __fastcall Cleanup();
   void __fastcall UpdateStaticUsage();
@@ -780,9 +797,10 @@ public:
   bool __fastcall IsFolder(const UnicodeString & Name);
   bool __fastcall IsWorkspace(const UnicodeString & Name);
   bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name);
-  TSessionData * __fastcall ParseUrl(UnicodeString Url, TOptions * Options, bool & DefaultsOnly,
-    UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
-  bool __fastcall IsUrl(UnicodeString Url);
+  TSessionData * ParseUrl(
+    const UnicodeString & Url, TOptions * Options, int & ParsedInfo,
+    UnicodeString * FileName = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
+  int GetUrlInfo(const UnicodeString & Url);
   bool __fastcall CanOpen(TSessionData * Data);
   void __fastcall GetFolderOrWorkspace(const UnicodeString & Name, TList * List);
   TStrings * __fastcall GetFolderOrWorkspaceList(const UnicodeString & Name);
@@ -794,7 +812,8 @@ public:
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
 
   static int ImportHostKeys(
-    THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected);
+    THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions,
+    bool OnlySelected, bool Putty);
   static void ImportHostKeys(THierarchicalStorage * SourceStorage, TStoredSessionList * Sessions, bool OnlySelected);
   static void ImportHostKeys(const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);

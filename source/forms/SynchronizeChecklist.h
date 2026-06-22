@@ -12,18 +12,19 @@
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
 #include "PngImageList.hpp"
-//----------------------------------------------------------------------------
-#include <Terminal.h>
 #include <System.Actions.hpp>
 #include <Vcl.ActnList.hpp>
 #include <System.ImageList.hpp>
+//----------------------------------------------------------------------------
+#include <Terminal.h>
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TSynchronizeChecklistDialog : public TForm
 {
 __published:
   TPanel * Panel;
-  TIEListView *ListView;
-  TStatusBar *StatusBar;
+  TIEListView *ListView2;
+  TStatusBar *StatusBar2;
   TPngImageList *ActionImages;
   TButton *OkButton;
   TButton *CancelButton;
@@ -65,10 +66,10 @@ __published:
   TMenuItem *N3;
   TMenuItem *CheckAllFilesinThisDirectory1;
   TMenuItem *UncheckAllActionsinThisDirectory1;
-  TAction *BrowseLocalAction;
-  TAction *BrowseRemoteAction;
-  TMenuItem *BrowseLocalDirectory1;
-  TMenuItem *BrowseLocalDirectory2;
+  TAction *ExploreLocalAction2;
+  TAction *ExploreRemoteAction2;
+  TMenuItem *ExploreLocalDirectory1;
+  TMenuItem *ExploreRemoteDirectory1;
   TAction *FindMoveCandidateAction;
   TMenuItem *Calculate3;
   TMenuItem *CalculateAll1;
@@ -80,60 +81,68 @@ __published:
   TPopupMenu *OkPopupMenu;
   TMenuItem *StartItem;
   TMenuItem *StartQueueItem;
+  TMenuItem *LeftDirectory1;
+  TMenuItem *RightDirectory1;
+  TAction *RemotePathToClipboardAction;
+  TMenuItem *CopyPathtoClipboard1;
+  TAction *LocalPathToClipboardAction;
+  TMenuItem *CopyPathtoClipboard2;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
-  void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
+  void __fastcall StatusBar2DrawPanel(TStatusBar *StatusBar,
           TStatusPanel *Panel, const TRect &Rect);
-  void __fastcall ListViewChange(TObject *Sender, TListItem *Item,
+  void __fastcall ListView2Change(TObject *Sender, TListItem *Item,
           TItemChange Change);
-  void __fastcall ListViewChanging(TObject *Sender, TListItem *Item,
+  void __fastcall ListView2Changing(TObject *Sender, TListItem *Item,
           TItemChange Change, bool &AllowChange);
   void __fastcall CheckAllActionExecute(TObject *Sender);
   void __fastcall CheckActionExecute(TObject *Sender);
-  void __fastcall ListViewSelectItem(TObject *Sender, TListItem *Item,
+  void __fastcall ListView2SelectItem(TObject *Sender, TListItem *Item,
           bool Selected);
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall SelectAllActionExecute(TObject *Sender);
-  void __fastcall StatusBarMouseDown(TObject *Sender, TMouseButton Button,
+  void __fastcall StatusBar2MouseDown(TObject *Sender, TMouseButton Button,
           TShiftState Shift, int X, int Y);
-  void __fastcall ListViewCompare(TObject *Sender, TListItem *Item1,
+  void __fastcall ListView2Compare(TObject *Sender, TListItem *Item1,
           TListItem *Item2, int Data, int &Compare);
-  void __fastcall ListViewSecondaryColumnHeader(TCustomIEListView *Sender,
+  void __fastcall ListView2SecondaryColumnHeader(TCustomIEListView *Sender,
           int Index, int &SecondaryColumn);
-  void __fastcall ListViewContextPopup(TObject *Sender, TPoint &MousePos,
+  void __fastcall ListView2ContextPopup(TObject *Sender, TPoint &MousePos,
           bool &Handled);
   void __fastcall CustomCommandsActionExecute(TObject *Sender);
-  void __fastcall ListViewAdvancedCustomDrawSubItem(TCustomListView *Sender, TListItem *Item,
+  void __fastcall ListView2AdvancedCustomDrawSubItem(TCustomListView *Sender, TListItem *Item,
           int SubItem, TCustomDrawState State, TCustomDrawStage Stage, bool &DefaultDraw);
-  void __fastcall StatusBarResize(TObject *Sender);
+  void __fastcall StatusBar2Resize(TObject *Sender);
   void __fastcall UncheckActionExecute(TObject *Sender);
   void __fastcall UncheckAllActionExecute(TObject *Sender);
   void __fastcall ReverseActionExecute(TObject *Sender);
-  void __fastcall ListViewClick(TObject *Sender);
+  void __fastcall ListView2Click(TObject *Sender);
   void __fastcall OkButtonClick(TObject *Sender);
   void __fastcall CalculateSizeActionExecute(TObject *Sender);
   void __fastcall CalculateSizeAllActionExecute(TObject *Sender);
   void __fastcall MoveActionExecute(TObject *Sender);
   void __fastcall CheckDirectoryActionExecute(TObject *Sender);
   void __fastcall UncheckDirectoryActionExecute(TObject *Sender);
-  void __fastcall BrowseLocalActionExecute(TObject *Sender);
-  void __fastcall BrowseRemoteActionExecute(TObject *Sender);
-  void __fastcall ListViewRecreate(TObject *Sender);
+  void __fastcall ExploreLocalAction2Execute(TObject *Sender);
+  void __fastcall ExploreRemoteAction2Execute(TObject *Sender);
+  void __fastcall ListView2Recreate(TObject *Sender);
   void __fastcall ToolsMenuButtonClick(TObject *Sender);
   void __fastcall FindMoveCandidateActionExecute(TObject *Sender);
   void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
   void __fastcall StartItemClick(TObject *Sender);
   void __fastcall OkButtonDropDownClick(TObject *Sender);
   void __fastcall StartQueueItemClick(TObject *Sender);
+  void __fastcall LocalPathToClipboardActionExecute(TObject *Sender);
+  void __fastcall RemotePathToClipboardActionExecute(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
     TComponent * AOwner, TSynchronizeMode Mode, int Params,
-    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+    const UnicodeString & Directory1, const UnicodeString & Directory2,
     TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
     TQueueSynchronizeEvent OnQueueSynchronize,
     TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-    TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
+    TSynchronizeExploreEvent OnSynchronizeExplore, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
   bool __fastcall Execute(TSynchronizeChecklist * Checklist);
@@ -143,8 +152,8 @@ protected:
   TSynchronizeChecklist * FChecklist;
   TSynchronizeMode FMode;
   int FParams;
-  UnicodeString FLocalDirectory;
-  UnicodeString FRemoteDirectory;
+  UnicodeString FDirectory1;
+  UnicodeString FDirectory2;
   TWndMethod FOrigListViewWindowProc;
   TWndMethod FOrigStatusBarWindowProc;
   int FTotals[1 + TSynchronizeChecklist::ActionCount];
@@ -157,7 +166,7 @@ protected:
   TCustomCommandMenuEvent FOnCustomCommandMenu;
   TSynchronizeChecklistCalculateSize FOnSynchronizeChecklistCalculateSize;
   TSynchronizeMoveEvent FOnSynchronizeMove;
-  TSynchronizeBrowseEvent FOnSynchronizeBrowse;
+  TSynchronizeExploreEvent FOnSynchronizeExplore;
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;
@@ -203,7 +212,7 @@ protected:
   void __fastcall CountItemTotal(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall DeleteItem(const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall CheckDirectory(bool Check);
-  void __fastcall DoBrowse(TOperationSide Side);
+  void __fastcall DoExplore(TOperationSide Side);
   void __fastcall ListViewHintShow(TCMHintShow & HintShow);
   void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
@@ -212,6 +221,9 @@ protected:
   bool IterateItems(TListItem *& Item, TItemStates States);
   bool IterateSelectedItems(TListItem *& Item);
   void DoSynchronize(bool Queue);
+  void PathToClipboard(bool Local);
+
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

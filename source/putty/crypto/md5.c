@@ -89,21 +89,17 @@ static inline void md5_block_pad(md5_block *blk, BinarySink *bs)
     put_byte(bs, 0x80);
     put_padding(bs, pad, 0);
 
-    { // WINSCP
     unsigned char buf[8];
     PUT_64BIT_LSB_FIRST(buf, final_len);
     put_data(bs, buf, 8);
     smemclr(buf, 8);
-    } // WINSCP
 
     assert(blk->used == 0 && "Should have exactly hit a block boundary");
 }
 
 static inline uint32_t rol(uint32_t x, unsigned y)
 {
-#pragma option push -w-ngu // WINSCP
     return (x << (31 & y)) | (x >> (31 & -y));
-#pragma option pop // WINSCP
 }
 
 static inline uint32_t Ch(uint32_t ctrl, uint32_t if1, uint32_t if0)
@@ -135,34 +131,31 @@ static inline void md5_round(
 static void md5_do_block(uint32_t *core, const uint8_t *block)
 {
     uint32_t message_words[16];
-    size_t i; // WINSCP
-    for (i = 0; i < 16; i++)
+    for (size_t i = 0; i < 16; i++)
         message_words[i] = GET_32BIT_LSB_FIRST(block + 4*i);
 
-    { // WINSCP
     uint32_t a = core[0], b = core[1], c = core[2], d = core[3];
 
     size_t t = 0;
-    size_t u; // WINSCP
-    for (u = 0; u < 4; u++) {
+    for (size_t u = 0; u < 4; u++) {
         md5_round(t++, message_words, &a, &b, &c, &d, F);
         md5_round(t++, message_words, &d, &a, &b, &c, F);
         md5_round(t++, message_words, &c, &d, &a, &b, F);
         md5_round(t++, message_words, &b, &c, &d, &a, F);
     }
-    for (u = 0; u < 4; u++) {
+    for (size_t u = 0; u < 4; u++) {
         md5_round(t++, message_words, &a, &b, &c, &d, G);
         md5_round(t++, message_words, &d, &a, &b, &c, G);
         md5_round(t++, message_words, &c, &d, &a, &b, G);
         md5_round(t++, message_words, &b, &c, &d, &a, G);
     }
-    for (u = 0; u < 4; u++) {
+    for (size_t u = 0; u < 4; u++) {
         md5_round(t++, message_words, &a, &b, &c, &d, H);
         md5_round(t++, message_words, &d, &a, &b, &c, H);
         md5_round(t++, message_words, &c, &d, &a, &b, H);
         md5_round(t++, message_words, &b, &c, &d, &a, H);
     }
-    for (u = 0; u < 4; u++) {
+    for (size_t u = 0; u < 4; u++) {
         md5_round(t++, message_words, &a, &b, &c, &d, I);
         md5_round(t++, message_words, &d, &a, &b, &c, I);
         md5_round(t++, message_words, &c, &d, &a, &b, I);
@@ -173,7 +166,6 @@ static void md5_do_block(uint32_t *core, const uint8_t *block)
     core[1] += b;
     core[2] += c;
     core[3] += d;
-    } // WINSCP
 
     smemclr(message_words, sizeof(message_words));
 }
@@ -236,21 +228,18 @@ static void md5_digest(ssh_hash *hash, uint8_t *digest)
 {
     md5 *s = container_of(hash, md5, hash);
 
-    size_t i; // WINSCP
     md5_block_pad(&s->blk, BinarySink_UPCAST(s));
-    for (i = 0; i < 4; i++)
+    for (size_t i = 0; i < 4; i++)
         PUT_32BIT_LSB_FIRST(digest + 4*i, s->core[i]);
 }
 
 const ssh_hashalg ssh_md5 = {
-    // WINSCP
-    /*.new =*/ md5_new,
-    /*.reset =*/ md5_reset,
-    /*.copyfrom =*/ md5_copyfrom,
-    /*.digest =*/ md5_digest,
-    /*.free =*/ md5_free,
-    /*.hlen =*/ 16,
-    /*.blocklen =*/ 64,
+    .new = md5_new,
+    .reset = md5_reset,
+    .copyfrom = md5_copyfrom,
+    .digest = md5_digest,
+    .free = md5_free,
+    .hlen = 16,
+    .blocklen = 64,
     HASHALG_NAMES_BARE("MD5"),
-    NULL, // WINSCP
 };

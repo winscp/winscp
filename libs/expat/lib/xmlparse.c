@@ -1,4 +1,4 @@
-/* 93c1caa66e2b0310459482516af05505b57c5cb7b96df777105308fc585c85d1 (2.7.5+)
+/* 75ef4224f81c052e9e5aeea2ac7de75357d2169ff9908e39edc08b9dc3052513 (2.8.1+)
                             __  __            _
                          ___\ \/ /_ __   __ _| |_
                         / _ \\  /| '_ \ / _` | __|
@@ -41,10 +41,12 @@
    Copyright (c) 2023-2024 Sony Corporation / Snild Dolkow <snild@sony.com>
    Copyright (c) 2024-2025 Berkay Eren Ürün <berkay.ueruen@siemens.com>
    Copyright (c) 2024      Hanno Böck <hanno@gentoo.org>
-   Copyright (c) 2025      Matthew Fernandez <matthew.fernandez@gmail.com>
+   Copyright (c) 2025-2026 Matthew Fernandez <matthew.fernandez@gmail.com>
    Copyright (c) 2025      Atrem Borovik <polzovatellllk@gmail.com>
    Copyright (c) 2025      Alfonso Gregory <gfunni234@gmail.com>
    Copyright (c) 2026      Rosen Penev <rosenp@gmail.com>
+   Copyright (c) 2026      Francesco Bertolaccini
+   Copyright (c) 2026      Christian Ng <christianrng@berkeley.edu>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -84,28 +86,16 @@
 #  error XML_CONTEXT_BYTES must be defined, non-empty and >=0 (0 to disable, >=1 to enable; 1024 is a common default)
 #endif
 
-#if defined(HAVE_SYSCALL_GETRANDOM)
-#  if ! defined(_GNU_SOURCE)
-#    define _GNU_SOURCE 1 /* syscall prototype */
-#  endif
-#endif
-
-#ifdef _WIN32
-/* force stdlib to define rand_s() */
-#  if ! defined(_CRT_RAND_S)
-#    define _CRT_RAND_S
-#  endif
-#endif
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h> /* memset(), memcpy() */
 #include <assert.h>
 #include <limits.h> /* INT_MAX, UINT_MAX */
 #include <stdio.h>  /* fprintf */
-#include <stdlib.h> /* getenv, rand_s */
+#include <stdlib.h> /* getenv */
 #include <stdint.h> /* SIZE_MAX, uintptr_t */
 #include <math.h>   /* isnan */
+#include <errno.h>
 
 #ifdef _WIN32
 #  define getpid GetCurrentProcessId
@@ -125,26 +115,34 @@
 #include "expat.h"
 #include "siphash.h"
 
-#if defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM)
-#  if defined(HAVE_GETRANDOM)
-#    include <sys/random.h> /* getrandom */
-#  else
-#    include <unistd.h>      /* syscall */
-#    include <sys/syscall.h> /* SYS_getrandom */
-#  endif
-#  if ! defined(GRND_NONBLOCK)
-#    define GRND_NONBLOCK 0x0001
-#  endif /* defined(GRND_NONBLOCK) */
-#endif   /* defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM) */
+#if defined(HAVE_ARC4RANDOM)
+#  include "random_arc4random.h"
+#endif /* defined(HAVE_ARC4RANDOM) */
 
-#if defined(_WIN32) && ! defined(LOAD_LIBRARY_SEARCH_SYSTEM32)
-#  define LOAD_LIBRARY_SEARCH_SYSTEM32 0x00000800
-#endif
+#if defined(HAVE_ARC4RANDOM_BUF)
+#  include "random_arc4random_buf.h"
+#endif // defined(HAVE_ARC4RANDOM_BUF)
+
+#if defined(XML_DEV_URANDOM)
+#  include "random_dev_urandom.h"
+#endif /* defined(XML_DEV_URANDOM) */
+
+#if defined(HAVE_GETENTROPY)
+#  include "random_getentropy.h"
+#endif // defined(HAVE_GETENTROPY)
+
+#if defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM)
+#  include "random_getrandom.h"
+#endif /* defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM) */
+
+#if defined(_WIN32)
+#  include "random_rand_s.h"
+#endif /* defined(_WIN32) */
 
 #if ! defined(HAVE_GETRANDOM) && ! defined(HAVE_SYSCALL_GETRANDOM)             \
     && ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM)            \
-    && ! defined(XML_DEV_URANDOM) && ! defined(_WIN32)                         \
-    && ! defined(XML_POOR_ENTROPY)
+    && ! defined(HAVE_GETENTROPY) && ! defined(XML_DEV_URANDOM)                \
+    && ! defined(_WIN32) && ! defined(XML_POOR_ENTROPY)
 #  error You do not have support for any sources of high quality entropy \
     enabled.  For end user security, that is probably not what you want. \
     \
@@ -153,10 +151,11 @@
       * Linux >=3.17 + glibc (including <2.25) (syscall SYS_getrandom): HAVE_SYSCALL_GETRANDOM, \
       * BSD / macOS >=10.7 / glibc >=2.36 (arc4random_buf): HAVE_ARC4RANDOM_BUF, \
       * BSD / macOS (including <10.7) / glibc >=2.36 (arc4random): HAVE_ARC4RANDOM, \
+      * BSD / macOS >=10.12 / glibc >=2.25 (getentropy): HAVE_GETENTROPY, \
       * Linux (including <3.17) / BSD / macOS (including <10.7) / Solaris >=8 (/dev/urandom): XML_DEV_URANDOM, \
       * Windows >=Vista (rand_s): _WIN32. \
     \
-    If insist on not using any of these, bypass this error by defining \
+    If you insist on not using any of these, bypass this error by defining \
     XML_POOR_ENTROPY; you have been warned. \
     \
     If you have reasons to patch this detection code away or need changes \
@@ -388,6 +387,7 @@ typedef struct {
   int nDefaultAtts;
   int allocDefaultAtts;
   DEFAULT_ATTRIBUTE *defaultAtts;
+  HASH_TABLE defaultAttsNames;
 } ELEMENT_TYPE;
 
 typedef struct {
@@ -604,7 +604,7 @@ static ELEMENT_TYPE *getElementType(XML_Parser parser, const ENCODING *enc,
 
 static XML_Char *copyString(const XML_Char *s, XML_Parser parser);
 
-static unsigned long generate_hash_secret_salt(XML_Parser parser);
+static struct sipkey generate_hash_secret_salt(void);
 static XML_Bool startParsing(XML_Parser parser);
 
 static XML_Parser parserCreate(const XML_Char *encodingName,
@@ -777,7 +777,8 @@ struct XML_ParserStruct {
   XML_Bool m_useForeignDTD;
   enum XML_ParamEntityParsing m_paramEntityParsing;
 #endif
-  unsigned long m_hash_secret_salt;
+  struct sipkey m_hash_secret_salt_128;
+  XML_Bool m_hash_secret_salt_set;
 #if XML_GE == 1
   ACCOUNTING m_accounting;
   MALLOC_TRACKER m_alloc_tracker;
@@ -817,7 +818,6 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
   assert(rootParser != NULL);
   assert(increase > 0);
 
-  { // WINSCP
   XmlBigCount newTotal = 0;
   bool tolerable = true;
 
@@ -830,14 +830,12 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
     if (newTotal >= rootParser->m_alloc_tracker.activationThresholdBytes) {
       assert(newTotal > 0);
       // NOTE: This can be +infinity when dividing by zero but not -nan
-      { // WINSCP
       const float amplification
           = (float)newTotal / (float)rootParser->m_accounting.countBytesDirect;
       if (amplification
           > rootParser->m_alloc_tracker.maximumAmplificationFactor) {
         tolerable = false;
       }
-      } // WINSCP
     }
   }
 
@@ -846,7 +844,6 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
   }
 
   return tolerable;
-  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -860,11 +857,9 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
     return NULL;
   }
 
-  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
-  { // WINSCP
   const size_t bytesToAllocate = sizeof(size_t) + EXPAT_MALLOC_PADDING + size;
 
   if ((XmlBigCount)-1 - rootParser->m_alloc_tracker.bytesAllocated
@@ -877,7 +872,6 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
     return NULL; // i.e. signal violation as out-of-memory
   }
 
-  { // WINSCP
   // Actually allocate
   void *const mallocedPtr = parser->m_mem.malloc_fcn(bytesToAllocate);
 
@@ -904,9 +898,6 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
   }
 
   return (char *)mallocedPtr + sizeof(size_t) + EXPAT_MALLOC_PADDING;
-  } // WINSCP
-  } // WINSCP
-  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -921,11 +912,9 @@ expat_free(XML_Parser parser, void *ptr, int sourceLine) {
     return;
   }
 
-  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
-  { // WINSCP
   // Extract size (to the eyes of malloc_fcn/realloc_fcn) and
   // the original pointer returned by malloc/realloc
   void *const mallocedPtr = (char *)ptr - EXPAT_MALLOC_PADDING - sizeof(size_t);
@@ -945,8 +934,6 @@ expat_free(XML_Parser parser, void *ptr, int sourceLine) {
 
   // NOTE: This may be freeing rootParser, so freeing has to come last
   parser->m_mem.free_fcn(mallocedPtr);
-  } // WINSCP
-  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -966,11 +953,9 @@ expat_realloc(XML_Parser parser, void *ptr, size_t size, int sourceLine) {
     return NULL;
   }
 
-  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
-  { // WINSCP
   // Extract original size (to the eyes of the caller) and the original
   // pointer returned by malloc/realloc
   void *mallocedPtr = (char *)ptr - EXPAT_MALLOC_PADDING - sizeof(size_t);
@@ -1026,8 +1011,6 @@ expat_realloc(XML_Parser parser, void *ptr, size_t size, int sourceLine) {
   *(size_t *)mallocedPtr = size;
 
   return (char *)mallocedPtr + sizeof(size_t) + EXPAT_MALLOC_PADDING;
-  } // WINSCP
-  } // WINSCP
 }
 #endif // XML_GE == 1
 
@@ -1038,10 +1021,7 @@ XML_ParserCreate(const XML_Char *encodingName) {
 
 XML_Parser XMLCALL
 XML_ParserCreateNS(const XML_Char *encodingName, XML_Char nsSep) {
-  // WINSCP
-  XML_Char tmp[2];
-  tmp[0] = nsSep;
-  tmp[1] = 0;
+  XML_Char tmp[2] = {nsSep, 0};
   return XML_ParserCreate_MM(encodingName, NULL, tmp);
 }
 
@@ -1056,139 +1036,6 @@ static const XML_Char implicitContext[]
        ASCII_SLASH, ASCII_n,     ASCII_a,      ASCII_m,      ASCII_e,
        ASCII_s,     ASCII_p,     ASCII_a,      ASCII_c,      ASCII_e,
        '\0'};
-
-/* To avoid warnings about unused functions: */
-#if ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM)
-
-#  if defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM)
-
-/* Obtain entropy on Linux 3.17+ */
-static int
-writeRandomBytes_getrandom_nonblock(void *target, size_t count) {
-  int success = 0; /* full count bytes written? */
-  size_t bytesWrittenTotal = 0;
-  const unsigned int getrandomFlags = GRND_NONBLOCK;
-
-  do {
-    void *const currentTarget = (void *)((char *)target + bytesWrittenTotal);
-    const size_t bytesToWrite = count - bytesWrittenTotal;
-
-    assert(bytesToWrite <= INT_MAX);
-
-    const int bytesWrittenMore =
-#    if defined(HAVE_GETRANDOM)
-        (int)getrandom(currentTarget, bytesToWrite, getrandomFlags);
-#    else
-        (int)syscall(SYS_getrandom, currentTarget, bytesToWrite,
-                     getrandomFlags);
-#    endif
-
-    if (bytesWrittenMore > 0) {
-      bytesWrittenTotal += bytesWrittenMore;
-      if (bytesWrittenTotal >= count)
-        success = 1;
-    }
-  } while (! success && (errno == EINTR));
-
-  return success;
-}
-
-#  endif /* defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM) */
-
-#  if ! defined(_WIN32) && defined(XML_DEV_URANDOM)
-
-/* Extract entropy from /dev/urandom */
-static int
-writeRandomBytes_dev_urandom(void *target, size_t count) {
-  int success = 0; /* full count bytes written? */
-  size_t bytesWrittenTotal = 0;
-
-  const int fd = open("/dev/urandom", O_RDONLY);
-  if (fd < 0) {
-    return 0;
-  }
-
-  do {
-    void *const currentTarget = (void *)((char *)target + bytesWrittenTotal);
-    const size_t bytesToWrite = count - bytesWrittenTotal;
-
-    const ssize_t bytesWrittenMore = read(fd, currentTarget, bytesToWrite);
-
-    if (bytesWrittenMore > 0) {
-      bytesWrittenTotal += bytesWrittenMore;
-      if (bytesWrittenTotal >= count)
-        success = 1;
-    }
-  } while (! success && (errno == EINTR));
-
-  close(fd);
-  return success;
-}
-
-#  endif /* ! defined(_WIN32) && defined(XML_DEV_URANDOM) */
-
-#endif /* ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM) */
-
-#if defined(HAVE_ARC4RANDOM) && ! defined(HAVE_ARC4RANDOM_BUF)
-
-static void
-writeRandomBytes_arc4random(void *target, size_t count) {
-  size_t bytesWrittenTotal = 0;
-
-  while (bytesWrittenTotal < count) {
-    const uint32_t random32 = arc4random();
-    size_t i = 0;
-
-    for (; (i < sizeof(random32)) && (bytesWrittenTotal < count);
-         i++, bytesWrittenTotal++) {
-      const uint8_t random8 = (uint8_t)(random32 >> (i * 8));
-      ((uint8_t *)target)[bytesWrittenTotal] = random8;
-    }
-  }
-}
-
-#endif /* defined(HAVE_ARC4RANDOM) && ! defined(HAVE_ARC4RANDOM_BUF) */
-
-#ifdef _WIN32
-
-// WINSCP - See writeRandomBytes_rand_s
-typedef BOOLEAN (APIENTRY *RTLGENRANDOM_FUNC)(PVOID, ULONG);
-HMODULE _Expat_LoadLibrary(LPCTSTR filename);  /* see loadlibrary.c */
-
-/* Provide declaration of rand_s() for MinGW-32 (not 64, which has it),
-   as it didn't declare it in its header prior to version 5.3.0 of its
-   runtime package (mingwrt, containing stdlib.h).  The upstream fix
-   was introduced at https://osdn.net/projects/mingw/ticket/39658 . */
-#  if defined(__MINGW32__) && defined(__MINGW32_VERSION)                       \
-      && __MINGW32_VERSION < 5003000L && ! defined(__MINGW64_VERSION_MAJOR)
-__declspec(dllimport) int rand_s(unsigned int *);
-#  endif
-
-/* Obtain entropy on Windows using the rand_s() function which
- * generates cryptographically secure random numbers.  Internally it
- * uses RtlGenRandom API which is present in Windows XP and later.
- */
-static int
-writeRandomBytes_rand_s(void *target, size_t count) {
-  // WINSCP, we do not have rand_s in C++Builder
-  int success = 0;  /* full count bytes written? */
-  const HMODULE advapi32 = _Expat_LoadLibrary(TEXT("ADVAPI32.DLL"));
-
-  if (advapi32) {
-    const RTLGENRANDOM_FUNC RtlGenRandom
-        = (RTLGENRANDOM_FUNC)GetProcAddress(advapi32, "SystemFunction036");
-    if (RtlGenRandom) {
-      if (RtlGenRandom((PVOID)target, (ULONG)count) == TRUE) {
-        success = 1;
-      }
-    }
-    FreeLibrary(advapi32);
-  }
-
-  return success;
-}
-
-#endif /* _WIN32 */
 
 #if ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM)
 
@@ -1217,67 +1064,68 @@ gather_time_entropy(void) {
 
 #endif /* ! defined(HAVE_ARC4RANDOM_BUF) && ! defined(HAVE_ARC4RANDOM) */
 
-static unsigned long
-ENTROPY_DEBUG(const char *label, unsigned long entropy) {
+static struct sipkey
+ENTROPY_DEBUG(const char *label, struct sipkey entropy_128) {
   if (getDebugLevel("EXPAT_ENTROPY_DEBUG", 0) >= 1u) {
-    fprintf(stderr, "expat: Entropy: %s --> 0x%0*lx (%lu bytes)\n", label,
-            (int)sizeof(entropy) * 2, entropy, (unsigned long)sizeof(entropy));
+    fprintf(stderr,
+            "expat: Entropy: %s --> [0x" EXPAT_FMT_LLX(
+                "016") ", 0x" EXPAT_FMT_LLX("016") "] (16 bytes)\n",
+            label, (unsigned long long)entropy_128.k[0],
+            (unsigned long long)entropy_128.k[1]);
   }
-  return entropy;
+  return entropy_128;
 }
 
-static unsigned long
-generate_hash_secret_salt(XML_Parser parser) {
-  unsigned long entropy;
-  (void)parser;
+static struct sipkey
+generate_hash_secret_salt(void) {
+  struct sipkey entropy;
 
   /* "Failproof" high quality providers: */
 #if defined(HAVE_ARC4RANDOM_BUF)
-  arc4random_buf(&entropy, sizeof(entropy));
+  writeRandomBytes_arc4random_buf(&entropy, sizeof(entropy));
   return ENTROPY_DEBUG("arc4random_buf", entropy);
 #elif defined(HAVE_ARC4RANDOM)
-  writeRandomBytes_arc4random((void *)&entropy, sizeof(entropy));
+  writeRandomBytes_arc4random(&entropy, sizeof(entropy));
   return ENTROPY_DEBUG("arc4random", entropy);
 #else
   /* Try high quality providers first .. */
 #  ifdef _WIN32
-  if (writeRandomBytes_rand_s((void *)&entropy, sizeof(entropy))) {
+  if (writeRandomBytes_rand_s(&entropy, sizeof(entropy))) {
     return ENTROPY_DEBUG("rand_s", entropy);
   }
+#  elif defined(HAVE_GETENTROPY)
+  if (writeRandomBytes_getentropy(&entropy, sizeof(entropy))) {
+    return ENTROPY_DEBUG("getentropy", entropy);
+  }
+  errno = 0;
 #  elif defined(HAVE_GETRANDOM) || defined(HAVE_SYSCALL_GETRANDOM)
-  if (writeRandomBytes_getrandom_nonblock((void *)&entropy, sizeof(entropy))) {
+  if (writeRandomBytes_getrandom_nonblock(&entropy, sizeof(entropy))) {
     return ENTROPY_DEBUG("getrandom", entropy);
   }
 #  endif
 #  if ! defined(_WIN32) && defined(XML_DEV_URANDOM)
-  if (writeRandomBytes_dev_urandom((void *)&entropy, sizeof(entropy))) {
+  if (writeRandomBytes_dev_urandom(&entropy, sizeof(entropy))) {
     return ENTROPY_DEBUG("/dev/urandom", entropy);
   }
 #  endif /* ! defined(_WIN32) && defined(XML_DEV_URANDOM) */
   /* .. and self-made low quality for backup: */
 
-  entropy = gather_time_entropy();
+  entropy.k[0] = 0;
+  entropy.k[1] = gather_time_entropy();
 #  if ! defined(__wasi__)
   /* Process ID is 0 bits entropy if attacker has local access */
-  entropy ^= getpid();
+  entropy.k[1] ^= getpid();
 #  endif
 
   /* Factors are 2^31-1 and 2^61-1 (Mersenne primes M31 and M61) */
   if (sizeof(unsigned long) == 4) {
-    return ENTROPY_DEBUG("fallback(4)", entropy * 2147483647);
+    entropy.k[1] *= 2147483647;
+    return ENTROPY_DEBUG("fallback(4)", entropy);
   } else {
-    return ENTROPY_DEBUG("fallback(8)",
-                         entropy * (unsigned long)2305843009213693951ULL);
+    entropy.k[1] *= 2305843009213693951ULL;
+    return ENTROPY_DEBUG("fallback(8)", entropy);
   }
 #endif
-}
-
-static unsigned long
-get_hash_secret_salt(XML_Parser parser) {
-  const XML_Parser rootParser = getRootParserOf(parser, NULL);
-  assert(! rootParser->m_parentParser);
-
-  return rootParser->m_hash_secret_salt;
 }
 
 static enum XML_Error
@@ -1299,7 +1147,6 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
     available_buffer
         += EXPAT_SAFE_PTR_DIFF(parser->m_bufferLim, parser->m_bufferEnd);
     // m_lastBufferRequestSize is never assigned a value < 0, so the cast is ok
-    { // WINSCP
     const bool enough
         = (have_now >= 2 * had_before)
           || ((size_t)parser->m_lastBufferRequestSize > available_buffer);
@@ -1308,12 +1155,10 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
       *endPtr = start; // callers may expect this to be set
       return XML_ERROR_NONE;
     }
-    } // WINSCP
   }
 #if defined(XML_TESTING)
   g_bytesScanned += (unsigned)have_now;
 #endif
-  { // WINSCP
   // Run in a loop to eliminate dangerous recursion depths
   enum XML_Error ret;
   *endPtr = start;
@@ -1346,14 +1191,15 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
     }
   }
   return ret;
-  } // WINSCP
 }
 
 static XML_Bool /* only valid for root parser */
 startParsing(XML_Parser parser) {
   /* hash functions must be initialized before setContext() is called */
-  if (parser->m_hash_secret_salt == 0)
-    parser->m_hash_secret_salt = generate_hash_secret_salt(parser);
+  if (parser->m_hash_secret_salt_set != XML_TRUE) {
+    parser->m_hash_secret_salt_128 = generate_hash_secret_salt();
+    parser->m_hash_secret_salt_set = XML_TRUE;
+  }
   if (parser->m_ns) {
     /* implicit context only set for root parser, since child
        parsers (i.e. external entity parsers) will inherit it
@@ -1451,7 +1297,6 @@ parserCreate(const XML_Char *encodingName,
     parser->m_parentParser = parentParser;
   }
 
-  { // WINSCP
   // Record XML_ParserStruct allocation we did a few lines up before
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
@@ -1565,7 +1410,6 @@ parserCreate(const XML_Char *encodingName,
   }
 
   return parser;
-  } // WINSCP
 }
 
 static void
@@ -1643,7 +1487,9 @@ parserInit(XML_Parser parser, const XML_Char *encodingName) {
   parser->m_useForeignDTD = XML_FALSE;
   parser->m_paramEntityParsing = XML_PARAM_ENTITY_PARSING_NEVER;
 #endif
-  parser->m_hash_secret_salt = 0;
+  parser->m_hash_secret_salt_128.k[0] = 0;
+  parser->m_hash_secret_salt_128.k[1] = 0;
+  parser->m_hash_secret_salt_set = XML_FALSE;
 
 #if XML_GE == 1
   memset(&parser->m_accounting, 0, sizeof(ACCOUNTING));
@@ -1810,7 +1656,8 @@ XML_ExternalEntityParserCreate(XML_Parser oldParser, const XML_Char *context,
      from hash tables associated with either parser without us having
      to worry which hash secrets each table has.
   */
-  unsigned long oldhash_secret_salt;
+  struct sipkey oldhash_secret_salt_128;
+  XML_Bool oldhash_secret_salt_set;
   XML_Bool oldReparseDeferralEnabled;
 
   /* Validate the oldParser parameter before we pull everything out of it */
@@ -1856,7 +1703,8 @@ XML_ExternalEntityParserCreate(XML_Parser oldParser, const XML_Char *context,
      from hash tables associated with either parser without us having
      to worry which hash secrets each table has.
   */
-  oldhash_secret_salt = parser->m_hash_secret_salt;
+  oldhash_secret_salt_128 = parser->m_hash_secret_salt_128;
+  oldhash_secret_salt_set = parser->m_hash_secret_salt_set;
   oldReparseDeferralEnabled = parser->m_reparseDeferralEnabled;
 
 #ifdef XML_DTD
@@ -1870,10 +1718,7 @@ XML_ExternalEntityParserCreate(XML_Parser oldParser, const XML_Char *context,
      would be otherwise.
   */
   if (parser->m_ns) {
-    // WINSCP
-    XML_Char tmp[2];
-    tmp[0] = parser->m_namespaceSeparator;
-    tmp[1] = 0;
+    XML_Char tmp[2] = {parser->m_namespaceSeparator, 0};
     parser = parserCreate(encodingName, &parser->m_mem, tmp, newDtd, oldParser);
   } else {
     parser
@@ -1914,7 +1759,8 @@ XML_ExternalEntityParserCreate(XML_Parser oldParser, const XML_Char *context,
     parser->m_externalEntityRefHandlerArg = oldExternalEntityRefHandlerArg;
   parser->m_defaultExpandInternalEntities = oldDefaultExpandInternalEntities;
   parser->m_ns_triplets = oldns_triplets;
-  parser->m_hash_secret_salt = oldhash_secret_salt;
+  parser->m_hash_secret_salt_128 = oldhash_secret_salt_128;
+  parser->m_hash_secret_salt_set = oldhash_secret_salt_set;
   parser->m_reparseDeferralEnabled = oldReparseDeferralEnabled;
   parser->m_parentParser = oldParser;
 #ifdef XML_DTD
@@ -2358,21 +2204,56 @@ XML_SetParamEntityParsing(XML_Parser parser,
 #endif
 }
 
+// DEPRECATED since Expat 2.8.0.
 int XMLCALL
 XML_SetHashSalt(XML_Parser parser, unsigned long hash_salt) {
   if (parser == NULL)
     return 0;
 
-  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(! rootParser->m_parentParser);
 
   /* block after XML_Parse()/XML_ParseBuffer() has been called */
   if (parserBusy(rootParser))
     return 0;
-  rootParser->m_hash_secret_salt = hash_salt;
+
+  rootParser->m_hash_secret_salt_128.k[0] = 0;
+  rootParser->m_hash_secret_salt_128.k[1] = hash_salt;
+
+  if (hash_salt != 0) { // to remain backwards compatible
+    rootParser->m_hash_secret_salt_set = XML_TRUE;
+
+    if (sizeof(unsigned long) == 4)
+      ENTROPY_DEBUG("explicit(4)", rootParser->m_hash_secret_salt_128);
+    else
+      ENTROPY_DEBUG("explicit(8)", rootParser->m_hash_secret_salt_128);
+  }
+
   return 1;
-  } // WINSCP
+}
+
+XML_Bool XMLCALL
+XML_SetHashSalt16Bytes(XML_Parser parser, const uint8_t entropy[16]) {
+  if (parser == NULL)
+    return XML_FALSE;
+
+  if (entropy == NULL)
+    return XML_FALSE;
+
+  const XML_Parser rootParser = getRootParserOf(parser, NULL);
+  assert(! rootParser->m_parentParser);
+
+  /* block after XML_Parse()/XML_ParseBuffer() has been called */
+  if (parserBusy(rootParser))
+    return XML_FALSE;
+
+  sip_tokey(&(rootParser->m_hash_secret_salt_128), entropy);
+
+  rootParser->m_hash_secret_salt_set = XML_TRUE;
+
+  ENTROPY_DEBUG("explicit(16)", rootParser->m_hash_secret_salt_128);
+
+  return XML_TRUE;
 }
 
 enum XML_Status XMLCALL
@@ -2476,7 +2357,6 @@ XML_Parse(XML_Parser parser, const char *s, int len, int isFinal) {
     return result;
   }
 #endif /* XML_CONTEXT_BYTES == 0 */
-  { // WINSCP
   void *buff = XML_GetBuffer(parser, len);
   if (buff == NULL)
     return XML_STATUS_ERROR;
@@ -2485,7 +2365,6 @@ XML_Parse(XML_Parser parser, const char *s, int len, int isFinal) {
     memcpy(buff, s, len);
   }
   return XML_ParseBuffer(parser, len, isFinal);
-  } // WINSCP
 }
 
 enum XML_Status XMLCALL
@@ -3549,7 +3428,6 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
           }
           if (SIZE_MAX / 2 < (size_t)(tag->bufEnd - tag->buf.raw))
             return XML_ERROR_NO_MEMORY;
-          { // WINSCP
           const size_t bufSize = (size_t)(tag->bufEnd - tag->buf.raw) * 2;
           {
             char *temp = REALLOC(parser, tag->buf.raw, bufSize);
@@ -3559,7 +3437,6 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
             tag->bufEnd = temp + bufSize;
             toPtr = (XML_Char *)temp + convLen;
           }
-          } // WINSCP
         }
       }
       tag->name.str = tag->buf.str;
@@ -3893,6 +3770,8 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
                                          sizeof(ELEMENT_TYPE));
     if (! elementType)
       return XML_ERROR_NO_MEMORY;
+    if (! elementType->defaultAttsNames.parser)
+      hashTableInit(&(elementType->defaultAttsNames), parser);
     if (parser->m_ns && ! setElementTypePrefix(parser, elementType))
       return XML_ERROR_NO_MEMORY;
   }
@@ -4095,7 +3974,6 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
       return XML_ERROR_NO_MEMORY;
     }
 
-    { // WINSCP
     unsigned int nsAttsSize = 1u << parser->m_nsAttsPower;
     unsigned char oldNsAttsPower = parser->m_nsAttsPower;
     /* size of hash table must be at least 2 * (# of prefixed attributes) */
@@ -4251,7 +4129,6 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
       } else                     /* not prefixed */
         ((XML_Char *)s)[-1] = 0; /* clear flag */
     }
-    } // WINSCP
   }
   /* clear flags for the remaining attributes */
   for (; i < attIndex; i += 2)
@@ -4557,14 +4434,12 @@ addBinding(XML_Parser parser, PREFIX *prefix, const ATTRIBUTE_ID *attId,
       }
 #endif
 
-      { // WINSCP
       XML_Char *temp
           = REALLOC(parser, b->uri, sizeof(XML_Char) * (len + EXPAND_SPARE));
       if (temp == NULL)
         return XML_ERROR_NO_MEMORY;
       b->uri = temp;
       b->uriAlloc = len + EXPAND_SPARE;
-      } // WINSCP
     }
     parser->m_freeBindingList = b->nextTagBinding;
   } else {
@@ -5280,7 +5155,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
   UNUSED_P(account);
 #endif
 
-  { // WINSCP
   /* save one level of indirection */
   DTD *const dtd = parser->m_dtd;
 
@@ -5967,7 +5841,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
               return XML_ERROR_NO_MEMORY;
             }
 
-            { // WINSCP
             char *const new_connector = REALLOC(
                 parser, parser->m_groupConnector, parser->m_groupSize *= 2);
             if (new_connector == NULL) {
@@ -5975,7 +5848,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
               return XML_ERROR_NO_MEMORY;
             }
             parser->m_groupConnector = new_connector;
-            } // WINSCP
           }
 
           if (dtd->scaffIndex) {
@@ -5990,7 +5862,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
             }
 #endif
 
-            { // WINSCP
             int *const new_scaff_index = REALLOC(
                 parser, dtd->scaffIndex, parser->m_groupSize * sizeof(int));
             if (new_scaff_index == NULL) {
@@ -5998,7 +5869,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
               return XML_ERROR_NO_MEMORY;
             }
             dtd->scaffIndex = new_scaff_index;
-            } // WINSCP
           }
         } else {
           parser->m_groupConnector = MALLOC(parser, parser->m_groupSize = 32);
@@ -6324,7 +6194,6 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
       tok = XmlPrologTok(enc, s, end, &next);
     }
   }
-  } // WINSCP
   /* not reached */
 }
 
@@ -6473,7 +6342,6 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
   UNUSED_P(s);
   UNUSED_P(end);
   UNUSED_P(nextPtr);
-  { // WINSCP
   ENTITY *entity;
   const char *textStart, *textEnd;
   const char *next;
@@ -6548,7 +6416,6 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
   }
   triggerReenter(parser);
   return XML_ERROR_NONE;
-  } // WINSCP
 }
 
 static enum XML_Error PTRCALL
@@ -6576,7 +6443,6 @@ storeAttributeValue(XML_Parser parser, const ENCODING *enc, XML_Bool isCdata,
       if (! openEntity)
         return XML_ERROR_UNEXPECTED_STATE;
 
-      { // WINSCP
       ENTITY *const entity = openEntity->entity;
       const char *const textStart
           = ((const char *)entity->textPtr) + entity->processed;
@@ -6621,7 +6487,6 @@ storeAttributeValue(XML_Parser parser, const ENCODING *enc, XML_Bool isCdata,
       /* put openEntity back in list of free instances */
       openEntity->next = parser->m_freeAttributeEntities;
       parser->m_freeAttributeEntities = openEntity;
-      } // WINSCP
     }
 
     // Break if an error occurred or there is nothing left to process
@@ -6854,7 +6719,6 @@ storeEntityValue(XML_Parser parser, const ENCODING *enc,
       return XML_ERROR_NO_MEMORY;
   }
 
-  { // WINSCP
   const char *next = entityTextPtr;
 
   /* Nothing to tokenize. */
@@ -6866,7 +6730,6 @@ storeEntityValue(XML_Parser parser, const ENCODING *enc,
   for (;;) {
     next
         = entityTextPtr; /* XmlEntityValueTok doesn't always set the last arg */
-    { // WINSCP
     int tok = XmlEntityValueTok(enc, entityTextPtr, entityTextEnd, &next);
 
     if (! accountingDiffTolerated(parser, tok, entityTextPtr, next, __LINE__,
@@ -7011,7 +6874,6 @@ storeEntityValue(XML_Parser parser, const ENCODING *enc,
       /* LCOV_EXCL_STOP */
     }
     entityTextPtr = next;
-    } // WINSCP
   }
 endEntityValue:
 #  ifdef XML_DTD
@@ -7022,7 +6884,6 @@ endEntityValue:
     *nextPtr = next;
   }
   return result;
-  } // WINSCP
 }
 
 static enum XML_Error
@@ -7040,7 +6901,6 @@ callStoreEntityValue(XML_Parser parser, const ENCODING *enc,
       if (! openEntity)
         return XML_ERROR_UNEXPECTED_STATE;
 
-      { // WINSCP
       ENTITY *const entity = openEntity->entity;
       const char *const textStart
           = ((const char *)entity->textPtr) + entity->processed;
@@ -7085,7 +6945,6 @@ callStoreEntityValue(XML_Parser parser, const ENCODING *enc,
       /* put openEntity back in list of free instances */
       openEntity->next = parser->m_freeValueEntities;
       parser->m_freeValueEntities = openEntity;
-      } // WINSCP
     }
 
     // Break if an error occurred or there is nothing left to process
@@ -7246,10 +7105,10 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
   if (value || isId) {
     /* The handling of default attributes gets messed up if we have
        a default which duplicates a non-default. */
-    int i;
-    for (i = 0; i < type->nDefaultAtts; i++)
-      if (attId == type->defaultAtts[i].id)
-        return 1;
+    NAMED *const nameFound
+        = (NAMED *)lookup(parser, &(type->defaultAttsNames), attId->name, 0);
+    if (nameFound)
+      return 1;
     if (isId && ! type->idAtt && ! attId->xmlns)
       type->idAtt = attId;
   }
@@ -7270,7 +7129,6 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
         return 0;
       }
 
-      { // WINSCP
       int count = type->allocDefaultAtts * 2;
 
       /* Detect and prevent integer overflow.
@@ -7289,7 +7147,6 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
         return 0;
       type->allocDefaultAtts = count;
       type->defaultAtts = temp;
-      } // WINSCP
     }
   }
   att = type->defaultAtts + type->nDefaultAtts;
@@ -7298,6 +7155,12 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
   att->isCdata = isCdata;
   if (! isCdata)
     attId->maybeTokenized = XML_TRUE;
+
+  NAMED *const nameAddedOrFound = (NAMED *)lookup(
+      parser, &(type->defaultAttsNames), attId->name, sizeof(NAMED));
+  if (! nameAddedOrFound)
+    return 0;
+
   type->nDefaultAtts += 1;
   return 1;
 }
@@ -7496,7 +7359,6 @@ setContext(XML_Parser parser, const XML_Char *context) {
     return XML_FALSE;
   }
 
-  { // WINSCP
   DTD *const dtd = parser->m_dtd; /* save one level of indirection */
   const XML_Char *s = context;
 
@@ -7520,7 +7382,6 @@ setContext(XML_Parser parser, const XML_Char *context) {
       else {
         if (! poolAppendChar(&parser->m_tempPool, XML_T('\0')))
           return XML_FALSE;
-        { // WINSCP
         const XML_Char *const prefixName = poolCopyStringNoFinish(
             &dtd->pool, poolStart(&parser->m_tempPool));
         if (! prefixName) {
@@ -7530,7 +7391,6 @@ setContext(XML_Parser parser, const XML_Char *context) {
         prefix = (PREFIX *)lookup(parser, &dtd->prefixes, prefixName,
                                   sizeof(PREFIX));
 
-        { // WINSCP
         const bool prefixNameUsed = prefix && prefix->name == prefixName;
         if (prefixNameUsed)
           poolFinish(&dtd->pool);
@@ -7541,8 +7401,6 @@ setContext(XML_Parser parser, const XML_Char *context) {
           return XML_FALSE;
 
         poolDiscard(&parser->m_tempPool);
-        } // WINSCP
-        } // WINSCP
       }
       for (context = s + 1; *context != CONTEXT_SEP && *context != XML_T('\0');
            context++)
@@ -7565,7 +7423,6 @@ setContext(XML_Parser parser, const XML_Char *context) {
     }
   }
   return XML_TRUE;
-  } // WINSCP
 }
 
 static void FASTCALL
@@ -7629,6 +7486,7 @@ dtdReset(DTD *p, XML_Parser parser) {
     ELEMENT_TYPE *e = (ELEMENT_TYPE *)hashTableIterNext(&iter);
     if (! e)
       break;
+    hashTableDestroy(&(e->defaultAttsNames));
     if (e->allocDefaultAtts != 0)
       FREE(parser, e->defaultAtts);
   }
@@ -7670,6 +7528,7 @@ dtdDestroy(DTD *p, XML_Bool isDocEntity, XML_Parser parser) {
     ELEMENT_TYPE *e = (ELEMENT_TYPE *)hashTableIterNext(&iter);
     if (! e)
       break;
+    hashTableDestroy(&(e->defaultAttsNames));
     if (e->allocDefaultAtts != 0)
       FREE(parser, e->defaultAtts);
   }
@@ -7763,6 +7622,10 @@ dtdCopy(XML_Parser oldParser, DTD *newDtd, const DTD *oldDtd,
                                   sizeof(ELEMENT_TYPE));
     if (! newE)
       return 0;
+
+    if (! newE->defaultAttsNames.parser)
+      hashTableInit(&(newE->defaultAttsNames), parser);
+
     if (oldE->nDefaultAtts) {
       /* Detect and prevent integer overflow.
        * The preprocessor guard addresses the "always false" warning
@@ -7787,8 +7650,9 @@ dtdCopy(XML_Parser oldParser, DTD *newDtd, const DTD *oldDtd,
       newE->prefix = (PREFIX *)lookup(oldParser, &(newDtd->prefixes),
                                       oldE->prefix->name, 0);
     for (i = 0; i < newE->nDefaultAtts; i++) {
+      const XML_Char *const attributeName = oldE->defaultAtts[i].id->name;
       newE->defaultAtts[i].id = (ATTRIBUTE_ID *)lookup(
-          oldParser, &(newDtd->attributeIds), oldE->defaultAtts[i].id->name, 0);
+          oldParser, &(newDtd->attributeIds), attributeName, 0);
       newE->defaultAtts[i].isCdata = oldE->defaultAtts[i].isCdata;
       if (oldE->defaultAtts[i].value) {
         newE->defaultAtts[i].value
@@ -7797,6 +7661,12 @@ dtdCopy(XML_Parser oldParser, DTD *newDtd, const DTD *oldDtd,
           return 0;
       } else
         newE->defaultAtts[i].value = NULL;
+
+      NAMED *const nameAddedOrFound = (NAMED *)lookup(
+          parser, &(newE->defaultAttsNames), attributeName, sizeof(NAMED));
+      if (! nameAddedOrFound) {
+        return 0;
+      }
     }
   }
 
@@ -7910,8 +7780,10 @@ keylen(KEY s) {
 
 static void
 copy_salt_to_sipkey(XML_Parser parser, struct sipkey *key) {
-  key->k[0] = 0;
-  key->k[1] = get_hash_secret_salt(parser);
+  const XML_Parser rootParser = getRootParserOf(parser, NULL);
+  assert(! rootParser->m_parentParser);
+
+  *key = rootParser->m_hash_secret_salt_128;
 }
 
 static unsigned long FASTCALL
@@ -7967,7 +7839,6 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
         return NULL;
       }
 
-      { // WINSCP
       size_t newSize = (size_t)1 << newPower;
       unsigned long newMask = (unsigned long)newSize - 1;
 
@@ -7976,7 +7847,6 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
         return NULL;
       }
 
-      { // WINSCP
       size_t tsize = newSize * sizeof(NAMED *);
       NAMED **newV = MALLOC(table->parser, tsize);
       if (! newV)
@@ -8005,8 +7875,6 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
           step = PROBE_STEP(h, newMask, newPower);
         i < step ? (i += newSize - step) : (i -= step);
       }
-      } // WINSCP
-      } // WINSCP
     }
   }
   table->v[i] = MALLOC(table->parser, createSize);
@@ -8429,7 +8297,6 @@ build_model(XML_Parser parser) {
     return NULL;
   }
 
-  { // WINSCP
   const size_t allocsize = (dtd->scaffCount * sizeof(XML_Content)
                             + (dtd->contentStringLen * sizeof(XML_Char)));
 
@@ -8489,7 +8356,6 @@ build_model(XML_Parser parser) {
    *
    * - The algorithm repeats until all target array indices have been processed.
    */
-  { // WINSCP
   XML_Content *dest = ret; /* tree node writing location, moves upwards */
   XML_Content *const destLimit = &ret[dtd->scaffCount];
   XML_Content *jobDest = ret; /* next free writing location in target array */
@@ -8532,8 +8398,6 @@ build_model(XML_Parser parser) {
   }
 
   return ret;
-  } // WINSCP
-  } // WINSCP
 }
 
 static ELEMENT_TYPE *
@@ -8549,6 +8413,8 @@ getElementType(XML_Parser parser, const ENCODING *enc, const char *ptr,
                                sizeof(ELEMENT_TYPE));
   if (! ret)
     return NULL;
+  if (! ret->defaultAttsNames.parser)
+    hashTableInit(&(ret->defaultAttsNames), getRootParserOf(parser, NULL));
   if (ret->name != name)
     poolDiscard(&dtd->pool);
   else {
@@ -8609,7 +8475,6 @@ accountingReportStats(XML_Parser originParser, const char *epilog) {
     return;
   }
 
-  { // WINSCP
   const float amplificationFactor
       = accountingGetCurrentAmplification(rootParser);
   fprintf(stderr,
@@ -8618,7 +8483,6 @@ accountingReportStats(XML_Parser originParser, const char *epilog) {
           (void *)rootParser, rootParser->m_accounting.countBytesDirect,
           rootParser->m_accounting.countBytesIndirect,
           (double)amplificationFactor, epilog);
-  } // WINSCP
 }
 
 static void
@@ -8638,7 +8502,6 @@ accountingReportDiff(XML_Parser rootParser,
           bytesMore, (account == XML_ACCOUNT_DIRECT) ? "DIR" : "EXP",
           levelsAwayFromRootParser, source_line, 10, "");
 
-  { // WINSCP
   const char ellipis[] = "[..]";
   const size_t ellipsisLength = sizeof(ellipis) /* because compile-time */ - 1;
   const unsigned int contextLength = 10;
@@ -8662,7 +8525,6 @@ accountingReportDiff(XML_Parser rootParser,
     }
   }
   fprintf(stderr, "\"\n");
-  } // WINSCP
 }
 
 static XML_Bool
@@ -8683,13 +8545,11 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
   if (account == XML_ACCOUNT_NONE)
     return XML_TRUE; /* because these bytes have been accounted for, already */
 
-  { // WINSCP
   unsigned int levelsAwayFromRootParser;
   const XML_Parser rootParser
       = getRootParserOf(originParser, &levelsAwayFromRootParser);
   assert(! rootParser->m_parentParser);
 
-  { // WINSCP
   const int isDirect
       = (account == XML_ACCOUNT_DIRECT) && (originParser == rootParser);
   const ptrdiff_t bytesMore = after - before;
@@ -8703,7 +8563,6 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
     return XML_FALSE;
   *additionTarget += bytesMore;
 
-  { // WINSCP
   const XmlBigCount countBytesOutput
       = rootParser->m_accounting.countBytesDirect
         + rootParser->m_accounting.countBytesIndirect;
@@ -8721,9 +8580,6 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
   }
 
   return tolerated;
-  } // WINSCP
-  } // WINSCP
-  } // WINSCP
 }
 
 unsigned long long
@@ -8747,7 +8603,6 @@ entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
   if (rootParser->m_entity_stats.debugLevel == 0u)
     return;
 
-  { // WINSCP
 #  if defined(XML_UNICODE)
   const char *const entityName = "[..]";
 #  else
@@ -8763,7 +8618,6 @@ entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
       ((int)rootParser->m_entity_stats.currentDepth - 1) * 2, "",
       entity->is_param ? "%" : "&", entityName, action, entity->textLen,
       sourceLine);
-  } // WINSCP
 }
 
 static void
@@ -9329,7 +9183,7 @@ unsignedCharToPrintable(unsigned char c) {
     assert(0); /* never gets here */
     return "dead code";
   }
-  // WINSCP assert(0); /* never gets here */
+  assert(0); /* never gets here */
   // LCOV_EXCL_STOP
 }
 
@@ -9341,13 +9195,10 @@ getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
   if (valueOrNull == NULL) {
     return defaultDebugLevel;
   }
-  { // WINSCP
   const char *const value = valueOrNull;
 
   errno = 0;
-  { // WINSCP
   char *afterValue = NULL;
-
   unsigned long debugLevel = strtoul(value, &afterValue, 10);
   if ((errno != 0) || (afterValue == value) || (afterValue[0] != '\0')) {
     errno = 0;
@@ -9355,6 +9206,4 @@ getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
   }
 
   return debugLevel;
-  } // WINSCP
-  } // WINSCP
 }

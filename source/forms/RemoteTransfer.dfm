@@ -71,11 +71,11 @@ object RemoteTransferDialog: TRemoteTransferDialog
       Top = 77
       Width = 392
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange
+      HistoryKey = 'RemoteTarget'
     end
     object NotDirectCopyCheck: TCheckBox
       Left = 49

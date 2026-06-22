@@ -23,6 +23,7 @@ class TRemoteToken
 {
 public:
   __fastcall TRemoteToken();
+  TRemoteToken(const TRemoteToken &) = default;
   explicit __fastcall TRemoteToken(const UnicodeString & Name);
 
   void __fastcall Clear();
@@ -211,7 +212,7 @@ protected:
   UnicodeString FDirectory;
   TDateTime FTimestamp;
   TRemoteFile * __fastcall GetFiles(Integer Index);
-  virtual void __fastcall SetDirectory(UnicodeString value);
+  void SetDirectory(const UnicodeString & value);
   UnicodeString __fastcall GetFullDirectory();
   Boolean __fastcall GetIsRoot();
   TRemoteFile * __fastcall GetParentDirectory();
@@ -222,7 +223,7 @@ public:
   virtual void __fastcall Reset();
   TRemoteFile * __fastcall FindFile(const UnicodeString &FileName);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
-  virtual void __fastcall AddFile(TRemoteFile * File);
+  virtual bool AddFile(TRemoteFile * File);
   virtual void ExtractFile(TRemoteFile * File);
 
   static TStrings * __fastcall CloneStrings(TStrings * List);
@@ -239,31 +240,22 @@ public:
 //---------------------------------------------------------------------------
 class TRemoteDirectory : public TRemoteFileList
 {
-friend class TSCPFileSystem;
-friend class TSFTPFileSystem;
 private:
   Boolean FIncludeParentDirectory;
-  Boolean FIncludeThisDirectory;
   TTerminal * FTerminal;
   TRemoteFile * FParentDirectory;
-  TRemoteFile * FThisDirectory;
-  virtual void __fastcall SetDirectory(UnicodeString value);
   Boolean __fastcall GetLoaded();
   void __fastcall SetIncludeParentDirectory(Boolean value);
-  void __fastcall SetIncludeThisDirectory(Boolean value);
   void __fastcall ReleaseRelativeDirectories();
 public:
   __fastcall TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template = NULL);
   virtual __fastcall ~TRemoteDirectory();
-  virtual void __fastcall AddFile(TRemoteFile * File);
+  virtual bool AddFile(TRemoteFile * File);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall Reset();
-  __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
+  __property TTerminal * Terminal = { read = FTerminal };
   __property Boolean IncludeParentDirectory = { read = FIncludeParentDirectory, write = SetIncludeParentDirectory };
-  __property Boolean IncludeThisDirectory = { read = FIncludeThisDirectory, write = SetIncludeThisDirectory };
   __property Boolean Loaded = { read = GetLoaded };
-  __property TRemoteFile * ParentDirectory = { read = FParentDirectory };
-  __property TRemoteFile * ThisDirectory = { read = FThisDirectory };
 };
 //---------------------------------------------------------------------------
 class TRemoteDirectoryCache : private TStringList
@@ -453,6 +445,7 @@ public:
 
   __fastcall TRemoteProperties();
   __fastcall TRemoteProperties(const TRemoteProperties & rhp);
+  TRemoteProperties & operator =(const TRemoteProperties &) = default;
   bool __fastcall operator ==(const TRemoteProperties & rhp) const;
   bool __fastcall operator !=(const TRemoteProperties & rhp) const;
   void __fastcall Default();
@@ -490,8 +483,8 @@ public:
 
     TAction Action;
     bool IsDirectory;
-    TFileInfo Local;
-    TFileInfo Remote;
+    TFileInfo Info1;
+    TFileInfo Info2;
     int ImageIndex;
     bool Checked;
     TRemoteFile * RemoteFile;
@@ -504,9 +497,14 @@ public:
     __int64 __fastcall GetSize() const;
     __int64 __fastcall GetSize(TAction AAction) const;
     UnicodeString GetLocalPath() const;
+    UnicodeString GetLocalPath2() const;
+    UnicodeString ForceGetLocalPath() const;
+    UnicodeString ForceGetLocalPath2() const;
     // Contrary to RemoteFile->FullFileName, this does not include trailing slash for directories
     UnicodeString GetRemotePath() const;
+    UnicodeString ForceGetRemotePath() const;
     UnicodeString GetLocalTarget() const;
+    UnicodeString GetLocalTarget2() const;
     UnicodeString GetRemoteTarget() const;
     TStrings * GetFileList() const;
 
@@ -520,7 +518,7 @@ public:
     __int64 __fastcall GetBaseSize(TAction AAction) const;
   };
 
-  typedef std::vector<const TSynchronizeChecklist::TItem *> TItemList;
+  typedef std::vector<const TItem *> TItemList;
 
   ~TSynchronizeChecklist();
 
@@ -554,6 +552,37 @@ private:
   static int __fastcall Compare(void * Item1, void * Item2);
 };
 //---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(
+  void * Token, const TSynchronizeChecklist::TItem * Item);
+struct IFileOperation;
+struct IShellItem;
+class TFileOperationProgressSink;
+//---------------------------------------------------------------------------
+class TSynchronizeChecklistFileOperation
+{
+friend class TSynchronizeChecklist;
+friend class TFileOperationProgressSink;
+public:
+  TSynchronizeChecklistFileOperation(
+    const TSynchronizeChecklist * Checklist, TProcessedSynchronizationChecklistItem OnProcessedItem, void * Token);
+  ~TSynchronizeChecklistFileOperation();
+
+  __property IFileOperation * FileOperation = { read = GetFileOperation };
+  __property bool Any = { read = FAny };
+
+protected:
+  void ProcessedItem(IShellItem * ShellItem);
+  IFileOperation * GetFileOperation() { return FFileOperation.Get(); }
+
+private:
+  TComPtr<IFileOperation> FFileOperation;
+  TFileOperationProgressSink * FProgressSink;
+  std::map<UnicodeString, const TSynchronizeChecklist::TItem *> FShellItems;
+  TProcessedSynchronizationChecklistItem FOnProcessedItem;
+  void * FToken;
+  bool FAny;
+};
+//---------------------------------------------------------------------------
 class TFileOperationProgressType;
 //---------------------------------------------------------------------------
 class TSynchronizeProgress
@@ -577,9 +606,14 @@ private:
 bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path);
 bool __fastcall UnixIsAbsolutePath(const UnicodeString & Path);
 UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString & Path);
+UnicodeString UniversalIncludeTrailingBackslash(bool Unix, const UnicodeString & Path);
 UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString & Path, bool Simple = false);
+UnicodeString UniversalExcludeTrailingBackslash(bool Unix, const UnicodeString & Path);
 UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString & Path);
 UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2);
+UnicodeString UnixCombinePathsForce(const UnicodeString & Path1, const UnicodeString & Path2);
+UnicodeString UnixCombinePathsSmart(const UnicodeString & Path1, const UnicodeString & Path2);
+UnicodeString UniversalCombinePaths(bool Unix, const UnicodeString & Path1, const UnicodeString & Path2);
 UnicodeString __fastcall UnixExtractFileDir(const UnicodeString & Path);
 UnicodeString __fastcall UnixExtractFilePath(const UnicodeString & Path);
 UnicodeString __fastcall UnixExtractFileName(const UnicodeString & Path);

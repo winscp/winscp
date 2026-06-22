@@ -70,13 +70,13 @@ object CustomCommandDialog: TCustomCommandDialog
       Top = 74
       Width = 430
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 2048
       TabOrder = 1
       OnChange = ControlChange
       OnGetData = CommandEditGetData
       OnSetData = CommandEditSetData
+      HistoryKey = 'CustomCommand'
     end
     object ApplyToDirectoriesCheck: TCheckBox
       Left = 11

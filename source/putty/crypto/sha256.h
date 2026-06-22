@@ -38,21 +38,19 @@ static inline bool check_availability(const struct sha256_extra *extra)
 #define SHA256_VTABLE(impl_c, impl_display)                             \
     static struct sha256_extra_mutable sha256_ ## impl_c ## _extra_mut; \
     static const struct sha256_extra sha256_ ## impl_c ## _extra = {    \
-        /* WINSCP */ \
-        /*.check_available =*/ sha256_ ## impl_c ## _available,             \
-        /*.mut =*/ &sha256_ ## impl_c ## _extra_mut,                        \
+        .check_available = sha256_ ## impl_c ## _available,             \
+        .mut = &sha256_ ## impl_c ## _extra_mut,                        \
     };                                                                  \
     const ssh_hashalg ssh_sha256_ ## impl_c = {                         \
-        /* WINSCP */ \
-        /*.new =*/ sha256_ ## impl_c ## _new,                               \
-        /*.reset =*/ sha256_ ## impl_c ## _reset,                           \
-        /*.copyfrom =*/ sha256_ ## impl_c ## _copyfrom,                     \
-        /*.digest =*/ sha256_ ## impl_c ## _digest,                         \
-        /*.free =*/ sha256_ ## impl_c ## _free,                             \
-        /*.hlen =*/ 32,                                                     \
-        /*.blocklen =*/ 64,                                                 \
+        .new = sha256_ ## impl_c ## _new,                               \
+        .reset = sha256_ ## impl_c ## _reset,                           \
+        .copyfrom = sha256_ ## impl_c ## _copyfrom,                     \
+        .digest = sha256_ ## impl_c ## _digest,                         \
+        .free = sha256_ ## impl_c ## _free,                             \
+        .hlen = 32,                                                     \
+        .blocklen = 64,                                                 \
         HASHALG_NAMES_BARE("SHA-256"),               \
-        /*.extra =*/ &sha256_ ## impl_c ## _extra,                          \
+        .extra = &sha256_ ## impl_c ## _extra,                          \
     }
 
 extern const uint32_t sha256_initial_state[8];
@@ -73,9 +71,7 @@ static inline void sha256_block_setup(sha256_block *blk)
     blk->len = 0;
 }
 
-#ifdef WINSCP_VS
-
-/*WINSCP static inline*/ bool sha256_block_write(
+static inline bool sha256_block_write(
     sha256_block *blk, const void **vdata, size_t *len)
 {
     size_t blkleft = sizeof(blk->block) - blk->used;
@@ -96,7 +92,7 @@ static inline void sha256_block_setup(sha256_block *blk)
     return false;
 }
 
-/*WINSCP static inline*/ void sha256_block_pad(sha256_block *blk, BinarySink *bs)
+static inline void sha256_block_pad(sha256_block *blk, BinarySink *bs)
 {
     uint64_t final_len = blk->len << 3;
     size_t pad = 1 + (63 & (55 - blk->used));
@@ -108,12 +104,3 @@ static inline void sha256_block_setup(sha256_block *blk)
 
     assert(blk->used == 0 && "Should have exactly hit a block boundary");
 }
-
-#else
-
-bool sha256_block_write(
-    sha256_block *blk, const void **vdata, size_t *len);
-void sha256_sw_block(uint32_t *core, const uint8_t *block);
-void sha256_block_pad(sha256_block *blk, BinarySink *bs);
-
-#endif

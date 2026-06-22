@@ -1,13 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include "Option.h"
-#include "TextsCore.h"
-#include "System.StrUtils.hpp"
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 const wchar_t ArrayValueDelimiter = L'[';
 const wchar_t ArrayValueEnd = L']';

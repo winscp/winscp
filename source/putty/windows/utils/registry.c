@@ -121,7 +121,6 @@ char *get_reg_sz(HKEY key, const char *name)
                         &size) != ERROR_SUCCESS || type != REG_SZ)
         return NULL;                   /* not a string */
 
-    { // WINSCP
     size_t allocsize = size+1;         /* allow for an extra NUL if needed */
     char *toret = snewn(allocsize, char);
     if (RegQueryValueEx(key, name, 0, &type, (BYTE *)toret,
@@ -134,7 +133,6 @@ char *get_reg_sz(HKEY key, const char *name)
                          * didn't supply one */
 
     return toret;
-    } // WINSCP
 }
 
 bool put_reg_sz(HKEY key, const char *name, const char *str)

@@ -121,6 +121,16 @@ init_get_thread_local(CRYPTO_THREAD_LOCAL *local, int alloc, int keep)
     return hands;
 }
 
+int CRYPTO_THREAD_init_local(CRYPTO_THREAD_LOCAL *key, void (*cleanup)(void *))
+{
+
+#ifndef FIPS_MODULE
+    if (!ossl_init_thread())
+        return 0;
+#endif
+    return ossl_thread_init_local(key, cleanup);
+}
+
 #ifndef FIPS_MODULE
 /*
  * Since per-thread-specific-data destructors are not universally
@@ -200,32 +210,18 @@ static void init_thread_destructor(void *hands)
 }
 
 static CRYPTO_ONCE ossl_init_thread_runonce = CRYPTO_ONCE_STATIC_INIT;
-#if defined(OPENSSL_SYS_TANDEM) && (defined(_PUT_MODEL_) || defined(_KLT_MODEL_))
-static CRYPTO_THREAD_ID recursion_guard = { (void *)-1, (short)-1, (short)-1 };
-#else
-static CRYPTO_THREAD_ID recursion_guard = (CRYPTO_THREAD_ID)0;
-#endif
 
 DEFINE_RUN_ONCE_STATIC(ossl_init_thread_once)
 {
-    recursion_guard = CRYPTO_THREAD_get_current_id();
-    if (!CRYPTO_THREAD_init_local(&destructor_key.value,
+    if (!ossl_thread_init_local(&destructor_key.value,
             init_thread_destructor))
         return 0;
 
-#if defined(OPENSSL_SYS_TANDEM)
-    memset(&recursion_guard, 0, sizeof(recursion_guard));
-#else
-    recursion_guard = (CRYPTO_THREAD_ID)0;
-#endif
     return 1;
 }
 
 int ossl_init_thread(void)
 {
-    if (CRYPTO_THREAD_compare_id(recursion_guard,
-            CRYPTO_THREAD_get_current_id()))
-        return 1;
     if (!RUN_ONCE(&ossl_init_thread_runonce, ossl_init_thread_once))
         return 0;
     return 1;

@@ -38,21 +38,19 @@ static inline bool check_availability(const struct sha1_extra *extra)
 #define SHA1_VTABLE(impl_c, impl_display)                               \
     static struct sha1_extra_mutable sha1_ ## impl_c ## _extra_mut;     \
     static const struct sha1_extra sha1_ ## impl_c ## _extra = {        \
-        /* WINSCP */ \
-        /*.check_available =*/ sha1_ ## impl_c ## _available,               \
-        /*.mut =*/ &sha1_ ## impl_c ## _extra_mut,                          \
+        .check_available = sha1_ ## impl_c ## _available,               \
+        .mut = &sha1_ ## impl_c ## _extra_mut,                          \
     };                                                                  \
     const ssh_hashalg ssh_sha1_ ## impl_c = {                           \
-        /* WINSCP */ \
-        /*.new =*/ sha1_ ## impl_c ## _new,                                 \
-        /*.reset =*/ sha1_ ## impl_c ## _reset,                             \
-        /*.copyfrom =*/ sha1_ ## impl_c ## _copyfrom,                       \
-        /*.digest =*/ sha1_ ## impl_c ## _digest,                           \
-        /*.free =*/ sha1_ ## impl_c ## _free,                               \
-        /*.hlen =*/ 20,                                                     \
-        /*.blocklen =*/ 64,                                                 \
+        .new = sha1_ ## impl_c ## _new,                                 \
+        .reset = sha1_ ## impl_c ## _reset,                             \
+        .copyfrom = sha1_ ## impl_c ## _copyfrom,                       \
+        .digest = sha1_ ## impl_c ## _digest,                           \
+        .free = sha1_ ## impl_c ## _free,                               \
+        .hlen = 20,                                                     \
+        .blocklen = 64,                                                 \
         HASHALG_NAMES_BARE("SHA-1"),                 \
-        /*.extra =*/ &sha1_ ## impl_c ## _extra,                            \
+        .extra = &sha1_ ## impl_c ## _extra,                            \
     }
 
 extern const uint32_t sha1_initial_state[5];
@@ -104,12 +102,9 @@ static inline void sha1_block_pad(sha1_block *blk, BinarySink *bs)
     size_t pad = 1 + (63 & (55 - blk->used));
 
     put_byte(bs, 0x80);
-    { // WINSCP
-    size_t i;
-    for (i = 1; i < pad; i++)
+    for (size_t i = 1; i < pad; i++)
         put_byte(bs, 0);
     put_uint64(bs, final_len);
 
     assert(blk->used == 0 && "Should have exactly hit a block boundary");
-    } // WINSCP
 }

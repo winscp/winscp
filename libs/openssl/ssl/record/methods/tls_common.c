@@ -73,7 +73,7 @@ int ossl_set_tls_provider_parameters(OSSL_RECORD_LAYER *rl,
     if ((EVP_CIPHER_get_flags(ciph) & EVP_CIPH_FLAG_AEAD_CIPHER) == 0
         && !rl->use_etm)
         imacsize = EVP_MD_get_size(md);
-    if (imacsize >= 0)
+    if (imacsize > 0)
         macsize = (size_t)imacsize;
 
     *pprm++ = OSSL_PARAM_construct_int(OSSL_CIPHER_PARAM_TLS_VERSION,
@@ -748,14 +748,17 @@ int tls_get_more_records(OSSL_RECORD_LAYER *rl)
          * CCS messages must be exactly 1 byte long, containing the value 0x01
          */
         if (thisrr->length != 1 || thisrr->data[0] != 0x01) {
-            RLAYERfatal(rl, SSL_AD_ILLEGAL_PARAMETER,
+            RLAYERfatal(rl, SSL_AD_UNEXPECTED_MESSAGE,
                 SSL_R_INVALID_CCS_MESSAGE);
             return OSSL_RECORD_RETURN_FATAL;
         }
         /*
          * CCS messages are ignored in TLSv1.3. We treat it like an empty
-         * handshake record
+         * handshake record - but we still call the msg_callback
          */
+        if (rl->msg_callback != NULL)
+            rl->msg_callback(0, TLS1_3_VERSION, SSL3_RT_CHANGE_CIPHER_SPEC,
+                thisrr->data, 1, rl->cbarg);
         thisrr->type = SSL3_RT_HANDSHAKE;
         if (++(rl->empty_record_count) > MAX_EMPTY_RECORDS) {
             RLAYERfatal(rl, SSL_AD_UNEXPECTED_MESSAGE,
@@ -774,7 +777,7 @@ int tls_get_more_records(OSSL_RECORD_LAYER *rl)
 
         if (tmpmd != NULL) {
             imac_size = EVP_MD_get_size(tmpmd);
-            if (!ossl_assert(imac_size >= 0 && imac_size <= EVP_MAX_MD_SIZE)) {
+            if (!ossl_assert(imac_size > 0 && imac_size <= EVP_MAX_MD_SIZE)) {
                 RLAYERfatal(rl, SSL_AD_INTERNAL_ERROR, ERR_R_EVP_LIB);
                 return OSSL_RECORD_RETURN_FATAL;
             }
@@ -1226,6 +1229,12 @@ int tls_set_options(OSSL_RECORD_LAYER *rl, const OSSL_PARAM *options)
             ERR_raise(ERR_LIB_SSL, SSL_R_FAILED_TO_GET_PARAMETER);
             return 0;
         }
+        p = OSSL_PARAM_locate_const(options,
+            OSSL_LIBSSL_RECORD_LAYER_PARAM_HS_PADDING);
+        if (p != NULL && !OSSL_PARAM_get_size_t(p, &rl->hs_padding)) {
+            ERR_raise(ERR_LIB_SSL, SSL_R_FAILED_TO_GET_PARAMETER);
+            return 0;
+        }
     }
 
     if (rl->level == OSSL_RECORD_PROTECTION_LEVEL_APPLICATION) {
@@ -1446,18 +1455,20 @@ err:
 static void tls_int_free(OSSL_RECORD_LAYER *rl)
 {
     BIO_free(rl->prev);
-    BIO_free(rl->bio);
+    BIO_free_all(rl->bio);
     BIO_free(rl->next);
     ossl_tls_buffer_release(&rl->rbuf);
 
     tls_release_write_buffer(rl);
 
     EVP_CIPHER_CTX_free(rl->enc_ctx);
+    EVP_MAC_CTX_free(rl->mac_ctx);
     EVP_MD_CTX_free(rl->md_ctx);
 #ifndef OPENSSL_NO_COMP
     COMP_CTX_free(rl->compctx);
 #endif
-
+    OPENSSL_free(rl->iv);
+    OPENSSL_free(rl->nonce);
     if (rl->version == SSL3_VERSION)
         OPENSSL_cleanse(rl->mac_secret, sizeof(rl->mac_secret));
 
@@ -1932,10 +1943,13 @@ int tls_retry_write_records(OSSL_RECORD_LAYER *rl)
                 else
                     ret = OSSL_RECORD_RETURN_SUCCESS;
             } else {
-                if (BIO_should_retry(rl->bio))
+                if (BIO_should_retry(rl->bio)) {
                     ret = OSSL_RECORD_RETURN_RETRY;
-                else
+                } else {
+                    ERR_raise_data(ERR_LIB_SYS, get_last_sys_error(),
+                        "tls_retry_write_records failure");
                     ret = OSSL_RECORD_RETURN_FATAL;
+                }
             }
         } else {
             RLAYERfatal(rl, SSL_AD_INTERNAL_ERROR, SSL_R_BIO_NOT_SET);
@@ -1961,6 +1975,28 @@ int tls_retry_write_records(OSSL_RECORD_LAYER *rl)
                 tls_release_write_buffer(rl);
             return OSSL_RECORD_RETURN_SUCCESS;
         } else if (i <= 0) {
+            /*
+             * If the app buffer is used directly (kTLS) and the caller is
+             * allowed to move it, copy the unsent data so the original
+             * buffer can be safely released.
+             */
+            if (TLS_BUFFER_is_app_buffer(thiswb)
+                && (rl->mode & SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER) != 0) {
+                size_t left = TLS_BUFFER_get_left(thiswb);
+                unsigned char *buf;
+
+                buf = OPENSSL_malloc(left);
+                if (buf == NULL) {
+                    RLAYERfatal(rl, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+                    return OSSL_RECORD_RETURN_FATAL;
+                }
+                memcpy(buf,
+                    TLS_BUFFER_get_buf(thiswb) + TLS_BUFFER_get_offset(thiswb),
+                    left);
+                TLS_BUFFER_set_buf(thiswb, buf);
+                TLS_BUFFER_set_offset(thiswb, 0);
+                TLS_BUFFER_set_app_buffer(thiswb, 0);
+            }
             if (rl->isdtls) {
                 /*
                  * For DTLS, just drop it. That's kind of the whole point in
@@ -1987,7 +2023,7 @@ int tls_set1_bio(OSSL_RECORD_LAYER *rl, BIO *bio)
 {
     if (bio != NULL && !BIO_up_ref(bio))
         return 0;
-    BIO_free(rl->bio);
+    BIO_free_all(rl->bio);
     rl->bio = bio;
 
     return 1;

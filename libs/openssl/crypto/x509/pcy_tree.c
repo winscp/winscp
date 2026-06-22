@@ -111,6 +111,8 @@ static int tree_init(X509_POLICY_TREE **ptree, STACK_OF(X509) *certs,
 
     *ptree = NULL;
 
+    if (n < 0)
+        return X509_PCY_TREE_INTERNAL;
     /* Can't do anything with just a trust anchor */
     if (n == 0)
         return X509_PCY_TREE_EMPTY;
@@ -211,7 +213,9 @@ static int tree_init(X509_POLICY_TREE **ptree, STACK_OF(X509) *certs,
         /* Access the cache which we now know exists */
         cache = ossl_policy_cache_set(x);
 
-        X509_up_ref(x);
+        if (!X509_up_ref(x))
+            goto bad_tree;
+
         (++level)->cert = x;
 
         if (!cache->anyPolicy)

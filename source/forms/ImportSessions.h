@@ -55,7 +55,7 @@ private:
   virtual void __fastcall DestroyHandle();
   virtual void __fastcall Dispatch(void * Message);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall TImportSessionsDialog(TComponent * AOwner);

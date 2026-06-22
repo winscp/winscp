@@ -8,8 +8,6 @@ unit TBX;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, Classes, SysUtils, Controls, Graphics, ImgList, Forms,
   TB2Item, TB2Dock, TB2Toolbar, TB2Anim, TBXUtils, TBXThemes, PasTools;
@@ -2308,7 +2306,7 @@ begin
   Message.Result := 1;
 end;
 
-procedure TBXPopupNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
+procedure TBXPopupNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: NativeUInt);
 var
   R, R2: TRect;
   Canvas: TCanvas;
@@ -2369,7 +2367,7 @@ begin
   try
     Assert(DC <> 0, 'TTBXPopupWindow.WMNCPaint');
     SelectNCUpdateRgn(Handle, DC, HRGN(Message.WParam));
-    TBXPopupNCPaintProc(Self, Handle, DC, LongInt(Self.View));
+    TBXPopupNCPaintProc(Self, Handle, DC, NativeUInt(Self.View));
   finally
     ReleaseDC(Handle, DC);
   end;
@@ -2377,7 +2375,7 @@ end;
 
 procedure TTBXPopupWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Self, Handle, Message, TBXPopupNCPaintProc, LongInt(Self.View));
+  HandleWMPrint(Self, Handle, Message, TBXPopupNCPaintProc, NativeUInt(Self.View));
 end;
 
 procedure TTBXPopupWindow.WMTB2kPopupShowing(var Message: TMessage);
@@ -3179,7 +3177,6 @@ end;
 procedure TTBXNexus.AddNotifie(AObject: TObject);
 begin
   if FNotifies.IndexOf(AObject) < 0 then FNotifies.Add(AObject);
-  Exit; asm db 0,'TBX (C) 2001-2003 Alex Denisov',0 end;
 end;
 
 procedure TTBXNexus.Broadcast(Msg: Cardinal; WParam, LParam: Integer);

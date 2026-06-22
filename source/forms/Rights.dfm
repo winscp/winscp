@@ -1,7 +1,7 @@
 object RightsFrame: TRightsFrame
   Left = 0
   Top = 0
-  Width = 258
+  Width = 273
   Height = 130
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -51,7 +51,7 @@ object RightsFrame: TRightsFrame
   end
   object OwnerReadCheck: TGrayedCheckBox
     Tag = 256
-    Left = 65
+    Left = 73
     Top = 6
     Width = 34
     Height = 17
@@ -64,7 +64,7 @@ object RightsFrame: TRightsFrame
   end
   object OwnerWriteCheck: TGrayedCheckBox
     Tag = 128
-    Left = 103
+    Left = 111
     Top = 6
     Width = 34
     Height = 17
@@ -77,7 +77,7 @@ object RightsFrame: TRightsFrame
   end
   object OwnerExecuteCheck: TGrayedCheckBox
     Tag = 64
-    Left = 141
+    Left = 149
     Top = 6
     Width = 31
     Height = 17
@@ -90,7 +90,7 @@ object RightsFrame: TRightsFrame
   end
   object GroupReadCheck: TGrayedCheckBox
     Tag = 32
-    Left = 65
+    Left = 73
     Top = 29
     Width = 34
     Height = 17
@@ -102,7 +102,7 @@ object RightsFrame: TRightsFrame
   end
   object GroupWriteCheck: TGrayedCheckBox
     Tag = 16
-    Left = 103
+    Left = 111
     Top = 29
     Width = 33
     Height = 17
@@ -114,7 +114,7 @@ object RightsFrame: TRightsFrame
   end
   object GroupExecuteCheck: TGrayedCheckBox
     Tag = 8
-    Left = 141
+    Left = 149
     Top = 29
     Width = 31
     Height = 17
@@ -126,7 +126,7 @@ object RightsFrame: TRightsFrame
   end
   object OthersReadCheck: TGrayedCheckBox
     Tag = 4
-    Left = 65
+    Left = 73
     Top = 52
     Width = 34
     Height = 17
@@ -138,7 +138,7 @@ object RightsFrame: TRightsFrame
   end
   object OthersWriteCheck: TGrayedCheckBox
     Tag = 2
-    Left = 103
+    Left = 111
     Top = 52
     Width = 33
     Height = 17
@@ -150,7 +150,7 @@ object RightsFrame: TRightsFrame
   end
   object OthersExecuteCheck: TGrayedCheckBox
     Tag = 1
-    Left = 141
+    Left = 149
     Top = 52
     Width = 31
     Height = 17
@@ -170,7 +170,7 @@ object RightsFrame: TRightsFrame
     OnClick = ControlChange
   end
   object OctalEdit: TEdit
-    Left = 65
+    Left = 73
     Top = 75
     Width = 70
     Height = 23
@@ -182,7 +182,7 @@ object RightsFrame: TRightsFrame
   end
   object SetUidCheck: TGrayedCheckBox
     Tag = 2048
-    Left = 179
+    Left = 187
     Top = 6
     Width = 77
     Height = 17
@@ -192,7 +192,7 @@ object RightsFrame: TRightsFrame
   end
   object SetGIDCheck: TGrayedCheckBox
     Tag = 1024
-    Left = 179
+    Left = 187
     Top = 29
     Width = 77
     Height = 17
@@ -202,7 +202,7 @@ object RightsFrame: TRightsFrame
   end
   object StickyBitCheck: TGrayedCheckBox
     Tag = 512
-    Left = 179
+    Left = 187
     Top = 52
     Width = 77
     Height = 17
@@ -211,7 +211,7 @@ object RightsFrame: TRightsFrame
     OnClick = ControlChange
   end
   object CloseButton: TButton
-    Left = 171
+    Left = 179
     Top = 98
     Width = 80
     Height = 25

@@ -14,12 +14,12 @@ class TTerminalQueueStatus;
 class TQueueController
 {
 public:
-  __fastcall TQueueController(TListView * ListView);
+  __fastcall TQueueController(TCustomListView * ListView);
   virtual __fastcall ~TQueueController();
 
   TQueueOperation __fastcall DefaultOperation();
-  bool __fastcall AllowOperation(TQueueOperation Operation, void ** Param = NULL);
-  void __fastcall ExecuteOperation(TQueueOperation Operation, void * Param = NULL);
+  bool __fastcall AllowOperation(TQueueOperation Operation, unsigned long * Param = NULL);
+  void __fastcall ExecuteOperation(TQueueOperation Operation, unsigned long Param = 0);
 
   void __fastcall UpdateQueueStatus(TTerminalQueueStatus * QueueStatus);
   void __fastcall RefreshQueueItem(TQueueItemProxy * QueueItem);

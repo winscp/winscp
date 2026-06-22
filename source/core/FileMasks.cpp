@@ -1,15 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "FileMasks.h"
-
-#include "Common.h"
-#include "TextsCore.h"
 #include "RemoteFiles.h"
 #include "PuttyTools.h"
 #include "Terminal.h"
-#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 extern const wchar_t IncludeExcludeFileMasksDelimiter = L'|';
 UnicodeString FileMasksDelimiters = L";,";
@@ -301,7 +297,7 @@ void __fastcall TFileMasks::Init()
 //---------------------------------------------------------------------------
 void __fastcall TFileMasks::DoInit(bool Delete)
 {
-  for (size_t Index = 0; Index < LENOF(FMasksStr); Index++)
+  for (size_t Index = 0; Index < std::size(FMasksStr); Index++)
   {
     if (Delete)
     {
@@ -315,7 +311,7 @@ void __fastcall TFileMasks::Clear()
 {
   DoInit(true);
 
-  for (size_t Index = 0; Index < LENOF(FMasks); Index++)
+  for (size_t Index = 0; Index < std::size(FMasks); Index++)
   {
     Clear(FMasks[Index]);
   }
@@ -935,7 +931,7 @@ void __fastcall TCustomCommand::GetToken(
     }
     else
     {
-      Len = NextPattern - Ptr;
+      Len = SizeToIntChecked(NextPattern - Ptr);
     }
   }
 }
@@ -1128,7 +1124,7 @@ int __fastcall TInteractiveCustomCommand::PatternLen(const UnicodeString & Comma
         {
           throw Exception(FMTLOAD(CUSTOM_COMMAND_UNTERMINATED, (Command[Index + 1], Index)));
         }
-        Len = PatternEnd - Ptr + 1;
+        Len = SizeToIntChecked(PatternEnd - Ptr + 1);
       }
       break;
 
@@ -1140,7 +1136,7 @@ int __fastcall TInteractiveCustomCommand::PatternLen(const UnicodeString & Comma
         {
           throw Exception(FMTLOAD(CUSTOM_COMMAND_UNTERMINATED, (Command[Index + 1], Index)));
         }
-        Len = PatternEnd - Ptr + 1;
+        Len = SizeToIntChecked(PatternEnd - Ptr + 1);
       }
       break;
 

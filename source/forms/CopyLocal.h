@@ -6,7 +6,7 @@
 #include <Vcl.Controls.hpp>
 #include <Vcl.StdCtrls.hpp>
 #include <Vcl.Forms.hpp>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include <Vcl.ExtCtrls.hpp>
 #include <GUITools.h>
 //---------------------------------------------------------------------------
@@ -40,7 +40,7 @@ private:
   UnicodeString GetFileMask();
   void SetDirectoryAndFileMask(const UnicodeString & Directory, const UnicodeString & FileMask);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   TCopyLocalDialog(TComponent * Owner, bool Move, int Options);

@@ -32,6 +32,8 @@ class TCollectedFileList;
 struct TLocalFileHandle;
 struct TNeonCertificateData;
 class TQueueItem;
+class TTerminalUI;
+struct TSynchronizeFileData;
 typedef std::vector<__int64> TCalculatedSizes;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
@@ -59,8 +61,6 @@ typedef void __fastcall (__closure *TSynchronizeDirectory)
    bool & Continue, bool Collect, const TSynchronizeOptions * Options);
 typedef void __fastcall (__closure *TUpdatedSynchronizationChecklistItems)(
   const TSynchronizeChecklist::TItemList & Items);
-typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(
-  void * Token, const TSynchronizeChecklist::TItem * Item);
 typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
   const UnicodeString FileName, bool Alternative, int & Deleted);
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
@@ -126,7 +126,7 @@ const int tfAutoResume = 0x04;
 const int tfPreCreateDir = 0x08;
 const int tfUseFileTransferAny = 0x10;
 //---------------------------------------------------------------------------
-class TTerminal : public TObject, public TSessionUI
+class TTerminal : public TObject
 {
 public:
   // TScript::SynchronizeProc relies on the order
@@ -146,6 +146,7 @@ public:
   static const int spMirror = 0x1000;
   static const int spCaseSensitive = 0x2000;
   static const int spByChecksum = 0x4000; // cannot be combined with spTimestamp and smBoth
+  static const int spLocalLocal = 0x8000; // internal only
   static const int spDefault = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
 
 // for ReactOnCommand()
@@ -159,6 +160,7 @@ friend class TCallbackGuard;
 friend class TSecondaryTerminal;
 friend class TRetryOperationLoop;
 friend class TParallelOperation;
+friend class TTerminalUI;
 
 private:
   TSessionData * FSessionData;
@@ -237,6 +239,7 @@ private:
   TFileOperationProgressType::TPersistence * FOperationProgressPersistence;
   TOnceDoneOperation FOperationProgressOnceDoneOperation;
   UnicodeString FCollectedCalculatedChecksum;
+  TTerminalUI * FTerminalUI;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -266,6 +269,9 @@ private:
   void LogAndInformation(const UnicodeString & S);
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
   static UnicodeString __fastcall SynchronizeParamsStr(int Params);
+  bool VerifyCertificateAgainstSessionData(
+    const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
+    const UnicodeString & CertificateSubject);
 
 protected:
   bool FReadCurrentDirectoryPending;
@@ -347,11 +353,7 @@ protected:
     const TOverwriteFileParams * FileParams, unsigned int Answers, TQueryParams * QueryParams,
     TOperationSide Side, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, UnicodeString Message = L"");
-  void __fastcall DoSynchronizeCollectDirectory(const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
-    const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory,
-    TSynchronizeOptions * Options, int Level, TSynchronizeChecklist * Checklist);
+  void DoSynchronizeCollectDirectory(TSynchronizeData Data);
   bool __fastcall LocalFindFirstLoop(const UnicodeString & Directory, TSearchRecChecked & SearchRec);
   bool __fastcall LocalFindNextLoop(TSearchRecChecked & SearchRec);
   bool __fastcall DoAllowLocalFileTransfer(
@@ -366,7 +368,11 @@ protected:
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
-  bool SameFileChecksum(const UnicodeString & LocalFileName, const TRemoteFile * File);
+  void SynchronizeCollectLocalFile(
+    const UnicodeString & FileName, const TSearchRecSmart & Rec, TSynchronizeData * Data);
+  void DoSynchronizeCollectLocalFile(const UnicodeString & FileName, const TSearchRecSmart & SearchRec, TSynchronizeData * Data);
+  bool SameFileChecksum(const UnicodeString & LeftFileName, const UnicodeString & RightFileName, const TRemoteFile * RightFile);
+  UnicodeString CalculateLocalFileChecksum(const UnicodeString & FileName, const UnicodeString & Alg);
   void __fastcall CollectCalculatedChecksum(
     const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
   void __fastcall SynchronizeRemoteTimestamp(const UnicodeString FileName,
@@ -374,6 +380,16 @@ protected:
   void __fastcall SynchronizeLocalTimestamp(const UnicodeString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data, bool Collect);
+  void SynchronizedFileCheckModified(
+    TSynchronizeData * Data, std::unique_ptr<TSynchronizeChecklist::TItem> & ChecklistItem,
+    const UnicodeString & FullLeftFileName, TSynchronizeFileData * LocalData,
+    const UnicodeString & FullRightFileName, const TRemoteFile * RightFile);
+  void SynchronizedFileNew(
+    TSynchronizeData * Data, std::unique_ptr<TSynchronizeChecklist::TItem> & ChecklistItem,
+    const UnicodeString & FullRightFileName, const TRemoteFile * RightLinkedFile);
+  void SynchronizedFileNewOrModified(
+    TSynchronizeData * Data, std::unique_ptr<TSynchronizeChecklist::TItem> & ChecklistItem, const TRemoteFile * File, bool New);
+  bool DoFilesMatch(const TSynchronizeFileData * LeftItem, TSynchronizeChecklist::TItem * RightItem);
   void __fastcall DeleteLocalFile(UnicodeString FileName,
     const TRemoteFile * File, void * Param);
   bool __fastcall RecycleFile(const UnicodeString & FileName, const TRemoteFile * File);
@@ -607,9 +623,9 @@ public:
   void __fastcall CalculateFilesChecksum(
     const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum);
   void __fastcall ClearCaches();
-  TSynchronizeChecklist * __fastcall SynchronizeCollect(const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
-    const TCopyParamType * CopyParam, int Params,
+  TSynchronizeChecklist * SynchronizeCollect(
+    const UnicodeString & Directory1, const UnicodeString & Directory2,
+    TSynchronizeMode Mode, const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeOptions * Options);
   void __fastcall SynchronizeApply(
     TSynchronizeChecklist * Checklist,
@@ -621,7 +637,7 @@ public:
     const TSynchronizeChecklist::TItem * ChecklistItem, const TCopyParamType * CopyParam, int Params, bool Parallel);
   void __fastcall SynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items,
-    const TCopyParamType * CopyParam);
+    const TCopyParamType * CopyParam, int Params);
   static TCopyParamType GetSynchronizeCopyParam(const TCopyParamType * CopyParam, int Params);
   static int GetSynchronizeCopyParams(int Params);
   void __fastcall FilesFind(UnicodeString Directory, const TFileMasks & FileMask,

@@ -1,18 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
-
-#include <Common.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <CustomWinConfiguration.h>
-#include <CoreMain.h>
-#include <WinInterface.h>
-#include <GUITools.h>
 
 #include "RemoteTransfer.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -70,7 +61,6 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & 
       break;
     }
   }
-  DirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteTarget"];
   DirectoryEdit->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
   FDirectCopy = DirectCopy;
   FOriginalTarget = Target;
@@ -79,7 +69,7 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & 
   if (Result)
   {
     Session = GetSelectedSession();
-    CustomWinConfiguration->History[L"RemoteTarget"] = DirectoryEdit->Items;
+    DirectoryEdit->SaveToHistory();
     Target = GetTarget();
     FileMask = GetFileMask();
     DirectCopy = !NotDirectCopyCheck->Checked;

@@ -15,6 +15,9 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
+/* Define to 1 if you have the 'ASN1_TIME_to_tm' function. */
+#undef HAVE_ASN1_TIME_TO_TM
+
 /* Define to 1 if you have the 'bind_textdomain_codeset' function. */
 #undef HAVE_BIND_TEXTDOMAIN_CODESET
 
@@ -35,6 +38,9 @@
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the <endian.h> header file. */
+#undef HAVE_ENDIAN_H
 
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
@@ -63,6 +69,9 @@
 /* Define to 1 if you have the 'getnameinfo' function. */
 #undef HAVE_GETNAMEINFO
 
+/* Define to 1 if you have the 'getrandom' function. */
+#undef HAVE_GETRANDOM
+
 /* Define to 1 if you have the 'getsockopt' function. */
 #undef HAVE_GETSOCKOPT
 
@@ -88,6 +97,9 @@
 /* Define to 1 if you have the 'gnutls_certificate_set_x509_system_trust'
    function. */
 #undef HAVE_GNUTLS_CERTIFICATE_SET_X509_SYSTEM_TRUST
+
+/* Define to 1 if you have the 'gnutls_ciphersuite_get' function. */
+#undef HAVE_GNUTLS_CIPHERSUITE_GET
 
 /* Define to 1 if you have the 'gnutls_privkey_import_ext' function. */
 #undef HAVE_GNUTLS_PRIVKEY_IMPORT_EXT
@@ -189,9 +201,6 @@
 /* Define to 1 if you have the <net/if.h> header file. */
 #undef HAVE_NET_IF_H
 
-/* Define if NTLM is supported */
-#undef HAVE_NTLM
-
 /* Define if OpenSSL support is enabled */
 #undef HAVE_OPENSSL
 
@@ -246,6 +255,9 @@
 /* Define to 1 if the system has the type 'socklen_t'. */
 #undef HAVE_SOCKLEN_T
 
+/* Define to 1 if you have the 'SSL_CIPHER_standard_name' function. */
+#undef HAVE_SSL_CIPHER_STANDARD_NAME
+
 /* Define to 1 if you have the 'SSL_SESSION_cmp' function. */
 #undef HAVE_SSL_SESSION_CMP
 
@@ -288,6 +300,9 @@
 /* Define to 1 if '__tm_gmtoff' is a member of 'struct tm'. */
 #undef HAVE_STRUCT_TM___TM_GMTOFF
 
+/* Define to 1 if you have the <sys/endian.h> header file. */
+#undef HAVE_SYS_ENDIAN_H
+
 /* Define to 1 if you have the <sys/limits.h> header file. */
 #undef HAVE_SYS_LIMITS_H
 
@@ -311,6 +326,9 @@
 
 /* Define to 1 if you have the <sys/uio.h> header file. */
 #undef HAVE_SYS_UIO_H
+
+/* Define to 1 if you have the 'timegm' function. */
+#undef HAVE_TIMEGM
 
 /* Define if the timezone global is available */
 #undef HAVE_TIMEZONE
@@ -392,6 +410,9 @@
 
 /* Defined if LIBPXY is supported */
 #undef NE_HAVE_LIBPXY
+
+/* Defined if NTLM is supported */
+#undef NE_HAVE_NTLM
 
 /* Defined if SSL is supported */
 #undef NE_HAVE_SSL

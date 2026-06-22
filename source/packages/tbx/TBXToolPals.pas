@@ -12,8 +12,6 @@ uses
   Windows, Messages, Classes, SysUtils, Controls, Forms, Graphics, TB2Item, TBX,
   TBXThemes;
 
-{$I TB2Ver.inc}
-
 type
   TRowColCount = 1..100;
   TTBXCustomToolPalette = class;

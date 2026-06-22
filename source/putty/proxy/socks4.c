@@ -129,9 +129,8 @@ static void proxy_socks4_process_queue(ProxyNegotiator *pn)
 }
 
 const struct ProxyNegotiatorVT socks4_proxy_negotiator_vt = {
-    // WINSCP
-    /*.new =*/ proxy_socks4_new,
-    /*.process_queue =*/ proxy_socks4_process_queue,
-    /*.free =*/ proxy_socks4_free,
-    /*.type =*/ "SOCKS 4",
+    .new = proxy_socks4_new,
+    .free = proxy_socks4_free,
+    .process_queue = proxy_socks4_process_queue,
+    .type = "SOCKS 4",
 };

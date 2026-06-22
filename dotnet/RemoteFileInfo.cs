@@ -7,7 +7,7 @@ namespace WinSCP
     [Guid("17FF9C92-B8B6-4506-A7BA-8482D9B0AB07")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
-    public sealed class RemoteFileInfo
+    public sealed class RemoteFileInfo : IRemoteFileInfo
     {
         public string Name { get; internal set; }
         public string FullName { get; internal set; }

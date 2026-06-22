@@ -12,7 +12,7 @@
 class TCustomScpExplorerForm;
 class TTerminalQueue;
 class TAuthenticateForm;
-class ITaskbarList3;
+struct ITaskbarList3;
 class TThumbnailDownloadQueueItem;
 //---------------------------------------------------------------------------
 enum TTerminalPendingAction { tpNull, tpNone, tpReconnect, tpFree };
@@ -58,12 +58,18 @@ public:
   // should not be reconnected when their tab is activated.
   bool Disconnected;
   bool DisconnectedTemporarily;
+  UnicodeString DisconnectMessage;
+  bool InitiateReconnectTimeout;
   // Sessions that should not close when they fail to connect
   // (i.e. those that were ever connected or were opened as a part of a workspace)
   bool Permanent;
   std::unique_ptr<TCriticalSection> ThumbnailsSection;
   bool ThumbnailsEnabled;
   TThumbnailDownloadQueueItem * ThumbnailDownloadQueueItem;
+  UnicodeString InactiveTerminationMessage;
+  TDateTime NextInactiveReconnect;
+  TDateTime LastInactiveSave;
+  UnicodeString OrigRemoteDirectory;
 
   TRemoteThumbnailsMap Thumbnails;
   TRemoteThumbnailsQueue ThumbnailsQueue;
@@ -88,8 +94,8 @@ public:
   TManagedTerminal * __fastcall NewSessions(TList * DataList);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall Move(TTerminal * Source, TTerminal * Target);
-  void __fastcall DisconnectActiveTerminalIfPermanentFreeOtherwise();
-  void __fastcall DisconnectActiveTerminal();
+  void __fastcall DisconnectActiveTerminalIfPermanentFreeOtherwise(const UnicodeString & Message);
+  void __fastcall DisconnectActiveTerminal(const UnicodeString & Message = UnicodeString());
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
@@ -103,13 +109,17 @@ public:
   void NewLocalSession(const UnicodeString & LocalDirectory = UnicodeString(), const UnicodeString & OtherLocalDirectory = UnicodeString());
   void __fastcall Idle(bool SkipCurrentTerminal);
   UnicodeString __fastcall GetSessionTitle(TManagedTerminal * Terminal, bool Unique);
+  UnicodeString FormatTerminalNoteMessage(TManagedTerminal * Terminal, const UnicodeString & Message);
   UnicodeString __fastcall GetActiveSessionAppTitle();
   UnicodeString __fastcall GetAppProgressTitle();
   UnicodeString __fastcall FormatFormCaptionWithSession(TCustomForm * Form, const UnicodeString & Caption);
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
-  bool __fastcall IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data);
+  bool IsOpenedTerminal(TTerminal * Terminal);
+  bool IsReconnectingTerminal(TTerminal * Terminal);
+  bool IsAvailableTerminal(TTerminal * Terminal);
+  bool IsAvailableTerminalForSite(TTerminal * Terminal, TSessionData * Data);
   TManagedTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
@@ -129,6 +139,7 @@ public:
   __property TTerminal * LocalTerminal = { read = FLocalTerminal };
   __property TManagedTerminal * Sessions[int Index]  = { read = GetSession };
   __property bool Updating = { read = IsUpdating };
+  __property TManagedTerminal * ReconnectingInactiveTerminal = { read = FReconnectingInactiveTerminal };
 
 protected:
   virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
@@ -146,7 +157,6 @@ private:
   TTerminalPendingAction FTerminalPendingAction;
   TStrings * FSessionList;
   TList * FQueues;
-  TStrings * FTerminationMessages;
   UnicodeString FProgressTitle;
   UnicodeString FForegroundProgressTitle;
   TDateTime FDirectoryReadingStart;
@@ -157,7 +167,7 @@ private:
   std::unique_ptr<TCriticalSection> FChangeSection;
   std::vector<std::pair<TTerminalQueue *, TQueueEvent> > FQueueEvents;
   unsigned int FTaskbarButtonCreatedMessage;
-  ITaskbarList3 * FTaskbarList;
+  TComPtr<ITaskbarList3> FTaskbarList;
   int FAuthenticating;
   void * FBusyToken;
   bool FAuthenticationCancelled;
@@ -166,6 +176,8 @@ private:
   int FUpdating;
   int FMaxSessions;
   TTerminal * FOpeningTerminal;
+  TManagedTerminal * FReconnectingInactiveTerminal;
+  UnicodeString FReconnectingNote;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
@@ -217,7 +229,6 @@ private:
   void __fastcall FileNameInputDialogInitializeRenameBaseName(
     TObject * Sender, TInputDialogData * Data);
   void __fastcall InitTaskbarButtonCreatedMessage();
-  void __fastcall ReleaseTaskbarList();
   void __fastcall CreateTaskbarList();
   void __fastcall UpdateTaskbarList();
   void __fastcall AuthenticateFormCancel(TObject * Sender);
@@ -239,6 +250,12 @@ private:
   bool SupportedSession(TSessionData * Data);
   void __fastcall TerminalFatalExceptionTimer(unsigned int & Result);
   void NeedThumbnailDownloadQueueItem(TManagedTerminal * ATerminal);
+  void StartInactiveTerminalReconnect(TManagedTerminal * Terminal);
+  void CheckInactiveTerminalReconnect();
+  TTerminalThread * CreateTerminalThread(TTerminal * Terminal);
+  void ReconnectingTerminal(TManagedTerminal * ManagedTerminal);
+  void ReconnectedTerminal(TManagedTerminal * ManagedTerminal);
+  void FreeTerminalCleanup(TTerminal * ATerminal, bool IsActiveSession);
 };
 //---------------------------------------------------------------------------
 class TThumbnailDownloadQueueItem : public TTransferQueueItem
@@ -255,8 +272,6 @@ protected:
 private:
   TManagedTerminal * FManagedTerminal;
   TCustomScpExplorerForm * FScpExplorer;
-  int FIndex;
-  bool FVisible;
 
   bool Continue();
   bool CheckQueueFront(int Index, const UnicodeString & FileName, TSize ThumbnailSize);

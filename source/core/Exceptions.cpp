@@ -1,17 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "Exceptions.h"
-#include "TextsCore.h"
-#include "HelpCore.h"
+
 #include "Configuration.h"
-#include "CoreMain.h"
-#include "Interface.h"
-#include <StrUtils.hpp>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 static std::unique_ptr<TCriticalSection> IgnoredExceptionsCriticalSection(TraceInitPtr(new TCriticalSection()));
 typedef std::set<UnicodeString> TIgnoredExceptions;
@@ -170,7 +163,7 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
   {
     Configuration->Usage->Inc(CounterName);
     UnicodeString ExceptionDebugInfo =
-      E->ClassName() + L":" + GetExceptionDebugInfo();
+      E->ClassName() + L":" + GetExceptionDebugInfo(E);
     Configuration->Usage->Set(LastInternalExceptionCounter, ExceptionDebugInfo);
   }
 
@@ -369,10 +362,7 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
       FMoreMessages->Insert(0, UnformatMessage(Msg));
     }
 
-    if (IsInternalException(E))
-    {
-      AppendExceptionStackTraceAndForget(FMoreMessages);
-    }
+    AppendExceptionStackTrace(E, FMoreMessages);
 
     if (FMoreMessages->Count == 0)
     {
@@ -429,12 +419,14 @@ __fastcall EOSExtException::EOSExtException(UnicodeString Msg, int LastError) :
 //---------------------------------------------------------------------------
 __fastcall EFatal::EFatal(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword) :
   ExtException(Msg, E, HelpKeyword),
-  FReopenQueried(false)
+  ReopenQueried(false),
+  InactiveTerminationMessage(false)
 {
   EFatal * F = dynamic_cast<EFatal *>(E);
   if (F != NULL)
   {
-    FReopenQueried = F->ReopenQueried;
+    ReopenQueried = F->ReopenQueried;
+    InactiveTerminationMessage = F->InactiveTerminationMessage;
   }
 }
 //---------------------------------------------------------------------------

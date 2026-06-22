@@ -1,18 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include <RemoteFiles.h>
 #include <Terminal.h>
 #include <DiscMon.hpp>
-#include <Exceptions.h>
-#include "GUIConfiguration.h"
-#include "CoreMain.h"
-#include "TextsCore.h"
 #include "SynchronizeController.h"
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeController::TSynchronizeController(
   TSynchronizeEvent AOnSynchronize, TSynchronizeInvalidEvent AOnSynchronizeInvalid,

@@ -66,7 +66,7 @@
 #define AssemblyFileSource BinariesDirAssembly+"\WinSCPnet.dll"
 
 #ifdef Donations
-#define PayPalCardImage "PayPalCard.bmp"
+#define PayPalCardFileBase "PayPalCard"
 #endif
 
 #define Major
@@ -85,11 +85,10 @@
 #define WebArguments "ver=" +VersionOnly + "&lang={language}&utm_source=winscp&utm_medium=setup&utm_campaign=" + VersionOnly
 #define WebGettingStarted WebRoot + "eng/installed.php?" + WebArguments + "&prevver="
 
-#define MessagesPath(L) TranslationDir + "\" + "WinSCP." + L + ".islu"
+#define MessagesPath(L) TranslationDir + "\" + "WinSCP." + L + ".isl"
 
 #define ExplorerFileBase "Explorer"
 #define CommanderFileBase "Commander"
-#define SelectDirFileBase "Opened bookmark folder-stored session folder"
 
 [Setup]
 AppId={#AppId}
@@ -114,8 +113,10 @@ AppVerName=WinSCP {#Version}
 OutputBaseFilename={#BaseFilename}
 SolidCompression=yes
 #ifdef ImagesDir
-WizardImageFile={#ImagesDir}\Tall *.bmp
-WizardSmallImageFile={#ImagesDir}\Square *.bmp
+WizardImageFile={#ImagesDir}\Tall *.png
+WizardImageFileDynamicDark={#ImagesDir}\TallDark *.png
+WizardSmallImageFile={#ImagesDir}\Square *.png
+WizardSmallImageFileDynamicDark={#ImagesDir}\SquareDark *.png
 #endif
 ShowTasksTreeLines=yes
 PrivilegesRequired=admin
@@ -125,9 +126,8 @@ UsePreviousLanguage=no
 DisableProgramGroupPage=yes
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
-WizardStyle=modern
-; We do not want the Explorer restarts as that is not pleasant to the user
-CloseApplications=no
+WizardStyle=modern dynamic
+CloseApplications=yes
 UsedUserAreasWarning=no
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" https://winscp.net/eng/docs/installation
@@ -218,7 +218,7 @@ Name: searchpath; Description: {cm:AddSearchPath}; \
 
 [Icons]
 Name: "{autoprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
-  Comment: "{cm:ProgramComment2}"
+  Comment: "{cm:ProgramComment2}"; Check: not CmdLineParamExists('/NoStartIcon');
 ; This is created when desktopicon task is selected
 Name: "{autodesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   Tasks: desktopicon; Comment: "{cm:ProgramComment2}"
@@ -254,9 +254,8 @@ Type: files; Name: "{app}\WinSCP.cgl"
 ; that can take long with solid compression enabled
 Source: "{#ImagesDir}\{#ExplorerFileBase} *.bmp"; Flags: dontcopy
 Source: "{#ImagesDir}\{#CommanderFileBase} *.bmp"; Flags: dontcopy
-Source: "{#ImagesDir}\{#SelectDirFileBase} *.bmp"; Flags: dontcopy
 #ifdef Donations
-Source: "{#ImagesDir}\{#PayPalCardImage}"; Flags: dontcopy
+Source: "{#ImagesDir}\{#PayPalCardFileBase} *.bmp"; Flags: dontcopy
 #endif
 #endif
 Source: "{#MainFileSource}"; DestDir: "{app}"; \
@@ -269,7 +268,8 @@ Source: "{#AssemblyFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "license.txt"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
-; If the Check is ever removed, remove the ExtraDiskSpaceRequired parameter of the component too
+; If the Check is ever removed, remove the ExtraDiskSpaceRequired parameter of the component too.
+; When ShouldInstallShellExt returns false, registration for the existing copy is done in CurStepChanged.
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
@@ -428,6 +428,21 @@ begin
   end;
 end;
 
+function CmdLineParamExists(const Value: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+  begin
+    if CompareText(ParamStr(I), Value) = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
+
 function ShouldInstallShellExt(FileName: string; InstalledVersion: string): Boolean;
 var
   ExistingMS, ExistingLS: Cardinal;
@@ -464,57 +479,64 @@ begin
   end
     else
   begin
-    ExistingMajor := ExistingMS shr 16;
-    ExistingMinor := ExistingMS and $FFFF;
-    ExistingRev := ExistingLS shr 16;
-    ExistingBuild := ExistingLS and $FFFF;
-    Log(Format('Existing shell extension %s version: %d.%d.%d[.%d]', [FileName, ExistingMajor, ExistingMinor, ExistingRev, ExistingBuild]));
-
-    Log(Format('Installed extension version string: %s', [InstalledVersion]));
-    CutVersionPart(InstalledVersion, InstalledMajor);
-    CutVersionPart(InstalledVersion, InstalledMinor);
-    CutVersionPart(InstalledVersion, InstalledRev);
-    CutVersionPart(InstalledVersion, InstalledBuild);
-    Log(Format('Installed extension version: %d.%d.%d[.%d]', [InstalledMajor, InstalledMinor, InstalledRev, InstalledBuild]));
-
-    if (InstalledMajor <> ExistingMajor) or
-       ((ExistingMajor = 1) and (ExistingMinor <= 1)) then
+    if CmdLineParamExists('/InstallShellExt') then
     begin
-      if InstalledMajor <> ExistingMajor then
-      begin
-        Log('Existing extension has different major version, allowing installation, and will require restart, if it is locked.')
-      end
-        else
-      begin
-        // 1.1 uses Ansi encoding, and is incompatible with 1.2 and newer which uses Unicode
-        Log('Existing extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
-      end;
-
+      Log('Installing shell extension and will require restart as explicitly requested using command-line parameter.');
       Result := True;
       ShellExtNoRestart := False;
     end
       else
-    if (InstalledMinor > ExistingMinor) or
-       ((InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
+    if CmdLineParamExists('/InstallShellExtNoRestart') then
     begin
-      if IsAdminInstallMode then
+      Log('Installing shell extension and will delay replacing as explicitly requested using command-line parameter.');
+      Result := True;
+      ShellExtNoRestart := True;
+    end
+      else
+    begin
+      ExistingMajor := ExistingMS shr 16;
+      ExistingMinor := ExistingMS and $FFFF;
+      ExistingRev := ExistingLS shr 16;
+      ExistingBuild := ExistingLS and $FFFF;
+      Log(Format('Existing shell extension %s version: %d.%d.%d[.%d]', [FileName, ExistingMajor, ExistingMinor, ExistingRev, ExistingBuild]));
+
+      Log(Format('Installed extension version string: %s', [InstalledVersion]));
+      CutVersionPart(InstalledVersion, InstalledMajor);
+      CutVersionPart(InstalledVersion, InstalledMinor);
+      CutVersionPart(InstalledVersion, InstalledRev);
+      CutVersionPart(InstalledVersion, InstalledBuild);
+      Log(Format('Installed extension version: %d.%d.%d[.%d]', [InstalledMajor, InstalledMinor, InstalledRev, InstalledBuild]));
+
+      if (InstalledMajor <> ExistingMajor) or
+         ((ExistingMajor = 1) and (ExistingMinor <= 1)) then
       begin
-        Log('Installed extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
+        if InstalledMajor <> ExistingMajor then
+        begin
+          Log('Existing shell extension has different major version, allowing installation, and will require restart, if it is locked.')
+        end
+          else
+        begin
+          // 1.1 uses Ansi encoding, and is incompatible with 1.2 and newer which uses Unicode
+          Log('Existing shell extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
+        end;
+
+        Result := True;
+        ShellExtNoRestart := False;
+      end
+        else
+      if (InstalledMinor > ExistingMinor) or
+         ((InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
+      begin
+        Log('Installed shell extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
         Result := True;
         ShellExtNoRestart := True;
       end
         else
       begin
-        Log('Installed extension is newer than existing extension, but major version is the same, and installer does not have administrator privileges, so delayed replacement is not possible, skipping installation (extension will be upgraded only with the next major release)');
+        Log('Installed shell extension is same or older than existing extension (but the same major version), skipping installation');
         ShellExtNoRestart := False;
         Result := False;
       end;
-    end
-      else
-    begin
-      Log('Installed extension is same or older than existing extension (but the same major version), skipping installation');
-      ShellExtNoRestart := False;
-      Result := False;
     end;
   end;
 
@@ -558,6 +580,12 @@ begin
   ShellExec('open', Url, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
 end;
 
+
+function IsRestartingApplicationsPage: Boolean;
+begin
+  Result := WizardForm.PreparingMemo.Visible;
+end;
+
 function IsRestartPage: Boolean;
 begin
   Result := WizardForm.YesRadio.Visible;
@@ -595,6 +623,10 @@ begin
 
     wpReady:
       HelpKeyword := 'ui_installer_ready';
+
+    wpPreparing:
+      if IsRestartingApplicationsPage then
+        HelpKeyword := 'ui_installer_restartingapplications';
 
     wpFinished:
       HelpKeyword := 'ui_installer_finished';
@@ -707,19 +739,9 @@ begin
   Bitmap := TBitmap.Create();
   Bitmap.AlphaFormat := afDefined;
   Bitmap.LoadFromFile(FileName);
+  Image.BackColor := clNone;
   Image.Bitmap := Bitmap;
   Bitmap.Free;
-end;
-
-procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string);
-var
-  FileName: string;
-begin
-  ExtractTemporaryFile(Name);
-  FileName := ExpandConstant('{tmp}\' + Name);
-  LoadBitmap(Image, FileName);
-  // we won't need this anymore
-  DeleteFile(FileName);
 end;
 
 function GetScalingFactor: Integer;
@@ -735,9 +757,14 @@ end;
 procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer);
 var
   Name: String;
+  FileName: string;
 begin
   Name := Format('%s %d.bmp', [NameBase, SizeBase * GetScalingFactor div 100]);
-  LoadEmbededBitmap(Image, Name);
+  ExtractTemporaryFile(Name);
+  FileName := ExpandConstant('{tmp}\' + Name);
+  LoadBitmap(Image, FileName);
+  // we won't need this anymore
+  DeleteFile(FileName);
   Image.AutoSize := True;
 end;
 
@@ -757,21 +784,6 @@ end;
 function GetRight(Control: TControl): Integer;
 begin
   Result := Control.Left + Control.Width;
-end;
-
-function CmdLineParamExists(const Value: string): Boolean;
-var
-  I: Integer;
-begin
-  Result := False;
-  for I := 1 to ParamCount do
-  begin
-    if CompareText(ParamStr(I), Value) = 0 then
-    begin
-      Result := True;
-      Exit;
-    end;
-  end;
 end;
 
 function MsiEnumRelatedProducts(
@@ -918,7 +930,7 @@ var
 #endif
   HelpButton: TButton;
 #ifdef Donations
-  P: Integer;
+  P, H: Integer;
 #ifdef ImagesDir
   P2: Integer;
 #endif
@@ -973,6 +985,8 @@ begin
   // add help button
   HelpButton := TButton.Create(WizardForm);
   HelpButton.Parent := WizardForm;
+  // Setting Anchors is no longer necessary since 6.6.0 (as it never resizes the form),
+  // but keeping it for a good measure
   HelpButton.Anchors := [akLeft, akBottom];
   HelpButton.Left := WizardForm.ClientWidth - GetRight(WizardForm.CancelButton);
   HelpButton.Top := WizardForm.CancelButton.Top;
@@ -1016,6 +1030,9 @@ begin
 
   Caption := TLabel.Create(SetupTypePage);
   Caption.WordWrap := True;
+  Caption.Top := GetBottom(TypicalTypeButton) + ScaleY(6);
+  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
   if not Upgrade then
   begin
     Caption.Caption :=
@@ -1028,9 +1045,6 @@ begin
     Caption.Caption :=
       Bullet(CustomMessage('TypicalUpgradeType1'));
   end;
-  Caption.Left := ScaleX(4) + ScaleX(20);
-  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
-  Caption.Top := GetBottom(TypicalTypeButton) + ScaleY(6);
   Caption.Parent := SetupTypePage.Surface;
   Caption.FocusControl := TypicalTypeButton;
   Caption.OnClick := @CaptionClick;
@@ -1050,6 +1064,9 @@ begin
 
   Caption := TLabel.Create(SetupTypePage);
   Caption.WordWrap := True;
+  Caption.Top := GetBottom(CustomTypeButton) + ScaleY(6);
+  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
   if not Upgrade then
   begin
     Caption.Caption :=
@@ -1061,9 +1078,6 @@ begin
       Bullet(CustomMessage('CustomUpgradeType1')) + NewLine +
       Bullet(CustomMessage('CustomUpgradeType2'));
   end;
-  Caption.Left := ScaleX(4) + ScaleX(20);
-  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
-  Caption.Top := GetBottom(CustomTypeButton) + ScaleY(6);
   Caption.Parent := SetupTypePage.Surface;
   Caption.FocusControl := CustomTypeButton;
   Caption.OnClick := @CaptionClick;
@@ -1109,14 +1123,14 @@ begin
 
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
+  Caption.Top := CommanderRadioButton.Top;
+  Caption.Left := GetRight(CommanderRadioButton);
+  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Caption :=
       Bullet(CustomMessage('NortonCommanderInterface1')) + NewLine +
       Bullet(CustomMessage('NortonCommanderInterface2')) + NewLine +
       Bullet(CustomMessage('NortonCommanderInterface3'));
   Caption.Anchors := [akLeft, akTop, akRight];
-  Caption.Left := GetRight(CommanderRadioButton);
-  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
-  Caption.Top := CommanderRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := CommanderRadioButton;
   Caption.OnClick := @CaptionClick;
@@ -1142,14 +1156,14 @@ begin
 
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
+  Caption.Top := ExplorerRadioButton.Top;
+  Caption.Left := GetRight(ExplorerRadioButton);
+  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Caption :=
       Bullet(CustomMessage('ExplorerInterface1')) + NewLine +
       Bullet(CustomMessage('ExplorerInterface2')) + NewLine +
       Bullet(CustomMessage('ExplorerInterface3'));
   Caption.Anchors := [akLeft, akTop, akRight];
-  Caption.Left := GetRight(ExplorerRadioButton);
-  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
-  Caption.Top := ExplorerRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := ExplorerRadioButton;
   Caption.OnClick := @CaptionClick;
@@ -1182,11 +1196,11 @@ begin
 
   Caption := TLabel.Create(DonationPanel);
   Caption.WordWrap := True;
+  Caption.Top := 0;
+  Caption.Left := 0;
+  Caption.Width := DonationPanel.Width;
   Caption.Caption := CustomMessage('PleaseDonate');
   Caption.Anchors := [akLeft, akTop, akRight];
-  Caption.Left := 0;
-  Caption.Top := 0;
-  Caption.Width := DonationPanel.Width;
   Caption.Parent := DonationPanel;
 
   P := GetBottom(Caption) + ScaleY(12);
@@ -1208,38 +1222,25 @@ begin
 
 #ifdef ImagesDir
   Image := TBitmapImage.Create(DonationPanel);
-  LoadEmbededBitmap(Image, '{#PayPalCardImage}');
-  Image.BackColor := DonationPanel.Color;
-  Image.AutoSize := True;
+  LoadEmbededScaledIcon(Image, '{#PayPalCardFileBase}', 100);
   Image.Cursor := crHand;
   Image.Parent := DonationPanel;
   Image.Left := ScaleX(108);
-  Image.Top := P2 + ScaleX(8);
+  Image.Top := P2;
   Image.Hint := CustomMessage('AboutDonations');
   Image.ShowHint := True;
   Image.OnClick := @AboutDonationsLinkClick;
 #endif
 
-  DonationPanel.Height := GetBottom(AboutDonationCaption);
+  H := GetBottom(AboutDonationCaption);
+  if H < Image.Height then H := Image.Height;
+  DonationPanel.Height := H + ScaleY(8);
 
 #endif
 
   WizardForm.YesRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   WizardForm.NoRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   UpdatePostInstallRunCheckboxes(nil);
-
-#ifdef ImagesDir
-  // Text does not scale as quick as with DPI,
-  // so the icon may overlap the labels. Shift them.
-  P := WizardForm.SelectDirBitmapImage.Width;
-  LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32);
-  P := (WizardForm.SelectDirBitmapImage.Width - P);
-  // Vertical change should be the same as horizontal
-  WizardForm.SelectDirLabel.Left := WizardForm.SelectDirLabel.Left + P;
-  WizardForm.SelectDirBrowseLabel.Top := WizardForm.SelectDirBrowseLabel.Top + P;
-  WizardForm.DirEdit.Top := WizardForm.DirEdit.Top + P;
-  WizardForm.DirBrowseButton.Top := WizardForm.DirBrowseButton.Top + P;
-#endif
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
@@ -1408,6 +1409,38 @@ begin
       end;
     end;
 #endif
+  end
+    else
+  if CurPageID = wpPreparing then
+  begin
+    // Are we at the "Restart applications?" screen.
+    // If PreparingMemo is hidden, it's "installation/removal was not completed" screen
+    if IsRestartingApplicationsPage then
+    begin
+      S := CustomMessage('ApplicationsFoundDragExt');
+      if IsAdminInstallMode then
+        S := S + NewLine + CustomMessage('ApplicationsFoundRestart');
+      WizardForm.PreparingLabel.Caption := S;
+
+      WizardForm.IncTopDecHeight(
+        WizardForm.PreparingMemo, WizardForm.AdjustLabelHeight(WizardForm.PreparingLabel));
+
+      if not IsAdminInstallMode then
+      begin
+        Log('Not automatically choosing not to restart applications as installer is not running in admin mode, so delaying replacement after Windows restart is not possible');
+      end
+        else
+      if not ShellExtNoRestart then
+      begin
+        Log('Not automatically choosing not to restart applications as shell extension upgrade is critical');
+      end
+        else
+      begin
+        Log('Automatically choosing not to restart applications as shell extension upgrade is not critical (or there''s even other reason the restart is needed) and installer is running in admin mode, so replacement after Windows restart should be possible and enough');
+        WizardForm.PreparingNoRadio.Checked := True;
+        WizardForm.NextButton.OnClick(WizardForm.NextButton);
+      end;
+    end;
   end;
 end;
 
@@ -1503,6 +1536,20 @@ begin
   if CurStep = ssPostInstall then
   begin
     Log('Post install');
+
+    if (ShellExtNewerCacheFileName <> '') and
+       (not ShellExtNewerCacheResult) then
+    begin
+      Log('The shell extension was not updated, re-registering the existing version');
+      // IsWin64 = False - Consistently with absence of 64bit flag in [Files]
+      try
+        RegisterServer(False, ShellExtNewerCacheFileName, False);
+        Log('Registration successful.');
+      except
+        Log('Registration failed:' + NewLine + GetExceptionMessage);
+      end;
+    end;
+
     InstallationDone := True;
   end
     else

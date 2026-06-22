@@ -328,7 +328,6 @@ static HttpAuthDetails *parse_http_auth_header(HttpProxyNegotiator *s)
                     (!get_token(s) && !get_quoted_string(s)))
                     return auth_error(d, "parse error in Digest algorithm "
                                       "field");
-                { // WINSCP
                 bool found = false;
                 size_t i;
 
@@ -353,14 +352,49 @@ static HttpAuthDetails *parse_http_auth_header(HttpProxyNegotiator *s)
                 }
 
                 d->digest_hash = i;
-                } // WINSCP
             } else if (!stricmp(s->token->s, "qop")) {
                 if (!get_separator(s, '=') ||
                     !get_quoted_string(s))
                     return auth_error(d, "parse error in Digest qop field");
-                if (stricmp(s->token->s, "auth"))
-                    return auth_error(d, "quality-of-protection type '%s' not "
-                                      "supported", s->token->s);
+
+                /*
+                 * RFC 7616 section 3.3: "qop" specifies one or more
+                 * options for the "quality of protection" offered by
+                 * the digest authentication. These options vary what
+                 * goes into the message digest: e.g. RFC 7616 defines
+                 * "auth-int", authentication with integrity
+                 * protection, which includes the body of the HTTP
+                 * request in the hash, so that even if you're
+                 * speaking cleartext HTTP, a MITM can't replace the
+                 * document you send without invalidating your auth
+                 * hash.
+                 *
+                 * For CONNECT requests this doesn't really apply,
+                 * because all the interesting data is transferred
+                 * _after_ the HTTP request and response are sent, and
+                 * by that time, the auth hash has to have been
+                 * checked already! So the only option we support is
+                 * plain "auth".
+                 *
+                 * RFC 7616 is vague on exactly how the options are
+                 * delimited in the qop string. It just says "a quoted
+                 * string of one or more tokens", without saying how
+                 * the tokens are separated. But the examples in
+                 * section 3.9.1 include qop="auth, auth-int", with
+                 * both a comma and a space between the two tokens. So
+                 * here we permit any combination of commas and
+                 * whitespace as a separator.
+                 */
+                ptrlen list = ptrlen_from_strbuf(s->token);
+                ptrlen word;
+                bool ok = false;
+                while ((word = ptrlen_get_word(&list, ", \t")).len)
+                    if (ptrlen_eq_string(word, "auth"))
+                        ok = true;
+                if (!ok)
+                    return auth_error(d, "quality-of-protection list \"%s\" "
+                                      "does not include our only supported "
+                                      "option \"auth\"", s->token->s);
             } else {
                 /* Ignore any other auth-param */
                 if (!get_separator(s, '=') ||
@@ -419,16 +453,13 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
         if (s->next_auth->auth_type == AUTH_BASIC) {
             put_datalit(pn->output, "Proxy-Authorization: Basic ");
 
-            { // WINSCP
             strbuf *base64_input = strbuf_new_nm();
             put_datapl(base64_input, ptrlen_from_strbuf(s->username));
             put_byte(base64_input, ':');
             put_datapl(base64_input, ptrlen_from_strbuf(s->password));
 
-            { // WINSCP
             char base64_output[4];
-            size_t i, e; // WINSCP
-            for (i = 0, e = base64_input->len; i < e; i += 3) {
+            for (size_t i = 0, e = base64_input->len; i < e; i += 3) {
                 base64_encode_atom(base64_input->u + i,
                                    e-i > 3 ? 3 : e-i, base64_output);
                 put_data(pn->output, base64_output, 4);
@@ -436,8 +467,6 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
             strbuf_free(base64_input);
             smemclr(base64_output, sizeof(base64_output));
             put_datalit(pn->output, "\r\n");
-            } // WINSCP
-            } // WINSCP
         } else if (s->next_auth->auth_type == AUTH_DIGEST) {
             put_datalit(pn->output, "Proxy-Authorization: Digest ");
 
@@ -499,14 +528,14 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
         if (s->http_status == 407) {
             /*
              * If this is going to be an auth request, we expect to
-             * see at least one Proxy-Authorization header offering us
+             * see at least one Proxy-Authenticate header offering us
              * auth options. Start by preloading s->next_auth with a
              * fallback error message, which will be used if nothing
              * better is available.
              */
             http_auth_details_free(s->next_auth);
             s->next_auth = http_auth_details_new();
-            auth_error(s->next_auth, "no Proxy-Authorization header seen in "
+            auth_error(s->next_auth, "no Proxy-Authenticate header seen in "
                        "HTTP 407 Proxy Authentication Required response");
         }
 
@@ -526,7 +555,6 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
             }
 
             /* Parse the header name */
-            { // WINSCP
             HttpHeader hdr = HDR_UNKNOWN;
             {
                 #define CHECK_HEADER(id, string) \
@@ -611,7 +639,6 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
                     http_auth_details_free(auth);
                 }
             }
-            } // WINSCP
         } while (s->header->len > 0);
 
         /* Read and ignore the entire response document */
@@ -783,9 +810,8 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
 }
 
 const struct ProxyNegotiatorVT http_proxy_negotiator_vt = {
-    // WINSCP
-    /*.new =*/ proxy_http_new,
-    /*.process_queue =*/ proxy_http_process_queue,
-    /*.free =*/ proxy_http_free,
-    /*.type =*/ "HTTP",
+    .new = proxy_http_new,
+    .free = proxy_http_free,
+    .process_queue = proxy_http_process_queue,
+    .type = "HTTP",
 };

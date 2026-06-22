@@ -1,26 +1,16 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <WinInterface.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <WinConfiguration.h>
-#include <CoreMain.h>
-#include <Tools.h>
-#include <BaseUtils.hpp>
 #include <Terminal.h>
 #include "FileFind.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
-#pragma link "PngImageList"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-TFileFindDialog * FileFindDialog = NULL;
+static TFileFindDialog * FileFindDialog = NULL;
 static const int NoSort = 1;
 //---------------------------------------------------------------------------
 void __fastcall ShowFileFindDialog(
@@ -59,7 +49,7 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner)
 
   UpdateImages();
 
-  UseDesktopFont(FileView);
+  UseDesktopFont(FileView2);
   UseDesktopFont(StatusBar);
 
   FFrameAnimation.Init(AnimationPaintBox, L"Find");
@@ -71,7 +61,7 @@ __fastcall TFileFindDialog::~TFileFindDialog()
   TFindFileConfiguration FormConfiguration = CustomWinConfiguration->FindFile;
   // | is there to make TCustomListViewColProperties.SetParamsStr stop there
   // (and it allows adding new parameters to the col properties in the future)
-  FormConfiguration.ListParams = FORMAT(L"%s|/%d", (FileView->ColProperties->ParamsStr, 1));
+  FormConfiguration.ListParams = FORMAT(L"%s|/%d", (FileView2->ColProperties->ParamsStr, 1));
   UnicodeString WindowParams = StoreFormSize(this);
   // this is particularly to prevent saving the form state
   // for the first time, keeping default positioning by a system
@@ -88,7 +78,7 @@ __fastcall TFileFindDialog::~TFileFindDialog()
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::UpdateImages()
 {
-  FileView->SmallImages = ShellImageListForControl(this, ilsSmall);
+  FileView2->SmallImages = ShellImageListForControl(this, ilsSmall);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileFindDialog::IsFinding()
@@ -113,13 +103,13 @@ void __fastcall TFileFindDialog::UpdateControls()
   }
   StartStopButton->Caption = StartStopCaption;
   EnableControl(FilterGroup, !Finding);
-  FocusAction->Enabled = (FileView->ItemFocused != NULL);
-  bool EnableFileOperations = !Finding && (FileView->SelCount > 0);
+  FocusAction->Enabled = (FileView2->ItemFocused != NULL);
+  bool EnableFileOperations = !Finding && (FileView2->SelCount > 0);
   DeleteAction->Enabled = EnableFileOperations;
   DownloadAction->Enabled = EnableFileOperations;
   EditAction->Enabled = EnableFileOperations;
-  CopyAction->Enabled = (FileView->Items->Count > 0);
-  SelectAllAction->Enabled = (FileView->SelCount < FileView->Items->Count);
+  CopyAction->Enabled = (FileView2->Items->Count > 0);
+  SelectAllAction->Enabled = (FileView2->SelCount < FileView2->Items->Count);
 
   switch (FState)
   {
@@ -152,7 +142,7 @@ void __fastcall TFileFindDialog::UpdateControls()
       break;
   }
 
-  FocusButton->Default = FileView->Focused() && (FState != ffInit);
+  FocusButton->Default = FileView2->Focused() && (FState != ffInit);
   StartStopButton->Default = !FocusButton->Default;
 }
 //---------------------------------------------------------------------------
@@ -200,12 +190,12 @@ void __fastcall TFileFindDialog::ClearItem(TListItem * Item)
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::Clear()
 {
-  for (int Index = 0; Index < FileView->Items->Count; Index++)
+  for (int Index = 0; Index < FileView2->Items->Count; Index++)
   {
-    ClearItem(FileView->Items->Item[Index]);
+    ClearItem(FileView2->Items->Item[Index]);
   }
 
-  FileView->Items->Clear();
+  FileView2->Items->Clear();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::Start()
@@ -216,9 +206,7 @@ void __fastcall TFileFindDialog::Start()
   }
 
   RemoteDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
   MaskEdit->SaveToHistory();
-  WinConfiguration->History[L"Mask"] = MaskEdit->Items;
   WinConfiguration->SelectMask = MaskEdit->Text;
 
   DebugAssert(FState != ffFinding);
@@ -281,25 +269,25 @@ void __fastcall TFileFindDialog::Start()
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
-  const UnicodeString FileName, const TRemoteFile * AFile, bool & Cancel)
+  const UnicodeString DebugUsedArg(FileName), const TRemoteFile * AFile, bool & Cancel)
 {
   TListItem * Item;
-  int Count = FileView->Items->Count;
+  int Count = FileView2->Items->Count;
   if ((GetColProperties()->SortColumn == NoSort) || (Count == 0))
   {
-    Item = FileView->Items->Add();
+    Item = FileView2->Items->Add();
   }
   else
   {
-    TRemoteFile * FirstFile = static_cast<TRemoteFile *>(FileView->Items->Item[0]->Data);
-    TRemoteFile * LastFile = static_cast<TRemoteFile *>(FileView->Items->Item[Count - 1]->Data);
+    TRemoteFile * FirstFile = static_cast<TRemoteFile *>(FileView2->Items->Item[0]->Data);
+    TRemoteFile * LastFile = static_cast<TRemoteFile *>(FileView2->Items->Item[Count - 1]->Data);
     if (FilesCompare(AFile, FirstFile) < 0)
     {
-      Item = FileView->Items->Insert(0);
+      Item = FileView2->Items->Insert(0);
     }
     else if (FilesCompare(LastFile, AFile) < 0)
     {
-      Item = FileView->Items->Add();
+      Item = FileView2->Items->Add();
     }
     else
     {
@@ -309,7 +297,7 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
       {
         int Index = (Start + End) / 2;
         DebugAssert((Index >= 0) && (Index < End));
-        TRemoteFile * FileAtIndex = static_cast<TRemoteFile *>(FileView->Items->Item[Index]->Data);
+        TRemoteFile * FileAtIndex = static_cast<TRemoteFile *>(FileView2->Items->Item[Index]->Data);
         int Compare = FilesCompare(AFile, FileAtIndex);
         if (Compare <= 0)
         {
@@ -320,7 +308,7 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
           Start = Index;
         }
       }
-      Item = FileView->Items->Insert(Start + 1);
+      Item = FileView2->Items->Insert(Start + 1);
     }
   }
 
@@ -386,7 +374,7 @@ void __fastcall TFileFindDialog::StartStopButtonClick(TObject * /*Sender*/)
     Clear();
     if (ActiveControl->Parent == FilterGroup)
     {
-      FileView->SetFocus();
+      FileView2->SetFocus();
     }
     Start();
   }
@@ -408,15 +396,11 @@ void __fastcall TFileFindDialog::FormShow(TObject * /*Sender*/)
   InstallPathWordBreakProc(MaskEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
 
-  // have to set history after value, to prevent autocompletition
-  MaskEdit->Items = WinConfiguration->History[L"Mask"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
-
   UpdateFormPosition(this, poOwnerFormCenter);
   RestoreFormSize(CustomWinConfiguration->FindFile.WindowParams, this);
   UnicodeString S = CustomWinConfiguration->FindFile.ListParams;
   UnicodeString ParamsStr = CutToChar(S, L'/', true);
-  FileView->ColProperties->ParamsStr = ParamsStr;
+  FileView2->ColProperties->ParamsStr = ParamsStr;
   UnicodeString V = CutToChar(S, L'/', true);
   if (StrToIntDef(V, 0) == 0)
   {
@@ -463,7 +447,7 @@ void __fastcall TFileFindDialog::Dispatch(void * Message)
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else
   {
@@ -522,7 +506,7 @@ void __fastcall TFileFindDialog::DoFocusFile(const UnicodeString & Path)
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FocusFile()
 {
-  UnicodeString Path = static_cast<TRemoteFile *>(FileView->ItemFocused->Data)->FullFileName;
+  UnicodeString Path = static_cast<TRemoteFile *>(FileView2->ItemFocused->Data)->FullFileName;
   // To make focussing directories work,
   // otherwise it would try to focus "empty-named file" in the Path
   Path = UnixExcludeTrailingBackslash(Path);
@@ -537,9 +521,9 @@ void __fastcall TFileFindDialog::FocusFile()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileViewDblClick(TObject * /*Sender*/)
+void __fastcall TFileFindDialog::FileView2DblClick(TObject * /*Sender*/)
 {
-  if (FileView->ItemFocused != NULL)
+  if (FileView2->ItemFocused != NULL)
   {
     FocusFile();
   }
@@ -550,7 +534,7 @@ void __fastcall TFileFindDialog::FocusActionExecute(TObject * /*Sender*/)
   FocusFile();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileViewSelectItem(TObject * /*Sender*/,
+void __fastcall TFileFindDialog::FileView2SelectItem(TObject * /*Sender*/,
   TListItem * /*Item*/, bool /*Selected*/)
 {
   UpdateControls();
@@ -569,9 +553,9 @@ void __fastcall TFileFindDialog::CopyToClipboard()
 {
   TInstantOperationVisualizer Visualizer;
   std::unique_ptr<TStrings> Strings(new TStringList());
-  for (int Index = 0; Index < FileView->Items->Count; Index++)
+  for (int Index = 0; Index < FileView2->Items->Count; Index++)
   {
-    TListItem * Item = FileView->Items->Item[Index];
+    TListItem * Item = FileView2->Items->Item[Index];
     TRemoteFile * File = static_cast<TRemoteFile *>(Item->Data);
     Strings->Add(File->FullFileName);
   }
@@ -589,7 +573,7 @@ void __fastcall TFileFindDialog::FormClose(TObject * /*Sender*/, TCloseAction & 
   Action = caFree;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileViewContextPopup(TObject * Sender, TPoint & MousePos, bool & Handled)
+void __fastcall TFileFindDialog::FileView2ContextPopup(TObject * Sender, TPoint & MousePos, bool & Handled)
 {
   // to update source popup menu before TBX menu is created
   UpdateControls();
@@ -604,7 +588,7 @@ TListItem * __fastcall TFileFindDialog::FileOperationFinished(const UnicodeStrin
   if (DebugAlwaysTrue(I != FFileItemMap.end()))
   {
     Result = I->second;
-    FileView->MakeProgressVisible(Result);
+    FileView2->MakeProgressVisible(Result);
     FFileItemMap.erase(I);
   }
   return Result;
@@ -617,7 +601,7 @@ void __fastcall TFileFindDialog::FileDeleteFinished(
   if (FileName.IsEmpty())
   {
     DebugAssert(Success && NotCancelled);
-    FileView->SelectAll(smNone);
+    FileView2->SelectAll(smNone);
   }
   else
   {
@@ -637,7 +621,7 @@ void __fastcall TFileFindDialog::FileDownloadFinished(
   {
     DebugAssert(Success && NotCancelled);
     // Moved to queue, see call in TCustomScpExplorerForm::CopyParamDialog
-    FileView->SelectAll(smNone);
+    FileView2->SelectAll(smNone);
   }
   else
   {
@@ -655,13 +639,13 @@ void __fastcall TFileFindDialog::FileListOperation(
   std::unique_ptr<TStrings> FileList(new TStringList());
 
   DebugAssert(FFileItemMap.empty());
-  TListItem * Item = FileView->Selected;
+  TListItem * Item = FileView2->Selected;
   while (Item != NULL)
   {
     TRemoteFile * File = static_cast<TRemoteFile *>(Item->Data);
     FileList->AddObject(File->FullFileName, File);
     FFileItemMap.insert(std::make_pair(File->FullFileName, Item));
-    Item = FileView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+    Item = FileView2->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
 
   try
@@ -684,7 +668,7 @@ void __fastcall TFileFindDialog::DeleteActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::SelectAllActionExecute(TObject * /*Sender*/)
 {
-  FileView->SelectAll(smAll);
+  FileView2->SelectAll(smAll);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::DownloadActionExecute(TObject * /*Sender*/)
@@ -699,7 +683,7 @@ void __fastcall TFileFindDialog::EditActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 TIEListViewColProperties * TFileFindDialog::GetColProperties()
 {
-  return dynamic_cast<TIEListViewColProperties *>(FileView->ColProperties);
+  return dynamic_cast<TIEListViewColProperties *>(FileView2->ColProperties);
 }
 //---------------------------------------------------------------------------
 int TFileFindDialog::FilesCompare(const TRemoteFile * File1, const TRemoteFile * File2)
@@ -741,7 +725,7 @@ int TFileFindDialog::FilesCompare(const TRemoteFile * File1, const TRemoteFile *
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileViewCompare(TObject *, TListItem * Item1, TListItem * Item2, int DebugUsedArg(Data), int & Compare)
+void __fastcall TFileFindDialog::FileView2Compare(TObject *, TListItem * Item1, TListItem * Item2, int DebugUsedArg(Data), int & Compare)
 {
   TRemoteFile * File1 = static_cast<TRemoteFile *>(Item1->Data);
   TRemoteFile * File2 = static_cast<TRemoteFile *>(Item2->Data);

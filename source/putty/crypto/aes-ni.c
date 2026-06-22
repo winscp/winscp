@@ -1,34 +1,15 @@
+#if defined(WINSCP_VS) || defined(_WIN64)
+
+#ifdef __clang__
+#pragma clang attribute push(__attribute__((target("sse2,aes,mmx,ssse3,sse4.1"))), apply_to=function)
+#endif
+
 /*
  * Hardware-accelerated implementation of AES using x86 AES-NI.
  */
 
 #include "ssh.h"
 #include "aes.h"
-
-#ifndef WINSCP_VS
-bool aes_ni_available(void);
-ssh_cipher *aes_ni_new(const ssh_cipheralg *alg);
-void aes_ni_free(ssh_cipher *ciph);
-void aes_ni_setiv_cbc(ssh_cipher *ciph, const void *iv);
-void aes_ni_setkey(ssh_cipher *ciph, const void *vkey);
-void aes_ni_setiv_sdctr(ssh_cipher *ciph, const void *iv);
-void aes_ni_setiv_gcm(ssh_cipher *ciph, const void *iv);
-#define NI_ENC_DEC_H(len)                                               \
-    void aes##len##_ni_cbc_encrypt(                                     \
-        ssh_cipher *ciph, void *vblk, int blklen);                      \
-    void aes##len##_ni_cbc_decrypt(                                     \
-        ssh_cipher *ciph, void *vblk, int blklen);                      \
-    void aes##len##_ni_sdctr(                                           \
-        ssh_cipher *ciph, void *vblk, int blklen);                      \
-    void aes##len##_ni_gcm(                                             \
-        ssh_cipher *ciph, void *vblk, int blklen);                      \
-    void aes##len##_ni_encrypt_ecb_block(                               \
-        ssh_cipher *ciph, void *vblk);                                  \
-
-NI_ENC_DEC_H(128)
-NI_ENC_DEC_H(192)
-NI_ENC_DEC_H(256)
-#else
 
 #include <wmmintrin.h>
 #include <smmintrin.h>
@@ -40,7 +21,7 @@ NI_ENC_DEC_H(256)
 #define GET_CPU_ID(out) __cpuid(out, 1)
 #endif
 
-/*static WINSCP*/ bool aes_ni_available(void)
+static bool aes_ni_available(void)
 {
     /*
      * Determine if AES is available on this CPU, by checking that
@@ -142,14 +123,17 @@ static void aes_ni_key_expand(
 // WINSCP
 // WORKAROUND
 // Cannot use _mm_setr_epi* - it results in the constant being stored in .rdata segment.
-// objconv reports:
-// Warning 1060: Different alignments specified for same segment, %s. Using highest alignment.rdata
-// Despite that the code crashes.
+// And consequently the code crashes.
 // This macro is based on:
-// Based on https://stackoverflow.com/q/35268036/850848
-#define _MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
+// https://stackoverflow.com/q/35268036/850848
+#ifdef _WIN64
+#define MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
+    _mm_setr_epi8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af)
+#else
+#define MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
     { (char)a0, (char)a1, (char)a2, (char)a3, (char)a4, (char)a5, (char)a6, (char)a7, \
       (char)a8, (char)a9, (char)aa, (char)ab, (char)ac, (char)ad, (char)ae, (char)af }
+#endif
 
 /*
  * Auxiliary routine to increment the 128-bit counter used in SDCTR
@@ -157,7 +141,7 @@ static void aes_ni_key_expand(
  */
 static inline __m128i aes_ni_sdctr_increment(__m128i v)
 {
-    const __m128i ONE = _MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
+    const __m128i ONE = MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
     const __m128i ZERO = _mm_setzero_si128();
 
     /* Increment the low-order 64 bits of v */
@@ -180,7 +164,7 @@ static inline __m128i aes_ni_sdctr_increment(__m128i v)
  */
 static inline __m128i aes_ni_gcm_increment(__m128i v)
 {
-    const __m128i ONE  = _MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
+    const __m128i ONE  = MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
     return _mm_add_epi32(v, ONE);
 }
 
@@ -190,7 +174,7 @@ static inline __m128i aes_ni_gcm_increment(__m128i v)
  */
 static inline __m128i aes_ni_sdctr_reverse(__m128i v)
 {
-    const __m128i R = _MM_SETR_EPI8(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0); // WINSCP
+    const __m128i R = MM_SETR_EPI8(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0); // WINSCP
     v = _mm_shuffle_epi8(
         v, R); // WINSCP
     return v;
@@ -208,7 +192,7 @@ struct aes_ni_context {
     ssh_cipher ciph;
 };
 
-/*static WINSCP*/ ssh_cipher *aes_ni_new(const ssh_cipheralg *alg)
+static ssh_cipher *aes_ni_new(const ssh_cipheralg *alg)
 {
     const struct aes_extra *extra = (const struct aes_extra *)alg->extra;
     if (!check_availability(extra))
@@ -232,7 +216,7 @@ struct aes_ni_context {
     return &ctx->ciph;
 }
 
-/*static WINSCP*/ void aes_ni_free(ssh_cipher *ciph)
+static void aes_ni_free(ssh_cipher *ciph)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     void *allocation = ctx->pointer_to_free;
@@ -240,7 +224,7 @@ struct aes_ni_context {
     sfree(allocation);
 }
 
-/*static WINSCP*/ void aes_ni_setkey(ssh_cipher *ciph, const void *vkey)
+static void aes_ni_setkey(ssh_cipher *ciph, const void *vkey)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     const unsigned char *key = (const unsigned char *)vkey;
@@ -249,20 +233,20 @@ struct aes_ni_context {
                       ctx->keysched_e, ctx->keysched_d);
 }
 
-/*static WINSCP*/ void aes_ni_setiv_cbc(ssh_cipher *ciph, const void *iv)
+static void aes_ni_setiv_cbc(ssh_cipher *ciph, const void *iv)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     ctx->iv = _mm_loadu_si128(iv);
 }
 
-/*static WINSCP*/ void aes_ni_setiv_sdctr(ssh_cipher *ciph, const void *iv)
+static void aes_ni_setiv_sdctr(ssh_cipher *ciph, const void *iv)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     __m128i counter = _mm_loadu_si128(iv);
     ctx->iv = aes_ni_sdctr_reverse(counter);
 }
 
-/*WINSCP static*/ void aes_ni_setiv_gcm(ssh_cipher *ciph, const void *iv)
+static void aes_ni_setiv_gcm(ssh_cipher *ciph, const void *iv)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     __m128i counter = _mm_loadu_si128(iv);
@@ -278,7 +262,7 @@ static void aes_ni_next_message_gcm(ssh_cipher *ciph)
     msg_counter <<= 32;
     msg_counter |= (uint32_t)_mm_extract_epi32(ctx->iv, 1);
     msg_counter++;
-    ctx->iv = _mm_set_epi32(fixed, (int)(msg_counter >> 32), (int)msg_counter, 1); // WINSCP
+    ctx->iv = _mm_set_epi32(fixed, (int)(msg_counter >> 32), (int)msg_counter, 1); // WINSCP VS
 }
 
 typedef __m128i (*aes_ni_fn)(__m128i v, const __m128i *keysched);
@@ -338,8 +322,10 @@ static inline void aes_encrypt_ecb_block_ni(
     _mm_storeu_si128(blk, ciphertext);
 }
 
+#ifdef WINSCP_VS
 // WINSCP (fixes linker alignment issues for the following function)
-const __m128i DUMMY; // WINSCP
+const __m128i DUMMY;
+#endif
 
 static inline void aes_gcm_ni(
     ssh_cipher *ciph, void *vblk, int blklen, aes_ni_fn encrypt)
@@ -358,19 +344,19 @@ static inline void aes_gcm_ni(
 }
 
 #define NI_ENC_DEC(len)                                                 \
-    /*static WINSCP*/ void aes##len##_ni_cbc_encrypt(                              \
+    static void aes##len##_ni_cbc_encrypt(                              \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_cbc_ni_encrypt(ciph, vblk, blklen, aes_ni_##len##_e); }       \
-    /*static WINSCP*/ void aes##len##_ni_cbc_decrypt(                              \
+    static void aes##len##_ni_cbc_decrypt(                              \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_cbc_ni_decrypt(ciph, vblk, blklen, aes_ni_##len##_d); }       \
-    /*static WINSCP*/ void aes##len##_ni_sdctr(                                    \
+    static void aes##len##_ni_sdctr(                                    \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_sdctr_ni(ciph, vblk, blklen, aes_ni_##len##_e); }             \
-    /*static WINSCP*/ void aes##len##_ni_gcm(                                      \
+    static void aes##len##_ni_gcm(                                      \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_gcm_ni(ciph, vblk, blklen, aes_ni_##len##_e); }               \
-    /*static WINSCP*/ void aes##len##_ni_encrypt_ecb_block(                        \
+    static void aes##len##_ni_encrypt_ecb_block(                        \
         ssh_cipher *ciph, void *vblk)                                   \
     { aes_encrypt_ecb_block_ni(ciph, vblk, aes_ni_##len##_e); }
 
@@ -378,7 +364,15 @@ NI_ENC_DEC(128)
 NI_ENC_DEC(192)
 NI_ENC_DEC(256)
 
-#endif // WINSCP_VS
-
 AES_EXTRA(_ni);
 AES_ALL_VTABLES(_ni, "AES-NI accelerated");
+
+#ifdef _WIN64
+#pragma clang attribute pop
+#endif
+
+#else
+
+extern int aes_ni_dummy_winscp; // unit cannot be empty
+
+#endif // WINSCP_VS || _WIN64

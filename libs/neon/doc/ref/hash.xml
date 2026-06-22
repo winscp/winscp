@@ -54,6 +54,10 @@
 	    <listitem><simpara>MD5</simpara></listitem>
 	  </varlistentry>
 	  <varlistentry>
+            <term><constant>NE_HASH_SHA1</constant></term>
+	    <listitem><simpara>SHA-1</simpara></listitem>
+	  </varlistentry>
+	  <varlistentry>
             <term><constant>NE_HASH_SHA256</constant></term>
 	    <listitem><simpara>SHA-256 (SHA-2)</simpara></listitem>
 	  </varlistentry>
@@ -62,7 +66,7 @@
 	    <listitem><simpara>SHA-512 (SHA-2)</simpara></listitem>
 	  </varlistentry>
 	  <varlistentry>
-            <term><constant>NE_HASH_SHA256_256</constant></term>
+            <term><constant>NE_HASH_SHA512_256</constant></term>
 	    <listitem><simpara>SHA-512/256 (SHA-2)</simpara></listitem>
 	  </varlistentry>
         </variablelist>
@@ -108,7 +112,10 @@
       <refsect1>
 	<title>History</title>
 
-        <para><function>ne_strhash</function> and <function>ne_vstrhash</function> is
+        <para><function>ne_strhash</function> and <function>ne_vstrhash</function> are
         available in &neon; 0.32.0 and later.</para>
+
+        <para>The <constant>NE_HASH_SHA1</constant> flag is available in
+        &neon; 0.37.0 and later.</para>
       </refsect1>
     </refentry>

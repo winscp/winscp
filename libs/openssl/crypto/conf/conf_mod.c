@@ -11,9 +11,7 @@
 #define OPENSSL_SUPPRESS_DEPRECATED
 
 #include "internal/cryptlib.h"
-#ifndef WinSCP
 #include "internal/rcu.h"
-#endif
 #include <stdio.h>
 #include <ctype.h>
 #include <openssl/crypto.h>
@@ -25,33 +23,6 @@
 #include <openssl/trace.h>
 #include <openssl/engine.h>
 #include "conf_local.h"
-
-#ifdef WINSCP
-
-// UPGRADE
-// RCU cannot be used in C++Builder XE6 as it does not support Interlocked* intrinsic.
-// Mapping RCU API to plain locks.
-// This is effectivelly a rollback of
-// https://github.com/openssl/openssl/commit/504e72fc1a1432d5266bd6e8909648c49884a36c
-
-// Localized to this unit only, as it is the only one that uses RCU currently.
-// And we want to know when more uses emerge.
-
-#define CRYPTO_RCU_LOCK CRYPTO_RWLOCK
-
-#define ossl_rcu_lock_new(num_writers, ctx) CRYPTO_THREAD_lock_new()
-#define ossl_rcu_lock_free CRYPTO_THREAD_lock_free
-// CRYPTO_THREAD_*_lock return boolean result, while ossl_rcu_*_lock are void.
-// But the CRYPTO_THREAD_*_lock actually always returns 1/true, so it's safe to ignore the result.
-#define ossl_rcu_read_lock CRYPTO_THREAD_read_lock
-#define ossl_rcu_write_lock CRYPTO_THREAD_write_lock
-#define ossl_rcu_write_unlock CRYPTO_THREAD_unlock
-#define ossl_rcu_read_unlock CRYPTO_THREAD_unlock
-#define ossl_synchronize_rcu(lock)
-#define ossl_rcu_deref(p) (*(p))
-#define ossl_rcu_assign_ptr(p, v) (*(p)) = (*(v))
-
-#endif // WINSCP
 
 DEFINE_STACK_OF(CONF_MODULE)
 DEFINE_STACK_OF(CONF_IMODULE)
@@ -139,7 +110,17 @@ DEFINE_RUN_ONCE_STATIC(do_init_module_list_lock)
 
 static int conf_diagnostics(const CONF *cnf)
 {
-    return _CONF_get_number(cnf, NULL, "config_diagnostics") != 0;
+    int status;
+    long result = 0;
+
+    ERR_set_mark();
+    status = NCONF_get_number_e(cnf, NULL, "config_diagnostics", &result);
+    ERR_pop_to_mark();
+    if (status > 0) {
+        OSSL_LIB_CTX_set_conf_diagnostics(cnf->libctx, result > 0);
+        return result > 0;
+    }
+    return OSSL_LIB_CTX_get_conf_diagnostics(cnf->libctx);
 }
 
 /* Main function: load modules from a CONF structure */
@@ -211,7 +192,7 @@ int CONF_modules_load_file_ex(OSSL_LIB_CTX *libctx, const char *filename,
 {
     char *file = NULL;
     CONF *conf = NULL;
-    int ret = 0, diagnostics = 0;
+    int ret = 0, diagnostics = OSSL_LIB_CTX_get_conf_diagnostics(libctx);
 
     ERR_set_mark();
 
@@ -240,7 +221,8 @@ int CONF_modules_load_file_ex(OSSL_LIB_CTX *libctx, const char *filename,
     }
 
     ret = CONF_modules_load(conf, appname, flags);
-    diagnostics = conf_diagnostics(conf);
+    /* CONF_modules_load() might change the diagnostics setting, reread it. */
+    diagnostics = OSSL_LIB_CTX_get_conf_diagnostics(libctx);
 
 err:
     if (filename == NULL)
@@ -395,7 +377,6 @@ static CONF_MODULE *module_add(DSO *dso, const char *name,
 
 err:
     ossl_rcu_write_unlock(module_list_lock);
-    sk_CONF_MODULE_free(new_modules);
     if (tmod != NULL) {
         OPENSSL_free(tmod->name);
         OPENSSL_free(tmod);
@@ -707,6 +688,18 @@ char *CONF_get1_default_config_file(void)
         return OPENSSL_strdup(file);
 
     t = X509_get_default_cert_area();
+    /*
+     * On windows systems with -DOSSL_WINCTX set, if the needed registry
+     * keys are not yet set, openssl applets will return, due to an inability
+     * to locate various directories, like the default cert area.  In that
+     * event, clone an empty string here, so that commands like openssl version
+     * continue to operate properly without needing to set OPENSSL_CONF.
+     * Applets like cms will fail gracefully later when they try to parse an
+     * empty config file
+     */
+    if (t == NULL)
+        return OPENSSL_strdup("");
+
 #ifndef OPENSSL_SYS_VMS
     sep = "/";
 #endif

@@ -7,7 +7,7 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 
 #include <WinInterface.h>
 
@@ -53,6 +53,7 @@ __published:
   TCheckBox *EncryptNewFilesCheck;
   TCheckBox *ExcludeHiddenFilesCheck;
   TCheckBox *ExcludeEmptyDirectoriesCheck;
+  TStaticText *PreserveTimeDirsHintText;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
   void __fastcall RightsEditButtonClick(TObject *Sender);
@@ -77,12 +78,15 @@ protected:
   void __fastcall UpdateRightsByStr();
   virtual void __fastcall CreateWnd();
 
+  INTERFACE_HOOK_CUSTOM(TFrame)
+
 public:
   __fastcall TCopyParamsFrame(TComponent* Owner);
   __fastcall ~TCopyParamsFrame();
 
   void __fastcall BeforeExecute();
   void __fastcall AfterExecute();
+  void Closing();
 
   __property int CopyParamAttrs = { read = FCopyParamAttrs, write = SetCopyParamAttrs };
   __property TCopyParamType Params = { read = GetParams, write = SetParams };

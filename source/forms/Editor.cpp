@@ -1,19 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include "Editor.h"
-#include "TextsWin.h"
-#include "Tools.h"
-#include <CoreMain.h>
-#include "VCLCommon.h"
-#include "WinConfiguration.h"
-#include "HelpWin.h"
-#include <BaseUtils.hpp>
-#include <GUITools.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "TB2Dock"
 #pragma link "TBX"
 #pragma link "TB2Item"
@@ -179,7 +169,6 @@ protected:
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
 
 private:
-  HINSTANCE FLibrary;
   bool FWordWrap;
   unsigned int FTabSize;
   bool FInitialized;
@@ -192,9 +181,8 @@ private:
 //---------------------------------------------------------------------------
 __fastcall TEditorRichEdit::TEditorRichEdit(TComponent * AOwner) :
   TRichEdit(AOwner),
-  FLibrary(0),
-  FTabSize(0),
   FWordWrap(true),
+  FTabSize(0),
   FInitialized(false),
   FLoadedWithPreamble(false)
 {
@@ -279,7 +267,7 @@ int __fastcall TEditorRichEdit::FindText(const UnicodeString SearchStr, int Star
     FLAGMASK(Options.Contains(stWholeWord), FR_WHOLEWORD) |
     FLAGMASK(Options.Contains(stMatchCase), FR_MATCHCASE) |
     FLAGMASK(Down, FR_DOWN);
-  int Result = SendMessage(Handle, EM_FINDTEXTEX, Flags, (LPARAM)&Find);
+  int Result = SizeToIntChecked(SendMessage(Handle, EM_FINDTEXTEX, Flags, reinterpret_cast<LPARAM>(&Find)));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -304,7 +292,7 @@ void __fastcall TEditorRichEdit::CreateWnd()
   TRichEdit::CreateWnd();
   if (!WinConfiguration->Editor.AutoFont)
   {
-    int LangOptions = SendMessage(Handle, EM_GETLANGOPTIONS, 0, 0);
+    __int64 LangOptions = SendMessage(Handle, EM_GETLANGOPTIONS, 0, 0);
     LangOptions = (LangOptions & ~IMF_AUTOFONT) | IMF_AUTOKEYBOARD;
     SendMessage(Handle, EM_SETLANGOPTIONS, 0, LangOptions);
   }
@@ -321,7 +309,7 @@ void __fastcall TEditorRichEdit::WMPaste()
     {
       // replacement for EM_PASTESPECIAL,
       // which ignores trailing line end for some reason
-      Perform(EM_REPLACESEL, true, reinterpret_cast<int>(Text));
+      Perform(EM_REPLACESEL, true, reinterpret_cast<NativeInt>(Text));
     }
     __finally
     {
@@ -379,7 +367,7 @@ static int __fastcall AdjustLineBreaks(unsigned char * Dest, const TBytes & Sour
     *P = Source[I];
     P++;
   }
-  return (P - Dest);
+  return SizeToIntChecked(P - Dest);
 }
 //---------------------------------------------------------------------------
 struct TStreamLoadInfo
@@ -391,7 +379,7 @@ struct TStreamLoadInfo
 // VCLCOPY Vcl.ComCtrls.pas,
 // WORKAROUND for bug in BCB XE2-XE6 VCL
 // Fixes conversion from UTF-8, when read buffer ends in the middle of UTF-8 char
-static unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
+unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
 {
   TStreamLoadInfo * LoadInfo = reinterpret_cast<TStreamLoadInfo *>(Cookie);
   unsigned long Result =
@@ -502,12 +490,12 @@ void __fastcall TEditorRichEdit::SetTabSize(unsigned int TabSize)
 
   // save selection
   CHARRANGE CharRange;
-  SendMessage(Handle, EM_EXGETSEL, 0, (LPARAM)&CharRange);
+  SendMessage(Handle, EM_EXGETSEL, 0, reinterpret_cast<LPARAM>(&CharRange));
 
   CHARRANGE CharRangeAll;
   CharRangeAll.cpMin = 0;
   CharRangeAll.cpMax = -1;
-  SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRangeAll);
+  SendMessage(Handle, EM_EXSETSEL, 0, reinterpret_cast<LPARAM>(&CharRangeAll));
 
   PARAFORMAT2 ParaFormat;
   ParaFormat.cbSize = sizeof(ParaFormat);
@@ -519,10 +507,10 @@ void __fastcall TEditorRichEdit::SetTabSize(unsigned int TabSize)
     ParaFormat.rgxTabs[i] = (i + 1) * TabTwips;
   }
 
-  SendMessage(Handle, EM_SETPARAFORMAT, 0, (LPARAM)&ParaFormat);
+  SendMessage(Handle, EM_SETPARAFORMAT, 0, reinterpret_cast<LPARAM>(&ParaFormat));
 
   // restore selection
-  SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRange);
+  SendMessage(Handle, EM_EXSETSEL, 0, reinterpret_cast<LPARAM>(&CharRange));
 }
 //---------------------------------------------------------------------------
 bool __stdcall TEditorRichEdit::StreamLoad(
@@ -562,7 +550,7 @@ bool __stdcall TEditorRichEdit::StreamLoad(
           if (StreamInfo->Encoding == NULL)
           {
             Buffer = TEncoding::Convert(TEncoding::Default, TEncoding::Unicode, Buffer, 0, WasRead);
-            WasRead = Buffer.Length;
+            WasRead = SizeToIntChecked(Buffer.Length);
           }
           else
           {
@@ -582,7 +570,7 @@ bool __stdcall TEditorRichEdit::StreamLoad(
                 }
               }
               Buffer = TEncoding::Convert(StreamInfo->Encoding, TEncoding::Unicode, Buffer, 0, WasRead);
-              WasRead = Buffer.Length;
+              WasRead = SizeToIntChecked(Buffer.Length);
             }
             // If Unicode preamble is present, set StartIndex to skip over it
             TBytes Preamble = TEncoding::Unicode->GetPreamble();
@@ -604,13 +592,13 @@ bool __stdcall TEditorRichEdit::StreamLoad(
 
     Result = true;
   }
-  catch (EEncodingError & E)
+  catch (EEncodingError &)
   {
     FStreamLoadError = true;
     FStreamLoadEncodingError = true;
     Result = false;
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     FStreamLoadError = true;
     Result = false;
@@ -776,6 +764,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   UseSystemSettings(this);
   UseDesktopFont(StatusBar);
   FixFormIcons(this);
+  UsesCustomColorMode(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TEditorForm::~TEditorForm()
@@ -883,7 +872,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
     Action == FindAction || Action == ReplaceAction || Action == GoToLineAction ||
     Action == HelpAction || Action == ColorAction)
   {
-    ((TAction *)Action)->Enabled = true;
+    static_cast<TAction *>(Action)->Enabled = true;
   }
   else if (Action == ReloadAction)
   {
@@ -1120,7 +1109,7 @@ void __fastcall TEditorForm::UpdateControls()
     FCaretPos = ACaretPos;
     int Count = EditorMemo->Lines->Count;
     StatusBar->Panels->Items[0]->Caption = FMTLOAD(EDITOR_LINE_STATUS,
-      ((int)FCaretPos.y+1, Count));
+      (static_cast<int>(FCaretPos.y)+1, Count));
     int Column = 0;
     UnicodeString Character;
     if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
@@ -1333,7 +1322,7 @@ bool __fastcall TEditorForm::ContainsPreamble(TStream * Stream, const TBytes & S
   bool Result;
   TBytes Buffer;
   int LBufLen;
-  int LSignatureLen = Signature.Length;
+  int LSignatureLen = SizeToIntChecked(Signature.Length);
   __int64 LPosition = Stream->Position;
   try
   {
@@ -1403,7 +1392,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
           DebugFail();
           // fallthru
 
-        case CP_ACP:
+        case CP_ACP: // = 0
           FEncoding = PrimaryEncoding ? FAnsiEncoding : TEncoding::UTF8;
           break;
       }
@@ -1478,47 +1467,41 @@ void __fastcall TEditorForm::CheckFileSize()
 {
   TEditorConfiguration EditorConfiguration = WinConfiguration->Editor;
 
-  TWin32FileAttributeData FileAttributeData;
-  if (GetFileAttributesEx(ApiPath(FFileName).c_str(), GetFileExInfoStandard, &FileAttributeData))
+  __int64 Size = TFile::GetSize(FFileName);
+  const __int64 MaxSize = static_cast<__int64>(EditorConfiguration.LargeFileSize) * 1024;
+  if ((Size >= 0) && (Size > MaxSize))
   {
-    const __int64 MaxSize = 100 * 1024 * 1024;
-    __int64 Size =
-      (static_cast<__int64>(FileAttributeData.nFileSizeHigh) << 32) +
-      FileAttributeData.nFileSizeLow;
-    if (Size > MaxSize)
+    if (EditorConfiguration.WarnOrLargeFileSize)
     {
-      if (EditorConfiguration.WarnOrLargeFileSize)
+      TMessageParams Params(mpNeverAskAgainCheck);
+      unsigned int Answer =
+        MoreMessageDialog(
+          FMTLOAD(INTERNAL_EDITOR_LARGE_FILE2, (FormatBytes(Size))), NULL,
+          qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
+      switch (Answer)
       {
-        TMessageParams Params(mpNeverAskAgainCheck);
-        unsigned int Answer =
-          MoreMessageDialog(
-            FMTLOAD(INTERNAL_EDITOR_LARGE_FILE2, (FormatBytes(Size))), NULL,
-            qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
-        switch (Answer)
-        {
-          case qaOK:
-            // noop;
-            break;
+        case qaOK:
+          // noop;
+          break;
 
-          case qaCancel:
-            Abort();
-            break;
+        case qaCancel:
+          Abort();
+          break;
 
-          case qaNeverAskAgain:
-            EditorConfiguration.WarnOrLargeFileSize = false;
-            WinConfiguration->Editor = EditorConfiguration;
-            break;
+        case qaNeverAskAgain:
+          EditorConfiguration.WarnOrLargeFileSize = false;
+          WinConfiguration->Editor = EditorConfiguration;
+          break;
 
-          default:
-            DebugFail();
-        }
+        default:
+          DebugFail();
       }
-
-      // Those are actually nearly all internal exceptions we ever practically get
-      IgnoreException(typeid(EOutOfMemory));
-      IgnoreException(typeid(EAccessViolation));
-      IgnoreException(typeid(EExternalException));
     }
+
+    // Those are actually nearly all internal exceptions we ever practically get
+    IgnoreException(typeid(EOutOfMemory));
+    IgnoreException(typeid(EAccessViolation));
+    IgnoreException(typeid(EExternalException));
   }
 }
 //---------------------------------------------------------------------------
@@ -1542,13 +1525,13 @@ bool __fastcall TEditorForm::CursorInUpperPart()
   TRect Rect;
 
   DC = GetDC(EditorMemo->Handle);
-  OldFont = (HFONT)SelectObject(DC, EditorMemo->Font->Handle);
+  OldFont = static_cast<HFONT>(SelectObject(DC, EditorMemo->Font->Handle));
 
   try
   {
     GetTextMetrics(DC, &TM);
 
-    EditorMemo->Perform(EM_GETRECT, 0, ((int)&Rect));
+    EditorMemo->Perform(EM_GETRECT, 0, reinterpret_cast<NativeInt>(&Rect));
   }
   __finally
   {
@@ -1557,7 +1540,7 @@ bool __fastcall TEditorForm::CursorInUpperPart()
   }
 
   int VisibleLines = (Rect.Bottom - Rect.Top) / (TM.tmHeight + TM.tmExternalLeading);
-  int FirstLine = SendMessage(EditorMemo->Handle, EM_GETFIRSTVISIBLELINE, 0, 0);
+  __int64 FirstLine = SendMessage(EditorMemo->Handle, EM_GETFIRSTVISIBLELINE, 0, 0);
   TPoint CaretPos = EditorMemo->CaretPos;
 
   return (CaretPos.y - FirstLine) < VisibleLines / 2;

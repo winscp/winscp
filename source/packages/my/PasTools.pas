@@ -9,9 +9,6 @@ uses
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 
-{$EXTERNALSYM IsWin7}
-function IsWin7: Boolean;
-
 {$EXTERNALSYM IsWin8}
 function IsWin8: Boolean;
 
@@ -72,7 +69,7 @@ procedure ForceColorChange(Control: TWinControl);
 
 function IsUncPath(Path: string): Boolean;
 function FileExistsFix(Path: string): Boolean;
-function DirectoryExistsFix(Path: string): Boolean;
+function DirectoryExistsFix(Path: string; FollowLink: Boolean = True): Boolean;
 
 const
   FIND_FIRST_EX_LARGE_FETCH_PAS = 2; // VCLCOPY (actually should be part of Winapi)
@@ -83,6 +80,7 @@ function FindFirstEx(
 function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
 procedure AllowDarkModeForWindow(Handle: THandle; Allow: Boolean); overload;
+procedure SetDarkModeTheme(Control: TWinControl; SubAppName: string);
 procedure RefreshColorMode;
 procedure ResetSysDarkTheme;
 function GetSysDarkTheme: Boolean;
@@ -107,12 +105,10 @@ procedure AppLog(S: string);
 
 type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
-  TControlScrollAfterUpdate = procedure of object;
 
   TCustomControlScrollOnDragOver = class
   private
     FOnBeforeUpdate: TControlScrollBeforeUpdate;
-    FOnAfterUpdate: TControlScrollAfterUpdate;
     FDragOverTimer: TTimer;
     FControl: TControl;
     FDragOverTime: FILETIME;
@@ -131,7 +127,6 @@ type
     procedure DragOver(Point: TPoint); virtual; abstract;
 
     property OnBeforeUpdate: TControlScrollBeforeUpdate read FOnBeforeUpdate write FOnBeforeUpdate;
-    property OnAfterUpdate: TControlScrollAfterUpdate read FOnAfterUpdate write FOnAfterUpdate;
   end;
 
   TTreeViewScrollOnDragOver = class(TCustomControlScrollOnDragOver)
@@ -156,7 +151,7 @@ type
 implementation
 
 uses
-  StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
+  StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry, UxTheme;
 
 const
   DDExpandDelay = 15000000;
@@ -168,11 +163,6 @@ const
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 begin
   Result := ComponentClass.Create(Owner);
-end;
-
-function IsWin7: Boolean;
-begin
-  Result := CheckWin32Version(6, 1);
 end;
 
 function IsWin8: Boolean;
@@ -455,8 +445,9 @@ begin
     end
       else
     begin
-      // that's our design text-size, we do not expect any other value
-      Assert(TextHeight = OurDesignTimeTextHeight);
+      // That's our design text-size, we do not expect any other value.
+      // Except for some reason, when designing a frame, the TextHeight is (temporarily?) not what expected.
+      Assert((TextHeight = OurDesignTimeTextHeight) or ((csDesigning in Control.ComponentState) and ((Control.Parent is TFrame) or (Assigned(Control.Parent) and (Control.Parent.Parent is TFrame)))));
       Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
     end;
   end;
@@ -720,7 +711,6 @@ constructor TCustomControlScrollOnDragOver.Create(Control: TControl;
 begin
   FControl := Control;
   FOnBeforeUpdate := nil;
-  FOnAfterUpdate := nil;
 
   if ScheduleDragOver then
   begin
@@ -774,6 +764,7 @@ var
 begin
   if Assigned(FOnBeforeUpdate) then
     FOnBeforeUpdate(ObjectToValidate);
+  // maybe not necessary once we are not using own drag images
   DragImages := TPublicControl(FControl).GetDragImages;
   if Assigned(DragImages) then
     DragImages.HideDragImage;
@@ -783,8 +774,6 @@ procedure TCustomControlScrollOnDragOver.AfterUpdate;
 var
   DragImages: TDragImageList;
 begin
-  if Assigned(FOnAfterUpdate) then
-    FOnAfterUpdate;
   DragImages := TPublicControl(FControl).GetDragImages;
   if Assigned(DragImages) then
     DragImages.ShowDragImage;
@@ -1048,11 +1037,11 @@ begin
   Result := DoExists(FileExists(ApiPath(Path)), Path);
 end;
 
-function DirectoryExistsFix(Path: string): Boolean;
+function DirectoryExistsFix(Path: string; FollowLink: Boolean): Boolean;
 begin
   // WORKAROUND
   SetLastError(ERROR_SUCCESS);
-  Result := DoExists(DirectoryExists(ApiPath(Path)), Path);
+  Result := DoExists(DirectoryExists(ApiPath(Path), FollowLink), Path);
 end;
 
 // VCLCOPY
@@ -1077,26 +1066,15 @@ begin
   Result := 0;
 end;
 
-var
-  FindexAdvancedSupport: Boolean = False;
-
 // VCLCOPY (with FindFirstFile replaced by FindFirstFileEx)
 function FindFirstEx(
   const Path: string; Attr: Integer; var F: TSearchRec; AdditionalFlags: DWORD; SearchOp: _FINDEX_SEARCH_OPS): Integer;
 const
   faSpecial = faHidden or faSysFile or faDirectory;
-var
-  FindexInfoLevel: TFindexInfoLevels;
 begin
   F.ExcludeAttr := not Attr and faSpecial;
   // FindExInfoBasic = do not retrieve cAlternateFileName, which we do not use
-  if FindexAdvancedSupport then FindexInfoLevel := FindExInfoBasic
-    else
-  begin
-    FindexInfoLevel := FindExInfoStandard;
-    AdditionalFlags := AdditionalFlags and (not FIND_FIRST_EX_LARGE_FETCH_PAS);
-  end;
-  F.FindHandle := FindFirstFileEx(PChar(Path), FindexInfoLevel, @F.FindData, SearchOp, nil, AdditionalFlags);
+  F.FindHandle := FindFirstFileEx(PChar(Path), FindExInfoBasic, @F.FindData, SearchOp, nil, AdditionalFlags);
   if F.FindHandle <> INVALID_HANDLE_VALUE then
   begin
     Result := FindMatchingFileEx(F);
@@ -1135,6 +1113,15 @@ begin
   end;
 end;
 
+procedure SetDarkModeTheme(Control: TWinControl; SubAppName: string);
+begin
+  // See https://gist.github.com/ericoporto/1745f4b912e22f9eabfce2c7166d979b#button
+  Assert(Control.HandleAllocated);
+  SetWindowTheme(Control.Handle, PChar(SubAppName), nil);
+  AllowDarkModeForWindow(Control, True);
+  SendMessage(Control.Handle, WM_THEMECHANGED, 0, 0);
+end;
+
 procedure RefreshColorMode;
 begin
   if SupportsDarkMode then
@@ -1161,6 +1148,7 @@ begin
   Registry := TRegistry.Create;
   try
     Registry.RootKey := RootKey;
+    Registry.Access := KEY_READ or KEY_WOW64_64KEY;
     Result := -1;
     if Registry.OpenKeyReadOnly(ThemesPersonalizeKey) and
        Registry.ValueExists(AppsUseLightThemeValue) then
@@ -1200,7 +1188,6 @@ var
   OSVersionInfo: TOSVersionInfoEx;
   SetDefaultDllDirectories: function(DirectoryFlags: DWORD): BOOL; stdcall;
 initialization
-  FindexAdvancedSupport := IsWin7;
   // Translated from PuTTY's dll_hijacking_protection().
   // Inno Setup does not use LOAD_LIBRARY_SEARCH_USER_DIRS and falls back to SetDllDirectory.
   Lib := LoadLibrary(kernel32);

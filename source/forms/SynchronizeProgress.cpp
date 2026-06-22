@@ -1,18 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <WinInterface.h>
 #include "SynchronizeProgress.h"
-#include <Common.h>
-#include <Configuration.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <VCLCommon.h>
-#include <GUITools.h>
 #include <Progress.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "PathLabel"
 #pragma link "PngImageList"
 #pragma link "TB2Dock"
@@ -22,7 +14,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 // Used for comparing only
-__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files)
+__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files, bool LocalLocal)
   : TForm(Owner)
 {
   FStarted = false;
@@ -47,6 +39,12 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
   {
     SetGlobalMinimizeHandler(this, GlobalMinimize);
   }
+  if (LocalLocal)
+  {
+    LeftLabel->Caption = LoadStr(SYNCHRONIZE_PROGRESS_LEFT_DIR);
+    RightLabel->Caption = LoadStr(SYNCHRONIZE_PROGRESS_RIGHT_DIR);
+    RightDirectoryLabel->UnixPath = false;
+  }
   FFrameAnimation.Init(AnimationPaintBox, L"SynchronizeDirectories");
 }
 //---------------------------------------------------------------------------
@@ -57,7 +55,7 @@ __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
   ReleaseAsModal(this, FShowAsModalStorage);
   UnhookFormActivation(this);
 
-  if (IsApplicationMinimized() && FMinimizedByMe)
+  if (IsMainFormMinimized() && FMinimizedByMe)
   {
     ShowNotification(
       NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
@@ -73,7 +71,7 @@ void __fastcall TSynchronizeProgressForm::Start()
   StartTimeLabel->Caption = FStartTime.TimeString();
   OperationProgress->Position = OperationProgress->Min;
   UpdateControls();
-  if (!IsApplicationMinimized())
+  if (!IsMainFormMinimized())
   {
     // Do not show the progress when the application is minimized,
     // otherwise the form popups up unminimized.
@@ -89,11 +87,11 @@ void __fastcall TSynchronizeProgressForm::Start()
 }
 //---------------------------------------------------------------------------
 int __fastcall TSynchronizeProgressForm::SetData(
-  const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory, int Progress, bool & Continue)
+  const UnicodeString & Directory1, const UnicodeString & Directory2, int Progress, bool & Continue)
 {
   DebugAssert(FStarted);
-  LocalDirectoryLabel->Caption = LocalDirectory;
-  RemoteDirectoryLabel->Caption = RemoteDirectory;
+  LeftDirectoryLabel->Caption = Directory1;
+  RightDirectoryLabel->Caption = Directory2;
   OperationProgress->Position = Progress;
   Continue = !FCanceled;
 

@@ -114,9 +114,7 @@ prng *prng_new(const ssh_hashalg *hashalg)
     pi->keymaker = NULL;
     pi->generator = NULL;
     memset(pi->counter, 0, sizeof(pi->counter));
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < NCOLLECTORS; i++)
+    for (size_t i = 0; i < NCOLLECTORS; i++)
         pi->collectors[i] = ssh_hash_new(pi->hashalg);
     pi->until_reseed = 0;
     BinarySink_INIT(&pi->Prng, prng_seed_BinarySink_write);
@@ -124,7 +122,6 @@ prng *prng_new(const ssh_hashalg *hashalg)
     pi->Prng.savesize = pi->hashalg->hlen * 4;
 
     return &pi->Prng;
-    } // WINSCP
 }
 
 void prng_free(prng *pr)
@@ -132,9 +129,7 @@ void prng_free(prng *pr)
     prng_impl *pi = container_of(pr, prng_impl, Prng);
 
     smemclr(pi->counter, sizeof(pi->counter));
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < NCOLLECTORS; i++)
+    for (size_t i = 0; i < NCOLLECTORS; i++)
         ssh_hash_free(pi->collectors[i]);
     if (pi->generator)
         ssh_hash_free(pi->generator);
@@ -142,7 +137,6 @@ void prng_free(prng *pr)
         ssh_hash_free(pi->keymaker);
     smemclr(pi, sizeof(*pi));
     sfree(pi);
-    } // WINSCP
 }
 
 void prng_seed_begin(prng *pr)
@@ -211,17 +205,12 @@ static inline void prng_generate(prng_impl *pi, void *outbuf)
 
     prngdebug("prng_generate\n");
     put_byte(h, 'G');
-    { // WINSCP
-    unsigned i; // WINSCP
-    for (i = 0; i < 128; i += 8)
+    for (unsigned i = 0; i < 128; i += 8)
         put_byte(h, pi->counter[i/BIGNUM_INT_BITS] >> (i%BIGNUM_INT_BITS));
-    { // WINSCP
     BignumCarry c = 1;
-    for (i = 0; i < lenof(pi->counter); i++)
+    for (unsigned i = 0; i < lenof(pi->counter); i++)
         BignumADC(pi->counter[i], c, pi->counter[i], 0, c);
     ssh_hash_final(h, outbuf);
-    } // WINSCP
-    } // WINSCP
 }
 
 void prng_read(prng *pr, void *vout, size_t size)
@@ -233,30 +222,26 @@ void prng_read(prng *pr, void *vout, size_t size)
 
     prngdebug("prng_read %"SIZEu"\n", size);
 
-    { // WINSCP
     uint8_t *out = (uint8_t *)vout;
     while (size > 0) {
         prng_generate(pi, buf);
-        { // WINSCP
         size_t to_use = size > pi->hashalg->hlen ? pi->hashalg->hlen : size;
         memcpy(out, buf, to_use);
         out += to_use;
         size -= to_use;
-        } // WINSCP
     }
 
     smemclr(buf, sizeof(buf));
 
     prng_seed_begin(&pi->Prng);
     prng_seed_finish(&pi->Prng);
-    } // WINSCP
 }
 
 void prng_add_entropy(prng *pr, unsigned source_id, ptrlen data)
 {
     prng_impl *pi = container_of(pr, prng_impl, Prng);
 
-    pinitassert(source_id < NOISE_MAX_SOURCES);
+    assert(source_id < NOISE_MAX_SOURCES);
     uint32_t counter = ++pi->source_counters[source_id];
 
     size_t index = 0;
@@ -278,13 +263,10 @@ void prng_add_entropy(prng *pr, unsigned source_id, ptrlen data)
         prng_reseed_time_ms() - pi->last_reseed_time >= 100) {
         prng_seed_begin(&pi->Prng);
 
-        { // WINSCP
         unsigned char buf[MAX_HASH_LEN];
         uint32_t reseed_index = ++pi->reseeds;
         prngdebug("prng entropy reseed #%"PRIu32"\n", reseed_index);
-        { // WINSCP
-        size_t i; // WINSCP
-        for (i = 0; i < NCOLLECTORS; i++) {
+        for (size_t i = 0; i < NCOLLECTORS; i++) {
             prngdebug("emptying collector %"SIZEu"\n", i);
             ssh_hash_digest(pi->collectors[i], buf);
             put_data(&pi->Prng, buf, pi->hashalg->hlen);
@@ -295,8 +277,6 @@ void prng_add_entropy(prng *pr, unsigned source_id, ptrlen data)
         }
         smemclr(buf, sizeof(buf));
         prng_seed_finish(&pi->Prng);
-        } // WINSCP
-        } // WINSCP
     }
 }
 

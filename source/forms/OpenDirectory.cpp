@@ -1,18 +1,10 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <CoreMain.h>
-#include <Configuration.h>
 #include <RemoteFiles.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <Common.h>
-#include <Math.hpp>
-#include <GUITools.h>
 
 #include "OpenDirectory.h"
-#include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
@@ -277,8 +269,8 @@ bool __fastcall TOpenDirectoryDialog::Execute()
   return Result;
 }
 //---------------------------------------------------------------------------
-template<class T>
-typename T * GetBookmarkObject(TObject * Sender, T * SessionObject, T * SharedObject)
+template<typename T>
+T * GetBookmarkObject(TObject * Sender, T * SessionObject, T * SharedObject)
 {
   TControl * Control = dynamic_cast<TControl *>(Sender);
   DebugAssert(Control != NULL);
@@ -451,7 +443,7 @@ void __fastcall TOpenDirectoryDialog::BookmarkButtonClick(TObject * Sender)
   TControl * Control = dynamic_cast<TControl *>(Sender);
   BookmarkMove(Sender,
     GetBookmarksList(Sender)->ItemIndex,
-    GetBookmarksList(Sender)->ItemIndex + (Control->Tag / abs(Control->Tag)));
+    SizeToIntChecked(GetBookmarksList(Sender)->ItemIndex + (Control->Tag / abs(Control->Tag))));
   UpdateControls();
 }
 //---------------------------------------------------------------------------

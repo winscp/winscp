@@ -1,18 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
 #include "CopyParams.h"
-
-#include <VCLCommon.h>
-#include <CoreMain.h>
-#include "CustomWinConfiguration.h"
-#include "TextsWin.h"
-#include "Tools.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "Rights"
 #pragma link "HistoryComboBox"
 #pragma link "ComboEdit"
@@ -35,6 +26,14 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   FParams = new TCopyParamType();
   TCopyParamType DefParams;
   Params = DefParams;
+
+  HintLabel(PreserveTimeDirsHintText);
+  int Right = PreserveTimeDirsHintText->Left + PreserveTimeDirsHintText->Width;
+  PreserveTimeDirsHintText->Font->Size = MulDiv(PreserveTimeDirsHintText->Font->Size, 13, 10);
+  PreserveTimeDirsHintText->AutoSize = true;
+  PreserveTimeDirsHintText->Left = Right - PreserveTimeDirsHintText->Width;
+  PreserveTimeDirsHintText->AutoSize = false;
+  VerticallyCenterWith(PreserveTimeDirsHintText, PreserveTimeDirsCheck);
 
   HintLabel(IncludeFileMaskHintText,
     FORMAT(L"%s\n \n%s\n \n%s\n \n%s\n \n%s\n \n%s", (LoadStr(MASK_HINT2),
@@ -240,8 +239,6 @@ void __fastcall TCopyParamsFrame::BeforeExecute()
   // adding TRightsFrame on run-time corrupts the tab order, fix it
   TransferModeGroup->TabOrder = 0;
   DebugAssert(CustomWinConfiguration);
-  AsciiFileMaskCombo->Items = CustomWinConfiguration->History[L"Mask"];
-  IncludeFileMaskCombo->Items = CustomWinConfiguration->History[L"IncludeMask"];
   CopySpeedLimits(CustomWinConfiguration->History[L"SpeedLimit"], SpeedCombo->Items);
 }
 //---------------------------------------------------------------------------
@@ -249,9 +246,7 @@ void __fastcall TCopyParamsFrame::AfterExecute()
 {
   DebugAssert(CustomWinConfiguration);
   AsciiFileMaskCombo->SaveToHistory();
-  CustomWinConfiguration->History[L"Mask"] = AsciiFileMaskCombo->Items;
   IncludeFileMaskCombo->SaveToHistory();
-  CustomWinConfiguration->History[L"IncludeMask"] = IncludeFileMaskCombo->Items;
   SpeedCombo->SaveToHistory();
   CustomWinConfiguration->History[L"SpeedLimit"] = SpeedCombo->Items;
 }
@@ -371,3 +366,10 @@ void __fastcall TCopyParamsFrame::CreateWnd()
   }
 }
 //---------------------------------------------------------------------------
+void TCopyParamsFrame::Closing()
+{
+  if (FRightsFrame->Visible)
+  {
+    FRightsFrame->CloseUp();
+  }
+}

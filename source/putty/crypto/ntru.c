@@ -161,32 +161,20 @@ void ntru_ring_multiply(uint16_t *out, const uint16_t *a, const uint16_t *b,
      * haven't tried it.
      */
     uint32_t *unreduced = snewn(2*p, uint32_t);
-    { // WINSCP
-    unsigned i;
-    for (i = 0; i < 2*p; i++)
+    for (unsigned i = 0; i < 2*p; i++)
         unreduced[i] = 0;
-    } // WINSCP
-    { // WINSCP
-    unsigned i, j;
-    for (i = 0; i < p; i++)
-        for (j = 0; j < p; j++)
+    for (unsigned i = 0; i < p; i++)
+        for (unsigned j = 0; j < p; j++)
             unreduced[i+j] = REDUCE(unreduced[i+j] + a[i] * b[j]);
-    } // WINSCP
 
-    { // WINSCP
-    unsigned i;
-    for (i = 2*p - 1; i >= p; i--) {
+    for (unsigned i = 2*p - 1; i >= p; i--) {
         unreduced[i-p] += unreduced[i];
         unreduced[i-p+1] += unreduced[i];
         unreduced[i] = 0;
     }
-    } // WINSCP
 
-    { // WINSCP
-    unsigned i;
-    for (i = 0; i < p; i++)
+    for (unsigned i = 0; i < p; i++)
         out[i] = REDUCE(unreduced[i]);
-    } // WINSCP
 
     smemclr(unreduced, 2*p * sizeof(*unreduced));
     sfree(unreduced);
@@ -256,31 +244,20 @@ unsigned ntru_ring_invert(uint16_t *out, const uint16_t *in,
     memcpy(A, in, p*sizeof(uint16_t));
     A[p] = 0;
     Ac[0] = 1;
-    { // WINSCP
-    size_t i;
-    for (i = 1; i < SIZE; i++)
+    for (size_t i = 1; i < SIZE; i++)
         Ac[i] = 0;
-    } // WINSCP
 
     /* Initialise B to the quotient polynomial of the ring, x^p-x-1
      * And Bc = 0 */
     B[0] = B[1] = q-1;
-    { // WINSCP
-    size_t i;
-    for (i = 2; i < p; i++)
+    for (size_t i = 2; i < p; i++)
         B[i] = 0;
-    } // WINSCP
     B[p] = 1;
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < SIZE; i++)
+    for (size_t i = 0; i < SIZE; i++)
         Bc[i] = 0;
-    } // WINSCP
 
     /* Run the gcd-finding algorithm. */
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < STEPS; i++) {
+    for (size_t i = 0; i < STEPS; i++) {
         /*
          * First swap round so that A is the one we'll be dividing by x.
          *
@@ -294,35 +271,25 @@ unsigned ntru_ring_invert(uint16_t *out, const uint16_t *in,
         unsigned B_is_bigger = 0;
         {
             unsigned not_seen_top_term_of_A = 1, not_seen_top_term_of_B = 1;
-            { // WINSCP
-            size_t j;
-            for (j = SIZE; j-- > 0 ;) {
+            for (size_t j = SIZE; j-- > 0 ;) {
                 not_seen_top_term_of_A &= iszero(A[j]);
                 not_seen_top_term_of_B &= iszero(B[j]);
                 B_is_bigger |= (~not_seen_top_term_of_B &
                                 not_seen_top_term_of_A);
             }
-            } // WINSCP
         }
-        { // WINSCP
         unsigned need_swap = x_divides_B | (~x_divides_A & B_is_bigger);
-        uint16_t swap_mask = (uint64_t)-(int64_t)need_swap; // WINSCP
-        { // WINSCP
-        size_t j;
-        for (j = 0; j < SIZE; j++) {
+        uint16_t swap_mask = -need_swap;
+        for (size_t j = 0; j < SIZE; j++) {
             uint16_t diff = (A[j] ^ B[j]) & swap_mask;
             A[j] ^= diff;
             B[j] ^= diff;
         }
-        } // WINSCP
-        { // WINSCP
-        size_t j;
-        for (j = 0; j < SIZE; j++) {
+        for (size_t j = 0; j < SIZE; j++) {
             uint16_t diff = (Ac[j] ^ Bc[j]) & swap_mask;
             Ac[j] ^= diff;
             Bc[j] ^= diff;
         }
-        } // WINSCP
 
         /*
          * Replace A with a linear combination of both A and B that
@@ -336,19 +303,12 @@ unsigned ntru_ring_invert(uint16_t *out, const uint16_t *in,
          * value), but it will take the same length of time as doing
          * something, which is just what we want.
          */
-        { // WINSCP
         uint16_t Amult = B[0], Bmult = q - A[0];
-        { // WINSCP
-        size_t j; // WINSCP
-        for (j = 0; j < SIZE; j++)
+        for (size_t j = 0; j < SIZE; j++)
             A[j] = REDUCE(Amult * A[j] + Bmult * B[j]);
-        } // WINSCP
         /* And do the same transformation to Ac */
-        { // WINSCP
-        size_t j;
-        for (j = 0; j < SIZE; j++)
+        for (size_t j = 0; j < SIZE; j++)
             Ac[j] = REDUCE(Amult * Ac[j] + Bmult * Bc[j]);
-        } // WINSCP
 
         /*
          * Now divide A by x, and compensate by multiplying Ac by
@@ -359,51 +319,33 @@ unsigned ntru_ring_invert(uint16_t *out, const uint16_t *in,
          * for n>0 just moves down to the x^{n-1} term, and only the
          * constant term has to be dealt with in an interesting way.
          */
-        { // WINSCP
-        size_t j;
-        for (j = 1; j < SIZE; j++)
+        for (size_t j = 1; j < SIZE; j++)
             A[j-1] = A[j];
-        } // WINSCP
         A[SIZE-1] = 0;
-        { // WINSCP
         uint16_t Ac0 = Ac[0];
-        { // WINSCP
-        size_t j;
-        for (j = 1; j < p; j++)
+        for (size_t j = 1; j < p; j++)
             Ac[j-1] = Ac[j];
-        } // WINSCP
         Ac[p-1] = Ac0;
         Ac[0] = REDUCE(Ac[0] + q - Ac0);
-        } // WINSCP
-        } // WINSCP
     }
-    } // WINSCP
 
     /*
      * Now we expect that A is 0, and B is a constant. If so, then
      * they are coprime, and we're going to return success. If not,
      * they have a common factor.
      */
-    { // WINSCP
     unsigned success = iszero(A[0]) & (1 ^ iszero(B[0]));
-    { // WINSCP
-    size_t j;
-    for (j = 1; j < SIZE; j++)
+    for (size_t j = 1; j < SIZE; j++)
         success &= iszero(A[j]) & iszero(B[j]);
-    } // WINSCP
 
     /*
      * So we're going to return Bc, but first, scale it by the
      * multiplicative inverse of the constant we ended up with in
      * B[0].
      */
-    { // WINSCP
     uint16_t scale = INVERT(B[0]);
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < p; i++)
+    for (size_t i = 0; i < p; i++)
         out[i] = REDUCE(scale * Bc[i]);
-    } // WINSCP
 
     smemclr(A, SIZE * sizeof(*A));
     sfree(A);
@@ -415,9 +357,6 @@ unsigned ntru_ring_invert(uint16_t *out, const uint16_t *in,
     sfree(Bc);
 
     return success;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 /*
@@ -440,14 +379,11 @@ void ntru_mod3(uint16_t *out, const uint16_t *in, unsigned p, unsigned q)
     unsigned bias = q/2;
     uint16_t adjust = 3 - reduce(bias-1, 3, recip3);
 
-    { // WINSCP
-    unsigned i;
-    for (i = 0; i < p; i++) {
+    for (unsigned i = 0; i < p; i++) {
         uint16_t val = reduce(in[i] + bias, q, qrecip);
         uint16_t residue = reduce(val + adjust, 3, recip3);
         out[i] = residue - 1;
     }
-    } // WINSCP
 }
 
 /*
@@ -462,11 +398,8 @@ void ntru_round3(uint16_t *out, const uint16_t *in, unsigned p, unsigned q)
     SETUP;
     unsigned bias = q/2;
     ntru_mod3(out, in, p, q);
-    { // WINSCP
-    unsigned i;
-    for (i = 0; i < p; i++)
+    for (unsigned i = 0; i < p; i++)
         out[i] = REDUCE(in[i] + bias) - bias - out[i];
-    } // WINSCP
 }
 
 /*
@@ -476,8 +409,7 @@ void ntru_round3(uint16_t *out, const uint16_t *in, unsigned p, unsigned q)
 static void ntru_normalise(uint16_t *out, const uint16_t *in,
                            unsigned p, unsigned q)
 {
-    unsigned i; // WINSCP
-    for (i = 0; i < p; i++)
+    for (unsigned i = 0; i < p; i++)
         out[i] = in[i] + q * (in[i] >> 15);
 }
 
@@ -488,8 +420,7 @@ void ntru_bias(uint16_t *out, const uint16_t *in, unsigned bias,
                unsigned p, unsigned q)
 {
     SETUP;
-    unsigned i; // WINSCP
-    for (i = 0; i < p; i++)
+    for (unsigned i = 0; i < p; i++)
         out[i] = REDUCE(in[i] + bias);
 }
 
@@ -500,8 +431,7 @@ void ntru_scale(uint16_t *out, const uint16_t *in, uint16_t scale,
                 unsigned p, unsigned q)
 {
     SETUP;
-    unsigned i; // WINSCP
-    for (i = 0; i < p; i++)
+    for (unsigned i = 0; i < p; i++)
         out[i] = REDUCE(in[i] * scale);
 }
 
@@ -512,8 +442,7 @@ void ntru_scale(uint16_t *out, const uint16_t *in, uint16_t scale,
 static void ntru_expand(
     uint16_t *out, const uint16_t *in, unsigned p, unsigned q)
 {
-    size_t i; // WINSCP
-    for (i = 0; i < p; i++) {
+    for (size_t i = 0; i < p; i++) {
         uint16_t v = in[i];
         /* Map 2 to q-1, and leave 0 and 1 unchanged */
         v += (v >> 1) * (q-3);
@@ -658,20 +587,14 @@ NTRUEncodeSchedule *ntru_encode_schedule(const uint16_t *ms_in, size_t n)
      * 'ms_new' is the list output from the current pass. After each
      * pass we swap the arrays round.
      */
-    { // WINSCP
     uint32_t *ms = snewn(n, uint32_t);
     uint32_t *msnew = snewn(n, uint32_t);
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
         ms[i] = ms_in[i];
-    } // WINSCP
 
     while (n > 1) {
         size_t nnew = 0;
-        { // WINSCP
-        size_t i;
-        for (i = 0; i < n; i += 2) {
+        for (size_t i = 0; i < n; i += 2) {
             if (i+1 == n) {
                 /*
                  * Odd element at the end of the input list: just copy
@@ -686,7 +609,6 @@ NTRUEncodeSchedule *ntru_encode_schedule(const uint16_t *ms_in, size_t n)
              * Normal case: consume two elements from the input list
              * and combine them.
              */
-            { // WINSCP
             uint32_t m1 = ms[i], m2 = ms[i+1], m = m1*m2;
             sched_append(sched, ENC_COMBINE_BASE + m1);
 
@@ -704,20 +626,16 @@ NTRUEncodeSchedule *ntru_encode_schedule(const uint16_t *ms_in, size_t n)
              * list and append to the fifo.
              */
             msnew[nnew++] = m;
-            } // WINSCP
         }
-        } // WINSCP
 
         /*
          * End of pass. The output list of (m_i) now becomes the input
          * list.
          */
-        { // WINSCP
         uint32_t *tmp = ms;
         ms = msnew;
         n = nnew;
         msnew = tmp;
-        } // WINSCP
     }
 
     /*
@@ -729,7 +647,6 @@ NTRUEncodeSchedule *ntru_encode_schedule(const uint16_t *ms_in, size_t n)
      * only possible actual value is 0).
      */
     assert(n == 1);
-    { // WINSCP
     uint32_t m = ms[0];
     while (m > 1) {
         sched_append(sched, ENC_BYTE);
@@ -740,8 +657,6 @@ NTRUEncodeSchedule *ntru_encode_schedule(const uint16_t *ms_in, size_t n)
     sfree(msnew);
 
     return sched;
-    } // WINSCP
-    } // WINSCP
 }
 
 void ntru_encode_schedule_free(NTRUEncodeSchedule *sched)
@@ -756,13 +671,10 @@ void ntru_encode_schedule_free(NTRUEncodeSchedule *sched)
 size_t ntru_encode_schedule_length(NTRUEncodeSchedule *sched)
 {
     size_t len = 0;
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < sched->nops; i++)
+    for (size_t i = 0; i < sched->nops; i++)
         if (sched->ops[i] == ENC_BYTE)
             len++;
     return len;
-    } // WINSCP
 }
 
 /*
@@ -782,11 +694,8 @@ void ntru_encode(NTRUEncodeSchedule *sched, const uint16_t *rs_in,
 {
     size_t n = sched->nvals;
     uint32_t *rs = snewn(n, uint32_t);
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
         rs[i] = rs_in[i];
-    } // WINSCP
 
     /*
      * The head and tail pointers of the queue are both 'full'. That
@@ -803,12 +712,9 @@ void ntru_encode(NTRUEncodeSchedule *sched, const uint16_t *rs_in,
      * full slot for the BYTE command, so in this case, it's easier to
      * do it the less usual way.
      */
-    { // WINSCP
     size_t head = 0, tail = n-1;
 
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < sched->nops; i++) {
+    for (size_t i = 0; i < sched->nops; i++) {
         uint16_t op = sched->ops[i];
         switch (op) {
           case ENC_BYTE:
@@ -825,17 +731,14 @@ void ntru_encode(NTRUEncodeSchedule *sched, const uint16_t *rs_in,
           default: {
             uint32_t r1 = rs[head];
             head = (head + 1) % n;
-            { // WINSCP
             uint32_t r2 = rs[head];
             head = (head + 1) % n;
             tail = (tail + 1) % n;
             rs[tail] = r1 + (op - ENC_COMBINE_BASE) * r2;
             break;
-            } // WINSCP
           }
         }
     }
-    } // WINSCP
 
     /*
      * Expect that we've ended up with a single zero in the queue, at
@@ -847,7 +750,6 @@ void ntru_encode(NTRUEncodeSchedule *sched, const uint16_t *rs_in,
 
     smemclr(rs, n * sizeof(*rs));
     sfree(rs);
-    } // WINSCP
 }
 
 /*
@@ -875,18 +777,14 @@ void ntru_decode(NTRUEncodeSchedule *sched, uint16_t *rs_out, ptrlen data)
     size_t head = sched->endpos, tail = head;
     rs[tail] = 0;
 
-    { // WINSCP
-    size_t i;
-    for (i = sched->nops; i-- > 0 ;) {
+    for (size_t i = sched->nops; i-- > 0 ;) {
         uint16_t op = sched->ops[i];
         switch (op) {
           case ENC_BYTE: {
             assert(pos > base);
-            { // WINSCP
             uint8_t byte = *--pos;
             rs[tail] = (rs[tail] << 8) | byte;
             break;
-            } // WINSCP
           }
           case ENC_COPY: {
             uint32_t r = rs[tail];
@@ -899,7 +797,6 @@ void ntru_decode(NTRUEncodeSchedule *sched, uint16_t *rs_out, ptrlen data)
             uint32_t r = rs[tail];
             tail = (tail + n - 1) % n;
 
-            { // WINSCP
             uint32_t m = op - ENC_COMBINE_BASE;
             uint64_t mrecip = reciprocal_for_reduction(m);
 
@@ -911,21 +808,16 @@ void ntru_decode(NTRUEncodeSchedule *sched, uint16_t *rs_out, ptrlen data)
             head = (head + n - 1) % n;
             rs[head] = r1;
             break;
-            } // WINSCP
           }
         }
     }
-    } // WINSCP
 
     assert(pos == base);
     assert(head == 0);
     assert(tail == n-1);
 
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
         rs_out[i] = rs[i];
-    } // WINSCP
     smemclr(rs, n * sizeof(*rs));
     sfree(rs);
 }
@@ -999,11 +891,8 @@ void ntru_gen_short(uint16_t *v, unsigned p, unsigned w)
      * Initial value before zeroing out some terms: p randomly chosen
      * values in {1,2}.
      */
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < p; i++)
+    for (size_t i = 0; i < p; i++)
         v[i] = 1 + mp_get_bit(randdata, --randbitpos);
-    } // WINSCP
 
     /*
      * Hereafter we're going to extract random bits by multiplication,
@@ -1015,19 +904,15 @@ void ntru_gen_short(uint16_t *v, unsigned p, unsigned w)
      * Zero out some terms, leaving a randomly selected w of them
      * nonzero.
      */
-    { // WINSCP
     uint32_t nonzeros_left = w;
     mp_int *x = mp_new(64);
-    { // WINSCP
-    size_t i;
-    for (i = p; i-- > 0 ;) {
+    for (size_t i = p; i-- > 0 ;) {
         /*
          * Pick a random number out of the number of terms remaning.
          */
         mp_mul_integer_into(randdata, randdata, i+1);
         mp_rshift_fixed_into(x, randdata, randbitpos);
         mp_reduce_mod_2to(randdata, randbitpos);
-        { // WINSCP
         size_t j = mp_get_integer(x);
 
         /*
@@ -1035,15 +920,12 @@ void ntru_gen_short(uint16_t *v, unsigned p, unsigned w)
          * number nonzero. Otherwise we're zeroing it out.
          */
         uint32_t keep = (uint32_t)(j - nonzeros_left) >> 31;
-        v[i] &= (uint32_t)-(int32_t)keep;            /* clear this field if keep == 0 */ // WINSCP
+        v[i] &= -keep;            /* clear this field if keep == 0 */
         nonzeros_left -= keep;    /* decrement counter if keep == 1 */
-        } // WINSCP
     }
-    } // WINSCP
 
     mp_free(x);
     mp_free(randdata);
-    } // WINSCP
 }
 
 /*
@@ -1086,22 +968,18 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
      */
     uint16_t *g = snewn(p, uint16_t);
     mp_int *x = mp_new(64);
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < p; i++) {
+    for (size_t i = 0; i < p; i++) {
         mp_mul_integer_into(randdata, randdata, 3);
         mp_rshift_fixed_into(x, randdata, randbitpos);
         mp_reduce_mod_2to(randdata, randbitpos);
         g[i] = mp_get_integer(x);
     }
-    } // WINSCP
     mp_free(x);
     mp_free(randdata);
 
     /*
      * Try to invert g over Z_3, and fail if it isn't invertible.
      */
-    { // WINSCP
     uint16_t *ginv = snewn(p, uint16_t);
     if (!ntru_ring_invert(ginv, g, p, 3)) {
         ring_free(g, p);
@@ -1113,7 +991,6 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
      * Fine; we have g. Now make up an f, and convert it to a
      * polynomial over q.
      */
-    { // WINSCP
     uint16_t *f = snewn(p, uint16_t);
     ntru_gen_short(f, p, w);
     ntru_expand(f, f, p, q);
@@ -1121,7 +998,6 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
     /*
      * Multiply f by 3.
      */
-    { // WINSCP
     uint16_t *f3 = snewn(p, uint16_t);
     ntru_scale(f3, f, 3, p, q);
 
@@ -1131,7 +1007,6 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
      * 0. And f is nonzero because it came from ntru_gen_short (hence,
      * w of its components are nonzero), hence so is 3*f.
      */
-    { // WINSCP
     uint16_t *f3inv = snewn(p, uint16_t);
     bool expect_always_success = ntru_ring_invert(f3inv, f3, p, q);
     assert(expect_always_success);
@@ -1140,10 +1015,8 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
      * Make the public key, by converting g to a polynomial over q and
      * then multiplying by f3inv.
      */
-    { // WINSCP
     uint16_t *g_q = snewn(p, uint16_t);
     ntru_expand(g_q, g, p, q);
-    { // WINSCP
     uint16_t *h = snewn(p, uint16_t);
     ntru_ring_multiply(h, g_q, f3inv, p, q);
 
@@ -1151,7 +1024,6 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
      * Make up rho, used to substitute for the plaintext in the
      * session hash in case of confirmation failure.
      */
-    { // WINSCP
     uint16_t *rho = snewn(p, uint16_t);
     ntru_gen_short(rho, p, w);
 
@@ -1159,7 +1031,6 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
      * And we're done! Free everything except the pieces we're
      * returning.
      */
-    { // WINSCP
     NTRUKeyPair *keypair = snew(NTRUKeyPair);
     keypair->p = p;
     keypair->q = q;
@@ -1173,14 +1044,6 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
     ring_free(g, p);
     ring_free(g_q, p);
     return keypair;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 /*
@@ -1205,7 +1068,6 @@ void ntru_encrypt(uint16_t *ciphertext, const uint16_t *plaintext,
     uint16_t *r_q = snewn(p, uint16_t);
     ntru_expand(r_q, plaintext, p, q);
 
-    { // WINSCP
     uint16_t *unrounded = snewn(p, uint16_t);
     ntru_ring_multiply(unrounded, r_q, pubkey, p, q);
 
@@ -1214,7 +1076,6 @@ void ntru_encrypt(uint16_t *ciphertext, const uint16_t *plaintext,
 
     ring_free(r_q, p);
     ring_free(unrounded, p);
-    } // WINSCP
 }
 
 /*
@@ -1246,14 +1107,9 @@ void ntru_decrypt(uint16_t *plaintext, const uint16_t *ciphertext,
      * secret about the private key in some way.)
      */
 
-    { // WINSCP
     unsigned weight = p;
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < p; i++)
+    for (size_t i = 0; i < p; i++)
         weight -= iszero(plaintext[i]);
-    } // WINSCP
-    { // WINSCP
     unsigned ok = iszero(weight ^ w);
 
     /*
@@ -1261,22 +1117,14 @@ void ntru_decrypt(uint16_t *plaintext, const uint16_t *ciphertext,
      * 0s.
      */
     unsigned mask = ok - 1;
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < w; i++) {
+    for (size_t i = 0; i < w; i++) {
         uint16_t diff = (1 ^ plaintext[i]) & mask;
         plaintext[i] ^= diff;
     }
-    } // WINSCP
-    { // WINSCP
-    size_t i;
-    for (i = w; i < p; i++) {
+    for (size_t i = w; i < p; i++) {
         uint16_t diff = (0 ^ plaintext[i]) & mask;
         plaintext[i] ^= diff;
     }
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -1298,16 +1146,11 @@ void ntru_decrypt(uint16_t *plaintext, const uint16_t *ciphertext,
 static NTRUEncodeSchedule *ntru_encode_pubkey_schedule(unsigned p, unsigned q)
 {
     uint16_t *ms = snewn(p, uint16_t);
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < p; i++)
+    for (size_t i = 0; i < p; i++)
         ms[i] = q;
-    } // WINSCP
-    { // WINSCP
     NTRUEncodeSchedule *sched = ntru_encode_schedule(ms, p);
     sfree(ms);
     return sched;
-    } // WINSCP
 }
 
 /*
@@ -1321,13 +1164,11 @@ void ntru_encode_pubkey(const uint16_t *pubkey, unsigned p, unsigned q,
     ntru_bias(biased_pubkey, pubkey, q / 2, p, q);
 
     /* Encode it */
-    { // WINSCP
     NTRUEncodeSchedule *sched = ntru_encode_pubkey_schedule(p, q);
     ntru_encode(sched, biased_pubkey, bs);
     ntru_encode_schedule_free(sched);
 
     ring_free(biased_pubkey, p);
-    } // WINSCP
 }
 
 /*
@@ -1388,16 +1229,11 @@ static NTRUEncodeSchedule *ntru_encode_ciphertext_schedule(
 {
     unsigned m = ciphertext_m(q);
     uint16_t *ms = snewn(p, uint16_t);
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < p; i++)
+    for (size_t i = 0; i < p; i++)
         ms[i] = m;
-    } // WINSCP
-    { // WINSCP
     NTRUEncodeSchedule *sched = ntru_encode_schedule(ms, p);
     sfree(ms);
     return sched;
-    } // WINSCP
 }
 
 /*
@@ -1419,13 +1255,11 @@ void ntru_encode_ciphertext(const uint16_t *ciphertext, unsigned p, unsigned q,
     ntru_scale(biased_ciphertext, biased_ciphertext, INVERT(3), p, q);
 
     /* Encode. */
-    { // WINSCP
     NTRUEncodeSchedule *sched = ntru_encode_ciphertext_schedule(p, q);
     ntru_encode(sched, biased_ciphertext, bs);
     ntru_encode_schedule_free(sched);
 
     ring_free(biased_ciphertext, p);
-    } // WINSCP
 }
 
 ptrlen ntru_decode_ciphertext(uint16_t *ct, NTRUKeyPair *keypair,
@@ -1471,9 +1305,7 @@ void ntru_encode_plaintext(const uint16_t *plaintext, unsigned p,
                            BinarySink *bs)
 {
     unsigned byte = 0, bitpos = 0;
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < p; i++) {
+    for (size_t i = 0; i < p; i++) {
         unsigned encoding = (plaintext[i] + 1) * iszero(plaintext[i] >> 1);
         byte |= encoding << bitpos;
         bitpos += 2;
@@ -1483,7 +1315,6 @@ void ntru_encode_plaintext(const uint16_t *plaintext, unsigned p,
             bitpos = 0;
         }
     }
-    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -1521,7 +1352,6 @@ static void ntru_confirmation_hash(
     ssh_hash *hconfirm = ssh_hash_new(&ssh_sha512);
     put_byte(hconfirm, 2);             /* initial byte 2 */
 
-    { // WINSCP
     uint8_t hashdata[64];
 
     /* Compute H(3 || r) and add it to the main hash */
@@ -1532,7 +1362,6 @@ static void ntru_confirmation_hash(
     put_data(hconfirm, hashdata, 32);
 
     /* Compute H(4 || K) and add it to the main hash */
-    { // WINSCP
     ssh_hash *h4K = ssh_hash_new(&ssh_sha512);
     put_byte(h4K, 4);
     ntru_encode_pubkey(pubkey, p, q, BinarySink_UPCAST(h4K));
@@ -1545,8 +1374,6 @@ static void ntru_confirmation_hash(
     /* And copy the first 32 bytes into the caller's output array */
     memcpy(out, hashdata, 32);
     smemclr(hashdata, sizeof(hashdata));
-    } // WINSCP
-    } // WINSCP
 }
 
 /*
@@ -1583,7 +1410,6 @@ static void ntru_session_hash(
     ssh_hash *hsession = ssh_hash_new(&ssh_sha512);
     put_byte(hsession, ok);            /* initial byte 1 or 0 */
 
-    { // WINSCP
     uint8_t hashdata[64];
 
     /* Compute H(3 || r), or maybe H(3 || rho), and add it to the main hash */
@@ -1603,7 +1429,6 @@ static void ntru_session_hash(
     /* And copy the first 32 bytes into the caller's output array */
     memcpy(out, hashdata, 32);
     smemclr(hashdata, sizeof(hashdata));
-    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -1641,7 +1466,6 @@ static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
     BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, ek);
 
-    { // WINSCP
     uint16_t *pubkey = snewn(p_LIVE, uint16_t);
     ntru_decode_pubkey(pubkey, p_LIVE, q_LIVE, src);
 
@@ -1652,17 +1476,14 @@ static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
     }
 
     /* Invent a valid NTRU plaintext. */
-    { // WINSCP
     uint16_t *plaintext = snewn(p_LIVE, uint16_t);
     ntru_gen_short(plaintext, p_LIVE, w_LIVE);
 
     /* Encrypt the plaintext, and encode the ciphertext into a strbuf,
      * so we can reuse it for both the session hash and sending to the
      * client. */
-    { // WINSCP
     uint16_t *ciphertext = snewn(p_LIVE, uint16_t);
     ntru_encrypt(ciphertext, plaintext, pubkey, p_LIVE, q_LIVE);
-    { // WINSCP
     strbuf *ciphertext_encoded = strbuf_new_nm();
     ntru_encode_ciphertext(ciphertext, p_LIVE, q_LIVE,
                            BinarySink_UPCAST(ciphertext_encoded));
@@ -1670,13 +1491,11 @@ static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
 
     /* Compute the confirmation hash, and append that to the data sent
      * to the other side. */
-    { // WINSCP
     uint8_t confhash[32];
     ntru_confirmation_hash(confhash, plaintext, pubkey, p_LIVE, q_LIVE);
     put_data(c, confhash, 32);
 
     /* Compute the session hash, i.e. the output shared secret. */
-    { // WINSCP
     uint8_t sesshash[32];
     ntru_session_hash(sesshash, 1, plaintext, p_LIVE,
                       ptrlen_from_strbuf(ciphertext_encoded),
@@ -1691,12 +1510,6 @@ static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
     smemclr(sesshash, sizeof(sesshash));
 
     return true;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 static bool ntru_vt_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
@@ -1707,7 +1520,6 @@ static bool ntru_vt_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
     BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, c);
 
-    { // WINSCP
     uint16_t *ciphertext = snewn(p_LIVE, uint16_t);
     ptrlen ciphertext_encoded = ntru_decode_ciphertext(
         ciphertext, ndk->keypair, src);
@@ -1720,28 +1532,23 @@ static bool ntru_vt_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
     }
 
     /* Decrypt the ciphertext to recover the sender's plaintext */
-    { // WINSCP
     uint16_t *plaintext = snewn(p_LIVE, uint16_t);
     ntru_decrypt(plaintext, ciphertext, ndk->keypair);
 
     /* Make the confirmation hash */
-    { // WINSCP
     uint8_t confhash[32];
     ntru_confirmation_hash(confhash, plaintext, ndk->keypair->h,
                            p_LIVE, q_LIVE);
 
     /* Check it matches the one the server sent */
-    { // WINSCP
     unsigned ok = smemeq(confhash, confirmation_hash.ptr, 32);
 
     /* If not, substitute in rho for the plaintext in the session hash */
     unsigned mask = ok-1;
-    size_t i; // WINSCP
-    for (i = 0; i < p_LIVE; i++)
+    for (size_t i = 0; i < p_LIVE; i++)
         plaintext[i] ^= mask & (plaintext[i] ^ ndk->keypair->rho[i]);
 
     /* Compute the session hash, whether or not we did that */
-    { // WINSCP
     uint8_t sesshash[32];
     ntru_session_hash(sesshash, ok, plaintext, p_LIVE, ciphertext_encoded,
                       confirmation_hash);
@@ -1753,11 +1560,6 @@ static bool ntru_vt_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
     smemclr(sesshash, sizeof(sesshash));
 
     return true;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 static void ntru_vt_free_dk(pq_kem_dk *dk)
@@ -1769,12 +1571,11 @@ static void ntru_vt_free_dk(pq_kem_dk *dk)
 }
 
 const pq_kemalg ssh_ntru = {
-    /*.keygen =*/ ntru_vt_keygen,
-    /*.encaps =*/ ntru_vt_encaps,
-    /*.decaps =*/ ntru_vt_decaps,
-    /*.free_dk =*/ ntru_vt_free_dk,
-    NULL, // WINSCP
-    /*.description =*/ "NTRU Prime",
-    /*.ek_len =*/ 1158,
-    /*.c_len =*/ 1039,
+    .keygen = ntru_vt_keygen,
+    .encaps = ntru_vt_encaps,
+    .decaps = ntru_vt_decaps,
+    .free_dk = ntru_vt_free_dk,
+    .description = "NTRU Prime",
+    .ek_len = 1158,
+    .c_len = 1039,
 };

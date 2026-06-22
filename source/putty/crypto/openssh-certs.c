@@ -147,9 +147,7 @@ static inline bool blobtrans_read(BlobTransformer *bt, BinarySource *src,
                                   blob_fmt blob)
 {
     size_t nparts = bt->nparts;
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < blob.len; i++)
+    for (size_t i = 0; i < blob.len; i++)
         if (nparts < blob.fmt[i]+1)
             nparts = blob.fmt[i]+1;
 
@@ -159,7 +157,7 @@ static inline bool blobtrans_read(BlobTransformer *bt, BinarySource *src,
             bt->parts[bt->nparts++] = make_ptrlen(NULL, 0);
     }
 
-    for (i = 0; i < blob.len; i++) {
+    for (size_t i = 0; i < blob.len; i++) {
         size_t j = blob.fmt[i];
         ptrlen part = get_string(src);
         if (bt->parts[j].ptr) {
@@ -177,15 +175,13 @@ static inline bool blobtrans_read(BlobTransformer *bt, BinarySource *src,
     }
 
     return true;
-    } // WINSCP
 }
 
 static inline void blobtrans_write(BlobTransformer *bt, BinarySink *bs,
                                    blob_fmt blob)
 {
-    size_t i; // WINSCP
-    for (i = 0; i < blob.len; i++) {
-        pinitassert(i < bt->nparts);
+    for (size_t i = 0; i < blob.len; i++) {
+        assert(i < bt->nparts);
         ptrlen part = bt->parts[blob.fmt[i]];
         assert(part.ptr);
         put_stringpl(bs, part);
@@ -245,46 +241,46 @@ static const ssh_keyalg *opensshcert_related_alg(const ssh_keyalg *self,
 
 #define KEYALG_DEF(name, ssh_alg_id_prefix, ssh_key_id_prefix, fmt_prefix) \
     static const struct opensshcert_extra opensshcert_##name##_extra = { \
-        /*.pub_fmt =*/ { /*.fmt =*/ fmt_prefix ## _pub_fmt,                     \
-                     /*.len =*/ lenof(fmt_prefix ## _pub_fmt) },            \
-        /*.base_ossh_fmt =*/ { /*.fmt =*/ fmt_prefix ## _base_ossh_fmt,         \
-                           /*.len =*/ lenof(fmt_prefix ## _base_ossh_fmt) }, \
-        /*.cert_ossh_fmt =*/ { /*.fmt =*/ fmt_prefix ## _cert_ossh_fmt,         \
-                           /*.len =*/ lenof(fmt_prefix ## _cert_ossh_fmt) }, \
-        /*.cert_key_ssh_id =*/ ssh_key_id_prefix "-cert-v01@openssh.com",   \
-        /*.base_key_ssh_id =*/ ssh_key_id_prefix,                           \
+        .pub_fmt = { .fmt = fmt_prefix ## _pub_fmt,                     \
+                     .len = lenof(fmt_prefix ## _pub_fmt) },            \
+        .base_ossh_fmt = { .fmt = fmt_prefix ## _base_ossh_fmt,         \
+                           .len = lenof(fmt_prefix ## _base_ossh_fmt) }, \
+        .cert_ossh_fmt = { .fmt = fmt_prefix ## _cert_ossh_fmt,         \
+                           .len = lenof(fmt_prefix ## _cert_ossh_fmt) }, \
+        .cert_key_ssh_id = ssh_key_id_prefix "-cert-v01@openssh.com",   \
+        .base_key_ssh_id = ssh_key_id_prefix,                           \
     };                                                                  \
                                                                         \
     const ssh_keyalg opensshcert_##name = {                             \
-        /*.new_pub =*/ opensshcert_new_pub,                                 \
-        /*.new_priv =*/ opensshcert_new_priv,                               \
-        /*.new_priv_openssh =*/ opensshcert_new_priv_openssh,               \
-        /*.freekey =*/ opensshcert_freekey,                                 \
-        /*.invalid =*/ opensshcert_invalid,                                 \
-        /*.sign =*/ opensshcert_sign,                                       \
-        /*.verify =*/ opensshcert_verify,                                   \
-        /*.public_blob =*/ opensshcert_public_blob,                         \
-        /*.private_blob =*/ opensshcert_private_blob,                       \
-        /*.openssh_blob =*/ opensshcert_openssh_blob,                       \
-        /*.has_private =*/ opensshcert_has_private,                         \
-        /*.cache_str =*/ opensshcert_cache_str,                             \
-        /*.components =*/ opensshcert_components,                           \
-        /*.base_key =*/ opensshcert_base_key,                               \
-        /*.ca_public_blob =*/ opensshcert_ca_public_blob,                   \
-        /*.check_cert =*/ opensshcert_check_cert,                           \
-        /*.cert_id_string =*/ opensshcert_cert_id_string,                   \
-        /*.cert_info =*/ opensshcert_cert_info,                             \
-        /*.pubkey_bits =*/ opensshcert_pubkey_bits,                         \
-        /*.supported_flags =*/ opensshcert_supported_flags,                 \
-        /*.alternate_ssh_id =*/ opensshcert_alternate_ssh_id,               \
-        /*.alg_desc =*/ opensshcert_alg_desc,                               \
-        /*.variable_size =*/ opensshcert_variable_size,                     \
-        /*.related_alg =*/ opensshcert_related_alg,                         \
-        /*.ssh_id =*/ ssh_alg_id_prefix "-cert-v01@openssh.com",            \
-        /*.cache_id =*/ "opensshcert-" ssh_key_id_prefix,                   \
-        /*.extra =*/ &opensshcert_##name##_extra,                           \
-        /*.is_certificate =*/ true,                                         \
-        /*.base_alg =*/ &name,                                              \
+        .new_pub = opensshcert_new_pub,                                 \
+        .new_priv = opensshcert_new_priv,                               \
+        .new_priv_openssh = opensshcert_new_priv_openssh,               \
+        .freekey = opensshcert_freekey,                                 \
+        .invalid = opensshcert_invalid,                                 \
+        .sign = opensshcert_sign,                                       \
+        .verify = opensshcert_verify,                                   \
+        .public_blob = opensshcert_public_blob,                         \
+        .private_blob = opensshcert_private_blob,                       \
+        .openssh_blob = opensshcert_openssh_blob,                       \
+        .has_private = opensshcert_has_private,                         \
+        .cache_str = opensshcert_cache_str,                             \
+        .components = opensshcert_components,                           \
+        .base_key = opensshcert_base_key,                               \
+        .ca_public_blob = opensshcert_ca_public_blob,                   \
+        .check_cert = opensshcert_check_cert,                           \
+        .cert_id_string = opensshcert_cert_id_string,                   \
+        .cert_info = opensshcert_cert_info,                             \
+        .pubkey_bits = opensshcert_pubkey_bits,                         \
+        .supported_flags = opensshcert_supported_flags,                 \
+        .alternate_ssh_id = opensshcert_alternate_ssh_id,               \
+        .alg_desc = opensshcert_alg_desc,                               \
+        .variable_size = opensshcert_variable_size,                     \
+        .related_alg = opensshcert_related_alg,                         \
+        .ssh_id = ssh_alg_id_prefix "-cert-v01@openssh.com",            \
+        .cache_id = "opensshcert-" ssh_key_id_prefix,                   \
+        .extra = &opensshcert_##name##_extra,                           \
+        .is_certificate = true,                                         \
+        .base_alg = &name,                                              \
     };
 KEYALG_LIST(KEYALG_DEF)
 #undef KEYALG_DEF
@@ -307,14 +303,12 @@ static strbuf *get_base_public_blob(BinarySource *src,
      * does ensure that the right amount of data is copied so that
      * src ends up in the right position to read the remaining
      * certificate fields. */
-    { // WINSCP
     BLOBTRANS_DECLARE(bt);
     blobtrans_read(bt, src, extra->pub_fmt);
     blobtrans_write(bt, BinarySink_UPCAST(basepub), extra->pub_fmt);
     blobtrans_clear(bt);
 
     return basepub;
-    } // WINSCP
 }
 
 static opensshcert_key *opensshcert_new_shared(
@@ -329,13 +323,11 @@ static opensshcert_key *opensshcert_new_shared(
     if (!ptrlen_eq_string(get_string(src), extra->cert_key_ssh_id))
         return NULL;
 
-    { // WINSCP
     opensshcert_key *ck = snew(opensshcert_key);
     memset(ck, 0, sizeof(*ck));
     ck->sshk.vt = self;
 
     ck->nonce = strbuf_dup(get_string(src));
-    { // WINSCP
     strbuf *basepub = get_base_public_blob(src, extra);
     ck->serial = get_uint64(src);
     ck->type = get_uint32(src);
@@ -358,8 +350,6 @@ static opensshcert_key *opensshcert_new_shared(
 
     *basepub_out = basepub;
     return ck;
-    } // WINSCP
-    } // WINSCP
 }
 
 static ssh_key *opensshcert_new_pub(const ssh_keyalg *self, ptrlen pub)
@@ -412,7 +402,6 @@ static ssh_key *opensshcert_new_priv_openssh(
     if (!ck)
         return NULL;
 
-    { // WINSCP
     strbuf *baseossh = strbuf_new();
 
     /* Make the base OpenSSH key blob out of the public key blob
@@ -426,7 +415,6 @@ static ssh_key *opensshcert_new_priv_openssh(
 
     /* blobtrans_read might fail in this case, because we're reading
      * from two sources and they might fail to match */
-    { // WINSCP
     bool success = blobtrans_read(bt, pubsrc, extra->pub_fmt) &&
         blobtrans_read(bt, src, extra->cert_ossh_fmt);
 
@@ -442,7 +430,6 @@ static ssh_key *opensshcert_new_priv_openssh(
 
     strbuf_free(basepub);
 
-    { // WINSCP
     BinarySource osshsrc[1];
     BinarySource_BARE_INIT_PL(osshsrc, ptrlen_from_strbuf(baseossh));
     ck->basekey = ssh_key_new_priv_openssh(self->base_alg, osshsrc);
@@ -454,9 +441,6 @@ static ssh_key *opensshcert_new_priv_openssh(
     }
 
     return &ck->sshk;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 static void opensshcert_freekey(ssh_key *key)
@@ -501,13 +485,11 @@ static ssh_key *opensshcert_ca_pub_key(
     if (algname)
         *algname = pubkey_blob_to_alg_name(alg_source);
 
-    { // WINSCP
     const ssh_keyalg *ca_alg = pubkey_blob_to_alg(alg_source);
     if (!ca_alg)
         return NULL;  /* don't even recognise the certifying key type */
 
     return ssh_key_new_pub(ca_alg, ca_keyblob);
-    } // WINSCP
 }
 
 static void opensshcert_signature_preimage(opensshcert_key *ck, BinarySink *bs)
@@ -516,10 +498,8 @@ static void opensshcert_signature_preimage(opensshcert_key *ck, BinarySink *bs)
     put_stringz(bs, extra->cert_key_ssh_id);
     put_stringpl(bs, ptrlen_from_strbuf(ck->nonce));
 
-    { // WINSCP
     strbuf *basepub = strbuf_new();
     ssh_key_public_blob(ck->basekey, BinarySink_UPCAST(basepub));
-    { // WINSCP
     BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(basepub));
     get_string(src); /* skip initial key type string */
@@ -536,8 +516,6 @@ static void opensshcert_signature_preimage(opensshcert_key *ck, BinarySink *bs)
     put_stringpl(bs, ptrlen_from_strbuf(ck->extensions));
     put_stringpl(bs, ptrlen_from_strbuf(ck->reserved));
     put_stringpl(bs, ptrlen_from_strbuf(ck->signature_key));
-    } // WINSCP
-    } // WINSCP
 }
 
 static void opensshcert_public_blob(ssh_key *key, BinarySink *bs)
@@ -563,23 +541,17 @@ static void opensshcert_openssh_blob(ssh_key *key, BinarySink *bs)
     ssh_key_public_blob(key, BinarySink_UPCAST(cert));
     put_stringsb(bs, cert);
 
-    { // WINSCP
     strbuf *baseossh = strbuf_new_nm();
     ssh_key_openssh_blob(ck->basekey, BinarySink_UPCAST(baseossh));
-    { // WINSCP
     BinarySource basesrc[1];
     BinarySource_BARE_INIT_PL(basesrc, ptrlen_from_strbuf(baseossh));
 
-    { // WINSCP
     BLOBTRANS_DECLARE(bt);
     blobtrans_read(bt, basesrc, extra->base_ossh_fmt);
     blobtrans_write(bt, bs, extra->cert_ossh_fmt);
     blobtrans_clear(bt);
 
     strbuf_free(baseossh);
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 static void opensshcert_ca_public_blob(ssh_key *key, BinarySink *bs)
@@ -620,30 +592,21 @@ static void opensshcert_string_list_key_components(
     BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(input));
 
-    { // WINSCP
-    const char *titles[2]; // WINSCP
-    titles[0] = title;
-    titles[1] = title2;
-    { // WINSCP
+    const char *titles[2] = { title, title2 };
     size_t ntitles = (title2 ? 2 : 1);
 
     unsigned index = 0;
     while (get_avail(src)) {
-        size_t ti; // WINSCP
-        for (ti = 0; ti < ntitles; ti++) {
+        for (size_t ti = 0; ti < ntitles; ti++) {
             ptrlen value = get_string(src);
             if (get_err(src))
                 break;
-            { // WINSCP
             char *name = dupprintf("%s_%u", titles[ti], index);
             key_components_add_text_pl(kc, name, value);
             sfree(name);
-            } // WINSCP
         }
         index++;
     }
-    } // WINSCP
-    } // WINSCP
 }
 
 static key_components *opensshcert_components(ssh_key *key)
@@ -680,7 +643,7 @@ static key_components *opensshcert_components(ssh_key *key)
                                    ptrlen_from_strbuf(date));
         strbuf_free(date);
     }
-    if (ck->valid_before != 0xFFFFFFFFFFFFFFFFLL ) { // WINSCP
+    if (ck->valid_before != 0xFFFFFFFFFFFFFFFF) {
         strbuf *date = strbuf_new();
         opensshcert_time_to_iso8601(BinarySink_UPCAST(date), ck->valid_before);
         key_components_add_text_pl(kc, "cert_valid_before_date",
@@ -696,7 +659,6 @@ static key_components *opensshcert_components(ssh_key *key)
     key_components_add_binary(kc, "cert_ca_key", ptrlen_from_strbuf(
                                   ck->signature_key));
 
-    { // WINSCP
     ptrlen ca_algname;
     ssh_key *ca_key = opensshcert_ca_pub_key(ck, make_ptrlen(NULL, 0),
                                              &ca_algname);
@@ -704,8 +666,7 @@ static key_components *opensshcert_components(ssh_key *key)
 
     if (ca_key) {
         key_components *kc_ca_key = ssh_key_components(ca_key);
-        size_t i; // WINSCP
-        for (i = 0; i < kc_ca_key->ncomponents; i++) {
+        for (size_t i = 0; i < kc_ca_key->ncomponents; i++) {
             key_component *comp = &kc_ca_key->components[i];
             char *subname = dupcat("cert_ca_key_", comp->name);
             key_components_add_copy(kc, subname, comp);
@@ -718,7 +679,6 @@ static key_components *opensshcert_components(ssh_key *key)
     key_components_add_binary(kc, "cert_ca_sig", ptrlen_from_strbuf(
                                   ck->signature));
     return kc;
-    } // WINSCP
 }
 
 static SeatDialogText *opensshcert_cert_info(ssh_key *key)
@@ -758,7 +718,6 @@ static SeatDialogText *opensshcert_cert_info(ssh_key *key)
         BinarySource src[1];
         BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(
                                       ck->valid_principals));
-        { // WINSCP
         const char *sep = "";
         strbuf_clear(tmp);
         while (get_avail(src)) {
@@ -771,14 +730,13 @@ static SeatDialogText *opensshcert_cert_info(ssh_key *key)
         }
         seat_dialog_text_append(text, SDT_MORE_INFO_VALUE_SHORT,
                                 "%s", tmp->s);
-        } // WINSCP
     }
 
     seat_dialog_text_append(text, SDT_MORE_INFO_KEY,
                             "Validity period");
     strbuf_clear(tmp);
     if (ck->valid_after == 0) {
-        if (ck->valid_before == 0xFFFFFFFFFFFFFFFFLL) { // WINSCP
+        if (ck->valid_before == 0xFFFFFFFFFFFFFFFF) {
             put_dataz(tmp, "forever");
         } else {
             put_dataz(tmp, "until ");
@@ -786,7 +744,7 @@ static SeatDialogText *opensshcert_cert_info(ssh_key *key)
                                         ck->valid_before);
         }
     } else {
-        if (ck->valid_before == 0xFFFFFFFFFFFFFFFFLL) { // WINSCP
+        if (ck->valid_before == 0xFFFFFFFFFFFFFFFF) {
             put_dataz(tmp, "after ");
             opensshcert_time_to_iso8601(BinarySink_UPCAST(tmp),
                                         ck->valid_after);
@@ -819,24 +777,20 @@ static SeatDialogText *opensshcert_cert_info(ssh_key *key)
                 ptrlen_eq_string(key, "source-address")) {
                 BinarySource src2[1];
                 BinarySource_BARE_INIT_PL(src2, value);
-                { // WINSCP
                 ptrlen addresslist = get_string(src2);
                 seat_dialog_text_append(text, SDT_MORE_INFO_KEY,
                                         "Permitted client IP addresses");
                 seat_dialog_text_append(text, SDT_MORE_INFO_VALUE_SHORT,
                                         "%.*s", PTRLEN_PRINTF(addresslist));
-                } // WINSCP
             } else if (ck->type == SSH_CERT_TYPE_USER &&
                        ptrlen_eq_string(key, "force-command")) {
                 BinarySource src2[1];
                 BinarySource_BARE_INIT_PL(src2, value);
-                { // WINSCP
                 ptrlen command = get_string(src2);
                 seat_dialog_text_append(text, SDT_MORE_INFO_KEY,
                                         "Forced remote command");
                 seat_dialog_text_append(text, SDT_MORE_INFO_VALUE_SHORT,
                                         "%.*s", PTRLEN_PRINTF(command));
-                } // WINSCP
             }
         }
     }
@@ -850,7 +804,6 @@ static SeatDialogText *opensshcert_cert_info(ssh_key *key)
      * things that _aren't_ enabled.
      */
 
-    { // WINSCP
     bool x11_ok = false, agent_ok = false, portfwd_ok = false;
     bool pty_ok = false, user_rc_ok = false;
 
@@ -914,7 +867,6 @@ static SeatDialogText *opensshcert_cert_info(ssh_key *key)
     seat_dialog_text_append(text, SDT_MORE_INFO_VALUE_SHORT,
                             "%" PRIu64, ck->serial);
 
-    { // WINSCP
     char *fp = ssh2_fingerprint_blob(ptrlen_from_strbuf(ck->signature_key),
                                      SSH_FPTYPE_DEFAULT);
     seat_dialog_text_append(text, SDT_MORE_INFO_KEY,
@@ -930,8 +882,6 @@ static SeatDialogText *opensshcert_cert_info(ssh_key *key)
 
     strbuf_free(tmp);
     return text;
-    } // WINSCP
-    } // WINSCP
 #endif
 }
 
@@ -942,13 +892,11 @@ static int opensshcert_pubkey_bits(const ssh_keyalg *self, ptrlen blob)
 
     get_string(src);                   /* key type */
     get_string(src);                   /* nonce */
-    { // WINSCP
     strbuf *basepub = get_base_public_blob(src, self->extra);
     int bits = ssh_key_public_bits(
         self->base_alg, ptrlen_from_strbuf(basepub));
     strbuf_free(basepub);
     return bits;
-    } // WINSCP
 }
 
 static unsigned opensshcert_supported_flags(const ssh_keyalg *self)
@@ -961,8 +909,7 @@ static const char *opensshcert_alternate_ssh_id(const ssh_keyalg *self,
 {
     const char *base_id = ssh_keyalg_alternate_ssh_id(self->base_alg, flags);
 
-    size_t i; // WINSCP
-    for (i = 0; i < lenof(opensshcert_all_keyalgs); i++) {
+    for (size_t i = 0; i < lenof(opensshcert_all_keyalgs); i++) {
         const ssh_keyalg *alg_i = opensshcert_all_keyalgs[i];
         if (!strcmp(base_id, alg_i->base_alg->ssh_id))
             return alg_i->ssh_id;
@@ -987,8 +934,7 @@ static bool opensshcert_variable_size(const ssh_keyalg *self)
 static const ssh_keyalg *opensshcert_related_alg(const ssh_keyalg *self,
                                                  const ssh_keyalg *base)
 {
-    size_t i; // WINSCP
-    for (i = 0; i < lenof(opensshcert_all_keyalgs); i++) {
+    for (size_t i = 0; i < lenof(opensshcert_all_keyalgs); i++) {
         const ssh_keyalg *alg_i = opensshcert_all_keyalgs[i];
         if (base == alg_i->base_alg)
             return alg_i;
@@ -1053,7 +999,6 @@ static bool opensshcert_check_cert(
     /* Check which signature algorithm is actually in use, because
      * that might be a reason to reject the certificate (e.g. ssh-rsa
      * when we wanted rsa-sha2-*). */
-    { // WINSCP
     const ssh_keyalg *sig_alg = ssh_key_alg(ca_key);
     if ((sig_alg == &ssh_rsa && !opts->permit_rsa_sha1) ||
         (sig_alg == &ssh_rsa_sha256 && !opts->permit_rsa_sha256) ||
@@ -1070,7 +1015,6 @@ static bool opensshcert_check_cert(
         goto out;
     }
 
-    { // WINSCP
     uint32_t expected_type = host ? SSH_CERT_TYPE_HOST : SSH_CERT_TYPE_USER;
     if (ck->type != expected_type) {
         put_fmt(error, "Certificate type is ");
@@ -1142,7 +1086,6 @@ static bool opensshcert_check_cert(
                 host ? "hostname" : "username");
         BinarySource_BARE_INIT_PL(
             src, ptrlen_from_strbuf(ck->valid_principals));
-        { // WINSCP
         const char *sep = "";
         while (get_avail(src)) {
             ptrlen valid_principal = get_string(src);
@@ -1157,7 +1100,6 @@ static bool opensshcert_check_cert(
         put_fmt(error, "\"");
         goto out;
       principal_ok:;
-        } // WINSCP
     }
 
     /*
@@ -1207,8 +1149,6 @@ static bool opensshcert_check_cert(
         ssh_key_free(ca_key);
     strbuf_free(preimage);
     return result;
-    } // WINSCP
-    } // WINSCP
 }
 
 static bool opensshcert_verify(ssh_key *key, ptrlen sig, ptrlen data)

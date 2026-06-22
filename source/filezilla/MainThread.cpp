@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "MainThread.h"
 
 #define ECS m_CriticalSection.Lock()
@@ -71,7 +71,7 @@ BOOL CMainThread::IsConnected()
   return bConnected;
 }
 
-void CMainThread::OnTimer(WPARAM wParam, LPARAM lParam)
+void CMainThread::OnTimer(WPARAM wParam, LPARAM)
 {
   if (!m_pControlSocket)
     return;
@@ -88,11 +88,11 @@ BOOL CMainThread::OnThreadMessage(UINT Msg, WPARAM wParam, LPARAM lParam)
   {
     if (wParam==FZAPI_THREADMSG_COMMAND)
     {
+      t_command *pCommand=reinterpret_cast<t_command *>(lParam);
       if (m_pControlSocket && !m_pControlSocket->IsReady())
-        m_pPostKeepAliveCommand=(t_command *)lParam;
+        m_pPostKeepAliveCommand=pCommand;
       else
       {
-        t_command *pCommand=(t_command *)lParam;
         switch(pCommand->id)
         {
         case FZ_COMMAND_CONNECT:
@@ -143,22 +143,22 @@ BOOL CMainThread::OnThreadMessage(UINT Msg, WPARAM wParam, LPARAM lParam)
     else if (wParam==FZAPI_THREADMSG_PROCESSREPLY)
       m_pControlSocket->ProcessReply();
     else if (wParam==FZAPI_THREADMSG_TRANSFEREND)
-      m_pControlSocket->TransferEnd(lParam);
+      m_pControlSocket->TransferEnd(static_cast<int>(lParam));
     else if (wParam==FZAPI_THREADMSG_CANCEL)
-      m_pControlSocket->Cancel(lParam);
+      m_pControlSocket->Cancel(static_cast<int>(lParam));
     else if (wParam==FZAPI_THREADMSG_DISCONNECT)
       m_pControlSocket->Disconnect();
     else if (wParam==FZAPI_THREADMSG_POSTKEEPALIVE)
     {
       if (m_pPostKeepAliveCommand)
       {
-        PostThreadMessage(m_nInternalMessageID,FZAPI_THREADMSG_COMMAND,(LPARAM)m_pPostKeepAliveCommand);
+        PostThreadMessage(m_nInternalMessageID,FZAPI_THREADMSG_COMMAND,reinterpret_cast<LPARAM>(m_pPostKeepAliveCommand));
         m_pPostKeepAliveCommand=0;
       }
     }
     else if (wParam==FZAPI_THREADMSG_ASYNCREQUESTREPLY)
     {
-      CAsyncRequestData *pData=(CAsyncRequestData *)lParam;
+      CAsyncRequestData *pData=reinterpret_cast<CAsyncRequestData *>(lParam);
       if (pData)
       {
         if (pData->nRequestID!=GetAsyncRequestID())
@@ -201,7 +201,7 @@ void CMainThread::Command(const t_command &command)
   m_bBusy=TRUE;
   t_command *pCommand=new t_command;
   *pCommand=command;
-  DebugCheck(PostThreadMessage(m_nInternalMessageID,FZAPI_THREADMSG_COMMAND,(LPARAM)pCommand));
+  DebugCheck(PostThreadMessage(m_nInternalMessageID,FZAPI_THREADMSG_COMMAND,reinterpret_cast<LPARAM>(pCommand)));
   m_LastCommand=command;
   LCS;
 }
@@ -349,7 +349,7 @@ void CMainThread::SetWorkingDir(t_directory *pWorkingDir)
 
 void CMainThread::SendDirectoryListing(t_directory * pDirectoryToSend)
 {
-  if (!GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_LISTDATA, 0), (LPARAM)pDirectoryToSend))
+  if (!GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_LISTDATA, 0), reinterpret_cast<LPARAM>(pDirectoryToSend)))
   {
     delete pDirectoryToSend;
   }
@@ -399,7 +399,7 @@ DWORD CMainThread::ResumeThread()
 
 DWORD WINAPI CMainThread::ThreadProc(LPVOID lpParameter)
 {
-  return ((CMainThread *)lpParameter)->Run();
+  return static_cast<CMainThread *>(lpParameter)->Run();
 }
 
 DWORD CMainThread::Run()

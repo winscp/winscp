@@ -43,7 +43,6 @@
 #define LIBS3_VER_MINOR "1"
 #endif
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -160,7 +159,10 @@ extern "C" {
  * S3_MAX_METADATA_SIZE is the maximum number of bytes allowed for
  * x-amz-meta header names and values in any request passed to Amazon S3
  **/
-#define S3_MAX_METADATA_SIZE               2048
+// WINSCP: Session token can have any size, but the documentation explicitly mentions 4096 bytes:
+// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html
+// AWS itself does not support headers larger than 8192 (returns RequestHeaderSectionTooLarge)
+#define S3_MAX_METADATA_SIZE               8192
 
 
 /**
@@ -171,13 +173,9 @@ extern "C" {
 
 /**
  * S3_MAX_METADATA_COUNT is the maximum number of x-amz-meta- headers that
- * could be included in a request to S3.  The smallest meta header is
- * "x-amz-meta-n: v".  Since S3 doesn't count the ": " against the total, the
- * smallest amount of data to count for a header would be the length of
- * "x-amz-meta-nv".
+ * could be included in a request to S3.
  **/
-#define S3_MAX_METADATA_COUNT \
-    (S3_MAX_METADATA_SIZE / (sizeof(S3_METADATA_HEADER_NAME_PREFIX "nv") - 1))
+#define S3_MAX_METADATA_COUNT 128
 
 
 /**
@@ -2660,10 +2658,6 @@ void S3_list_multipart_uploads(S3BucketContext *bucketContext,
                                int timeoutMs,
                                const S3ListMultipartUploadsHandler *handler,
                                void *callbackData);
-
-#ifdef WINSCP
-int snprintf_S(char * s, size_t n, const char * format, size_t len, const char * data);
-#endif
 
 #ifdef __cplusplus
 }

@@ -15,11 +15,12 @@
 // CM_DPICHANGED + 10 (packages/my/PasTools.pas)
 #define WM_WANTS_MOUSEWHEEL_INACTIVE (WM_WINSCP_USER + 11)
 #define WM_WANTS_SCREEN_TIPS (WM_WINSCP_USER + 12)
-// WM_USER_SHCHANGENOTIFY + 13 (packages/filemng/DriveView.pas)
+// WM_USER_SHCHANGENOTIFY + 13 (packages/filemng/IEDriveInfo.pas)
 // WM_PASTE_FILES + 14 (forms/CustomScpExplorer.cpp)
 #define WM_IS_HIDDEN (WM_WINSCP_USER + 15)
 // WM_USER_INVALIDATEITEM + 16 (packages/filemng/DirView.pas)
 #define WM_QUEUE_CALLBACK (WM_WINSCP_USER + 17)
+// WM_DRIVEINFO_PROCESS + 18 (packages/filemng/IEDriveInfo.pas)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration
@@ -27,7 +28,7 @@ struct TSynchronizeChecklistConfiguration
   UnicodeString WindowParams;
   UnicodeString ListParams;
   bool __fastcall operator !=(TSynchronizeChecklistConfiguration & rhc)
-    { return C(WindowParams) C(ListParams) 0; };
+    { return C(WindowParams) C(ListParams) 0; }
 };
 typedef TSynchronizeChecklistConfiguration TFindFileConfiguration;
 //---------------------------------------------------------------------------
@@ -35,7 +36,7 @@ struct TConsoleWinConfiguration
 {
   UnicodeString WindowSize;
   bool __fastcall operator !=(TConsoleWinConfiguration & rhc)
-    { return C(WindowSize) 0; };
+    { return C(WindowSize) 0; }
 };
 //---------------------------------------------------------------------------
 enum TIncrementalSearch { isOff = -1, isNameStartOnly, isName, isAll };
@@ -44,7 +45,7 @@ struct TLoginDialogConfiguration : public TConsoleWinConfiguration
 {
   TIncrementalSearch SiteSearch;
   bool __fastcall operator !=(TLoginDialogConfiguration & rhc)
-    { return (TConsoleWinConfiguration::operator !=(rhc)) || C(SiteSearch) 0; };
+    { return (TConsoleWinConfiguration::operator !=(rhc)) || C(SiteSearch) 0; }
 };
 //---------------------------------------------------------------------------
 class TCustomWinConfiguration : public TGUIConfiguration

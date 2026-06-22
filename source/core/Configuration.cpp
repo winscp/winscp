@@ -1,25 +1,15 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include <FileInfo.h>
 
-#include "Common.h"
-#include "Exceptions.h"
 #include "Configuration.h"
 #include "PuttyIntf.h"
-#include "TextsCore.h"
-#include "Interface.h"
-#include "CoreMain.h"
 #include "Security.h"
 #include "FileMasks.h"
 #include "CopyParam.h"
 #include <shlobj.h>
-#include <System.IOUtils.hpp>
-#include <System.StrUtils.hpp>
-#include <System.DateUtils.hpp>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 const wchar_t * AutoSwitchNames = L"On;Off;Auto";
 const wchar_t * NotAutoSwitchNames = L"Off;On;Auto";
@@ -132,7 +122,7 @@ void TSshHostCAList::Load(THierarchicalStorage * Storage)
 //---------------------------------------------------------------------------
 int TSshHostCAList::GetCount() const
 {
-  return FList.size();
+  return SizeToIntChecked(FList.size());
 }
 //---------------------------------------------------------------------------
 const TSshHostCA * TSshHostCAList::Get(int Index) const
@@ -206,7 +196,7 @@ void __fastcall TConfiguration::Default()
   FDisableAcceptingHostKeys = false;
 
   TRegistryStorage * AdminStorage;
-  AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE);
+  AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE, KEY_WOW64_32KEY);
   try
   {
     if (AdminStorage->OpenRootKey(false))
@@ -396,6 +386,8 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
     KEY(String,   AWSAPI); \
+    KEY(String,   ChecksumCommands); \
+    KEY(Integer,  AuthAgent); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
@@ -770,7 +762,7 @@ UnicodeString __fastcall TConfiguration::BannerHash(const UnicodeString & Banner
   Result.SetLength(16);
   md5checksum(
     reinterpret_cast<const char*>(Banner.c_str()), Banner.Length() * sizeof(wchar_t),
-    (unsigned char*)Result.c_str());
+    reinterpret_cast<unsigned char*>(Result.c_str()));
   return BytesToHex(Result);
 }
 //---------------------------------------------------------------------------
@@ -1190,7 +1182,10 @@ bool __fastcall TConfiguration::GetIsUnofficial()
 //---------------------------------------------------------------------------
 static TDateTime GetBuildDate()
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdate-time"
   UnicodeString BuildDateStr = __DATE__;
+#pragma clang diagnostic pop
   UnicodeString MonthStr = CutToChar(BuildDateStr, L' ', true);
   int Month = ParseShortEngMonthName(MonthStr);
   int Day = StrToInt(CutToChar(BuildDateStr, L' ', true));
@@ -1908,7 +1903,17 @@ UnicodeString __fastcall TConfiguration::GetDirectoryStatisticsCacheKey(
 {
   std::unique_ptr<TStringList> RawOptions(new TStringList());
   RawOptions->Add(SessionKey);
-  RawOptions->Add(UnixExcludeTrailingBackslash(Path));
+
+  UnicodeString PathKey;
+  if (SessionKey.IsEmpty())
+  {
+    PathKey = ExcludeTrailingBackslash(Path).LowerCase();
+  }
+  else
+  {
+    PathKey = UnixExcludeTrailingBackslash(Path);
+  }
+  RawOptions->Add(PathKey);
 
   TCopyParamType Defaults;
   TCopyParamType FilterCopyParam;
@@ -2374,6 +2379,16 @@ const TSshHostCAList * TConfiguration::GetActiveSshHostCAList()
 bool __fastcall TConfiguration::GetPersistent()
 {
   return (Storage != stNul) && !FDontSave;
+}
+//---------------------------------------------------------------------------
+int TConfiguration::GetAuthAgent()
+{
+  return auth_agent_implementation;
+}
+//---------------------------------------------------------------------------
+void TConfiguration::SetAuthAgent(int value)
+{
+  auth_agent_implementation = static_cast<AuthAgentImplementation>(value);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

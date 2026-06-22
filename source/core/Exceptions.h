@@ -160,13 +160,11 @@ public:
   // fatal errors are always copied, new message is only appended
   __fastcall EFatal(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
 
-  __property bool ReopenQueried = { read = FReopenQueried, write = FReopenQueried };
+  bool ReopenQueried;
+  bool InactiveTerminationMessage;
 
   virtual ExtException * __fastcall Clone();
   virtual void __fastcall Rethrow();
-
-private:
-  bool FReopenQueried;
 };
 //---------------------------------------------------------------------------
 #define DERIVE_FATAL_EXCEPTION(NAME, BASE) \

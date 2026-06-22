@@ -1,14 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
-#include <Common.h>
 #include "NamedObjs.h"
 #include "Bookmarks.h"
 #include "Configuration.h"
 #include "HierarchicalStorage.h"
-#include "TextsCore.h"
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 __fastcall TBookmarks::TBookmarks(): TObject()
 {
@@ -98,7 +94,7 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Unic
       else
       {
         Directory = L""; // use only in case of malformed config
-        ShortCut = (TShortCut)Storage->ReadInteger(Name, 0);
+        ShortCut = static_cast<TShortCut>(Storage->ReadInteger(Name, 0));
       }
       TBookmark * Bookmark;
       if (IsNumber(Name))

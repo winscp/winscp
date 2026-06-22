@@ -248,10 +248,8 @@ static ptrlen BinarySource_get_chars_internal(
             break;
         (void) consume(1);
     }
-    { // WINSCP
     const char *end = here;
     return make_ptrlen(start, end - start);
-    } // WINSCP
 }
 
 ptrlen BinarySource_get_chars(BinarySource *src, const char *include_set)

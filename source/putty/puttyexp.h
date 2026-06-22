@@ -39,15 +39,6 @@ Seat * get_pfwd_seat(Plug * plug);
 
 void select_result(WPARAM wParam, LPARAM lParam);
 
-// from sshaes.c
-
-typedef void AESContext;
-AESContext * aes_make_context();
-void aes_free_context(AESContext * ctx);
-void aes_iv(AESContext * ctx, const void * iv);
-void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen);
-void call_aes_sdctr(unsigned char *blk, int len, AESContext * ctx);
-
 // from sshaesold.c
 
 void *aesold_make_context(void);
@@ -57,11 +48,11 @@ void call_aesold_encrypt(void * ctx, unsigned int * block);
 
 // from winmisc.c
 
-void win_misc_cleanup();
+void win_misc_cleanup(void);
 
 // from misc.c
 
-const char * get_putty_version();
+const char * get_putty_version(void);
 
 // from winsecur.c
 
@@ -70,5 +61,14 @@ void win_secur_cleanup(void);
 // from sshecc.c
 
 void ec_cleanup(void);
+
+// from agent-client.c
+
+typedef enum AuthAgentImplementation {
+    AAI_PAGEANT,
+    AAI_OPENSSH
+} AuthAgentImplementation;
+
+extern AuthAgentImplementation auth_agent_implementation;
 
 #endif

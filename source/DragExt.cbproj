@@ -8,6 +8,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Library</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -29,14 +30,18 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <_TCHARMapping>wchar_t</_TCHARMapping>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
         <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-        <BCC_wdlx>false</BCC_wdlx>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-c++98-compat-pedantic -Wno-padded</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+        <ILINK_LargeAddressAware>true</ILINK_LargeAddressAware>
         <ILINK_LibraryPath>dragext\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>dragext\;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
         <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
@@ -49,10 +54,10 @@
         <SanitizedProjectName>DragExt</SanitizedProjectName>
         <VerInfo_DLL>true</VerInfo_DLL>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Drag&amp;Drop shell extension for WinSCP ($(Platform));FileVersion=2.1.0.0;InternalName=dragext;LegalCopyright=(c) 2000-2026 Martin Prikryl;LegalTrademarks=;OriginalFilename=dragext.dll;ProductName=WinSCP;ProductVersion=6.5.7.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Drag&amp;Drop shell extension for WinSCP ($(Platform));FileVersion=2.3.0.0;InternalName=dragext;LegalCopyright=(c) 2000-2026 Martin Prikryl;LegalTrademarks=;OriginalFilename=dragext.dll;ProductName=WinSCP;ProductVersion=6.6.3.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>2</VerInfo_MajorVer>
-        <VerInfo_MinorVer>1</VerInfo_MinorVer>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <OutputName>DragExt64</OutputName>
@@ -94,7 +99,6 @@
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
     </ItemGroup>
-    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
     <ProjectExtensions>
         <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
         <Borland.ProjectType>CppDynamicLibrary</Borland.ProjectType>
@@ -114,5 +118,6 @@
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
     </ProjectExtensions>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
     <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

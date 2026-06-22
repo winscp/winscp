@@ -47,7 +47,6 @@ static ssh2_mac *hmac_new_inner(struct hmac *ctx, const ssh2_macalg *alg)
             ctx->hashalg->text_basename, extra->suffix);
     if (extra->annotation || ctx->hashalg->annotation) {
         put_fmt(ctx->text_name, " (");
-        { // WINSCP
         const char *sep = "";
         if (extra->annotation) {
             put_fmt(ctx->text_name, "%s%s", sep, extra->annotation);
@@ -58,7 +57,6 @@ static ssh2_mac *hmac_new_inner(struct hmac *ctx, const ssh2_macalg *alg)
             sep = ", ";
         }
         put_fmt(ctx->text_name, ")");
-        } // WINSCP
     }
 
     ctx->mac.vt = alg;
@@ -107,10 +105,8 @@ static void hmac_key(ssh2_mac *mac, ptrlen key)
         sb = strbuf_new_nm();
         strbuf_append(sb, ctx->hashalg->hlen);
         hash_simple(ctx->hashalg, key, sb->u);
-        { // WINSCP
         kp = sb->u;
         klen = sb->len;
-        } // WINSCP
     } else {
         /*
          * A short enough key is used as is.
@@ -120,22 +116,19 @@ static void hmac_key(ssh2_mac *mac, ptrlen key)
     }
 
     ssh_hash_reset(ctx->h_outer);
-    { // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < klen; i++)
+    for (size_t i = 0; i < klen; i++)
         put_byte(ctx->h_outer, PAD_OUTER ^ kp[i]);
-    for (i = klen; i < ctx->hashalg->blocklen; i++)
+    for (size_t i = klen; i < ctx->hashalg->blocklen; i++)
         put_byte(ctx->h_outer, PAD_OUTER);
 
     ssh_hash_reset(ctx->h_inner);
-    for (i = 0; i < klen; i++)
+    for (size_t i = 0; i < klen; i++)
         put_byte(ctx->h_inner, PAD_INNER ^ kp[i]);
-    for (i = klen; i < ctx->hashalg->blocklen; i++)
+    for (size_t i = klen; i < ctx->hashalg->blocklen; i++)
         put_byte(ctx->h_inner, PAD_INNER);
 
     if (sb)
         strbuf_free(sb);
-    } // WINSCP
 }
 
 static void hmac_start(ssh2_mac *mac)
@@ -175,88 +168,84 @@ static const char *hmac_text_name(ssh2_mac *mac)
 
 static const struct hmac_extra ssh_hmac_sha512_extra = { &ssh_sha512, "" };
 const ssh2_macalg ssh_hmac_sha512 = {
-    /*.new =*/ hmac_new,
-    /*.free =*/ hmac_free,
-    /*.setkey =*/ hmac_key,
-    /*.start =*/ hmac_start,
-    /*.genresult =*/ hmac_genresult,
-    /*.next_message =*/ nullmac_next_message,
-    /*.text_name =*/ hmac_text_name,
-    /*.name =*/ "hmac-sha2-512",
-    /*.etm_name =*/ "hmac-sha2-512-etm@openssh.com",
-    /*.len =*/ 64,
-    /*.keylen =*/ 64,
-    /*.extra =*/ &ssh_hmac_sha512_extra,
+    .new = hmac_new,
+    .free = hmac_free,
+    .setkey = hmac_key,
+    .start = hmac_start,
+    .genresult = hmac_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = hmac_text_name,
+    .name = "hmac-sha2-512",
+    .etm_name = "hmac-sha2-512-etm@openssh.com",
+    .len = 64,
+    .keylen = 64,
+    .extra = &ssh_hmac_sha512_extra,
 };
 
 static const struct hmac_extra ssh_hmac_sha256_extra = { &ssh_sha256, "" };
 const ssh2_macalg ssh_hmac_sha256 = {
-    // WINSCP
-    /*.new =*/ hmac_new,
-    /*.free =*/ hmac_free,
-    /*.setkey =*/ hmac_key,
-    /*.start =*/ hmac_start,
-    /*.genresult =*/ hmac_genresult,
-    /*.next_message =*/ nullmac_next_message,
-    /*.text_name =*/ hmac_text_name,
-    /*.name =*/ "hmac-sha2-256",
-    /*.etm_name =*/ "hmac-sha2-256-etm@openssh.com",
-    /*.len =*/ 32,
-    /*.keylen =*/ 32,
-    /*.extra =*/ &ssh_hmac_sha256_extra,
+    .new = hmac_new,
+    .free = hmac_free,
+    .setkey = hmac_key,
+    .start = hmac_start,
+    .genresult = hmac_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = hmac_text_name,
+    .name = "hmac-sha2-256",
+    .etm_name = "hmac-sha2-256-etm@openssh.com",
+    .len = 32,
+    .keylen = 32,
+    .extra = &ssh_hmac_sha256_extra,
 };
 
 static const struct hmac_extra ssh_hmac_md5_extra = { &ssh_md5, "" };
 const ssh2_macalg ssh_hmac_md5 = {
-    // WINSCP
-    /*.new =*/ hmac_new,
-    /*.free =*/ hmac_free,
-    /*.setkey =*/ hmac_key,
-    /*.start =*/ hmac_start,
-    /*.genresult =*/ hmac_genresult,
-    /*.next_message =*/ nullmac_next_message,
-    /*.text_name =*/ hmac_text_name,
-    /*.name =*/ "hmac-md5",
-    /*.etm_name =*/ "hmac-md5-etm@openssh.com",
-    /*.len =*/ 16,
-    /*.keylen =*/ 16,
-    /*.extra =*/ &ssh_hmac_md5_extra,
+    .new = hmac_new,
+    .free = hmac_free,
+    .setkey = hmac_key,
+    .start = hmac_start,
+    .genresult = hmac_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = hmac_text_name,
+    .name = "hmac-md5",
+    .etm_name = "hmac-md5-etm@openssh.com",
+    .len = 16,
+    .keylen = 16,
+    .extra = &ssh_hmac_md5_extra,
 };
 
 static const struct hmac_extra ssh_hmac_sha1_extra = { &ssh_sha1, "" };
 
 const ssh2_macalg ssh_hmac_sha1 = {
-    // WINSCP
-    /*.new =*/ hmac_new,
-    /*.free =*/ hmac_free,
-    /*.setkey =*/ hmac_key,
-    /*.start =*/ hmac_start,
-    /*.genresult =*/ hmac_genresult,
-    /*.next_message =*/ nullmac_next_message,
-    /*.text_name =*/ hmac_text_name,
-    /*.name =*/ "hmac-sha1",
-    /*.etm_name =*/ "hmac-sha1-etm@openssh.com",
-    /*.len =*/ 20,
-    /*.keylen =*/ 20,
-    /*.extra =*/ &ssh_hmac_sha1_extra,
+    .new = hmac_new,
+    .free = hmac_free,
+    .setkey = hmac_key,
+    .start = hmac_start,
+    .genresult = hmac_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = hmac_text_name,
+    .name = "hmac-sha1",
+    .etm_name = "hmac-sha1-etm@openssh.com",
+    .len = 20,
+    .keylen = 20,
+    .extra = &ssh_hmac_sha1_extra,
 };
 
 static const struct hmac_extra ssh_hmac_sha1_96_extra = { &ssh_sha1, "-96" };
 
 const ssh2_macalg ssh_hmac_sha1_96 = {
-    // WINSCP
-    /*.new =*/ hmac_new,
-    /*.free =*/ hmac_free,
-    /*.setkey =*/ hmac_key,
-    /*.start =*/ hmac_start,
-    /*.genresult =*/ hmac_genresult,
-    /*.next_message =*/ nullmac_next_message,
-    /*.text_name =*/ hmac_text_name,
-    /*.name =*/ "hmac-sha1-96",
-    /*.etm_name =*/ "hmac-sha1-96-etm@openssh.com",
-    /*.len =*/ 12,
-    /*.keylen =*/ 20,
-    /*.extra =*/ &ssh_hmac_sha1_96_extra,
+    .new = hmac_new,
+    .free = hmac_free,
+    .setkey = hmac_key,
+    .start = hmac_start,
+    .genresult = hmac_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = hmac_text_name,
+    .name = "hmac-sha1-96",
+    .etm_name = "hmac-sha1-96-etm@openssh.com",
+    .len = 12,
+    .keylen = 20,
+    .extra = &ssh_hmac_sha1_96_extra,
 };
 
 static const struct hmac_extra ssh_hmac_sha1_buggy_extra = {
@@ -264,19 +253,17 @@ static const struct hmac_extra ssh_hmac_sha1_buggy_extra = {
 };
 
 const ssh2_macalg ssh_hmac_sha1_buggy = {
-    // WINSCP
-    /*.new =*/ hmac_new,
-    /*.free =*/ hmac_free,
-    /*.setkey =*/ hmac_key,
-    /*.start =*/ hmac_start,
-    /*.genresult =*/ hmac_genresult,
-    /*.next_message =*/ nullmac_next_message,
-    /*.text_name =*/ hmac_text_name,
-    /*.name =*/ "hmac-sha1",
-    NULL, // WINSCP
-    /*.len =*/ 20,
-    /*.keylen =*/ 16,
-    /*.extra =*/ &ssh_hmac_sha1_buggy_extra,
+    .new = hmac_new,
+    .free = hmac_free,
+    .setkey = hmac_key,
+    .start = hmac_start,
+    .genresult = hmac_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = hmac_text_name,
+    .name = "hmac-sha1",
+    .len = 20,
+    .keylen = 16,
+    .extra = &ssh_hmac_sha1_buggy_extra,
 };
 
 static const struct hmac_extra ssh_hmac_sha1_96_buggy_extra = {
@@ -284,19 +271,17 @@ static const struct hmac_extra ssh_hmac_sha1_96_buggy_extra = {
 };
 
 const ssh2_macalg ssh_hmac_sha1_96_buggy = {
-    // WINSCP
-    /*.new =*/ hmac_new,
-    /*.free =*/ hmac_free,
-    /*.setkey =*/ hmac_key,
-    /*.start =*/ hmac_start,
-    /*.genresult =*/ hmac_genresult,
-    /*.next_message =*/ nullmac_next_message,
-    /*.text_name =*/ hmac_text_name,
-    /*.name =*/ "hmac-sha1-96",
-    NULL, // WINSCP
-    /*.len =*/ 12,
-    /*.keylen =*/ 16,
-    /*.extra =*/ &ssh_hmac_sha1_96_buggy_extra,
+    .new = hmac_new,
+    .free = hmac_free,
+    .setkey = hmac_key,
+    .start = hmac_start,
+    .genresult = hmac_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = hmac_text_name,
+    .name = "hmac-sha1-96",
+    .len = 12,
+    .keylen = 16,
+    .extra = &ssh_hmac_sha1_96_buggy_extra,
 };
 
 ssh2_mac *hmac_new_from_hash(const ssh_hashalg *hash)

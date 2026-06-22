@@ -1,10 +1,8 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 //---------------------------------------------------------------------------
 #include "FileZillaIntern.h"
 #include "FileZillaIntf.h"
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 TFileZillaIntern::TFileZillaIntern(TFileZillaIntf * AOwner) :
   FOwner(AOwner)

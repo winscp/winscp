@@ -1,17 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <WinConfiguration.h>
-#include <WinInterface.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <Tools.h>
-#include <CoreMain.h>
 #include "EditorPreferences.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -79,7 +71,7 @@ void __fastcall TEditorPreferencesDialog::Init(TEditorPreferencesMode Mode, bool
     ExternalEditorBrowseButton->Top = ExternalEditorBrowseButton->Top - Shift;
     Shift += (EditorExternalButton->Top - EditorInternalButton->Top);
     EditorGroup2->Height = EditorGroup2->Height - Shift;
-    TLabel * ExternalEditorLabel = new TUIStateAwareLabel(this);
+    TLabel * ExternalEditorLabel = CreateLabel(this);
     ExternalEditorLabel->Caption = EditorExternalButton->Caption;
     ExternalEditorLabel->Parent = EditorGroup2;
     ExternalEditorLabel->Top = MaskLabel->Top;
@@ -116,10 +108,8 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & R
     ReformatFileNameCommand(ExternalEditor);
   }
   ExternalEditorEdit->Text = ExternalEditor;
-  ExternalEditorEdit->Items = CustomWinConfiguration->History[L"ExternalEditor"];
   FExternalEditorDefaults = GetExternalEditorDefaults();
   MaskEdit->Text = Editor->FileMask.Masks;
-  MaskEdit->Items = CustomWinConfiguration->History[L"Mask"];
   ExternalEditorTextCheck->Checked = Editor->ExternalEditorText;
   SDIExternalEditorCheck->Checked = Editor->SDIExternalEditor;
   RememberCheck->Checked = Remember;
@@ -143,10 +133,8 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & R
     }
     Editor->ExternalEditor = ExternalEditorEdit->Text;
     ExternalEditorEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"ExternalEditor"] = ExternalEditorEdit->Items;
     Editor->FileMask = MaskEdit->Text;
     MaskEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"Mask"] = MaskEdit->Items;
     Editor->ExternalEditorText = ExternalEditorTextCheck->Checked;
     Editor->SDIExternalEditor = SDIExternalEditorCheck->Checked;
     Remember = RememberCheck->Checked;

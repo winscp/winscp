@@ -39,9 +39,9 @@ class TOptions;
 TOptions * __fastcall GetGlobalOptions();
 
 void __fastcall ShowExtendedException(Exception * E);
-bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages);
+bool AppendExceptionStackTrace(Exception * E, TStrings *& MoreMessages);
 void __fastcall IgnoreException(const std::type_info & ExceptionType);
-UnicodeString __fastcall GetExceptionDebugInfo();
+UnicodeString GetExceptionDebugInfo(Exception * E);
 
 UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();
@@ -54,9 +54,9 @@ void SystemRequired();
 UnicodeString __fastcall AppNameString();
 UnicodeString __fastcall SshVersionString();
 void __fastcall CopyToClipboard(UnicodeString Text);
-int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
-  TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
-  TThreadID & ThreadId);
+THandle StartThread(
+  void * SecurityAttributes, unsigned StackSize, TThreadFunc ThreadFunc, void * Parameter,
+  unsigned CreationFlags, TThreadID & ThreadId);
 bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim);
 
 // Order of the values also define order of the buttons/answers on the prompts
@@ -115,6 +115,8 @@ struct TQueryParams
 {
   TQueryParams(unsigned int AParams = 0, UnicodeString AHelpKeyword = HELP_NONE);
   TQueryParams(const TQueryParams & Source);
+
+  TQueryParams & operator =(const TQueryParams &) = default;
 
   void Assign(const TQueryParams & Source);
 

@@ -62,7 +62,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
       inline RightsFrame: TRightsFrame
         Left = 2
         Top = 39
-        Width = 258
+        Width = 273
         Height = 98
         TabOrder = 1
         inherited DirectoriesXCheck: TCheckBox

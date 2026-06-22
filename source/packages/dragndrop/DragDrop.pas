@@ -192,6 +192,7 @@ type
     procedure SuggestDropEffect(grfKeyState: LongInt; var dwEffect: LongInt); virtual;
     procedure AcceptDataObject(DataObj: IDataObject; var Accept:Boolean); virtual;
     procedure RenderDropped(DataObj: IDataObject; grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt); virtual;
+    function GetPreferredDropEffect(const DataObj: IDataObject): LongInt;
   public
     constructor Create(AOwner: TDragDrop);
     destructor Destroy; override;
@@ -338,7 +339,7 @@ type
     function ExecuteOperation(DataObject: TDataObject): TDragResult;
     function Execute: TDragResult;
     function CopyToClipboard: Boolean; virtual;
-    function GetFromClipboard: Boolean; virtual;
+    function GetFromClipboard(var dwEffect: LongInt): Boolean; virtual;
     procedure StartDnDDetection(Button: TMouseButton); virtual;
     property OwnerIsSource:Boolean read FOwnerIsSource;
     property Registered: Boolean read FRegistered default False;
@@ -1200,25 +1201,13 @@ begin
   Accept := True;
 end;
 
-function TDropTarget.DragEnter(
-  const dataObj: IDataObject; grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt): HResult;
-// Is called if the d&d-mouse cursor moves ON (one call only) the TargeTWinControl. Here,
-// you influence if a drop can be accepted and the drop's effect if accepted.
+function TDropTarget.GetPreferredDropEffect(const DataObj: IDataObject): LongInt;
 var
   FormatEtc: TFormatEtc;
   StgMedium: TStgMedium;
   Ptr: Pointer;
 begin
-  TDragDrop(FOwner).FInternalSource := GInternalSource;
-  FOwner.FAvailableDropEffects := dwEffect;
-  FOwner.FContextMenu := grfKeyState and MK_RBUTTON <> 0;
-  if (FOwner.RenderDataOn = rdoEnter) or (FOwner.RenderDataOn = rdoEnterAndDropSync) or
-     (FOwner.RenderDataOn = rdoEnterAndDropAsync) then
-  begin
-    RenderDropped(DataObj, grfKeyState, pt, dwEffect);
-  end;
-
-  FPreferredEffect := 0;
+  Result := 0;
   with FormatEtc do
   begin
     cfFormat := CF_PREFERREDDROPEFFECT;
@@ -1227,14 +1216,14 @@ begin
     lindex := -1;
     tymed := TYMED_HGLOBAL;
   end;
-  if dataObj.GetData(FormatEtc, StgMedium) = S_OK then
+  if DataObj.GetData(FormatEtc, StgMedium) = S_OK then
   begin
     try
-      if GlobalSize(StgMedium.HGlobal) = SizeOf(FPreferredEffect) then
+      if GlobalSize(StgMedium.HGlobal) = SizeOf(Result) then
       begin
         Ptr := GlobalLock(StgMedium.HGlobal);
         try
-          FPreferredEffect := PLongInt(Ptr)^;
+          Result := PLongInt(Ptr)^;
         finally
           GlobalUnLock(StgMedium.HGlobal);
         end;
@@ -1243,6 +1232,24 @@ begin
       ReleaseStgMedium(StgMedium);
     end;
   end;
+end;
+
+function TDropTarget.DragEnter(
+  const dataObj: IDataObject; grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt): HResult;
+// Is called if the d&d-mouse cursor moves ON (one call only) the TargeTWinControl. Here,
+// you influence if a drop can be accepted and the drop's effect if accepted.
+begin
+  TDragDrop(FOwner).FInternalSource := GInternalSource;
+  FOwner.FAvailableDropEffects := dwEffect;
+  FOwner.FContextMenu := grfKeyState and MK_RBUTTON <> 0;
+  if (FOwner.RenderDataOn = rdoEnter) or (FOwner.RenderDataOn = rdoEnterAndDropSync) or
+     (FOwner.RenderDataOn = rdoEnterAndDropAsync) then
+  begin
+    var dwEffectDummy: LongInt;
+    RenderDropped(DataObj, grfKeyState, pt, dwEffectDummy);
+  end;
+
+  FPreferredEffect := GetPreferredDropEffect(dataObj);
 
   SuggestDropEffect(grfKeyState, dwEffect);
   AcceptDataObject(DataObj, FAccept);
@@ -1351,7 +1358,7 @@ var
   end;
 
 begin
-  Result := E_Fail;
+  Result := E_Fail; // Should return DRAGDROP_S_CANCEL when the menu is canceled
   if FOwner.FContextMenu then KeyState := grfKeyState or MK_RBUTTON
     else KeyState := grfKeyState or MK_LButton;
   if FAccept then SuggestDropEffect(KeyState, dwEffect)
@@ -1434,7 +1441,8 @@ begin
         mcursor := Screen.Cursor;
         Screen.Cursor := crHourGlass;
         try
-          RenderDropped(DataObj, KeyState, pt, dwEffect);
+          var dwEffectDummy: LongInt;
+          RenderDropped(DataObj, KeyState, pt, dwEffectDummy);
         finally
           // Set old cursor
           Screen.Cursor := mcursor;
@@ -1635,7 +1643,8 @@ begin
         mcursor := Screen.Cursor;
         Screen.Cursor := crHourGlass;
         try
-          FDropTarget.RenderDropped(FDataObj, FgrfKeyState, Fpt, FdwEffect);
+          var dwEffectDummy: LongInt;
+          FDropTarget.RenderDropped(FDataObj, FgrfKeyState, Fpt, dwEffectDummy);
           FDataObj._Release;
         finally
           // Set old cursor
@@ -1849,16 +1858,16 @@ begin
      (not FMessageHooked) and ((FSourceEffects <> 0) or (FTargetEffects <> 0)) then
   begin
     WndProcPtr := MakeObjectInstance(WndMethod);
-    OldWndProc := Pointer(SetWindowLong(FDragDropControl.Handle, GWL_WNDPROC, LongInt(WndProcPtr)));
+    OldWndProc := Pointer(SetWindowLongPtr(FDragDropControl.Handle, GWLP_WNDPROC, NativeInt(WndProcPtr)));
     FMessageHooked := True;
   end;
 end;
 
 procedure TDragDrop.UnhookMessageHandler(ForceUnhook: Boolean);
 begin
-  if FMessageHooked and (ForceUnhook or ((FSourceEffects=0) and (FTargetEffects=0))) then
+  if FMessageHooked and (ForceUnhook or ((FSourceEffects = 0) and (FTargetEffects = 0))) then
   begin
-    SetWindowLong(FDragDropControl.Handle, GWL_WNDPROC, LongInt(OldWndProc));
+    SetWindowLongPtr(FDragDropControl.Handle, GWLP_WNDPROC, NativeInt(OldWndProc));
     FreeObjectInstance(WndProcPtr);
     WndProcPtr := nil;
     OldWndProc := nil;
@@ -2025,19 +2034,27 @@ begin
   end;
 end;
 
-function TDragDrop.GetFromClipboard: Boolean;
+function TDragDrop.GetFromClipboard(var dwEffect: LongInt): Boolean;
 var
   DataObject: IDataObject;
   pt: TPoint;
-  dwEffect: LongInt;
 begin
   Result := (OLEGetClipBoard(DataObject) = S_OK);
   if Result then
   begin
     pt.x := -1;
     pt.y := -1;
-    dwEffect := DROPEFFECT_COPY;
-    FDropTarget.RenderDropped(DataObject, 0, pt, dwEffect);
+    var Effect: LongInt := 0;
+    // CF_PREFERREDDROPEFFECT is a bitmask, so it can be e.g. (DROPEFFECT_COPY | DROPEFFECT_LINK)
+    FDropTarget.RenderDropped(DataObject, 0, pt, Effect);
+    if (Effect and DROPEFFECT_COPY) <> 0 then
+      dwEffect := DROPEFFECT_COPY
+    else if (Effect and DROPEFFECT_MOVE) <> 0 then
+      dwEffect := DROPEFFECT_MOVE
+    else if (Effect and DROPEFFECT_LINK) <> 0 then
+      dwEffect := DROPEFFECT_LINK
+    else
+      dwEffect := DROPEFFECT_COPY;
   end;
 end;
 

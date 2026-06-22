@@ -1,19 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include "VCLCommon.h"
 #include "GenerateUrl.h"
-#include "CoreMain.h"
-#include "WinConfiguration.h"
-#include <StrUtils.hpp>
-#include <Tools.h>
 #include <PuttyTools.h>
-#include <TextsWin.h>
 #include <ProgParams.h>
-#include <GUITools.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 const UnicodeString AllFilesMask(L"*");
@@ -63,7 +55,7 @@ __fastcall TRichEditWithLinks::TRichEditWithLinks(TComponent * AOwner) :
 void __fastcall TRichEditWithLinks::CreateWnd()
 {
   TRichEdit::CreateWnd();
-  int Mask = SendMessage(Handle, EM_GETEVENTMASK, 0, 0);
+  __int64 Mask = SendMessage(Handle, EM_GETEVENTMASK, 0, 0);
   SendMessage(Handle, EM_SETEVENTMASK, 0, Mask | ENM_LINK);
   SendMessage(Handle, EM_SETEDITSTYLEEX, 0, SES_EX_HANDLEFRIENDLYURL);
 }
@@ -204,7 +196,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
   if ((RemoteDirectoryCheck->Enabled && RemoteDirectoryCheck->Checked) ||
       IsFileUrl())
   {
-    if (StartsStr(L"/", Path));
+    if (StartsStr(L"/", Path))
     {
       Path.Delete(1, 1);
     }
@@ -610,20 +602,13 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode(UnicodeString 
       L")." + RtfLibraryMethod(L"OperationResultBase", L"Check", true) + L"()" +
       StatementSeparator + RtfPara;
 
+    UnicodeString SourcePath = UniversalIncludeTrailingBackslash(!FToRemote, FSourcePath);
     if (FFilesSelected == fsList)
     {
       for (int Index = 0; Index < FPaths->Count; Index++)
       {
         UnicodeString FileName = FPaths->Strings[Index];
-        UnicodeString Path;
-        if (!FToRemote)
-        {
-          Path = UnixIncludeTrailingBackslash(FSourcePath) + FileName;
-        }
-        else
-        {
-          Path = IncludeTrailingBackslash(FSourcePath) + FileName;
-        }
+        UnicodeString Path = SourcePath + FileName;
         UnicodeString PathCode = AssemblyString(Language, Path);
         if (!FToRemote && (FileName != EscapeFileMask(FileName)))
         {
@@ -636,15 +621,6 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode(UnicodeString 
     }
     else
     {
-      UnicodeString SourcePath = FSourcePath;
-      if (FToRemote)
-      {
-        SourcePath = IncludeTrailingBackslash(SourcePath);
-      }
-      else
-      {
-        SourcePath = UnixIncludeTrailingBackslash(SourcePath);
-      }
       SourcePath += AllFilesMask;
       Code += TransferMethodCallStart + AssemblyString(Language, SourcePath) + TransferMethodCallEnd;
     }
@@ -831,7 +807,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     Stream->Write(ResultUtf.c_str(), ResultUtf.Length());
     Stream->Position = 0;
 
-    FResultMemoWithLinks->Perform(WM_VSCROLL, SB_TOP, 0);
+    FResultMemoWithLinks->Perform(WM_VSCROLL, SB_TOP, NativeInt(0));
     FResultMemoWithLinks->Lines->LoadFromStream(Stream.get(), TEncoding::UTF8);
   }
 }
@@ -841,7 +817,7 @@ void __fastcall TGenerateUrlDialog::Execute()
   int Components = WinConfiguration->GenerateUrlComponents;
   if (Components < 0)
   {
-    Components = UserNameCheck->Tag | RemoteDirectoryCheck->Tag;
+    Components = SizeToIntChecked(UserNameCheck->Tag | RemoteDirectoryCheck->Tag);
   }
   TGenerateUrlCodeTarget Target = WinConfiguration->GenerateUrlCodeTarget;
 

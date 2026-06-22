@@ -2,8 +2,8 @@
 #ifndef GUIToolsH
 #define GUIToolsH
 //---------------------------------------------------------------------------
-#include <FileMasks.H>
-#include <Tbx.hpp>
+#include <FileMasks.h>
+#include <TBX.hpp>
 #include <DirectoryMonitor.hpp>
 //---------------------------------------------------------------------------
 class TSessionData;
@@ -37,7 +37,14 @@ typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
 void __fastcall ApplyTabs(
   UnicodeString & Text, wchar_t Padding,
   TCalculateWidth CalculateWidth, void * CalculateWidthArg);
-TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label);
+TPanel * CreateBlankPanel(TComponent * Owner);
+TPanel * CreateLabelPanel(TPanel * Parent, const UnicodeString & Label);
+TLabel * CreateLabel(TComponent * AOwner);
+TCheckBox * CreateCheckBox(TComponent * AOwner);
+void SetExplorerTheme(TWinControl * Control);
+TButton * CreateButton(TComponent * AOwner);
+TEdit * CreateEdit(TComponent * AOwner);
+TMemo * CreateMemo(TComponent * AOwner);
 void __fastcall SelectScaledImageList(TImageList * ImageList);
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList);
 void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName);
@@ -59,7 +66,10 @@ namespace Webbrowserex
 {
   class TWebBrowserEx;
 }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wheader-hygiene"
 using namespace Webbrowserex;
+#pragma clang diagnostic pop
 TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeString & LoadingLabel);
 void __fastcall SetBrowserDesignModeOff(TWebBrowserEx * WebBrowser);
 void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
@@ -75,6 +85,7 @@ TComponent * __fastcall FindComponentRecursively(TComponent * Root, const Unicod
 void __fastcall GetInstrutionsTheme(
   TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont);
 bool CanShowTimeEstimate(TDateTime StartTime);
+void CheckOperationStatusWindow();
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {
@@ -106,7 +117,10 @@ namespace Pngimagelist
   class TPngImageList;
   class TPngImageCollectionItem;
 }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wheader-hygiene"
 using namespace Pngimagelist;
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 TPngImageList * __fastcall GetAnimationsImages(TControl * Control);
 TImageList * __fastcall GetButtonImages(TControl * Control);
@@ -178,18 +192,6 @@ private:
     TControl * HintControl, const UnicodeString & Hint, UnicodeString & ShortHint, UnicodeString & LongHint);
 };
 //---------------------------------------------------------------------------
-// Based on:
-// https://stackoverflow.com/q/6912424/850848
-// https://stackoverflow.com/q/4685863/850848
-class TUIStateAwareLabel : public TLabel
-{
-public:
-  __fastcall virtual TUIStateAwareLabel(TComponent * AOwner);
-
-protected:
-  DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
-  virtual void __fastcall Dispatch(void * AMessage);
-};
 // FindComponentClass takes parameter by reference and as such it cannot be implemented in
 // an inline method without a compiler warning, which we cannot suppress in a macro.
 // And having the implementation in a real code (not macro) also allows us to debug the code.

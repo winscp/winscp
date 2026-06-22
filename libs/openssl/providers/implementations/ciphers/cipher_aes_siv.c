@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -118,18 +118,9 @@ static int siv_cipher(void *vctx, unsigned char *out, size_t *outl,
     if (!ossl_prov_is_running())
         return 0;
 
-    /* Ignore just empty encryption/decryption call and not AAD. */
-    if (out != NULL) {
-        if (inl == 0) {
-            if (outl != NULL)
-                *outl = 0;
-            return 1;
-        }
-
-        if (outsize < inl) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_OUTPUT_BUFFER_TOO_SMALL);
-            return 0;
-        }
+    if (out != NULL && outsize < inl) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_OUTPUT_BUFFER_TOO_SMALL);
+        return 0;
     }
 
     if (ctx->hw->cipher(ctx, out, in, inl) <= 0)
@@ -201,8 +192,9 @@ static int aes_siv_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     PROV_AES_SIV_CTX *ctx = (PROV_AES_SIV_CTX *)vctx;
     const OSSL_PARAM *p;
     unsigned int speed = 0;
+    SIV128_CONTEXT *sctx = &ctx->siv;
 
-    if (params == NULL)
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_AEAD_TAG);
@@ -235,6 +227,8 @@ static int aes_siv_set_ctx_params(void *vctx, const OSSL_PARAM params[])
         if (keylen != ctx->keylen)
             return 0;
     }
+    sctx->final_ret = -1;
+
     return 1;
 }
 

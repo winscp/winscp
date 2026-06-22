@@ -157,6 +157,7 @@ char *ne_concat(const char *str, ...)
 #define NE_HASH_SHA256     (0x0002) /* SHA-256 (SHA-2) */
 #define NE_HASH_SHA512     (0x0003) /* SHA-512 (SHA-2) */
 #define NE_HASH_SHA512_256 (0x0004) /* SHA-512/256 (SHA-2) */
+#define NE_HASH_SHA1       (0x0005) /* SHA-1 */
 
 /* Optional hash output formatting options: */
 #define NE_HASH_COLON      (0x1000) /* Colon-separated pairs */
@@ -175,6 +176,11 @@ char *ne_strhash(unsigned int flags, ...)
  * is otherwise identical. */
 char *ne_vstrhash(unsigned int flags, va_list ap)
     ne_attribute_malloc;
+
+/* Generates a nonce of length 'len', which must be no greater than
+ * 256. 'flags' must be zero. Returns zero on success, or an errno
+ * value on error. */
+int ne_mknonce(unsigned char *nonce, size_t len, unsigned int flags);
 
 /* Wrapper for snprintf: always NUL-terminates returned buffer, and
  * returns strlen(str). */
@@ -202,6 +208,14 @@ int ne_strncasecmp(const char *s1, const char *s2, size_t n);
 
 const unsigned char *ne_tolower_array(void) ne_attribute((const));
 
+/* Modifies every character in 'str' to lower-case in-place, returning
+ * 'str'. */
+char *ne_strlower(char *str);
+
+/* Modifies every character in 'str' to upper-case in-place, returning
+ * 'str'. */
+char *ne_strupper(char *str);
+
 /* Convert an ASCII hexadecimal character in the ranges '0'..'9'
  * 'a'..'f' 'A'..'F' to its numeric equivalent. */
 #define NE_ASC2HEX(x) (((x) <= '9') ? ((x) - '0') : \
@@ -219,6 +233,13 @@ const unsigned char *ne_tolower_array(void) ne_attribute((const));
 char *ne_strparam(const char *charset, const char *lang,
                   const unsigned char *value)
     ne_attribute((nonnull (1, 3))) ne_attribute_malloc;
+
+/* Parse a hex string like strtoul(,,16), but:
+ * a) any whitespace, 0x or -/+ prefixes result in EINVAL
+ * b) errno is always set (to zero or an error)
+ * c) end pointer is const char *
+ */
+unsigned long ne_strhextoul(const char *str, const char **endptr);
 
 NE_END_DECLS
 

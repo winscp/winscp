@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 //---------------------------------------------------------------------------
@@ -7,23 +7,17 @@
 #include "FtpFileSystem.h"
 #include "FileZillaIntf.h"
 
-#include "Common.h"
-#include "Exceptions.h"
 #include "Terminal.h"
-#include "TextsCore.h"
 #include "TextsFileZilla.h"
-#include "HelpCore.h"
 #include "Security.h"
 #include "NeonIntf.h"
 #include "SessionInfo.h"
 #include "Cryptography.h"
-#include <StrUtils.hpp>
-#include <DateUtils.hpp>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/x509_vfy.h>
 #include <openssl/err.h>
-#include <limits>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
+#pragma clang diagnostic push
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
@@ -52,8 +46,7 @@ protected:
     const TFtpsCertificateData & Data, int & RequestResult);
   virtual bool __fastcall HandleAsynchRequestNeedPass(
     struct TNeedPassRequestData & Data, int & RequestResult);
-  virtual bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries,
-    unsigned int Count);
+  virtual bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries, size_t Count);
   virtual bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
     __int64 Bytes, bool FileTransfer);
   virtual bool __fastcall HandleReply(int Command, unsigned int Reply);
@@ -121,7 +114,7 @@ bool __fastcall TFileZillaImpl::HandleAsynchRequestNeedPass(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaImpl::HandleListData(const wchar_t * Path,
-  const TListDataEntry * Entries, unsigned int Count)
+  const TListDataEntry * Entries, size_t Count)
 {
   return FFileSystem->HandleListData(Path, Entries, Count);
 }
@@ -587,7 +580,10 @@ void __fastcall TFTPFileSystem::Close()
   bool Opening = (FTerminal->Status == ssOpening);
   if (FFileZillaIntf->Close(Opening))
   {
-    DebugCheck(FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED));
+    if (!FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED))
+    {
+      DebugFail();
+    }
     Result = true;
   }
   else
@@ -902,7 +898,7 @@ UnicodeString __fastcall TFTPFileSystem::AbsolutePath(UnicodeString Path, bool /
 UnicodeString __fastcall TFTPFileSystem::ActualCurrentDirectory()
 {
   wchar_t CurrentPath[1024];
-  FFileZillaIntf->GetCurrentPath(CurrentPath, LENOF(CurrentPath));
+  FFileZillaIntf->GetCurrentPath(CurrentPath, std::size(CurrentPath));
   return UnixExcludeTrailingBackslash(CurrentPath);
 }
 //---------------------------------------------------------------------------
@@ -1388,7 +1384,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
     Aliases[4] = TQueryButtonAlias::CreateNoToAllGrouppedWithNo();
     TQueryParams QueryParams(qpNeverAskAgainCheck);
     QueryParams.Aliases = Aliases;
-    QueryParams.AliasesCount = LENOF(Aliases);
+    QueryParams.AliasesCount = std::size(Aliases);
 
     {
       TSuspendFileOperationProgress Suspend(OperationProgress);
@@ -2171,7 +2167,8 @@ bool __fastcall TFTPFileSystem::LookupUploadModificationTime(
     {
       TDateTime UploadModification = Iterator->second;
       TDateTime UploadModificationReduced = ReduceDateTimePrecision(UploadModification, ModificationFmt);
-      if (UploadModificationReduced == Modification)
+      // Though we might use seconds (or even milliseconds) precision comparison here, not FAT precision
+      if (CompareFileTime(UploadModificationReduced, Modification) == 0)
       {
         if ((FTerminal->Configuration->ActualLogProtocol >= 2))
         {
@@ -3312,7 +3309,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           }
           if (ContainsText(FLastError->Strings[0], CantOpenTransferChannelMessage))
           {
-            FTerminal->LogEvent(L"Failed to connection data connection after some previous data connections succeeded, retrying connection");
+            FTerminal->LogEvent(L"Failed to connect data connection after some previous data connections succeeded, retrying connection");
             RetryTransfer = true;
           }
         }
@@ -3888,20 +3885,9 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
       UnicodeString TargetFileName = FileName1;
       DebugAssert(UserData.FileName == TargetFileName);
 
-      UnicodeString SourceFullFileName = Path2;
-      UnicodeString TargetFullFileName = Path1;
-      if (OperationProgress->Side == osLocal)
-      {
-        SourceFullFileName = IncludeTrailingBackslash(SourceFullFileName);
-        TargetFullFileName = UnixIncludeTrailingBackslash(TargetFullFileName);
-      }
-      else
-      {
-        SourceFullFileName = UnixIncludeTrailingBackslash(SourceFullFileName);
-        TargetFullFileName = IncludeTrailingBackslash(TargetFullFileName);
-      }
-      SourceFullFileName += FileName2;
-      TargetFullFileName += FileName1;
+      bool Local = (OperationProgress->Side == osLocal);
+      UnicodeString SourceFullFileName = UniversalIncludeTrailingBackslash(!Local, Path2) + FileName2;
+      UnicodeString TargetFullFileName = UniversalIncludeTrailingBackslash(Local, Path1) + FileName1;
 
       TOverwriteMode OverwriteMode = omOverwrite;
       TOverwriteFileParams FileParams;
@@ -4425,7 +4411,7 @@ void __fastcall TFTPFileSystem::RemoteFileTimeToDateTimeAndPrecision(const TRemo
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
-  const TListDataEntry * Entries, unsigned int Count)
+  const TListDataEntry * Entries, size_t Count)
 {
   if (!FActive)
   {
@@ -4453,7 +4439,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         File->FileName = Entry->Name;
         try
         {
-          int PermissionsLen = wcslen(Entry->Permissions);
+          int PermissionsLen = SizeToIntChecked(wcslen(Entry->Permissions));
           if (PermissionsLen >= 10)
           {
             File->Rights->Text = Entry->Permissions + 1;
@@ -4476,7 +4462,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
           const wchar_t * Space = wcschr(Entry->OwnerGroup, L' ');
           if (Space != NULL)
           {
-            File->Owner.Name = UnicodeString(Entry->OwnerGroup, Space - Entry->OwnerGroup);
+            File->Owner.Name = UnicodeString(Entry->OwnerGroup, SizeToIntChecked(Space - Entry->OwnerGroup));
             File->Group.Name = Space + 1;
           }
           else

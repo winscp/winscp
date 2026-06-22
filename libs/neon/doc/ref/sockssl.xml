@@ -1,0 +1,158 @@
+<refentry id="refsockssl">
+
+  <refmeta>
+    <refentrytitle>ne_sock_handshake</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname id="ne_sock_handshake">ne_sock_handshake</refname>
+    <refname id="ne_sock_sessid">ne_sock_sessid</refname>
+    <refname id="ne_sock_cipher">ne_sock_cipher</refname>
+    <refname id="ne_sock_getproto">ne_sock_getproto</refname>
+    <refname id="ne_sock_getcert">ne_sock_getcert</refname>
+    <refname id="ne_ssl_check_certificate">ne_ssl_check_certificate</refname>
+    <refpurpose>SSL socket functions</refpurpose>
+  </refnamediv>
+  
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+
+      <funcsynopsisinfo>#include &lt;ne_socket.h&gt;</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>int <function>ne_sock_handshake</function></funcdef>
+        <paramdef>ne_socket *<parameter>sock</parameter></paramdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>const char *<parameter>hostname</parameter></paramdef>
+        <paramdef>unsigned int <parameter>flags</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>int <function>ne_sock_sessid</function></funcdef>
+        <paramdef>ne_socket *<parameter>sock</parameter></paramdef>
+        <paramdef>unsigned char *<parameter>buf</parameter></paramdef>
+        <paramdef>size_t *<parameter>buflen</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>char *<function>ne_sock_cipher</function></funcdef>
+        <paramdef>ne_socket *<parameter>sock</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>enum ne_ssl_protocol <function>ne_sock_getproto</function></funcdef>
+        <paramdef>ne_socket *<parameter>sock</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>ne_ssl_certificate *<function>ne_sock_getcert</function></funcdef>
+        <paramdef>ne_socket *<parameter>sock</parameter></paramdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>int <function>ne_ssl_check_certificate</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>ne_socket *<parameter>sock</parameter></paramdef>
+        <paramdef>const char *<parameter>hostname</parameter></paramdef>
+        <paramdef>const ne_inet_addr *<parameter>address</parameter></paramdef>
+        <paramdef>const ne_ssl_certificate *<parameter>cert</parameter></paramdef>
+        <paramdef>unsigned int <parameter>flags</parameter></paramdef>
+        <paramdef>int *<parameter>failures</parameter></paramdef>
+      </funcprototype>
+
+    </funcsynopsis>
+    
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>The <function>ne_sock_handshake</function> function initiates an
+    SSL handshake on socket <parameter>sock</parameter> using SSL context
+    <parameter>ctx</parameter>. If <parameter>hostname</parameter> is
+    non-&null;, it is used as the Server Name Indication (SNI) hint. The
+    <parameter>flags</parameter> parameter must be zero.</para>
+
+    <para>The <function>ne_sock_sessid</function> function retrieves the
+    session ID of the current SSL session. If <parameter>buf</parameter> is
+    non-&null;, on success, copies at most <literal>*buflen</literal> bytes
+    to <parameter>buf</parameter> and sets <literal>*buflen</literal> to the
+    exact number of bytes copied. If <parameter>buf</parameter> is &null;,
+    on success, sets <literal>*buflen</literal> to the length of the session
+    ID.</para>
+
+    <para>The <function>ne_sock_cipher</function> function returns a
+    human-readable name of the SSL/TLS cipher used for the connection, or
+    &null; if none. The format of this string is not intended to be fixed or
+    parseable, but is informational only. The return value is a
+    &nul;-terminated malloc-allocated string which must be freed by the
+    caller.</para>
+
+    <para>The <function>ne_sock_getproto</function> function returns the
+    SSL/TLS protocol version used for socket <parameter>sock</parameter>, or
+    <constant>NE_SSL_PROTO_UNSPEC</constant> if SSL/TLS is not in use for
+    the socket.</para>
+
+    <para>The <function>ne_sock_getcert</function> function returns the
+    server certificate for the socket.</para>
+
+    <para>The <function>ne_ssl_check_certificate</function> function checks
+    the identity of a server certificate against the hostname or address used
+    to establish the connection, following rules specified by <ulink
+    url="https://www.rfc-editor.org/rfc/rfc2818">RFC 2818</ulink> and
+    <ulink
+    url="https://www.rfc-editor.org/rfc/rfc3280">RFC 3280</ulink>. Either <parameter>hostname</parameter> or
+    <parameter>address</parameter> can be non-&null;; whichever was used to
+    identify the server when establishing the SSL connection. If both are
+    &null;, matching will fail but the <literal>*identity</literal> output
+    parameter will still be set. The <parameter>flags</parameter> parameter
+    must be zero. If verification fails, the failure reasons are stored in
+    <literal>*failures</literal> as a binary OR of
+    <constant>NE_SSL_*</constant> values.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Return value</title>
+
+    <para><function>ne_sock_handshake</function> returns zero on success,
+    or non-zero on error.</para>
+
+    <para><function>ne_sock_sessid</function> returns zero on success,
+    or non-zero on error.</para>
+
+    <para><function>ne_sock_cipher</function> returns a malloc-allocated
+    string on success which must be freed by the caller, or &null; if no
+    cipher is in use.</para>
+
+    <para><function>ne_sock_getproto</function> returns the SSL/TLS protocol
+    version, or <constant>NE_SSL_PROTO_UNSPEC</constant>.</para>
+
+    <para><function>ne_sock_getcert</function> returns the server certificate,
+    or &null; on error.</para>
+
+    <para><function>ne_ssl_check_certificate</function> returns zero if
+    the identity matches, 1 if the identity does not match, or less than
+    zero if the certificate had no identity.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_sock_getproto</function> is available in &neon;
+    0.34.0 and later. <function>ne_sock_handshake</function> and
+    <function>ne_sock_getcert</function> are available in &neon;
+    0.37.0 and later.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+
+    <para><xref linkend="ne_ssl_context_create"/></para>
+  </refsect1>
+
+</refentry>

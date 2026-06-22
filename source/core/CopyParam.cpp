@@ -1,16 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
-#include "Exceptions.h"
 #include "CopyParam.h"
 #include "HierarchicalStorage.h"
-#include "TextsCore.h"
-#include "Interface.h"
 //---------------------------------------------------------------------------
 const wchar_t * TransferModeNames[] = { L"binary", L"ascii", L"automatic" };
-const int TransferModeNamesCount = LENOF(TransferModeNames);
+const int TransferModeNamesCount = std::size(TransferModeNames);
 //---------------------------------------------------------------------------
 __fastcall TCopyParamType::TCopyParamType()
 {
@@ -626,7 +622,7 @@ UnicodeString __fastcall TCopyParamType::RestoreChars(UnicodeString FileName) co
     wchar_t * InvalidChar = FileName.c_str();
     while ((InvalidChar = wcschr(InvalidChar, TokenPrefix)) != NULL)
     {
-      int Index = InvalidChar - FileName.c_str() + 1;
+      int Index = SizeToIntChecked(InvalidChar - FileName.c_str() + 1);
       if (FileName.Length() >= Index + 2)
       {
         UnicodeString Hex = FileName.SubString(Index + 1, 2);
@@ -750,7 +746,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        CaseC[FileNameCase],
        CharToHex(InvalidCharsReplacement),
        ResumeC[ResumeSupport],
-       (int)ResumeThreshold,
+       static_cast<int>(ResumeThreshold),
        BooleanToEngStr(CalculateSize),
        FileMask)) +
     FORMAT(
@@ -871,18 +867,18 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
 {
   AddXToDirectories = Storage->ReadBool(L"AddXToDirectories", AddXToDirectories);
   AsciiFileMask.Masks = Storage->ReadString(L"Masks", AsciiFileMask.Masks);
-  FileNameCase = (TFileNameCase)Storage->ReadInteger(L"FileNameCase", FileNameCase);
+  FileNameCase = static_cast<TFileNameCase>(Storage->ReadInteger(L"FileNameCase", FileNameCase));
   PreserveReadOnly = Storage->ReadBool(L"PreserveReadOnly", PreserveReadOnly);
   PreserveTime = Storage->ReadBool(L"PreserveTime", PreserveTime);
   PreserveTimeDirs = Storage->ReadBool(L"PreserveTimeDirs", PreserveTimeDirs);
   PreserveRights = Storage->ReadBool(L"PreserveRights", PreserveRights);
   IgnorePermErrors = Storage->ReadBool(L"IgnorePermErrors", IgnorePermErrors);
   Rights.Text = Storage->ReadString(L"Text", Rights.Text);
-  TransferMode = (TTransferMode)Storage->ReadInteger(L"TransferMode", TransferMode);
-  ResumeSupport = (TResumeSupport)Storage->ReadInteger(L"ResumeSupport", ResumeSupport);
+  TransferMode = static_cast<TTransferMode>(Storage->ReadInteger(L"TransferMode", TransferMode));
+  ResumeSupport = static_cast<TResumeSupport>(Storage->ReadInteger(L"ResumeSupport", ResumeSupport));
   ResumeThreshold = Storage->ReadInt64(L"ResumeThreshold", ResumeThreshold);
-  InvalidCharsReplacement = (wchar_t)Storage->ReadInteger(L"ReplaceInvalidChars",
-    (unsigned int)InvalidCharsReplacement);
+  InvalidCharsReplacement = static_cast<wchar_t>(Storage->ReadInteger(L"ReplaceInvalidChars",
+    static_cast<unsigned int>(InvalidCharsReplacement)));
   LocalInvalidChars = Storage->ReadString(L"LocalInvalidChars", LocalInvalidChars);
   CalculateSize = Storage->ReadBool(L"CalculateSize", CalculateSize);
   if (Storage->ValueExists(L"IncludeFileMask"))
@@ -951,7 +947,7 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopy
   WRITE_DATA(Integer, TransferMode);
   WRITE_DATA(Integer, ResumeSupport);
   WRITE_DATA(Int64, ResumeThreshold);
-  #define WRITE_DATA_CONV_FUNC(X) (unsigned int)(X)
+  #define WRITE_DATA_CONV_FUNC(X) static_cast<unsigned int>(X)
   WRITE_DATA_CONV(Integer, L"ReplaceInvalidChars", InvalidCharsReplacement);
   WRITE_DATA(String, LocalInvalidChars);
   WRITE_DATA(Bool, CalculateSize);

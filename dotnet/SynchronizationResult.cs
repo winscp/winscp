@@ -5,7 +5,7 @@ namespace WinSCP
     [Guid("D0ADB4F7-47AE-43AC-AA41-9114650EA51A")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
-    public sealed class SynchronizationResult : OperationResultBase
+    public sealed class SynchronizationResult : OperationResultBase, ISynchronizationResult
     {
         public TransferEventArgsCollection Uploads { get; private set; }
         public TransferEventArgsCollection Downloads { get; private set; }

@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2026 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -9,11 +9,14 @@
  * https://www.openssl.org/source/license.html
  */
 
+#include "internal/e_os.h"
+
 #include <stdio.h>
 #include "../ssl_local.h"
 #include "statem_local.h"
 #include "internal/constant_time.h"
 #include "internal/cryptlib.h"
+#include "internal/ssl_unwrap.h"
 #include <openssl/buffer.h>
 #include <openssl/rand.h>
 #include <openssl/objects.h>
@@ -27,6 +30,7 @@
 #include <openssl/core_names.h>
 #include <openssl/asn1t.h>
 #include <openssl/comp.h>
+#include "internal/comp.h"
 
 #define TICKET_NONCE_SIZE 8
 
@@ -81,7 +85,8 @@ static int ossl_statem_server13_read_transition(SSL_CONNECTION *s, int mt)
                 return 1;
             }
             break;
-        } else if (s->ext.early_data == SSL_EARLY_DATA_ACCEPTED) {
+        } else if (s->ext.early_data == SSL_EARLY_DATA_ACCEPTED
+            && !SSL_NO_EOED(s)) {
             if (mt == SSL3_MT_END_OF_EARLY_DATA) {
                 st->hand_state = TLS_ST_SR_END_OF_EARLY_DATA;
                 return 1;
@@ -832,6 +837,20 @@ WORK_STATE ossl_statem_server_pre_work(SSL_CONNECTION *s, WORK_STATE wst)
         if (s->early_data_state != SSL_EARLY_DATA_ACCEPTING
             && (s->s3.flags & TLS1_FLAGS_STATELESS) == 0)
             return WORK_FINISHED_CONTINUE;
+
+        /*
+         * In QUIC with 0-RTT we just carry on when otherwise we would stop
+         * to allow the server to read early data
+         */
+        if (SSL_NO_EOED(s) && s->ext.early_data == SSL_EARLY_DATA_ACCEPTED
+            && s->early_data_state != SSL_EARLY_DATA_FINISHED_READING) {
+            s->early_data_state = SSL_EARLY_DATA_FINISHED_READING;
+            if (!ssl->method->ssl3_enc->change_cipher_state(s, SSL3_CC_HANDSHAKE | SSL3_CHANGE_CIPHER_SERVER_READ)) {
+                SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+                return WORK_ERROR;
+            }
+            return WORK_FINISHED_SWAP;
+        }
         /* Fall through */
 
     case TLS_ST_OK:
@@ -956,6 +975,7 @@ WORK_STATE ossl_statem_server_post_work(SSL_CONNECTION *s, WORK_STATE wst)
 
         if (SSL_CONNECTION_IS_TLS13(s)) {
             if (!ssl->method->ssl3_enc->setup_key_block(s)
+                || !tls13_store_handshake_traffic_hash(s)
                 || !ssl->method->ssl3_enc->change_cipher_state(s,
                     SSL3_CC_HANDSHAKE | SSL3_CHANGE_CIPHER_SERVER_WRITE)) {
                 /* SSLfatal() already called */
@@ -1019,6 +1039,7 @@ WORK_STATE ossl_statem_server_post_work(SSL_CONNECTION *s, WORK_STATE wst)
             if (!ssl->method->ssl3_enc->generate_master_secret(s,
                     s->master_secret, s->handshake_secret, 0,
                     &dummy)
+                || !tls13_store_server_finished_hash(s)
                 || !ssl->method->ssl3_enc->change_cipher_state(s,
                     SSL3_CC_APPLICATION | SSL3_CHANGE_CIPHER_SERVER_WRITE))
                 /* SSLfatal() already called */
@@ -1545,7 +1566,7 @@ MSG_PROCESS_RETURN tls_process_client_hello(SSL_CONNECTION *s, PACKET *pkt)
             || mt != SSL2_MT_CLIENT_HELLO) {
             /*
              * Should never happen. We should have tested this in the record
-             * layer in order to have determined that this is a SSLv2 record
+             * layer in order to have determined that this is an SSLv2 record
              * in the first place
              */
             SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
@@ -1698,7 +1719,6 @@ static int tls_early_post_process_client_hello(SSL_CONNECTION *s)
     unsigned int j;
     int i, al = SSL_AD_INTERNAL_ERROR;
     int protverr;
-    size_t loop;
     unsigned long id;
 #ifndef OPENSSL_NO_COMP
     SSL_COMP *comp = NULL;
@@ -1939,14 +1959,17 @@ static int tls_early_post_process_client_hello(SSL_CONNECTION *s)
         OSSL_TRACE_END(TLS_CIPHER);
     }
 
-    for (loop = 0; loop < clienthello->compressions_len; loop++) {
-        if (clienthello->compressions[loop] == 0)
-            break;
-    }
-
-    if (loop >= clienthello->compressions_len) {
-        /* no compress */
+    /* At least one compression method must be preset. */
+    if (clienthello->compressions_len == 0) {
         SSLfatal(s, SSL_AD_DECODE_ERROR, SSL_R_NO_COMPRESSION_SPECIFIED);
+        goto err;
+    }
+    /* Make sure at least the null compression is supported. */
+    if (memchr(clienthello->compressions, 0,
+            clienthello->compressions_len)
+        == NULL) {
+        SSLfatal(s, SSL_AD_ILLEGAL_PARAMETER,
+            SSL_R_REQUIRED_COMPRESSION_ALGORITHM_MISSING);
         goto err;
     }
 
@@ -2002,6 +2025,19 @@ static int tls_early_post_process_client_hello(SSL_CONNECTION *s)
             s->hit = 1;
             s->peer_ciphers = ciphers;
             s->session->verify_result = X509_V_OK;
+
+            /*
+             * Per RFC 4851, Section 3.2.2:
+             * If the ClientHello contains both a Session ID and a PAC-Opaque in
+             * the SessionTicket extension, and the server resumes the session
+             * using the PAC-Opaque, it should echo the same Session ID in the
+             * ServerHello.
+             */
+            if (clienthello->session_id_len > 0) {
+                memcpy(s->session->session_id, clienthello->session_id,
+                    clienthello->session_id_len);
+                s->session->session_id_length = clienthello->session_id_len;
+            }
 
             ciphers = NULL;
 
@@ -3100,7 +3136,7 @@ static int tls_process_cke_dhe(SSL_CONNECTION *s, PACKET *pkt)
         goto err;
     }
 
-    if (!EVP_PKEY_set1_encoded_public_key(ckey, data, i)) {
+    if (EVP_PKEY_set1_encoded_public_key(ckey, data, i) <= 0) {
         SSLfatal(s, SSL_AD_ILLEGAL_PARAMETER, SSL_R_BAD_KEY_SHARE);
         goto err;
     }
@@ -4200,7 +4236,7 @@ CON_FUNC_RETURN tls_construct_new_session_ticket(SSL_CONNECTION *s, WPACKET *pkt
         int hashleni = EVP_MD_get_size(md);
 
         /* Ensure cast to size_t is safe */
-        if (!ossl_assert(hashleni >= 0)) {
+        if (!ossl_assert(hashleni > 0)) {
             SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
             goto err;
         }

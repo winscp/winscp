@@ -67,11 +67,12 @@ to tim.kosse@gmx.de
 #define FD_FORCEREAD (1<<15)
 //---------------------------------------------------------------------------
 #include <winsock2.h>
-#include <Ws2tcpip.h>
+#include <ws2tcpip.h>
 //---------------------------------------------------------------------------
 class CAsyncSocketExHelperWindow;
 class CAsyncSocketExLayer;
 class CCriticalSectionWrapper;
+class CString;
 //---------------------------------------------------------------------------
 struct t_callbackMsg
 {
@@ -90,7 +91,7 @@ public:
 
   BOOL Create(UINT nSocketPort = 0, int nSocketType = SOCK_STREAM,
      long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |  FD_CONNECT | FD_CLOSE,
-     LPCTSTR lpszSocketAddress = NULL, int nFamily = AF_INET);
+     const wchar_t * lpszSocketAddress = NULL, int nFamily = AF_INET);
 
   // Attaches a socket handle to a CAsyncSocketEx object.
   BOOL Attach(SOCKET hSocket,
@@ -131,14 +132,14 @@ public:
   BOOL AsyncSelect(long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE);
 
   // Associates a local address with the socket.
-  virtual BOOL Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress);
+  virtual BOOL Bind(UINT nSocketPort, const wchar_t * lpszSocketAddress);
   BOOL BindToAddr(const SOCKADDR* lpSockAddr, int nSockAddrLen);
 
   // Closes the socket.
   virtual void Close();
 
   // Establishes a connection to a peer socket.
-  virtual BOOL Connect(LPCTSTR lpszHostAddress, UINT nHostPort);
+  virtual BOOL Connect(const wchar_t * lpszHostAddress, UINT nHostPort);
   virtual BOOL Connect(const SOCKADDR * lpSockAddr, int nSockAddrLen);
 
   // Controls the mode of the socket.
@@ -193,6 +194,9 @@ public:
   // Any combination of FD_READ, FD_WRITE, FD_CLOSE, FD_ACCEPT, FD_CONNECT and FD_FORCEREAD is valid for lEvent.
   BOOL TriggerEvent(long lEvent);
 
+  static SOCKADDR * CreateSockAddr(int family, int & nSockAddrLen);
+  static bool GetSockName(int family, SOCKADDR * sockAddr, CString & address, UINT & peerPort);
+
 protected:
   // Strucure to hold the socket data
   struct t_AsyncSocketExData
@@ -216,10 +220,10 @@ protected:
   HWND GetHelperWindowHandle();
 
   // Attaches socket handle to helper window
-  void AttachHandle(SOCKET hSocket);
+  void AttachHandle();
 
   // Detaches socket handle to helper window
-  void DetachHandle(SOCKET hSocket);
+  void DetachHandle();
 
   // Critical section for thread synchronization
   static CCriticalSectionWrapper m_sGlobalCriticalSection;
@@ -258,7 +262,7 @@ protected:
 
   int GetState() const;
   virtual void SetState(int nState);
-  static const TCHAR * GetStateDesc(int nState);
+  static const wchar_t * GetStateDesc(int nState);
   static bool LogStateChange(int nState1, int nState2);
 
   int m_nState;
@@ -274,17 +278,17 @@ protected:
 
   // Used by Bind with AF_UNSPEC sockets
   UINT m_nSocketPort;
-  LPTSTR m_lpszSocketAddress;
+  wchar_t * m_lpszSocketAddress;
 
   friend CAsyncSocketExHelperWindow;
 
   // Pending callbacks
   std::list<t_callbackMsg> m_pendingCallbacks;
 
-  virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg) {};
-  virtual bool LoggingSocketMessage(int nMessageType) { return true; };
-  virtual int GetSocketOptionVal(int OptionID) const { DebugFail(); return 0; };
-  virtual void ConfigureSocket() {};
+  virtual void LogSocketMessageRaw(int, const wchar_t *) {}
+  virtual bool LoggingSocketMessage(int) { return true; }
+  virtual int GetSocketOptionVal(int) const { DebugFail(); return 0; }
+  virtual void ConfigureSocket() {}
 };
 //---------------------------------------------------------------------------
 #define LAYERCALLBACK_STATECHANGE 0
@@ -302,11 +306,11 @@ enum SocketState
   attached
 };
 //---------------------------------------------------------------------------
-inline TCHAR* Inet6AddrToString(in6_addr & addr)
+inline wchar_t* Inet6AddrToString(in6_addr & addr)
 {
-  LPTSTR buf = new TCHAR[512];
+  wchar_t * buf = new wchar_t[512];
 
-  _sntprintf(buf, 512, L"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+  snwprintf(buf, 512, L"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
        addr.s6_bytes[0], addr.s6_bytes[1], addr.s6_bytes[2], addr.s6_bytes[3],
        addr.s6_bytes[4], addr.s6_bytes[5], addr.s6_bytes[6], addr.s6_bytes[7],
        addr.s6_bytes[8], addr.s6_bytes[9], addr.s6_bytes[10], addr.s6_bytes[11],

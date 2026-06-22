@@ -1,16 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
 #include "Rights.h"
-
-#include <VCLCommon.h>
-#include <Tools.h>
-#include <TextsWin.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "GrayedCheckBox"
 #pragma link "PngImageList"
 #pragma resource "*.dfm"
@@ -149,7 +142,7 @@ TCheckBox * __fastcall TRightsFrame::GetChecks(TRights::TRight Right)
     if (Controls[Index]->InheritsFrom(__classid(TCheckBox)) &&
         (Controls[Index]->Tag == TRights::RightToFlag(Right)))
     {
-      return ((TCheckBox *)Controls[Index]);
+      return static_cast<TCheckBox *>(Controls[Index]);
     }
   }
   return NULL;
@@ -447,6 +440,7 @@ void __fastcall TRightsFrame::SetPopup(bool value)
 void __fastcall TRightsFrame::DoCloseUp()
 {
   Hide();
+  FApplicationEvents.reset(nullptr);
 
   if (FDefaultButton != NULL)
   {
@@ -521,7 +515,7 @@ bool TRightsFrame::IsButtonAccel(TCMDialogChar & Message, TSpeedButton * Button,
   bool Result = IsAccel(Message.CharCode, Button->Caption) && Button->Visible && Button->Enabled;
   if (Result)
   {
-    Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+    Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), NativeInt(0));
     FocusControl->SetFocus();
   }
   return Result;
@@ -541,17 +535,22 @@ void TRightsFrame::CMDialogChar(TCMDialogChar & Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::CMCancelMode(TCMCancelMode & Message)
+void __fastcall TRightsFrame::ApplicationMessage(TMsg & Msg, __attribute__((unused)) bool & Handled)
 {
-  if (FPopup && Visible && !FPopingContextMenu &&
-      ((Message.Sender == NULL) ||
-       (!IsAncestor(Message.Sender, this) &&
-        !IsAncestor(Message.Sender, FPopupParent) &&
-        (Message.Sender != this))))
+  if ((Msg.message == WM_LBUTTONDOWN) ||
+      (Msg.message == WM_MBUTTONDOWN) ||
+      (Msg.message == WM_RBUTTONDOWN))
   {
-    CloseUp();
+    if (FPopup && Visible && !FPopingContextMenu)
+    {
+      TPoint P;
+      GetCursorPos(&P);
+      if (!ClientRect.Contains(ScreenToClient(P)))
+      {
+        CloseUp();
+      }
+    }
   }
-  TFrame::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void TRightsFrame::CMDPIChanged(TMessage & Message)
@@ -599,20 +598,16 @@ void __fastcall TRightsFrame::Dispatch(void * Message)
 
   switch (AMessage.Msg)
   {
-    case CM_CANCELMODE:
-      CMCancelMode(*(TCMCancelMode *)Message);
-      break;
-
     case CM_DIALOGKEY:
-      CMDialogKey(*(TCMDialogKey *)Message);
+      CMDialogKey(*static_cast<TCMDialogKey *>(Message));
       break;
 
     case CM_DIALOGCHAR:
-      CMDialogChar(*(TCMDialogChar *)Message);
+      CMDialogChar(*static_cast<TCMDialogChar *>(Message));
       break;
 
     case WM_CONTEXTMENU:
-      WMContextMenu(*(TWMContextMenu *)Message);
+      WMContextMenu(*static_cast<TWMContextMenu *>(Message));
       break;
 
     case CM_DPICHANGED:
@@ -666,6 +661,8 @@ void __fastcall TRightsFrame::DropDown()
   Top = Origin.y;
   Show();
   SetFocus();
+  FApplicationEvents.reset(new TApplicationEvents(Application));
+  FApplicationEvents->OnMessage = ApplicationMessage;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CloseUp()

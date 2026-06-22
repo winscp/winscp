@@ -3,10 +3,13 @@
 #define WebDavFileSystemH
 
 //------------------------------------------------------------------------------
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <ne_uri.h>
 #include <ne_utils.h>
 #include <ne_string.h>
 #include <ne_request.h>
+#pragma clang diagnostic pop
 #include <FileSystems.h>
 //------------------------------------------------------------------------------
 struct TNeonCertificateData;

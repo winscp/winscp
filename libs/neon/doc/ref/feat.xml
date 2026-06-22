@@ -83,6 +83,12 @@
           <simpara>Indicates support for libproxy (in <xref linkend="ne_session_system_proxy"/>)</simpara>
         </listitem>
       </varlistentry>
+      <varlistentry>
+        <term><constant>NE_FEATURE_NTLM</constant></term>
+        <listitem>
+          <simpara>Indicates support for NTLM authentication via Libntlm</simpara>
+        </listitem>
+      </varlistentry>
     </variablelist>
 
     </para>
@@ -102,8 +108,10 @@
 
     <para>The <constant>NE_FEATURE_GSSAPI</constant> and
     <constant>NE_FEATURE_LIBPXY</constant> constants are only
-    available in &neon; 0.34.0 and later.</para>
+    available in &neon; 0.34.0 and newer.</para>
 
+    <para>The <constant>NE_FEATURE_NTLM</constant> is only
+    available in &neon; 0.37.0 and newer.</para>
   </refsect1>
 
   <refsect1>

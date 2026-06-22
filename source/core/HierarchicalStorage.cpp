@@ -1,17 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "Exceptions.h"
 #include "PuttyIntf.h"
 #include "HierarchicalStorage.h"
-#include <Interface.h>
-#include <TextsCore.h>
-#include <StrUtils.hpp>
-#include <vector>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 // ValueExists test was probably added to avoid registry exceptions when debugging
 #define READ_REGISTRY(Method) \
@@ -69,9 +62,9 @@ UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
   RawByteString Dest(sb->s);
   strbuf_free(sb);
   UnicodeString Result;
-  if (Dest.SubString(1, strlen(Bom)) == Bom)
+  if (Dest.SubString(1, Bom.Length()) == Bom)
   {
-    Dest.Delete(1, strlen(Bom));
+    Dest.Delete(1, Bom.Length());
     Result = UTF8ToString(Dest);
   }
   else
@@ -781,7 +774,7 @@ size_t __fastcall THierarchicalStorage::BinaryDataSize(const UnicodeString & Nam
 //---------------------------------------------------------------------------
 RawByteString __fastcall THierarchicalStorage::ReadBinaryData(const UnicodeString & Name)
 {
-  size_t Size = BinaryDataSize(Name);
+  int Size = SizeToIntChecked(BinaryDataSize(Name));
   RawByteString Value;
   Value.SetLength(Size);
   ReadBinaryData(Name, Value.c_str(), Size);
@@ -827,6 +820,12 @@ void __fastcall THierarchicalStorage::WriteInteger(const UnicodeString & Name, i
   {
     DoWriteInteger(Name, Value);
   }
+}
+//---------------------------------------------------------------------------
+// Simple alias to WriteInteger
+void __fastcall THierarchicalStorage::WriteEnum(const UnicodeString & Name, int Value)
+{
+  WriteInteger(Name, Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::WriteInt64(const UnicodeString & Name, __int64 Value)
@@ -957,7 +956,7 @@ bool __fastcall TRegistryStorage::Copy(TRegistryStorage * Storage)
   while ((Index < Names->Count) && Result)
   {
     UnicodeString Name = MungeStr(Names->Strings[Index], ForceAnsi, false);
-    unsigned long Size = Buffer.size();
+    unsigned long Size = SizeToUIntChecked(Buffer.size());
     unsigned long Type;
     int RegResult;
     do
@@ -1125,12 +1124,12 @@ UnicodeString __fastcall TRegistryStorage::DoReadStringRaw(const UnicodeString &
 //---------------------------------------------------------------------------
 size_t __fastcall TRegistryStorage::DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size)
 {
-  size_t Result;
+  int Result;
   if (FRegistry->ValueExists(Name))
   {
     try
     {
-      Result = FRegistry->ReadBinaryData(Name, Buffer, Size);
+      Result = FRegistry->ReadBinaryData(Name, Buffer, SizeToIntChecked(Size));
     }
     catch(...)
     {

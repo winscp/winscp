@@ -1,16 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <TextsWin.h>
-#include <GUIConfiguration.h>
-#include <GUITools.h>
-#include <Tools.h>
 #include "CopyParamPreset.h"
-#include "VCLCommon.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "CopyParams"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -192,6 +185,7 @@ void __fastcall TCopyParamPresetDialog::FormShow(TObject * /*Sender*/)
 void __fastcall TCopyParamPresetDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
+  CopyParamsFrame->Closing();
   if (ModalResult == DefaultResult(this))
   {
     UnicodeString Description = DescriptionEdit->Text;

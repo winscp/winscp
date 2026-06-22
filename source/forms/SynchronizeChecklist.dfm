@@ -1484,12 +1484,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       TabOrder = 8
     end
   end
-  object ListView: TIEListView
+  object ListView2: TIEListView
     Left = 0
     Top = 0
     Width = 562
     Height = 500
-    OnRecreate = ListViewRecreate
+    OnRecreate = ListView2Recreate
     Align = alClient
     Checkboxes = True
     Constraints.MinWidth = 240
@@ -1503,9 +1503,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     PopupMenu = ListViewPopupMenu
     ShowHint = True
     TabOrder = 0
-    OnChange = ListViewChange
-    OnChanging = ListViewChanging
-    OnClick = ListViewClick
+    OnChange = ListView2Change
+    OnChanging = ListView2Changing
+    OnClick = ListView2Click
     NortonLike = nlOff
     Columns = <
       item
@@ -1527,7 +1527,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
         Width = 70
       end
       item
-        Caption = 'Changed'
+        Caption = 'Date modified'
         MaxWidth = 1000
         MinWidth = 20
         Width = 80
@@ -1551,19 +1551,19 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
         Width = 70
       end
       item
-        Caption = 'Changed'
+        Caption = 'Date modified'
         MaxWidth = 1000
         MinWidth = 20
         Width = 80
       end>
     ViewStyle = vsReport
-    OnAdvancedCustomDrawSubItem = ListViewAdvancedCustomDrawSubItem
-    OnCompare = ListViewCompare
-    OnContextPopup = ListViewContextPopup
-    OnSelectItem = ListViewSelectItem
-    OnSecondaryColumnHeader = ListViewSecondaryColumnHeader
+    OnAdvancedCustomDrawSubItem = ListView2AdvancedCustomDrawSubItem
+    OnCompare = ListView2Compare
+    OnContextPopup = ListView2ContextPopup
+    OnSelectItem = ListView2SelectItem
+    OnSecondaryColumnHeader = ListView2SecondaryColumnHeader
   end
-  object StatusBar: TStatusBar
+  object StatusBar2: TStatusBar
     Left = 0
     Top = 500
     Width = 695
@@ -1577,32 +1577,32 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end
       item
         Style = psOwnerDraw
-        Text = 'New local files'
+        Text = 'New left files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'New remote files'
+        Text = 'New right files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'Updated local files'
+        Text = 'Updated left files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'Updated remote files'
+        Text = 'Updated right files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'Obsolete remote files'
+        Text = 'Obsolete right files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'Obsolete local files'
+        Text = 'Obsolete left files'
         Width = 95
       end
       item
@@ -1610,9 +1610,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     ParentShowHint = False
     ShowHint = True
-    OnMouseDown = StatusBarMouseDown
-    OnDrawPanel = StatusBarDrawPanel
-    OnResize = StatusBarResize
+    OnMouseDown = StatusBar2MouseDown
+    OnDrawPanel = StatusBar2DrawPanel
+    OnResize = StatusBar2Resize
   end
   object ActionImages: TPngImageList
     PngImages = <
@@ -2111,11 +2111,23 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       object TMenuItem
       end
     end
-    object BrowseLocalDirectory2: TMenuItem
-      Action = BrowseLocalAction
+    object LeftDirectory1: TMenuItem
+      Caption = '&Left Directory'
+      object ExploreLocalDirectory1: TMenuItem
+        Action = ExploreLocalAction2
+      end
+      object CopyPathtoClipboard2: TMenuItem
+        Action = LocalPathToClipboardAction
+      end
     end
-    object BrowseLocalDirectory1: TMenuItem
-      Action = BrowseRemoteAction
+    object RightDirectory1: TMenuItem
+      Caption = 'Rig&ht Directory'
+      object ExploreRemoteDirectory1: TMenuItem
+        Action = ExploreRemoteAction2
+      end
+      object CopyPathtoClipboard1: TMenuItem
+        Action = RemotePathToClipboardAction
+      end
     end
     object N2: TMenuItem
       Caption = '-'
@@ -2186,18 +2198,28 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Caption = 'Uncheck All Actions in This &Directory'
       OnExecute = UncheckDirectoryActionExecute
     end
-    object BrowseLocalAction: TAction
-      Caption = 'Browse &Local Directory'
-      OnExecute = BrowseLocalActionExecute
+    object ExploreLocalAction2: TAction
+      Caption = '&Explore'
+      OnExecute = ExploreLocalAction2Execute
     end
-    object BrowseRemoteAction: TAction
-      Caption = 'Browse &Remote Directory'
-      OnExecute = BrowseRemoteActionExecute
+    object ExploreRemoteAction2: TAction
+      Caption = '&Explore'
+      OnExecute = ExploreRemoteAction2Execute
     end
     object FindMoveCandidateAction: TAction
       Caption = '&Find Move Candidate'
       ShortCut = 49269
       OnExecute = FindMoveCandidateActionExecute
+    end
+    object LocalPathToClipboardAction: TAction
+      Caption = 'Copy &Path to Clipboard'
+      ShortCut = 16603
+      OnExecute = LocalPathToClipboardActionExecute
+    end
+    object RemotePathToClipboardAction: TAction
+      Caption = 'Copy &Path to Clipboard'
+      ShortCut = 16605
+      OnExecute = RemotePathToClipboardActionExecute
     end
   end
   object ActionImages120: TPngImageList

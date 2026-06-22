@@ -1,18 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include <Terminal.h>
-#include <TextsWin.h>
-#include <WinConfiguration.h>
-#include <WinInterface.h>
-#include <GUITools.h>
-#include <CoreMain.h>
 #include "CustomCommand.h"
-#include "VCLCommon.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -174,7 +166,6 @@ void __fastcall TCustomCommandDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
 {
-  CommandEdit->Items = CustomWinConfiguration->History[L"CustomCommand"];
   if (CommandEdit->Items->Count == 0)
   {
     for (int i = 0; i < FCustomCommandList->Count; i++)
@@ -198,7 +189,6 @@ bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
     GetCommand(Command);
 
     CommandEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"CustomCommand"] = CommandEdit->Items;
   }
   return Result;
 }
@@ -263,13 +253,13 @@ void __fastcall TCustomCommandDialog::HelpButtonClick(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::CommandEditGetData(
-  THistoryComboBox * /*Sender*/, Pointer & Data)
+  THistoryComboBox * /*Sender*/, TObject *& Data)
 {
-  Data = reinterpret_cast<void *>(ccSet | GetParams());
+  Data = reinterpret_cast<TObject *>(ccSet | GetParams());
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::CommandEditSetData(
-  THistoryComboBox * /*Sender*/, Pointer Data)
+  THistoryComboBox * /*Sender*/, TObject * Data)
 {
   int IData = reinterpret_cast<int>(Data);
   if (FLAGSET(IData, ccSet))

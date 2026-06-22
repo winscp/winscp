@@ -10,6 +10,7 @@
 #include "storage.h"
 
 #include <wincrypt.h>
+
 DECL_WINDOWS_FUNCTION(static, BOOL, CryptAcquireContextA,
                       (HCRYPTPROV *, LPCTSTR, LPCTSTR, DWORD, DWORD));
 DECL_WINDOWS_FUNCTION(static, BOOL, CryptGenRandom,
@@ -135,9 +136,7 @@ uint64_t prng_reseed_time_ms(void)
 {
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
-    { // WINSCP
     uint64_t value = ft.dwHighDateTime;
     value = (value << 32) + ft.dwLowDateTime;
     return value / 10000;              /* 1 millisecond / 100ns */
-    } // WINSCP
 }

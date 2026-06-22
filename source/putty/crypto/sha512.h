@@ -40,40 +40,36 @@ static inline bool check_availability(const struct sha512_extra *extra)
 #define SHA512_VTABLES(impl_c, impl_display)                            \
     static struct sha512_extra_mutable sha512_ ## impl_c ## _extra_mut; \
     static const struct sha512_extra sha384_ ## impl_c ## _extra = {    \
-        /* WINSCP */ \
-        /*.initial_state =*/ sha384_initial_state,                          \
-        /*.check_available =*/ sha512_ ## impl_c ## _available,             \
-        /*.mut =*/ &sha512_ ## impl_c ## _extra_mut,                        \
+        .initial_state = sha384_initial_state,                          \
+        .check_available = sha512_ ## impl_c ## _available,             \
+        .mut = &sha512_ ## impl_c ## _extra_mut,                        \
     };                                                                  \
     static const struct sha512_extra sha512_ ## impl_c ## _extra = {    \
-        /* WINSCP */ \
-        /*.initial_state =*/ sha512_initial_state,                          \
-        /*.check_available =*/ sha512_ ## impl_c ## _available,             \
-        /*.mut =*/ &sha512_ ## impl_c ## _extra_mut,                        \
+        .initial_state = sha512_initial_state,                          \
+        .check_available = sha512_ ## impl_c ## _available,             \
+        .mut = &sha512_ ## impl_c ## _extra_mut,                        \
     };                                                                  \
     const ssh_hashalg ssh_sha384_ ## impl_c = {                         \
-        /* WINSCP */ \
-        /*.new =*/ sha512_ ## impl_c ## _new,                               \
-        /*.reset =*/ sha512_ ## impl_c ## _reset,                           \
-        /*.copyfrom =*/ sha512_ ## impl_c ## _copyfrom,                     \
-        /*.digest =*/ sha384_ ## impl_c ## _digest,                         \
-        /*.free =*/ sha512_ ## impl_c ## _free,                             \
-        /*.hlen =*/ 48,                                                     \
-        /*.blocklen =*/ 128,                                                \
+        .new = sha512_ ## impl_c ## _new,                               \
+        .reset = sha512_ ## impl_c ## _reset,                           \
+        .copyfrom = sha512_ ## impl_c ## _copyfrom,                     \
+        .digest = sha384_ ## impl_c ## _digest,                         \
+        .free = sha512_ ## impl_c ## _free,                             \
+        .hlen = 48,                                                     \
+        .blocklen = 128,                                                \
         HASHALG_NAMES_ANNOTATED("SHA-384", impl_display),               \
-        /*.extra =*/ &sha384_ ## impl_c ## _extra,                          \
+        .extra = &sha384_ ## impl_c ## _extra,                          \
     };                                                                  \
     const ssh_hashalg ssh_sha512_ ## impl_c = {                         \
-        /* WINSCP */ \
-        /*.new =*/ sha512_ ## impl_c ## _new,                               \
-        /*.reset =*/ sha512_ ## impl_c ## _reset,                           \
-        /*.copyfrom =*/ sha512_ ## impl_c ## _copyfrom,                     \
-        /*.digest =*/ sha512_ ## impl_c ## _digest,                         \
-        /*.free =*/ sha512_ ## impl_c ## _free,                             \
-        /*.hlen =*/ 64,                                                     \
-        /*.blocklen =*/ 128,                                                \
+        .new = sha512_ ## impl_c ## _new,                               \
+        .reset = sha512_ ## impl_c ## _reset,                           \
+        .copyfrom = sha512_ ## impl_c ## _copyfrom,                     \
+        .digest = sha512_ ## impl_c ## _digest,                         \
+        .free = sha512_ ## impl_c ## _free,                             \
+        .hlen = 64,                                                     \
+        .blocklen = 128,                                                \
         HASHALG_NAMES_ANNOTATED("SHA-512", impl_display),               \
-        /*.extra =*/ &sha512_ ## impl_c ## _extra,                          \
+        .extra = &sha512_ ## impl_c ## _extra,                          \
     }
 
 extern const uint64_t sha512_initial_state[8];
@@ -107,7 +103,6 @@ static inline bool sha512_block_write(
     *len -= chunk;
     blk->used += chunk;
 
-    { // WINSCP
     size_t chunkbits = chunk << 3;
 
     blk->lenlo += chunkbits;
@@ -119,7 +114,6 @@ static inline bool sha512_block_write(
     }
 
     return false;
-    } // WINSCP
 }
 
 static inline void sha512_block_pad(sha512_block *blk, BinarySink *bs)

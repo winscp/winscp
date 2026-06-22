@@ -1,19 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <TextsWin.h>
-
-#include <VCLCommon.h>
-#include "WinInterface.h"
 #include "License.h"
-#include "Tools.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-UnicodeString LicenseStr[2] =
+static UnicodeString LicenseStr[2] =
   { L"LICENSE", L"LICENSE_EXPAT" };
 //---------------------------------------------------------------------------
 void __fastcall DoLicenseDialog(TLicense License)

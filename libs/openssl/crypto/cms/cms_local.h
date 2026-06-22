@@ -99,6 +99,8 @@ struct CMS_SignerInfo_st {
     EVP_MD_CTX *mctx;
     EVP_PKEY_CTX *pctx;
     const CMS_CTX *cms_ctx;
+    /* Set to 1 if signing time attribute is to be omitted */
+    int omit_signing_time;
 };
 
 struct CMS_SignerIdentifier_st {
@@ -432,7 +434,7 @@ int ossl_cms_set1_ias(CMS_IssuerAndSerialNumber **pias, X509 *cert);
 int ossl_cms_set1_keyid(ASN1_OCTET_STRING **pkeyid, X509 *cert);
 
 BIO *ossl_cms_EncryptedContent_init_bio(CMS_EncryptedContentInfo *ec,
-    const CMS_CTX *ctx);
+    const CMS_CTX *ctx, int auth);
 BIO *ossl_cms_EncryptedData_init_bio(const CMS_ContentInfo *cms);
 int ossl_cms_EncryptedContent_init(CMS_EncryptedContentInfo *ec,
     const EVP_CIPHER *cipher,
@@ -482,6 +484,9 @@ int ossl_cms_dh_envelope(CMS_RecipientInfo *ri, int decrypt);
 int ossl_cms_ecdh_envelope(CMS_RecipientInfo *ri, int decrypt);
 int ossl_cms_rsa_envelope(CMS_RecipientInfo *ri, int decrypt);
 int ossl_cms_rsa_sign(CMS_SignerInfo *si, int verify);
+
+int ossl_cms_get1_certs_ex(CMS_ContentInfo *cms, STACK_OF(X509) **certs);
+int ossl_cms_get1_crls_ex(CMS_ContentInfo *cms, STACK_OF(X509_CRL) **crls);
 
 DECLARE_ASN1_ITEM(CMS_CertificateChoices)
 DECLARE_ASN1_ITEM(CMS_DigestedData)

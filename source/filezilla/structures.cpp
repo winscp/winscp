@@ -1,10 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
-
-
-AFX_COMDAT int _afxInitDataA[] = { -1, 0, 0, 0 };
-AFX_COMDAT CStringDataA* _afxDataNilA = (CStringDataA*)&_afxInitDataA;
-AFX_COMDAT LPCSTR _afxPchNilA = (LPCSTR)(((BYTE*)&_afxInitDataA)+sizeof(CStringDataA));
+#include "FileZillaPCH.h"
 
 t_directory::t_directory()
 {

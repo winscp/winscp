@@ -40,12 +40,10 @@ static const char *sk_error_socket_error(Socket *s)
 }
 
 static const SocketVtable ErrorSocket_sockvt = {
-    // WINSCP
-    /*.plug =*/ sk_error_plug,
-    /*.close =*/ sk_error_close,
-    NULL, NULL, NULL, NULL,
-    /*.socket_error =*/ sk_error_socket_error,
-    /*.endpoint_info =*/ nullsock_endpoint_info,
+    .plug = sk_error_plug,
+    .close = sk_error_close,
+    .socket_error = sk_error_socket_error,
+    .endpoint_info = nullsock_endpoint_info,
     /* other methods are NULL */
 };
 

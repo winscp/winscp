@@ -23,10 +23,8 @@ wchar_t *decode_utf8_to_wide_string(const char *s)
         /* We ignore 'err': if it is set, then the character decode
          * function will have emitted U+FFFD REPLACEMENT CHARACTER,
          * which is what we'd have done in response anyway. */
-        { // WINSCP
         DecodeUTF8Failure err;
         wlen += decode_utf8_to_wchar(src, ws + wlen, &err);
-        } // WINSCP
     }
 
     /* Reallocate to the final size and append the trailing NUL */

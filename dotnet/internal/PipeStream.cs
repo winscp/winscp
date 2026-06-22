@@ -134,8 +134,6 @@ namespace WinSCP
         ///<exception cref="ArgumentOutOfRangeException">offset or count is negative.</exception>
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (offset < 0)
-                throw new NotSupportedException("Offset cnnot be negative");
             if (buffer == null)
                 throw new ArgumentNullException("buffer");
             if (offset + count > buffer.Length)

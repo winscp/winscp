@@ -72,7 +72,7 @@ protected:
   BOOL m_bQuit;
   t_command * m_pPostKeepAliveCommand;
   CServerPath m_CurrentPath;
-  UINT m_nTimerID;
+  UINT_PTR m_nTimerID;
   virtual ~CMainThread();
   bool m_Started;
 };

@@ -16,14 +16,14 @@
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
 #include <ToolWin.hpp>
-#include <DirView.hpp>
+#include <DirView.h>
 #include <PathLabel.hpp>
 
 #include <WinInterface.h>
 
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include "CustomDriveView.hpp"
-#include "DriveView.hpp"
+#include "DriveView.h"
 #include "UnixDriveView.h"
 #include "TB2Dock.hpp"
 #include "TB2Item.hpp"
@@ -37,6 +37,8 @@
 #include "TBXToolPals.hpp"
 #include "ThemePageControl.h"
 #include <Vcl.AppEvnts.hpp>
+#include "DriveViewInt.hpp"
+#include "DirViewInt.hpp"
 //---------------------------------------------------------------------------
 class TScpCommanderForm : public TCustomScpExplorerForm
 {
@@ -533,7 +535,6 @@ __published:
           bool FromLink);
   void __fastcall CommandLineComboBeginEdit(TTBEditItem *Sender,
           TTBEditItemViewer *Viewer, TEdit *EditControl);
-  void __fastcall LocalDriveViewRefreshDrives(TObject *Sender, bool Global);
   void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
           bool FromLink);
   void __fastcall DirViewHistoryGo(TCustomDirView *Sender, int Index,
@@ -551,22 +552,22 @@ __published:
   void __fastcall OtherLocalDirViewUpdateStatusBar(TObject *Sender, const TStatusFileInfo &FileInfo);
   void __fastcall OtherLocalDirViewPathChange(TCustomDirView *Sender);
   void __fastcall LocalDriveViewNeedHiddenDirectories(TObject *Sender);
+  void __fastcall DriveNotification(TDriveNotification Notification, UnicodeString Drive);
 
 private:
   bool FConstructed;
   double FLastLeftPanelWidth;
   double FLeftPanelWidth;
   int FNormalPanelsWidth;
-  int FLastWidth;
   bool FSynchronisingBrowse;
   TStrings * FInternalDDDownloadList;
   UnicodeString FPrevPath[2];
   bool FFirstTerminal;
   UnicodeString FDDFakeFileTarget;
   bool FCommandLineComboPopulated;
-  TStrings* FLocalPathComboBoxPaths;
+  TStrings * FLocalPathComboBoxPaths;
+  TStrings * FOtherLocalPathComboBoxPaths;
   int FLocalSpecialPaths;
-  unsigned int FSpecialFolders;
   TEdit * FCommandLineComboEdit;
   TWndMethod FToolbarEditOldWndProc;
   bool FPanelsRestored;
@@ -647,8 +648,11 @@ protected:
   void __fastcall SynchronizeBrowsingRemote(UnicodeString PrevPath, UnicodeString & NewPath, bool Create);
   void __fastcall CreateLocalDirectory(const UnicodeString & Path);
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path);
+  void LocalPathComboUpdateDrives(
+    TTBXComboBoxItem * ALocalPathComboBox, TCustomDirView * ADirView, TDriveView * ALocalDriveView, TStrings * LocalPathComboBoxPaths);
+  void OtherLocalPathComboUpdateDrives();
   void __fastcall LocalPathComboUpdateDrives();
-  void __fastcall LocalPathComboUpdate(TCustomDirView * ADirView, TTBXComboBoxItem * PathComboBox);
+  void LocalPathComboUpdate(TCustomDirView * ADirView, TTBXComboBoxItem * PathComboBox, TStrings * LocalPathComboBoxPaths);
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
   virtual bool __fastcall OpenBookmark(TOperationSide Side, TBookmark * Bookmark);
@@ -660,14 +664,14 @@ protected:
   virtual void __fastcall StartingWithoutSession();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
-  virtual void __fastcall ThemeChanged();
   void __fastcall DoPathLabelPathClick(TOperationSide Side, const UnicodeString & Path);
   virtual void __fastcall DoRemotePathComboBoxAdjustImageIndex(
     TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
   virtual void __fastcall DoRemotePathComboBoxCancel(TObject * Sender);
-  void __fastcall DoLocalDirViewPathChange(TCustomDirView * Sender, TTBXComboBoxItem * PathComboBox);
-  void __fastcall DoLocalPathComboBoxAdjustImageIndex(TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
-  void __fastcall DoLocalPathComboBoxItemClick(TDirView * ADirView, TTBXComboBoxItem * PathComboBox);
+  void DoLocalDirViewPathChange(TCustomDirView * Sender, TTBXComboBoxItem * PathComboBox, TStrings * LocalPathComboBoxPaths);
+  void DoLocalPathComboBoxAdjustImageIndex(
+    TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex, TStrings * LocalPathComboBoxPaths);
+  void DoLocalPathComboBoxItemClick(TDirView * ADirView, TTBXComboBoxItem * PathComboBox, TStrings * LocalPathComboBoxPaths);
   virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
   virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
   void __fastcall SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action);
@@ -700,7 +704,7 @@ public:
   virtual void __fastcall GoToAddress();
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
-  virtual void __fastcall BrowseFile(const UnicodeString & FileName);
+  virtual void __fastcall ExploreFile(const UnicodeString & FileName);
   virtual bool SupportsLocalBrowser();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual bool IsLocalBrowserMode();

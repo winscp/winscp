@@ -10,11 +10,9 @@ object TBItemEditForm: TTBItemEditForm
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
-  OldCreateOrder = True
   Position = poScreenCenter
   OnActivate = FormActivate
   OnClose = FormClose
-  PixelsPerInch = 96
   TextHeight = 13
   object Splitter1: TSplitter
     Left = 129

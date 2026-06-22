@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include <io.h>
@@ -7,6 +7,8 @@
 #include <wincrypt.h>
 
 #define NE_LFS
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <ne_basic.h>
 #include <ne_auth.h>
 #include <ne_props.h>
@@ -18,22 +20,14 @@
 #include <ne_xmlreq.h>
 #include <ne_locks.h>
 #include <expat.h>
+#pragma clang diagnostic pop
 
 #include "WebDAVFileSystem.h"
 
-#include "Interface.h"
-#include "Common.h"
-#include "Exceptions.h"
 #include "Terminal.h"
-#include "TextsCore.h"
 #include "SecureShell.h"
-#include "HelpCore.h"
-#include "CoreMain.h"
 #include "Security.h"
-#include <StrUtils.hpp>
 #include <NeonIntf.h>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
@@ -89,31 +83,14 @@ static UnicodeString PathUnescape(const char * Path)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 static bool NeonInitialized = false;
-static bool NeonSspiInitialized = false;
+static int NeonSspiInitialized = -1;
 //---------------------------------------------------------------------------
 void __fastcall NeonInitialize()
 {
   // Even if this fails, we do not want to interrupt WinSCP starting for that.
   // Anyway, it can hardly fail.
-  // Though it fails on Wine on Debian VM, because of ne_sspi_init():
-  // sspi: QuerySecurityPackageInfo [failed] [80090305].
-  // sspi: Unable to get negotiate maximum packet size
   int NeonResult = ne_sock_init();
-  if (NeonResult == 0)
-  {
-    NeonInitialized = true;
-    NeonSspiInitialized = true;
-  }
-  else if (NeonResult == -2)
-  {
-    NeonInitialized = true;
-    NeonSspiInitialized = false;
-  }
-  else
-  {
-    NeonInitialized = false;
-    NeonSspiInitialized = false;
-  }
+  NeonInitialized = (NeonResult == 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall NeonFinalize()
@@ -122,6 +99,7 @@ void __fastcall NeonFinalize()
   {
     ne_sock_exit();
     NeonInitialized = false;
+    NeonSspiInitialized = -1;
   }
 }
 //---------------------------------------------------------------------------
@@ -132,7 +110,23 @@ void __fastcall RequireNeon(TTerminal * Terminal)
     throw Exception(LoadStr(NEON_INIT_FAILED2));
   }
 
-  if (!NeonSspiInitialized)
+  if (NeonSspiInitialized < 0)
+  {
+    // This fails on Wine on Debian VM:
+    // sspi: QuerySecurityPackageInfo [failed] [80090305].
+    // sspi: Unable to get negotiate maximum packet size
+    // This takes about second, when debugging, that's why it is postponed until the first connection.
+    if (ne_sock_sspi_init() < 0)
+    {
+      NeonSspiInitialized = 0;
+    }
+    else
+    {
+      NeonSspiInitialized = 1;
+    }
+  }
+
+  if (NeonSspiInitialized <= 0)
   {
     Terminal->LogEvent(L"Warning: SSPI initialization failed.");
   }
@@ -140,10 +134,7 @@ void __fastcall RequireNeon(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall NeonVersion()
 {
-  UnicodeString Str = StrFromNeon(ne_version_string());
-  CutToChar(Str, L' ', true); // "neon"
-  UnicodeString Result = CutToChar(Str, L':', true);
-  return Result;
+  return StrFromNeon(ne_version_library());
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ExpatVersion()
@@ -280,11 +271,6 @@ void TWebDAVFileSystem::NeonClientOpenSessionInternal(UnicodeString & CorrectedU
     bool Ssl = IsTlsSession(FSessionContext->NeonSession);
     FSessionInfo.SecurityProtocolName = Ssl ? LoadStr(FTPS_IMPLICIT) : EmptyStr;
 
-    if (Ssl != (FTerminal->SessionData->Ftps != ftpsNone))
-    {
-      FTerminal->LogEvent(FORMAT(L"Warning: %s", (LoadStr(UNENCRYPTED_REDIRECT))));
-    }
-
     {
       CorrectedUrl = EmptyStr;
       TAutoFlag Flag(FInitialHandshake);
@@ -332,22 +318,20 @@ void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext,
 //---------------------------------------------------------------------------
 TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeString & Url, UTF8String & Path, UTF8String & Query)
 {
-  ne_uri uri;
-  NeonParseUrl(Url, uri);
+  TNeonUri Uri(Url);
 
   std::unique_ptr<TSessionContext> Result(new TSessionContext());
   Result->FileSystem = this;
-  Result->HostName = StrFromNeon(uri.host);
-  Result->PortNumber = uri.port;
+  Result->HostName = Uri.GetHost();
+  Result->PortNumber = Uri.port;
   Result->NtlmAuthenticationFailed = false;
 
-  Result->NeonSession = CreateNeonSession(uri);
+  Result->NeonSession = CreateNeonSession(Uri);
   InitSession(Result.get(), Result->NeonSession);
 
-  Path = uri.path;
-  Query = uri.query;
-  bool Ssl = IsTlsUri(uri);
-  ne_uri_free(&uri);
+  Path = Uri.path;
+  Query = Uri.query;
+  bool Ssl = Uri.IsTls();
   ne_set_aux_request_init(Result->NeonSession, NeonAuxRequestInit, Result.get());
 
   UpdateNeonDebugMask();
@@ -371,12 +355,9 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
 //---------------------------------------------------------------------------
 bool TWebDAVFileSystem::IsTlsSession(ne_session * Session)
 {
-  ne_uri uri = ne_uri();
-  ne_fill_server_uri(Session, &uri);
-  bool Result = IsTlsUri(uri);
-  ne_uri_free(&uri);
-
-  return Result;
+  TNeonUri Uri;
+  ne_fill_server_uri(Session, &Uri);
+  return Uri.IsTls();
 }
 //---------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonAuxRequestInit(ne_session * Session, ne_request * /*Request*/, void * UserData)
@@ -409,6 +390,37 @@ UnicodeString __fastcall TWebDAVFileSystem::GetRedirectUrl()
 {
   UnicodeString Result = GetNeonRedirectUrl(FSessionContext->NeonSession);
   FTerminal->LogEvent(FORMAT(L"Redirected to \"%s\".", (Result)));
+
+  TNeonUri RedirectUri(Result);
+
+  if ((FTerminal->SessionData->Ftps != ftpsNone) && !RedirectUri.IsTls())
+  {
+    UnicodeString Message = LoadStr(UNENCRYPTED_REDIRECT);
+    if (FTerminal->SessionData->WebDavUnencryptedRedirects)
+    {
+      FTerminal->LogEvent(FORMAT(L"Warning: %s", (Message)));
+    }
+    else
+    {
+      throw Exception(Message);
+    }
+  }
+
+  int PortNumber = static_cast<int>(RedirectUri.port);
+  if (!SameText(RedirectUri.GetHost(), FSessionContext->HostName) ||
+      (PortNumber != FSessionContext->PortNumber))
+  {
+    UnicodeString OtherHost = RedirectUri.GetHost();
+    if (RedirectUri.port != ne_uri_defaultport(RedirectUri.scheme))
+    {
+      OtherHost = FORMAT(L"%s:%d", (OtherHost, PortNumber));
+    }
+    if (!FTerminal->SessionData->WebDavCrossDomainRedirects)
+    {
+      throw Exception(FMTLOAD(WEBDAV_CROSS_DOMAIN_REDIR, (OtherHost)));
+    }
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1016,8 +1028,8 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
       if (Month >= 1)
       {
         TDateTime Modification =
-          EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
-          EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
+          EncodeDateVerbose(static_cast<unsigned short>(Year), static_cast<unsigned short>(Month), static_cast<unsigned short>(Day)) +
+          EncodeTimeVerbose(static_cast<unsigned short>(Hour), static_cast<unsigned short>(Min), static_cast<unsigned short>(Sec), 0);
         File->Modification = ConvertTimestampFromUTC(Modification);
         // Should use mfYMDHM or mfMDY when appropriate according to Filled
         File->ModificationFmt = mfFull;
@@ -1274,7 +1286,7 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
   Aliases[2] = TQueryButtonAlias::CreateNoToAllGrouppedWithNo();
   TQueryParams QueryParams(qpNeverAskAgainCheck);
   QueryParams.Aliases = Aliases;
-  QueryParams.AliasesCount = LENOF(Aliases);
+  QueryParams.AliasesCount = std::size(Aliases);
 
   unsigned int Answer;
 
@@ -1453,7 +1465,7 @@ void __fastcall TWebDAVFileSystem::Source(
     {
       SetFilePointer(Handle.Handle, 0, NULL, FILE_BEGIN);
 
-      FD = _open_osfhandle((intptr_t)Handle.Handle, O_BINARY);
+      FD = _open_osfhandle(reinterpret_cast<intptr_t>(Handle.Handle), O_BINARY);
       if (FD < 0) // can happen only if there are no free slots in handle-FD table
       {
         throw ESkipFile();
@@ -1554,7 +1566,7 @@ void TWebDAVFileSystem::NeonPreSend(
   TWebDAVFileSystem * FileSystem = SessionContext->FileSystem;
 
   SessionContext->AuthorizationProtocol = EmptyStr;
-  UnicodeString HeaderBuf(UnicodeString(AnsiString(Header->data, Header->used)));
+  UnicodeString HeaderBuf(UnicodeString(AnsiString(Header->data, SizeToIntChecked(Header->used))));
   const UnicodeString AuthorizationHeaderName(L"Authorization:");
   int P = HeaderBuf.Pos(AuthorizationHeaderName);
   if (P > 0)
@@ -1596,7 +1608,7 @@ void TWebDAVFileSystem::NeonPreSend(
       // all neon request types that use ne_add_request_header
       // use XML content-type, so it's text-based
       DebugAssert(ContainsStr(HeaderBuf, ContentTypeHeaderPrefix + NE_XML_MEDIA_TYPE));
-      FileSystem->FTerminal->Log->Add(llInput, UnicodeString(UTF8String(Buffer, Size)));
+      FileSystem->FTerminal->Log->Add(llInput, UnicodeString(UTF8String(Buffer, SizeToIntChecked(Size))));
     }
   }
 
@@ -1803,7 +1815,7 @@ int TWebDAVFileSystem::NeonBodyReader(void * UserData, const char * Buf, size_t 
           ((ne_strcasecmp(ContentType.type, "text") == 0) ||
            media_type_is_xml(&ContentType)))
       {
-        UnicodeString Content = UnicodeString(UTF8String(Buf, Len)).Trim();
+        UnicodeString Content = UnicodeString(UTF8String(Buf, SizeToIntChecked(Len))).Trim();
         FileSystem->FResponse += Content;
       }
       ne_free(ContentType.value);
@@ -1852,7 +1864,7 @@ void __fastcall TWebDAVFileSystem::Sink(
     int FD = -1;
     try
     {
-      FD = _open_osfhandle((intptr_t)LocalHandle, O_BINARY);
+      FD = _open_osfhandle(reinterpret_cast<intptr_t>(LocalHandle), O_BINARY);
       if (FD < 0)
       {
         throw ESkipFile();

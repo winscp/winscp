@@ -1,26 +1,17 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "SessionData.h"
 
-#include "Common.h"
-#include "Exceptions.h"
 #include "FileBuffer.h"
-#include "CoreMain.h"
-#include "TextsCore.h"
 #include "PuttyIntf.h"
 #include "RemoteFiles.h"
 #include "SftpFileSystem.h"
 #include "S3FileSystem.h"
 #include "FileMasks.h"
 #include <Soap.EncdDecd.hpp>
-#include <StrUtils.hpp>
 #include <XMLDoc.hpp>
-#include <System.IOUtils.hpp>
-#include <algorithm>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 #define SET_SESSION_PROPERTY_FROM(PROPERTY, FROM) \
   if (F##PROPERTY != FROM) { F##PROPERTY = FROM; Modify(); }
@@ -143,6 +134,7 @@ __fastcall TSessionData::TSessionData(UnicodeString aName):
 {
   Default();
   FModified = true;
+  FUnsafeSettings = nullptr;
 }
 //---------------------------------------------------------------------
 _fastcall TSessionData::~TSessionData()
@@ -232,20 +224,18 @@ void __fastcall TSessionData::DefaultSettings()
 
   WebDavLiberalEscaping = false;
   WebDavAuthLegacy = false;
+  WebDavCrossDomainRedirects = false;
+  WebDavUnencryptedRedirects = false;
 
-  ProxyMethod = ::pmNone;
-  ProxyHost = L"proxy";
-  ProxyPort = ProxyPortNumber;
-  ProxyUsername = L"";
-  ProxyPassword = L"";
+  DefaultProxy();
   ProxyTelnetCommand = L"connect %host %port\\n";
   ProxyLocalCommand = L"";
   ProxyDNS = asAuto;
   ProxyLocalhost = false;
 
-  for (unsigned int Index = 0; Index < LENOF(FBugs); Index++)
+  for (unsigned int Index = 0; Index < std::size(FBugs); Index++)
   {
-    Bug[(TSshBug)Index] = asAuto;
+    Bug[static_cast<TSshBug>(Index)] = asAuto;
   }
 
   Special = false;
@@ -312,9 +302,9 @@ void __fastcall TSessionData::DefaultSettings()
   SFTPRealPath = asAuto;
   UsePosixRename = false;
 
-  for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++)
+  for (unsigned int Index = 0; Index < std::size(FSFTPBugs); Index++)
   {
-    SFTPBug[(TSftpBug)Index] = asAuto;
+    SFTPBug[static_cast<TSftpBug>(Index)] = asAuto;
   }
 
   Tunnel = false;
@@ -353,6 +343,15 @@ void __fastcall TSessionData::DefaultSettings()
 
   CustomParam1 = L"";
   CustomParam2 = L"";
+}
+//---------------------------------------------------------------------
+void TSessionData::DefaultProxy()
+{
+  ProxyMethod = ::pmNone;
+  ProxyHost = L"proxy";
+  ProxyPort = ProxyPortNumber;
+  ProxyUsername = L"";
+  ProxyPassword = L"";
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Default()
@@ -483,9 +482,9 @@ void __fastcall TSessionData::NonPersistent()
   PROPERTY(ProxyDNS); \
   PROPERTY(ProxyLocalhost); \
   \
-  for (unsigned int Index = 0; Index < LENOF(FBugs); Index++) \
+  for (unsigned int Index = 0; Index < std::size(FBugs); Index++) \
   { \
-    PROPERTY(Bug[(TSshBug)Index]); \
+    PROPERTY(Bug[static_cast<TSshBug>(Index)]); \
   } \
   \
   PROPERTY(SftpServer); \
@@ -497,9 +496,9 @@ void __fastcall TSessionData::NonPersistent()
   PROPERTY(SFTPRealPath); \
   PROPERTY(UsePosixRename); \
   \
-  for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++) \
+  for (unsigned int Index = 0; Index < std::size(FSFTPBugs); Index++) \
   { \
-    PROPERTY(SFTPBug[(TSftpBug)Index]); \
+    PROPERTY(SFTPBug[static_cast<TSftpBug>(Index)]); \
   } \
   \
   PROPERTY(Tunnel); \
@@ -539,6 +538,8 @@ void __fastcall TSessionData::NonPersistent()
   \
   PROPERTY(WebDavLiberalEscaping); \
   PROPERTY(WebDavAuthLegacy); \
+  PROPERTY(WebDavCrossDomainRedirects); \
+  PROPERTY(WebDavUnencryptedRedirects); \
   \
   PROPERTY(PuttySettings); \
   \
@@ -553,7 +554,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
 {
   if (Source && Source->InheritsFrom(__classid(TSessionData)))
   {
-    TSessionData * SourceData = (TSessionData *)Source;
+    TSessionData * SourceData = static_cast<TSessionData *>(Source);
     // Master password prompt shows implicitly here, when cloning the session data for a new terminal
     CopyData(SourceData);
     FSource = SourceData->FSource;
@@ -691,10 +692,14 @@ bool __fastcall TSessionData::IsInFolderOrWorkspace(const UnicodeString & AFolde
   return StartsText(UnixIncludeTrailingBackslash(AFolder), Name);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe, bool RespectDisablePasswordStoring)
+void TSessionData::DoLoad(
+  THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword,
+  bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings)
 {
   // Make sure we only ever use methods supported by TOptionsStorage
   // (implemented by TOptionsIniFile)
+
+  UnsafeSettings = false;
 
   PortNumber = Storage->ReadInteger(L"PortNumber", PortNumber);
   UserName = Storage->ReadString(L"UserName", UserName);
@@ -713,6 +718,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
       SET_SESSION_PROPERTY_FROM(PROP, A##PROP); \
     }
   #define LOAD_PASSWORD(PROP, PLAIN_NAME) LOAD_PASSWORD_EX(PROP, PLAIN_NAME, TEXT(#PROP), RewritePassword = true;)
+  #define LOADING_UNSAFE TValueRestorer<bool *> UnsafeSettingsRestorer(FUnsafeSettings, &UnsafeSettings);
   bool LoadPasswords = !Configuration->DisablePasswordStoring || !RespectDisablePasswordStoring;
   if (LoadPasswords)
   {
@@ -758,6 +764,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   HostKeyList = Storage->ReadString(L"HostKey", HostKeyList);
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     GssLibList = Storage->ReadString(L"GSSLibs", GssLibList);
   }
   GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
@@ -768,7 +775,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   RekeyData = Storage->ReadString(L"RekeyBytes", RekeyData);
   RekeyTime = Storage->ReadInteger(L"RekeyTime", RekeyTime);
 
-  FSProtocol = (TFSProtocol)Storage->ReadInteger(L"FSProtocol", FSProtocol);
+  FSProtocol = static_cast<TFSProtocol>(Storage->ReadInteger(L"FSProtocol", FSProtocol));
   LocalDirectory = Storage->ReadString(L"LocalDirectory", LocalDirectory);
   OtherLocalDirectory = Storage->ReadString(L"OtherLocalDirectory", OtherLocalDirectory);
   RemoteDirectory = Storage->ReadString(L"RemoteDirectory", RemoteDirectory);
@@ -780,16 +787,18 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   ResolveSymlinks = Storage->ReadBool(L"ResolveSymlinks", ResolveSymlinks);
   FollowDirectorySymlinks = Storage->ReadBool(L"FollowDirectorySymlinks", FollowDirectorySymlinks);
-  DSTMode = (TDSTMode)Storage->ReadInteger(L"ConsiderDST", DSTMode);
+  DSTMode = static_cast<TDSTMode>(Storage->ReadInteger(L"ConsiderDST", DSTMode));
   Special = Storage->ReadBool(L"Special", Special);
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     Shell = Storage->ReadString(L"Shell", Shell);
   }
   ClearAliases = Storage->ReadBool(L"ClearAliases", ClearAliases);
   UnsetNationalVars = Storage->ReadBool(L"UnsetNationalVars", UnsetNationalVars);
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     ListingCommand = Storage->ReadString(L"ListingCommand",
       Storage->ReadBool(L"AliasGroupList", false) ? UnicodeString(L"ls -gla") : ListingCommand);
   }
@@ -800,6 +809,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   TimeDifferenceAuto = Storage->ReadBool(L"TimeDifferenceAuto", (TimeDifference == TDateTime()));
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     DeleteToRecycleBin = Storage->ReadBool(L"DeleteToRecycleBin", DeleteToRecycleBin);
     OverwrittenToRecycleBin = Storage->ReadBool(L"OverwrittenToRecycleBin", OverwrittenToRecycleBin);
     RecycleBinPath = Storage->ReadString(L"RecycleBinPath", RecycleBinPath);
@@ -809,7 +819,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   ExitCode1IsError = Storage->ReadBool(L"ExitCode1IsError", ExitCode1IsError);
   LookupUserGroups = Storage->ReadEnum(L"LookupUserGroups2", LookupUserGroups, AutoSwitchMapping);
-  EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
+  EOLType = static_cast<TEOLType>(Storage->ReadInteger(L"EOLType", EOLType));
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
   VMSAllRevisions = Storage->ReadBool(L"VMSAllRevisions", VMSAllRevisions);
   NotUtf = Storage->ReadEnum(L"Utf", Storage->ReadEnum(L"SFTPUtfBug", NotUtf), AutoSwitchReversedMapping);
@@ -820,7 +830,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   S3RoleArn = Storage->ReadString(L"S3RoleArn", S3RoleArn);
   S3RoleSessionName = Storage->ReadString(L"S3RoleSessionName", S3RoleSessionName);
   S3Profile = Storage->ReadString(L"S3Profile", S3Profile);
-  S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
+  S3UrlStyle = static_cast<TS3UrlStyle>(Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle));
   S3MaxKeys = Storage->ReadEnum(L"S3MaxKeys", S3MaxKeys, AutoSwitchMapping);
   S3CredentialsEnv = Storage->ReadBool(L"S3CredentialsEnv", S3CredentialsEnv);
   S3RequesterPays = Storage->ReadBool(L"S3RequesterPays", S3RequesterPays);
@@ -843,6 +853,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   LOAD_PASSWORD_EX(ProxyPassword, L"ProxyPassword", L"ProxyPasswordEnc", );
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     if (ProxyMethod == pmCmd)
     {
       ProxyLocalCommand = Storage->ReadStringRaw(L"ProxyTelnetCommand", ProxyLocalCommand);
@@ -878,6 +889,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   if (!Unsafe)
   {
+    LOADING_UNSAFE;
     SftpServer = Storage->ReadString(L"SftpServer", SftpServer);
   }
   #define READ_SFTP_BUG(BUG) \
@@ -899,14 +911,26 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   PuttyProtocol = Storage->ReadString(L"Protocol", PuttyProtocol);
 
   Tunnel = Storage->ReadBool(L"Tunnel", Tunnel);
-  TunnelPortNumber = Storage->ReadInteger(L"TunnelPortNumber", TunnelPortNumber);
-  TunnelUserName = Storage->ReadString(L"TunnelUserName", TunnelUserName);
-  // must be loaded after TunnelUserName,
-  // because TunnelHostName may be in format user@host
-  TunnelHostName = Storage->ReadString(L"TunnelHostName", TunnelHostName);
-  if (LoadPasswords)
+  if (!Tunnel && PuttyImport && (ProxyMethod == pmSshTcpIp))
   {
-    LOAD_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
+    Tunnel = true;
+    TunnelPortNumber = ProxyPort;
+    TunnelUserName = ProxyUsername;
+    TunnelHostName = ProxyHost;
+    TunnelPassword = ProxyPassword;
+    DefaultProxy();
+  }
+  else
+  {
+    TunnelPortNumber = Storage->ReadInteger(L"TunnelPortNumber", TunnelPortNumber);
+    TunnelUserName = Storage->ReadString(L"TunnelUserName", TunnelUserName);
+    // must be loaded after TunnelUserName,
+    // because TunnelHostName may be in format user@host
+    TunnelHostName = Storage->ReadString(L"TunnelHostName", TunnelHostName);
+    if (LoadPasswords)
+    {
+      LOAD_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
+    }
   }
   TunnelPublicKeyFile = Storage->ReadString(L"TunnelPublicKeyFile", TunnelPublicKeyFile);
   // Contrary to main session passphrase (which has -passphrase switch in scripting),
@@ -944,6 +968,12 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   WebDavLiberalEscaping = Storage->ReadBool(L"WebDavLiberalEscaping", WebDavLiberalEscaping);
   WebDavAuthLegacy = Storage->ReadBool(L"WebDavAuthLegacy", WebDavAuthLegacy);
+  if (!Unsafe)
+  {
+    LOADING_UNSAFE;
+    WebDavCrossDomainRedirects = Storage->ReadBool(L"WebDavCrossDomainRedirects", WebDavCrossDomainRedirects);
+    WebDavUnencryptedRedirects = Storage->ReadBool(L"WebDavUnencryptedRedirects", WebDavUnencryptedRedirects);
+  }
 
   IsWorkspace = Storage->ReadBool(L"IsWorkspace", IsWorkspace);
   Link = Storage->ReadString(L"Link", Link);
@@ -954,6 +984,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   CustomParam1 = Storage->ReadString(L"CustomParam1", CustomParam1);
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
 
+  #undef LOADING_UNSAFE
   #undef LOAD_PASSWORD
 }
 //---------------------------------------------------------------------
@@ -970,7 +1001,8 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
     ClearSessionPasswords();
     FProxyPassword = L"";
 
-    DoLoad(Storage, PuttyImport, RewritePassword, false, true);
+    bool UnsafeSettings; // unused
+    DoLoad(Storage, PuttyImport, RewritePassword, false, true, UnsafeSettings);
 
     Storage->CloseSubKey();
   }
@@ -1253,6 +1285,8 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
     WRITE_DATA(Bool, WebDavLiberalEscaping);
     WRITE_DATA(Bool, WebDavAuthLegacy);
+    WRITE_DATA(Bool, WebDavCrossDomainRedirects);
+    WRITE_DATA(Bool, WebDavUnencryptedRedirects);
 
     WRITE_DATA(Bool, IsWorkspace);
     WRITE_DATA(String, Link);
@@ -1771,8 +1805,8 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
             if (Jump.Pos(L",") == 0)
             {
               std::unique_ptr<TSessionData> JumpData(new TSessionData(EmptyStr));
-              bool DefaultsOnly;
-              if ((JumpData->ParseUrl(Jump, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, 0)) &&
+              int ParsedInfo;
+              if ((JumpData->ParseUrl(Jump, NULL, NULL, ParsedInfo, NULL, NULL, 0)) &&
                   !JumpData->HostName.IsEmpty())
               {
                 JumpData->Name = JumpData->HostName;
@@ -1949,6 +1983,10 @@ void __fastcall TSessionData::Modify()
   if (FSource == ssStored)
   {
     FSource = ssStoredModified;
+  }
+  if (FUnsafeSettings != nullptr)
+  {
+    *FUnsafeSettings = true;
   }
 }
 //---------------------------------------------------------------------
@@ -2149,10 +2187,12 @@ void __fastcall TSessionData::MaskPasswords()
   }
 }
 //---------------------------------------------------------------------
-bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
-  TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
-  bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags)
+bool TSessionData::ParseUrl(
+  const UnicodeString & AUrl, TOptions * Options, TStoredSessionList * StoredSessions, int & ParsedInfo,
+  UnicodeString * FileName, UnicodeString * MaskedUrl, int Flags)
 {
+  UnicodeString Url = AUrl;
+  ParsedInfo = 0;
   bool ProtocolDefined = true;
   bool PortNumberDefined = false;
   TFSProtocol AFSProtocol = TFSProtocol(); // shut up
@@ -2231,17 +2271,13 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 
   if (ProtocolDefined)
   {
+    ParsedInfo |= piProtocolDefined;
     MoveStr(Url, MaskedUrl, ProtocolLen);
   }
 
   if (ProtocolDefined && (Url.SubString(1, 2) == L"//"))
   {
     MoveStr(Url, MaskedUrl, 2);
-  }
-
-  if (AProtocolDefined != NULL)
-  {
-    *AProtocolDefined = ProtocolDefined;
   }
 
   bool Unsafe = FLAGSET(Flags, pufUnsafe);
@@ -2260,7 +2296,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       // this can be optimized as the list is sorted
       for (Integer Index = 0; Index < StoredSessions->CountIncludingHidden; Index++)
       {
-        TSessionData * AData = (TSessionData *)StoredSessions->Items[Index];
+        TSessionData * AData = static_cast<TSessionData *>(StoredSessions->Items[Index]);
         if (!AData->IsWorkspace)
         {
           bool Match = false;
@@ -2428,7 +2464,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 
       if (RawSettings->Count > 0) // optimization
       {
-        ApplyRawSettings(RawSettings.get(), Unsafe);
+        ApplyRawSettings(RawSettings.get(), Unsafe, ParsedInfo);
       }
 
       bool HasPassword = (UserInfo.Pos(L':') > 0);
@@ -2485,8 +2521,6 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       // Is already true for ad-hoc URL, but we want to error even for "storedsite/path/"-style URL.
       RequireDirectories = true;
     }
-
-    DefaultsOnly = false;
   }
   else
   {
@@ -2496,7 +2530,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       CopyData(StoredSessions->DefaultSettings);
     }
 
-    DefaultsOnly = true;
+    ParsedInfo |= piDefaultsOnly;
   }
 
   if (ProtocolDefined)
@@ -2587,7 +2621,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       std::unique_ptr<TStrings> RawSettings(new TStringList());
       if (Options->FindSwitch(RawSettingsOption, RawSettings.get()))
       {
-        ApplyRawSettings(RawSettings.get(), Unsafe);
+        ApplyRawSettings(RawSettings.get(), Unsafe, ParsedInfo);
       }
     }
     if (Options->FindSwitch(PASSWORDSFROMFILES_SWITCH) &&
@@ -2603,16 +2637,28 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   return true;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe)
+void TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe)
 {
-  std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings, false));
-  ApplyRawSettings(OptionsStorage.get(), Unsafe, false);
+  int ParsedInfo;
+  ApplyRawSettings(RawSettings, Unsafe, ParsedInfo);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring)
+void TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe, int & ParsedInfo)
+{
+  std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings, false));
+  bool UnsafeSettings;
+  ApplyRawSettings(OptionsStorage.get(), Unsafe, false, UnsafeSettings);
+  if (UnsafeSettings)
+  {
+    ParsedInfo |= piUnsafeSettings;
+  }
+}
+//---------------------------------------------------------------------
+void TSessionData::ApplyRawSettings(
+  THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings)
 {
   bool Dummy;
-  DoLoad(Storage, false, Dummy, Unsafe, RespectDisablePasswordStoring);
+  DoLoad(Storage, false, Dummy, Unsafe, RespectDisablePasswordStoring, UnsafeSettings);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ConfigureTunnel(int APortNumber)
@@ -3051,7 +3097,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
   {
     WarnPtr = std::find(DefaultList, DefaultList + Count, WarnAlgo);
     DebugAssert(WarnPtr != NULL);
-    WarnDefaultIndex = (WarnPtr - DefaultList);
+    WarnDefaultIndex = SizeToIntChecked(WarnPtr - DefaultList);
   }
 
   int Index = 0;
@@ -3063,7 +3109,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
       if (!AlgoStr.CompareIC(Names[Algo]) &&
           !Used[Algo] && DebugAlwaysTrue(Index < Count))
       {
-        NewList[Index] = (AlgoT)Algo;
+        NewList[Index] = static_cast<AlgoT>(Algo);
         Used[Algo] = true;
         Index++;
         break;
@@ -3081,7 +3127,7 @@ void __fastcall TSessionData::SetAlgoList(AlgoT * List, const AlgoT * DefaultLis
   int WarnIndex = -1;
   if (HasWarnAlgo)
   {
-    WarnIndex = std::find(NewList.begin(), NewList.end(), WarnAlgo) - NewList.begin();
+    WarnIndex = SizeToIntChecked(std::find(NewList.begin(), NewList.end(), WarnAlgo) - NewList.begin());
   }
 
   bool Priority = true;
@@ -3370,7 +3416,7 @@ void __fastcall TSessionData::SetPingIntervalDT(TDateTime value)
   unsigned short hour, min, sec, msec;
 
   value.DecodeTime(&hour, &min, &sec, &msec);
-  PingInterval = ((int)hour)*SecsPerHour + ((int)min)*SecsPerMin + sec;
+  PingInterval = (static_cast<int>(hour))*SecsPerHour + (static_cast<int>(min))*SecsPerMin + sec;
 }
 //---------------------------------------------------------------------------
 TDateTime __fastcall TSessionData::GetPingIntervalDT()
@@ -4280,13 +4326,13 @@ void __fastcall TSessionData::SetFtpProxyLogonType(int value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetBug(TSshBug Bug, TAutoSwitch value)
 {
-  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FBugs));
+  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < std::size(FBugs));
   SET_SESSION_PROPERTY(Bugs[Bug]);
 }
 //---------------------------------------------------------------------
 TAutoSwitch __fastcall TSessionData::GetBug(TSshBug Bug) const
 {
-  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FBugs));
+  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < std::size(FBugs));
   return FBugs[Bug];
 }
 //---------------------------------------------------------------------
@@ -4342,13 +4388,13 @@ void TSessionData::SetUsePosixRename(bool value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetSFTPBug(TSftpBug Bug, TAutoSwitch value)
 {
-  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FSFTPBugs));
+  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < std::size(FSFTPBugs));
   SET_SESSION_PROPERTY(SFTPBugs[Bug]);
 }
 //---------------------------------------------------------------------
 TAutoSwitch __fastcall TSessionData::GetSFTPBug(TSftpBug Bug) const
 {
-  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FSFTPBugs));
+  DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < std::size(FSFTPBugs));
   return FSFTPBugs[Bug];
 }
 //---------------------------------------------------------------------
@@ -4665,6 +4711,16 @@ void __fastcall TSessionData::SetWebDavAuthLegacy(bool value)
   SET_SESSION_PROPERTY(WebDavAuthLegacy);
 }
 //---------------------------------------------------------------------
+void TSessionData::SetWebDavCrossDomainRedirects(bool value)
+{
+  SET_SESSION_PROPERTY(WebDavCrossDomainRedirects);
+}
+//---------------------------------------------------------------------
+void TSessionData::SetWebDavUnencryptedRedirects(bool value)
+{
+  SET_SESSION_PROPERTY(WebDavUnencryptedRedirects);
+}
+//---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetInfoTip()
 {
   if (UsesSsh)
@@ -4822,7 +4878,7 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
           }
           else
           {
-            SessionData = (TSessionData*)FindByName(SessionName);
+            SessionData = static_cast<TSessionData*>(FindByName(SessionName));
           }
         }
 
@@ -4914,7 +4970,7 @@ void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
     DoSave(Storage, FDefaultSettings, All, RecryptPasswordOnly, FactoryDefaults);
     for (int Index = 0; Index < CountIncludingHidden; Index++)
     {
-      TSessionData * SessionData = (TSessionData *)Items[Index];
+      TSessionData * SessionData = static_cast<TSessionData *>(Items[Index]);
       try
       {
         DoSave(Storage, SessionData, All, RecryptPasswordOnly, FactoryDefaults);
@@ -4982,7 +5038,7 @@ void __fastcall TStoredSessionList::Saved()
   FDefaultSettings->Modified = false;
   for (int Index = 0; Index < CountIncludingHidden; Index++)
   {
-    ((TSessionData *)Items[Index])->Modified = false;
+    static_cast<TSessionData *>(Items[Index])->Modified = false;
   }
 }
 //---------------------------------------------------------------------
@@ -5434,7 +5490,7 @@ int __fastcall TStoredSessionList::IndexOf(TSessionData * Data)
 TSessionData * __fastcall TStoredSessionList::NewSession(
   UnicodeString SessionName, TSessionData * Session)
 {
-  TSessionData * DuplicateSession = (TSessionData*)FindByName(SessionName);
+  TSessionData * DuplicateSession = static_cast<TSessionData*>(FindByName(SessionName));
   if (!DuplicateSession)
   {
     DuplicateSession = new TSessionData(L"");
@@ -5487,7 +5543,8 @@ THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWr
 }
 //---------------------------------------------------------------------------
 int TStoredSessionList::ImportHostKeys(
-  THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected)
+  THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions,
+  bool OnlySelected, bool Putty)
 {
   int Result = 0;
   if (OpenHostKeysSubKey(SourceStorage, false) &&
@@ -5508,7 +5565,28 @@ int TStoredSessionList::ImportHostKeys(
           UnicodeString KeyName = KeyList->Strings[KeyIndex];
           if (EndsText(HostKeyName, KeyName))
           {
-            TargetStorage->WriteStringRaw(KeyName, SourceStorage->ReadStringRaw(KeyName, L""));
+            UnicodeString HostKey = SourceStorage->ReadStringRaw(KeyName, EmptyStr);
+            if (Putty && ContainsStr(HostKey, HostKeyDelimiter))
+            {
+              UnicodeString PuttyHostKey = TargetStorage->ReadStringRaw(KeyName, EmptyStr);
+              UnicodeString Buf = HostKey;
+              while (true)
+              {
+                HostKey = CutToChar(Buf, HostKeyDelimiter, false);
+                if (!PuttyHostKey.IsEmpty() && (HostKey == PuttyHostKey))
+                {
+                  AppLogFmt(L"Found one of our cached %s hostkeys in PuTTY cache, keeping it", (KeyName));
+                  break;
+                }
+                if (Buf.IsEmpty())
+                {
+                  AppLogFmt(L"Have more cached %s hostkeys, using the last one", (KeyName));
+                  break;
+                }
+              }
+              TargetStorage->ReadStringRaw(KeyName, HostKey);
+            }
+            TargetStorage->WriteStringRaw(KeyName, HostKey);
             Result++;
           }
         }
@@ -5523,7 +5601,7 @@ void TStoredSessionList::ImportHostKeys(
 {
   std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWriting());
 
-  ImportHostKeys(SourceStorage, TargetStorage.get(), Sessions, OnlySelected);
+  ImportHostKeys(SourceStorage, TargetStorage.get(), Sessions, OnlySelected, false);
 }
 //---------------------------------------------------------------------------
 void TStoredSessionList::ImportHostKeys(
@@ -5752,31 +5830,20 @@ bool __fastcall TStoredSessionList::HasAnyWorkspace()
   return Result;
 }
 //---------------------------------------------------------------------------
-TSessionData * __fastcall TStoredSessionList::ParseUrl(UnicodeString Url,
-  TOptions * Options, bool & DefaultsOnly, UnicodeString * FileName,
-  bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags)
+TSessionData * TStoredSessionList::ParseUrl(
+  const UnicodeString & Url, TOptions * Options, int & ParsedInfo,
+  UnicodeString * FileName, UnicodeString * MaskedUrl, int Flags)
 {
-  TSessionData * Data = new TSessionData(L"");
-  try
-  {
-    Data->ParseUrl(Url, Options, this, DefaultsOnly, FileName, AProtocolDefined, MaskedUrl, Flags);
-  }
-  catch(...)
-  {
-    delete Data;
-    throw;
-  }
-
-  return Data;
+  std::unique_ptr<TSessionData> Data(new TSessionData(L""));
+  Data->ParseUrl(Url, Options, this, ParsedInfo, FileName, MaskedUrl, Flags);
+  return Data.release();
 }
 //---------------------------------------------------------------------
-bool __fastcall TStoredSessionList::IsUrl(UnicodeString Url)
+int TStoredSessionList::GetUrlInfo(const UnicodeString & Url)
 {
-  bool DefaultsOnly;
-  bool ProtocolDefined = false;
-  std::unique_ptr<TSessionData> ParsedData(ParseUrl(Url, NULL, DefaultsOnly, NULL, &ProtocolDefined));
-  bool Result = ProtocolDefined;
-  return Result;
+  int ParsedInfo;
+  std::unique_ptr<TSessionData> ParsedData(ParseUrl(Url, NULL, ParsedInfo));
+  return ParsedInfo;
 }
 //---------------------------------------------------------------------
 TSessionData * __fastcall TStoredSessionList::ResolveWorkspaceData(TSessionData * Data)

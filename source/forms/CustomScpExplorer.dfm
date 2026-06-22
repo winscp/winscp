@@ -126,6 +126,27 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         OnStartReading = RemoteDirViewStartReading
         OnThumbnailNeeded = RemoteDirViewThumbnailNeeded
       end
+      object ReconnectPanel: TPanel
+        Left = 48
+        Top = 54
+        Width = 321
+        Height = 52
+        BevelOuter = bvNone
+        Color = clWindow
+        ParentBackground = False
+        TabOrder = 2
+        object ReconnectLabel: TLabel
+          Left = 0
+          Top = 0
+          Width = 84
+          Height = 15
+          Align = alClient
+          Alignment = taCenter
+          Caption = 'ReconnectLabel'
+          ShowAccelChar = False
+          WordWrap = True
+        end
+      end
       object ReconnectToolbar: TTBXToolbar
         Left = 136
         Top = 112
@@ -137,7 +158,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-        object TBXItem254: TTBXItem
+        OnResize = ReconnectToolbarResize
+        object ReconnectItem: TTBXItem
           Action = NonVisualDataModule.ReconnectSessionAction
         end
       end
@@ -215,12 +237,25 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       ResizeStyle = rsUpdate
       OnCanResize = QueueFileListSplitterCanResize
     end
-    object QueueView3: TListView
+    object QueueView3: TIEListView
       Left = 0
       Top = 47
       Width = 620
       Height = 70
+      ShowColumnIcon = False
       Align = alClient
+      ColumnClick = False
+      DoubleBuffered = True
+      ReadOnly = True
+      RowSelect = True
+      ParentDoubleBuffered = False
+      PopupMenu = NonVisualDataModule.QueuePopup
+      TabOrder = 0
+      OnChange = QueueView3Change
+      OnDeletion = QueueView3Deletion
+      OnEnter = QueueView3Enter
+      OnExit = QueueView3Exit
+      NortonLike = nlOff
       Columns = <
         item
           Caption = 'Operation'
@@ -261,23 +296,13 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
           MinWidth = 20
           Width = 80
         end>
-      ColumnClick = False
-      DoubleBuffered = True
       DragMode = dmAutomatic
-      ReadOnly = True
-      RowSelect = True
-      ParentDoubleBuffered = False
-      PopupMenu = NonVisualDataModule.QueuePopup
+      MultiSelect = False
       SmallImages = GlyphsModule.QueueImages
       StateImages = GlyphsModule.QueueImages
-      TabOrder = 0
       ViewStyle = vsReport
-      OnChange = QueueView3Change
       OnContextPopup = QueueView3ContextPopup
-      OnDeletion = QueueView3Deletion
       OnEndDrag = QueueView3EndDrag
-      OnEnter = QueueView3Enter
-      OnExit = QueueView3Exit
       OnDragDrop = QueueView3DragDrop
       OnDragOver = QueueView3DragOver
       OnSelectItem = QueueView3SelectItem

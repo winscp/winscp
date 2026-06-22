@@ -1,16 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include "CopyLocal.h"
-#include "VCLCommon.h"
-#include "TextsWin.h"
-#include "GUITools.h"
-#include "Tools.h"
-#include "WinInterface.h"
+#include "ComboEdit.hpp"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -54,7 +48,6 @@ TCopyLocalDialog::TCopyLocalDialog(TComponent * Owner, bool Move, int Options)
 //---------------------------------------------------------------------------
 bool TCopyLocalDialog::Execute(UnicodeString & TargetDirectory, UnicodeString & FileMask, int & OutputOptions)
 {
-  DirectoryEdit->Items = CustomWinConfiguration->History[L"LocalTarget"];
   SetDirectoryAndFileMask(TargetDirectory, FileMask);
   NeverShowAgainCheck->Checked = FLAGSET(OutputOptions, clooDoNotShowAgain);
   DebugAssert((OutputOptions & ~clooDoNotShowAgain) == 0);
@@ -62,9 +55,7 @@ bool TCopyLocalDialog::Execute(UnicodeString & TargetDirectory, UnicodeString & 
   if (Result)
   {
     ValidateDirectoryEdit();
-
     DirectoryEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"LocalTarget"] = DirectoryEdit->Items;
 
     FileMask = GetFileMask();
     TargetDirectory = GetDirectory();
@@ -149,7 +140,7 @@ void __fastcall TCopyLocalDialog::HelpButtonClick(TObject *)
 void __fastcall TCopyLocalDialog::LocalDirectoryBrowseButtonClick(TObject *)
 {
   UnicodeString ADirectory = GetDirectory();
-  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY), false))
+  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY)))
   {
     SetDirectoryAndFileMask(ADirectory, GetFileMask());
     UpdateControls();

@@ -21,6 +21,13 @@
  */
 #undef UNICODE
 
+#if defined(WINSCP) && defined(_WIN64) && defined(_DEBUG)
+#ifdef gai_strerrorA
+#error gai_strerrorA already defined
+#endif
+#define gai_strerrorA gai_strerrorAoriginal
+#endif
+
 #include <assert.h>
 #include <string.h>
 
@@ -31,6 +38,27 @@
 #include <openssl/err.h>
 #include <openssl/buffer.h>
 #include "internal/thread_once.h"
+
+#ifdef gai_strerrorA
+#undef gai_strerrorA
+static char * gai_strerrorA(int ecode)
+{
+    static char buff[GAI_STRERROR_BUFFER_SIZE + 1];
+
+    (void)FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM
+                             |FORMAT_MESSAGE_IGNORE_INSERTS
+                             |FORMAT_MESSAGE_MAX_WIDTH_MASK,
+                              NULL,
+                              ecode,
+                              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                              (LPSTR)buff,
+                              GAI_STRERROR_BUFFER_SIZE,
+                              NULL);
+
+    return buff;
+}
+#endif
+
 
 CRYPTO_RWLOCK *bio_lookup_lock;
 static CRYPTO_ONCE bio_lookup_init = CRYPTO_ONCE_STATIC_INIT;
@@ -783,13 +811,19 @@ int BIO_lookup_ex(const char *host, const char *service, int lookup_type,
         /* Windows doesn't seem to have in_addr_t */
 #if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_MSDOS)
         static uint32_t he_fallback_address;
-        static const char *he_fallback_addresses[] = { (char *)&he_fallback_address, NULL };
+        static const char *he_fallback_addresses[] = {
+            (char *)&he_fallback_address, NULL
+        };
 #else
         static in_addr_t he_fallback_address;
-        static const char *he_fallback_addresses[] = { (char *)&he_fallback_address, NULL };
+        static const char *he_fallback_addresses[] = {
+            (char *)&he_fallback_address, NULL
+        };
 #endif
-        static const struct hostent he_fallback = { NULL, NULL, AF_INET, sizeof(he_fallback_address),
-            (char **)&he_fallback_addresses };
+        static const struct hostent he_fallback = {
+            NULL, NULL, AF_INET, sizeof(he_fallback_address),
+            (char **)&he_fallback_addresses
+        };
 #if defined(OPENSSL_SYS_VMS) && defined(__DECC)
 #pragma pointer_size restore
 #endif

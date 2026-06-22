@@ -215,13 +215,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 312
           Width = 445
-          Height = 72
+          Height = 95
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Notifications'
           TabOrder = 1
           DesignSize = (
             445
-            72)
+            95)
           object BeepOnFinishAfterText: TLabel
             Left = 429
             Top = 22
@@ -262,6 +262,18 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Show balloon &notifications in taskbar status area (system tray)'
             TabOrder = 2
+            OnClick = ControlChange
+          end
+          object FlashTaskbarCheck: TCheckBox
+            Left = 11
+            Top = 68
+            Width = 425
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 
+              'Flash taskbar button when &attention is needed while on backgrou' +
+              'nd'
+            TabOrder = 3
             OnClick = ControlChange
           end
         end
@@ -2010,13 +2022,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 132
           Width = 445
-          Height = 211
+          Height = 234
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Automatic reconnect'
           TabOrder = 1
           DesignSize = (
             445
-            211)
+            234)
           object SessionReopenAutoLabel: TLabel
             Left = 27
             Top = 48
@@ -2035,7 +2047,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenTimeoutLabel: TLabel
             Left = 9
-            Top = 181
+            Top = 204
             Width = 120
             Height = 15
             Caption = '&Keep reconnecting for:'
@@ -2043,7 +2055,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenTimeoutSecLabel: TLabel
             Left = 286
-            Top = 181
+            Top = 204
             Width = 43
             Height = 15
             Caption = 'seconds'
@@ -2051,7 +2063,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoStallLabel: TLabel
             Left = 27
-            Top = 152
+            Top = 175
             Width = 86
             Height = 15
             Caption = 'Re&connect after:'
@@ -2059,7 +2071,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoStallSecLabel: TLabel
             Left = 286
-            Top = 152
+            Top = 175
             Width = 43
             Height = 15
             Caption = 'seconds'
@@ -2067,7 +2079,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoIdleLabel: TLabel
             Left = 27
-            Top = 100
+            Top = 123
             Width = 86
             Height = 15
             Caption = 'Reco&nnect after:'
@@ -2075,7 +2087,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoIdleSecLabel: TLabel
             Left = 286
-            Top = 100
+            Top = 123
             Width = 43
             Height = 15
             Caption = 'seconds'
@@ -2116,30 +2128,30 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenTimeoutEdit: TUpDownEdit
             Left = 183
-            Top = 178
+            Top = 201
             Width = 97
             Height = 23
             Alignment = taRightJustify
             Increment = 30.000000000000000000
             MaxValue = 86400.000000000000000000
             MaxLength = 5
-            TabOrder = 6
+            TabOrder = 7
             OnGetValue = SessionReopenTimeoutEditGetValue
             OnSetValue = SessionReopenTimeoutEditSetValue
           end
           object SessionReopenAutoStallCheck: TCheckBox
             Left = 11
-            Top = 126
+            Top = 149
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Automatically reconnect session, if it &stalls'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = ControlChange
           end
           object SessionReopenAutoStallEdit: TUpDownEdit
             Left = 183
-            Top = 149
+            Top = 172
             Width = 97
             Height = 23
             Alignment = taRightJustify
@@ -2148,11 +2160,11 @@ object PreferencesDialog: TPreferencesDialog
             MinValue = 1.000000000000000000
             Value = 5.000000000000000000
             MaxLength = 3
-            TabOrder = 5
+            TabOrder = 6
           end
           object SessionReopenAutoIdleEdit: TUpDownEdit
             Left = 183
-            Top = 97
+            Top = 120
             Width = 97
             Height = 23
             Alignment = taRightJustify
@@ -2161,7 +2173,17 @@ object PreferencesDialog: TPreferencesDialog
             MinValue = 1.000000000000000000
             Value = 5.000000000000000000
             MaxLength = 3
+            TabOrder = 4
+          end
+          object SessionReopenAutoInactiveCheck: TCheckBox
+            Left = 11
+            Top = 97
+            Width = 425
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Automatically reconnect session, if it breaks &while inactive'
             TabOrder = 3
+            OnClick = ControlChange
           end
         end
       end
@@ -2262,9 +2284,9 @@ object PreferencesDialog: TPreferencesDialog
           object UpdatesProxyHostLabel: TLabel
             Left = 27
             Top = 91
-            Width = 91
+            Width = 88
             Height = 15
-            Caption = 'Proxy &host name:'
+            Caption = 'Proxy &hostname:'
             FocusControl = UpdatesProxyHostEdit
           end
           object UpdatesProxyPortLabel: TLabel
@@ -2530,7 +2552,7 @@ object PreferencesDialog: TPreferencesDialog
           475)
         object PathInCaptionGroup: TGroupBox
           Left = 8
-          Top = 127
+          Top = 150
           Width = 445
           Height = 95
           Anchors = [akLeft, akTop, akRight]
@@ -2569,15 +2591,15 @@ object PreferencesDialog: TPreferencesDialog
         end
         object WindowMiscellaneousGroup: TGroupBox
           Left = 8
-          Top = 228
+          Top = 251
           Width = 445
-          Height = 164
+          Height = 187
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Miscellaneous'
           TabOrder = 2
           DesignSize = (
             445
-            164)
+            187)
           object MinimizeToTrayCheck: TCheckBox
             Left = 11
             Top = 22
@@ -2610,12 +2632,12 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ShowTipsCheck: TCheckBox
             Left = 11
-            Top = 137
+            Top = 160
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Display tips on startup'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object ShowLoginWhenNoSessionCheck: TCheckBox
@@ -2632,11 +2654,21 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionTabCaptionTruncationCheck: TCheckBox
             Left = 11
-            Top = 114
+            Top = 137
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Truncate tab titles when they do not fit to window'
+            TabOrder = 5
+            OnClick = ControlChange
+          end
+          object SessionSilentDisconnectCheck: TCheckBox
+            Left = 11
+            Top = 114
+            Width = 425
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Do not p&opup error message when idle session is disconnected'
             TabOrder = 4
             OnClick = ControlChange
           end
@@ -2645,13 +2677,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 2
           Width = 445
-          Height = 119
+          Height = 142
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Workspaces'
           TabOrder = 0
           DesignSize = (
             445
-            119)
+            142)
           object AutoWorkspaceLabel: TLabel
             Left = 27
             Top = 45
@@ -2688,6 +2720,16 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Save &passwords (not recommended) X'
             TabOrder = 2
+            OnClick = ControlChange
+          end
+          object WorkspaceConnectAllCheck: TCheckBox
+            Left = 11
+            Top = 115
+            Width = 408
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Connect all sessions of opened workspace or site folder'
+            TabOrder = 3
             OnClick = ControlChange
           end
         end
@@ -2733,17 +2775,26 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = UseMasterPasswordCheckClick
           end
         end
-        object PasswordGroupBox: TGroupBox
+        object AuthenticationGroup: TGroupBox
           Left = 8
           Top = 88
           Width = 445
-          Height = 48
+          Height = 78
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Session password'
+          Caption = 'Authentication'
           TabOrder = 1
           DesignSize = (
             445
-            48)
+            78)
+          object Label13: TLabel
+            Left = 9
+            Top = 48
+            Width = 115
+            Height = 15
+            Caption = 'Aut&hentication agent:'
+            FocusControl = AuthAgentCombo
+            OnClick = ControlChange
+          end
           object SessionRememberPasswordCheck: TCheckBox
             Left = 11
             Top = 22
@@ -2753,23 +2804,37 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Remember &password for duration of session'
             TabOrder = 0
           end
+          object AuthAgentCombo: TComboBox
+            Left = 241
+            Top = 45
+            Width = 195
+            Height = 23
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            MaxLength = 1
+            TabOrder = 1
+            OnChange = ControlChange
+            Items.Strings = (
+              'PuTTY Pageant'
+              'OpenSSH ssh-agent')
+          end
         end
         object SshHostCAsGroup: TGroupBox
           Left = 8
-          Top = 142
+          Top = 172
           Width = 445
-          Height = 331
+          Height = 301
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Trusted host certification authorities'
           TabOrder = 2
           DesignSize = (
             445
-            331)
+            301)
           object SshHostCAsView: TListView
             Left = 9
             Top = 45
             Width = 427
-            Height = 245
+            Height = 215
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -2796,7 +2861,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddSshHostCAButton: TButton
             Left = 9
-            Top = 296
+            Top = 266
             Width = 90
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2806,7 +2871,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveSshHostCAButton: TButton
             Left = 201
-            Top = 296
+            Top = 266
             Width = 90
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2816,7 +2881,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditSshHostCAButton: TButton
             Left = 105
-            Top = 296
+            Top = 266
             Width = 90
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2835,7 +2900,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfigureSshHostCAsButton: TButton
             Left = 9
-            Top = 296
+            Top = 266
             Width = 138
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2891,6 +2956,7 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 0
             OnChange = PuttyPathEditChange
             OnExit = PuttyPathEditExit
+            HistoryKey = 'PuttyPath'
           end
           object PuttyPasswordCheck2: TCheckBox
             Left = 11
@@ -3383,13 +3449,22 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 278
           Width = 445
-          Height = 49
+          Height = 75
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Behaviour'
           TabOrder = 2
           DesignSize = (
             445
-            49)
+            75)
+          object EditorLargeFileSizeUnitLabel: TLabel
+            Left = 415
+            Top = 45
+            Width = 14
+            Height = 15
+            Anchors = [akTop, akRight]
+            Caption = 'KB'
+            ShowAccelChar = False
+          end
           object EditorDisableSmoothScrollCheck: TCheckBox
             Left = 11
             Top = 22
@@ -3399,6 +3474,29 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Disable s&mooth scrolling'
             TabOrder = 0
             OnClick = ControlChange
+          end
+          object EditorWarnLargeFileCheck: TCheckBox
+            Left = 11
+            Top = 45
+            Width = 303
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Warn when &editing files larger than:'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object EditorLargeFileSizeEdit: TUpDownEdit
+            Left = 320
+            Top = 42
+            Width = 89
+            Height = 23
+            Alignment = taRightJustify
+            Increment = 1024.000000000000000000
+            MaxValue = 1048576.000000000000000000
+            MinValue = 1.000000000000000000
+            Anchors = [akTop, akRight]
+            TabOrder = 2
+            OnChange = ControlChange
           end
         end
       end

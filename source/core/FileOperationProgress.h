@@ -168,6 +168,7 @@ public:
     TFileOperationProgressEvent AOnProgress, TFileOperationFinished AOnFinished,
     TFileOperationProgressType * Parent = NULL);
   __fastcall ~TFileOperationProgressType();
+  TFileOperationProgressType & operator =(const TFileOperationProgressType &) = default;
   void __fastcall Assign(const TFileOperationProgressType & Other);
   void __fastcall AssignButKeepSuspendState(const TFileOperationProgressType & Other);
   void __fastcall AddLocallyUsed(__int64 ASize);

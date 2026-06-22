@@ -13,11 +13,23 @@
 
 #ifdef WINSCP
 #define HAVE_AES_NI 1
+#define HAVE_SHA_NI 0 // to be enabled
+#define HAVE_CLMUL 0 // to be enabled
+#define HAVE_NEON_CRYPTO 0
+#define HAVE_NEON_SHA512 0
+#define HAVE_NEON_PMULL 0
+#define HAVE_ARM_DIT 0
 #define HAVE_WMEMCHR 1
 #define HAVE_CMAKE_H 0
 #define HAVE_NO_STDINT_H 0
-#define HAVE_ARM_DIT 0
 #define HAVE_STRTOUMAX 1
+#define HAVE_ADDDLLDIRECTORY 1
+#define HAVE_GETNAMEDPIPECLIENTPROCESSID 1
+#define HAVE_AFUNIX_H 0 // maybe have, but we are not using them in WINSCP anyway
+#define HAVE_COUNTOF 0 // have, but it's implementation does not support non-compile-time constant arrays
+#define SSH 1
+#define OTHERBACKENDS 0
+#define SERIAL 0
 #endif
 
 #ifndef WINSCP
@@ -52,6 +64,7 @@
 #define SCNu64 "I64u"
 #define SIZEx "Ix"
 #define SIZEu "Iu"
+uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 /* Also, define a LEGACY_WINDOWS flag to enable other workarounds */
 #define LEGACY_WINDOWS
 #else
@@ -61,11 +74,6 @@
  * inttypes.h-style macro for those */
 #define SIZEx "zx"
 #define SIZEu "zu"
-#endif
-
-#if !HAVE_WMEMCHR
-/* Work around lack of wmemchr in older MSVC */
-wchar_t *wmemchr(const wchar_t *s, wchar_t c, size_t n);
 #endif
 
 #if defined __GNUC__ || defined __clang__
@@ -225,6 +233,8 @@ typedef struct SessionSpecial SessionSpecial;
 typedef struct StripCtrlChars StripCtrlChars;
 
 typedef struct BidiContext BidiContext;
+
+typedef struct SubprocessWaiter SubprocessWaiter;
 
 /*
  * A small structure wrapping up a (pointer, length) pair so that it

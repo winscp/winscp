@@ -1,17 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include "WinInterface.h"
-#include <VCLCommon.h>
-#include <Windows.hpp>
-#include <Consts.hpp>
-#include <HistoryComboBox.hpp>
-#include <PasTools.hpp>
-#include <PasswordEdit.hpp>
 #include <Custom.h>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 class TInputDialog : public TCustomDialog
 {
@@ -29,7 +20,7 @@ private:
   bool FPathInput;
   TInputDialogInitialize FOnInitialize;
   TStrings * FHistory;
-  TCustomEdit * Edit;
+  TEdit * Edit;
   THistoryComboBox * HistoryCombo;
 };
 //---------------------------------------------------------------------------
@@ -49,14 +40,8 @@ __fastcall TInputDialog::TInputDialog(
   int MaxLength = FPathInput ? 0 : 255;
   if (History == NULL)
   {
-    if (Echo)
-    {
-      Edit = new TEdit(this);
-    }
-    else
-    {
-      Edit = new TPasswordEdit(this);
-    }
+    Edit = new TEdit(this);
+    SetEditPasswordMode(Edit, !Echo);
     HistoryCombo = NULL;
     AddEditLikeControl(Edit, Label);
     reinterpret_cast<TEdit *>(Edit)->MaxLength = MaxLength;
@@ -67,7 +52,6 @@ __fastcall TInputDialog::TInputDialog(
     HistoryCombo = new THistoryComboBox(this);
     AddEditLikeControl(HistoryCombo, Label);
     HistoryCombo->MaxLength = MaxLength;
-    HistoryCombo->AutoComplete = false;
     Edit = NULL;
   }
 }

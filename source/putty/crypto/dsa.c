@@ -60,13 +60,11 @@ static void append_hex_to_strbuf(strbuf *sb, mp_int *x)
     if (sb->len > 0)
         put_byte(sb, ',');
     put_data(sb, "0x", 2);
-    { // WINSCP
     char *hex = mp_get_hex(x);
     size_t hexlen = strlen(hex);
     put_data(sb, hex, hexlen);
     smemclr(hex, hexlen);
     sfree(hex);
-    } // WINSCP
 }
 
 static char *dsa_cache_str(ssh_key *key)
@@ -143,7 +141,6 @@ static bool dsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     }
 
     /* Now we're sitting on a 40-byte string for sure. */
-    { // WINSCP
     mp_int *r = mp_from_bytes_be(make_ptrlen(sig.ptr, 20));
     mp_int *s = mp_from_bytes_be(make_ptrlen((const char *)sig.ptr + 20, 20));
     if (!r || !s) {
@@ -155,7 +152,6 @@ static bool dsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     }
 
     /* Basic sanity checks: 0 < r,s < q */
-    { // WINSCP
     unsigned invalid = 0;
     invalid |= mp_eq_integer(r, 0);
     invalid |= mp_eq_integer(s, 0);
@@ -170,7 +166,6 @@ static bool dsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     /*
      * Step 1. w <- s^-1 mod q.
      */
-    { // WINSCP
     mp_int *w = mp_invert(s, dsa->q);
     if (!w) {
         mp_free(r);
@@ -182,7 +177,6 @@ static bool dsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
      * Step 2. u1 <- SHA(message) * w mod q.
      */
     hash_simple(&ssh_sha1, data, hash);
-    { // WINSCP
     mp_int *sha = mp_from_bytes_be(make_ptrlen(hash, 20));
     mp_int *u1 = mp_modmul(sha, w, dsa->q);
 
@@ -215,10 +209,6 @@ static bool dsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     mp_free(v);
     mp_free(r);
     mp_free(s);
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 
     return toret;
 }
@@ -358,7 +348,6 @@ static void dsa_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
 
     hash_simple(&ssh_sha1, data, digest);
 
-    { // WINSCP
     /* Generate any valid exponent k, using the RFC 6979 deterministic
      * procedure. */
     mp_int *k = rfc6979(&ssh_sha1, dsa->q, dsa->x, data);
@@ -371,11 +360,9 @@ static void dsa_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
     mp_int *r = mp_mod(gkp, dsa->q);        /* r = (g^k mod p) mod q */
     mp_free(gkp);
 
-    { // WINSCP
     mp_int *hash = mp_from_bytes_be(make_ptrlen(digest, 20));
     mp_int *xr = mp_mul(dsa->x, r);
     mp_int *hxr = mp_add(xr, hash);         /* hash + x*r */
-    { // WINSCP
     mp_int *s = mp_modmul(kinv, hxr, dsa->q); /* s = k^-1 * (hash+x*r) mod q */
     mp_free(hxr);
     mp_free(xr);
@@ -391,37 +378,30 @@ static void dsa_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
         put_byte(bs, mp_get_byte(s, 19 - i));
     mp_free(r);
     mp_free(s);
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 static char *dsa_alg_desc(const ssh_keyalg *self) { return dupstr("DSA"); }
 
 const ssh_keyalg ssh_dsa = {
-    // WINSCP
-    /*.new_pub =*/ dsa_new_pub,
-    /*.new_priv =*/ dsa_new_priv,
-    /*.new_priv_openssh =*/ dsa_new_priv_openssh,
-    /*.freekey =*/ dsa_freekey,
-    /*.invalid =*/ dsa_invalid,
-    /*.sign =*/ dsa_sign,
-    /*.verify =*/ dsa_verify,
-    /*.public_blob =*/ dsa_public_blob,
-    /*.private_blob =*/ dsa_private_blob,
-    /*.openssh_blob =*/ dsa_openssh_blob,
-    /*.has_private =*/ dsa_has_private,
-    /*.cache_str =*/ dsa_cache_str,
-    /*.components =*/ dsa_components,
-    /*.base_key =*/ nullkey_base_key,
-    NULL, NULL, NULL, NULL, // WINSCP
-    /*.pubkey_bits =*/ dsa_pubkey_bits,
-    /*.supported_flags =*/ nullkey_supported_flags,
-    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
-    /*.alg_desc =*/ dsa_alg_desc,
-    /*.variable_size =*/ nullkey_variable_size_yes,
-    NULL, // WINSCP
-    /*.ssh_id =*/ "ssh-dss",
-    /*.cache_id =*/ "dss",
-    NULL, false, NULL, // WINSCP
+    .new_pub = dsa_new_pub,
+    .new_priv = dsa_new_priv,
+    .new_priv_openssh = dsa_new_priv_openssh,
+    .freekey = dsa_freekey,
+    .invalid = dsa_invalid,
+    .sign = dsa_sign,
+    .verify = dsa_verify,
+    .public_blob = dsa_public_blob,
+    .private_blob = dsa_private_blob,
+    .openssh_blob = dsa_openssh_blob,
+    .has_private = dsa_has_private,
+    .cache_str = dsa_cache_str,
+    .components = dsa_components,
+    .base_key = nullkey_base_key,
+    .pubkey_bits = dsa_pubkey_bits,
+    .supported_flags = nullkey_supported_flags,
+    .alternate_ssh_id = nullkey_alternate_ssh_id,
+    .alg_desc = dsa_alg_desc,
+    .variable_size = nullkey_variable_size_yes,
+    .ssh_id = "ssh-dss",
+    .cache_id = "dss",
 };

@@ -1,29 +1,15 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <SysUtils.hpp>
-//---------------------------------------------------------------------
-#include <VCLCommon.h>
-#include <Common.h>
-#include <Tools.h>
-#include <GUITools.h>
-#include <CoreMain.h>
 #include <PuttyTools.h>
-#include "WinInterface.h"
 #include "About.h"
-#include "TextsCore.h"
-#include "TextsWin.h"
-#ifndef NO_COMPONENTS
 // must be included before WebBrowserEx.hpp to avoid ambiguity of tagLOGFONTW
 #include <TB2Version.hpp>
 #include <TBX.hpp>
-#endif
 #include <JclBase.hpp>
 #include <JclDebug.hpp>
 #include <WebBrowserEx.hpp>
-#include <StrUtils.hpp>
-#include <Dialogs.hpp>
 #include <FtpFileSystem.h>
 #include <S3FileSystem.h>
 //---------------------------------------------------------------------
@@ -53,7 +39,7 @@ void __fastcall DoAboutDialog(TConfiguration * Configuration,
   {
     DoAboutDialog(Configuration, AllowLicense, Registration, true);
   }
-  catch (EOleException & E)
+  catch (EOleException &)
   {
     // This happens particularly on Wine that does not support some
     // functionality of embedded IE we need.
@@ -146,7 +132,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   }
 
   int IconSize = ScaleByPixelsPerInch(48, this);
-  FIconHandle = (HICON)LoadImage(MainInstance, L"MAINICON", IMAGE_ICON, IconSize, IconSize, 0);
+  FIconHandle = static_cast<HICON>(LoadImage(MainInstance, L"MAINICON", IMAGE_ICON, IconSize, IconSize, 0));
   IconPaintBox->Width = IconSize;
   IconPaintBox->Height = IconSize;
 }
@@ -205,7 +191,7 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     wchar_t LocaleNameStr[255];
     GetLocaleInfo(
       GUIConfiguration->AppliedLocale, LOCALE_SLOCALIZEDLANGUAGENAME,
-      LocaleNameStr, LENOF(LocaleNameStr));
+      LocaleNameStr, std::size(LocaleNameStr));
     UnicodeString LocaleName(LocaleNameStr);
 
     // The {language} should be present only if we are using an untranslated
@@ -264,8 +250,6 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
 
   AddBrowserLinkHandler(FThirdPartyWebBrowser, EXPAT_LICENSE_URL, ExpatLicenceHandler);
 
-#ifndef NO_COMPONENTS
-
   AddPara(ThirdParty,
     FMTLOAD(ABOUT_TOOLBAR2000, (Toolbar2000Version)) + Br +
     LoadStr(ABOUT_TOOLBAR2000_COPYRIGHT) + Br +
@@ -279,8 +263,6 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
   AddPara(ThirdParty,
     LoadStr(ABOUT_FILEMANAGER) + Br +
     LoadStr(ABOUT_FILEMANAGER_COPYRIGHT));
-
-#endif
 
   UnicodeString JclVersion =
     FormatVersion(JclVersionMajor, JclVersionMinor, JclVersionRelease) + L" " + JclCommit;
@@ -336,6 +318,10 @@ void __fastcall TAboutDialog::OKButtonMouseDown(TObject * /*Sender*/,
     {
       AccessViolationTest();
     }
+    else if (Shift.Contains(ssShift))
+    {
+      InternalExceptionTest();
+    }
     else if (Shift.Contains(ssCtrl))
     {
       LookupAddress();
@@ -353,11 +339,69 @@ void __fastcall TAboutDialog::LookupAddress()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::AccessViolationTest()
+#ifdef _WIN64
+static thread_local EXCEPTION_RECORD ExceptionRecord;
+static thread_local bool ExceptionCaptured = false;
+//---------------------------------------------------------------------------
+LONG WINAPI CaptureException(EXCEPTION_POINTERS * ExceptionInfo)
 {
+  if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
+  {
+    ExceptionRecord = *(ExceptionInfo->ExceptionRecord);
+    ExceptionCaptured = true;
+  }
+  return EXCEPTION_CONTINUE_SEARCH; // Let the local __except block catch it
+}
+#endif
+//---------------------------------------------------------------------------
+[[noreturn]] static void RaiseInternalError(Exception * E)
+{
+  throw ExtException(E, MainInstructions(L"Internal error test."));
+}
+//---------------------------------------------------------------------------
+#ifdef _WIN64
+[[noreturn]]
+#endif
+void TAboutDialog::AccessViolationTest()
+{
+  #ifdef _WIN64
+  PVOID ExceptionHandler = AddVectoredExceptionHandler(1, CaptureException);
+  ExceptionCaptured = false;
+  __try
+  {
+    ACCESS_VIOLATION_TEST;
+  }
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wunreachable-code"
+  __except (EXCEPTION_EXECUTE_HANDLER)
+  #pragma clang diagnostic pop
+  {
+    RemoveVectoredExceptionHandler(ExceptionHandler);
+    if (ExceptionCaptured)
+    {
+      auto VclExceptionRecord = reinterpret_cast<System::PExceptionRecord>(&ExceptionRecord);
+      Exception * E = static_cast<Exception *>(reinterpret_cast<TExceptObjProc>(ExceptObjProc)(VclExceptionRecord));
+      RaiseInternalError(E);
+    }
+    throw Exception(L"Unknown hardware exception occurred.");
+  }
+  #else
   try
   {
     ACCESS_VIOLATION_TEST;
+  }
+  catch (Exception & E)
+  {
+    RaiseInternalError(&E);
+  }
+  #endif
+}
+//---------------------------------------------------------------------------
+void TAboutDialog::InternalExceptionTest()
+{
+  try
+  {
+    (new TList())->Error(L"List error", 0);
   }
   catch (Exception & E)
   {

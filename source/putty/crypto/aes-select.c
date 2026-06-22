@@ -13,9 +13,7 @@ static ssh_cipher *aes_select(const ssh_cipheralg *alg)
 {
     const ssh_cipheralg *const *real_algs = (const ssh_cipheralg **)alg->extra;
 
-    { // WINSCP
-    size_t i;
-    for (i = 0; real_algs[i]; i++) {
+    for (size_t i = 0; real_algs[i]; i++) {
         const ssh_cipheralg *alg = real_algs[i];
         const struct aes_extra *alg_extra =
             (const struct aes_extra *)alg->extra;
@@ -27,7 +25,6 @@ static ssh_cipher *aes_select(const ssh_cipheralg *alg)
      * the last non-NULL entry should be software-only AES, which is
      * always available. */
     unreachable("aes_select ran off the end of its list");
-    } // WINSCP
 }
 
 #if HAVE_AES_NI
@@ -42,7 +39,7 @@ static ssh_cipher *aes_select(const ssh_cipheralg *alg)
 #define IF_NEON(...)
 #endif
 
-#define AES_SELECTOR_VTABLE_IMPL(mode_c, id, mode_display, bits, required_mac, flags) /*WINSCP*/       \
+#define AES_SELECTOR_VTABLE(mode_c, id, mode_display, bits, ...)        \
     static const ssh_cipheralg *                                        \
     ssh_aes ## bits ## _ ## mode_c ## _impls[] = {                      \
         IF_NI(&ssh_aes ## bits ## _ ## mode_c ## _ni,)                  \
@@ -51,56 +48,48 @@ static ssh_cipher *aes_select(const ssh_cipheralg *alg)
         NULL,                                                           \
     };                                                                  \
     const ssh_cipheralg ssh_aes ## bits ## _ ## mode_c = {              \
-        /* WINSCP */ \
-        /*.new =*/ aes_select,                                              \
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, \
-        /*.ssh2_id =*/ id,                                                  \
-        /*.blksize =*/ 16,                                                  \
-        /*.real_keybits =*/ bits,                                           \
-        /*.padded_keybytes =*/ bits/8,                                      \
-        flags, \
-        /*.text_name =*/ "AES-" #bits " " mode_display                      \
+        .new = aes_select,                                              \
+        .ssh2_id = id,                                                  \
+        .blksize = 16,                                                  \
+        .real_keybits = bits,                                           \
+        .padded_keybytes = bits/8,                                      \
+        .text_name = "AES-" #bits " " mode_display                      \
         " (dummy selector vtable)",                                     \
-        required_mac, /*WINSCP*/                                                        \
-        /*.extra =*/ ssh_aes ## bits ## _ ## mode_c ## _impls,              \
+        .extra = ssh_aes ## bits ## _ ## mode_c ## _impls,              \
+        __VA_ARGS__                                                     \
     }
 
-// WINSCP
-#define AES_SELECTOR_VTABLE(mode_c, id, mode_display, bits, dummy) AES_SELECTOR_VTABLE_IMPL(mode_c, id, mode_display, bits, NULL, 0)
-
-AES_SELECTOR_VTABLE_IMPL(cbc, "aes128-cbc", "CBC", 128, NULL, /*.flags =*/ SSH_CIPHER_IS_CBC);
-AES_SELECTOR_VTABLE_IMPL(cbc, "aes192-cbc", "CBC", 192, NULL, /*.flags =*/ SSH_CIPHER_IS_CBC);
-AES_SELECTOR_VTABLE_IMPL(cbc, "aes256-cbc", "CBC", 256, NULL, /*.flags =*/ SSH_CIPHER_IS_CBC);
+AES_SELECTOR_VTABLE(cbc, "aes128-cbc", "CBC", 128, .flags = SSH_CIPHER_IS_CBC);
+AES_SELECTOR_VTABLE(cbc, "aes192-cbc", "CBC", 192, .flags = SSH_CIPHER_IS_CBC);
+AES_SELECTOR_VTABLE(cbc, "aes256-cbc", "CBC", 256, .flags = SSH_CIPHER_IS_CBC);
 AES_SELECTOR_VTABLE(sdctr, "aes128-ctr", "SDCTR", 128, );
 AES_SELECTOR_VTABLE(sdctr, "aes192-ctr", "SDCTR", 192, );
 AES_SELECTOR_VTABLE(sdctr, "aes256-ctr", "SDCTR", 256, );
-AES_SELECTOR_VTABLE_IMPL(gcm, "aes128-gcm@openssh.com", "GCM", 128,
-                    /*.required_mac =*/ &ssh2_aesgcm_mac,
-                    /*.flags =*/ SSH_CIPHER_SEPARATE_LENGTH);
-AES_SELECTOR_VTABLE_IMPL(gcm, "aes256-gcm@openssh.com", "GCM", 256,
-                    /*.required_mac =*/ &ssh2_aesgcm_mac,
-                    /*.flags =*/ SSH_CIPHER_SEPARATE_LENGTH);
+AES_SELECTOR_VTABLE(gcm, "aes128-gcm@openssh.com", "GCM", 128,
+                    .required_mac = &ssh2_aesgcm_mac,
+                    .flags = SSH_CIPHER_SEPARATE_LENGTH);
+AES_SELECTOR_VTABLE(gcm, "aes256-gcm@openssh.com", "GCM", 256,
+                    .required_mac = &ssh2_aesgcm_mac,
+                    .flags = SSH_CIPHER_SEPARATE_LENGTH);
 
 /* 192-bit AES-GCM is included only so that testcrypt can run standard
  * test vectors against it. OpenSSH doesn't define a protocol id for
  * it. Hence setting its ssh2_id to NULL here, and more importantly,
  * leaving it out of aesgcm_list[] below. */
-AES_SELECTOR_VTABLE_IMPL(gcm, NULL, "GCM", 192,
-                    /*.required_mac =*/ &ssh2_aesgcm_mac,
-                    /*.flags =*/ SSH_CIPHER_SEPARATE_LENGTH);
+AES_SELECTOR_VTABLE(gcm, NULL, "GCM", 192,
+                    .required_mac = &ssh2_aesgcm_mac,
+                    .flags = SSH_CIPHER_SEPARATE_LENGTH);
 
 static const ssh_cipheralg ssh_rijndael_lysator = {
     /* Same as aes256_cbc, but with a different protocol ID */
-    /*.new =*/ aes_select,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    /*.ssh2_id =*/ "rijndael-cbc@lysator.liu.se",
-    /*.blksize =*/ 16,
-    /*.real_keybits =*/ 256,
-    /*.padded_keybytes =*/ 256/8,
-    /*.flags =*/ SSH_CIPHER_IS_CBC,
-    /*.text_name =*/ "AES-256 CBC (dummy selector vtable)",
-    NULL,
-    /*.extra =*/ ssh_aes256_cbc_impls,
+    .new = aes_select,
+    .ssh2_id = "rijndael-cbc@lysator.liu.se",
+    .blksize = 16,
+    .real_keybits = 256,
+    .padded_keybytes = 256/8,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "AES-256 CBC (dummy selector vtable)",
+    .extra = ssh_aes256_cbc_impls,
 };
 
 static const ssh_cipheralg *const aes_list[] = {

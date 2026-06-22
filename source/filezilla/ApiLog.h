@@ -15,15 +15,15 @@ public:
 
   bool LoggingMessageType(int nMessageType) const;
 
-  void LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const;
-  void LogMessageRaw(int nMessageType, LPCTSTR pMsg) const;
+  void LogMessage(int nMessageType, const wchar_t * pMsgFormat, ...) const;
+  void LogMessageRaw(int nMessageType, const wchar_t * pMsg) const;
   void LogError(int Error);
 
   CString GetOption(int OptionID) const;
   int GetOptionVal(int OptionID) const;
 
 protected:
-  void SendLogMessage(int nMessageType, LPCTSTR pMsg) const;
+  void SendLogMessage(int nMessageType, const wchar_t * pMsg) const;
 
   TFileZillaIntern * FIntern;
 };

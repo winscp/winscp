@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #define NE_LFS
@@ -8,25 +8,14 @@
 #include "S3FileSystem.h"
 
 #include "SessionData.h"
-#include "Interface.h"
-#include "Common.h"
-#include "Exceptions.h"
 #include "Terminal.h"
-#include "TextsCore.h"
-#include "HelpCore.h"
 #include "NeonIntf.h"
 #include <ne_request.h>
-#include <StrUtils.hpp>
-#include <limits>
-#include "CoreMain.h"
 #include "Http.h"
 #include "Cryptography.h"
 #include <System.JSON.hpp>
-#include <System.DateUtils.hpp>
 #include "request.h"
 #include <XMLDoc.hpp>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 // Should be used with character pointer only
 #define StrFromS3(S) StrFromNeon(S)
@@ -640,7 +629,7 @@ struct TLibS3CallbackData
 {
   TLibS3CallbackData()
   {
-    Status = (S3Status)-1;
+    Status = static_cast<S3Status>(-1);
   }
 
   TS3FileSystem * FileSystem;
@@ -722,7 +711,7 @@ void TS3FileSystem::LibS3ResponseDataCallback(const char * Data, size_t Size, vo
   TS3FileSystem * FileSystem = static_cast<TS3FileSystem *>(CallbackData);
   if (FileSystem->FTerminal->Log->Logging && !FileSystem->FResponseIgnore)
   {
-    UnicodeString Content = UnicodeString(UTF8String(Data, Size)).Trim();
+    UnicodeString Content = UnicodeString(UTF8String(Data, SizeToIntChecked(Size))).Trim();
     FileSystem->FResponse += Content;
   }
 }
@@ -1424,8 +1413,8 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
       if (Filled == 6)
       {
         TDateTime Modification =
-          EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
-          EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
+          EncodeDateVerbose(static_cast<unsigned short>(Year), static_cast<unsigned short>(Month), static_cast<unsigned short>(Day)) +
+          EncodeTimeVerbose(static_cast<unsigned short>(Hour), static_cast<unsigned short>(Min), static_cast<unsigned short>(Sec), 0);
         File->Modification = ConvertTimestampFromUTC(Modification);
         File->ModificationFmt = mfFull;
       }
@@ -1858,11 +1847,6 @@ static _di_IXMLNode S3NeedNode(const _di_IXMLNodeList & NodeList, const UnicodeS
   return NeedNode(NodeList, Name, S3Namespace);
 }
 //---------------------------------------------------------------------------
-#define COPY_BUCKET_CONTEXT(BucketContext) \
-  { BucketContext.hostName, BucketContext.bucketName, BucketContext.protocol, BucketContext.uriStyle, \
-    BucketContext.accessKeyId, BucketContext.secretAccessKey, BucketContext.securityToken, BucketContext.authRegion, \
-    BucketContext.service }
-//---------------------------------------------------------------------------
 bool TS3FileSystem::DoLoadFileProperties(
   const UnicodeString & AFileName, const TRemoteFile * File, TS3FileProperties & Properties, bool LoadTags)
 {
@@ -1893,7 +1877,7 @@ bool TS3FileSystem::DoLoadFileProperties(
       RequestParams TaggingRequestParams =
       {
         HttpRequestTypeGET,
-        COPY_BUCKET_CONTEXT(BucketContext),
+        BucketContext,
         KeyBuf.c_str(),
         NULL,
         "tagging",
@@ -2030,7 +2014,7 @@ void __fastcall TS3FileSystem::ChangeFileProperties(const UnicodeString FileName
 
         S3_set_acl(
           &BucketContext, StrToS3(Key), FileProperties.OwnerId, FileProperties.OwnerDisplayName,
-          NewAclGrants.size(), &NewAclGrants[0],
+          SizeToIntChecked(NewAclGrants.size()), &NewAclGrants[0],
           FRequestContext, FTimeout, &ResponseHandler, &Data);
 
         CheckLibS3Error(Data);
@@ -2071,7 +2055,7 @@ void __fastcall TS3FileSystem::ChangeFileProperties(const UnicodeString FileName
       RequestParams TaggingRequestParams =
       {
         HttpRequestTypePUT,
-        COPY_BUCKET_CONTEXT(BucketContext),
+        BucketContext,
         KeyBuf.c_str(),
         NULL,
         "tagging",
@@ -2305,7 +2289,7 @@ void TS3FileSystem::ConfirmOverwrite(
 
   TQueryParams QueryParams(qpNeverAskAgainCheck);
   QueryParams.Aliases = &Aliases[0];
-  QueryParams.AliasesCount = Aliases.size();
+  QueryParams.AliasesCount = SizeToIntChecked(Aliases.size());
 
   unsigned int Answer;
 

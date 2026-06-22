@@ -106,9 +106,9 @@ object LoginDialog: TLoginDialog
         object Label1: TLabel
           Left = 8
           Top = 69
-          Width = 61
+          Width = 58
           Height = 15
-          Caption = '&Host name:'
+          Caption = '&Hostname:'
           FocusControl = HostNameEdit
         end
         object Label2: TLabel
@@ -123,9 +123,9 @@ object LoginDialog: TLoginDialog
         object UserNameLabel: TLabel
           Left = 8
           Top = 116
-          Width = 59
+          Width = 56
           Height = 15
-          Caption = '&User name:'
+          Caption = '&Username:'
           FocusControl = UserNameEdit
         end
         object PasswordLabel: TLabel
@@ -230,13 +230,14 @@ object LoginDialog: TLoginDialog
           Text = 'UserNameEdit'
           OnChange = DataChange
         end
-        object PasswordEdit: TPasswordEdit
+        object PasswordEdit: TEdit
           Left = 198
           Top = 134
           Width = 184
           Height = 23
           Anchors = [akLeft, akTop, akRight]
           MaxLength = 100
+          PasswordChar = '*'
           TabOrder = 8
           Text = 'PasswordEdit'
           OnChange = DataChange
@@ -258,7 +259,8 @@ object LoginDialog: TLoginDialog
           Top = 40
           Width = 164
           Height = 23
-          Style = csDropDownList
+          Style = csOwnerDrawFixed
+          ItemHeight = 17
           TabOrder = 0
           OnChange = TransferProtocolComboChange
           Items.Strings = (
@@ -273,7 +275,8 @@ object LoginDialog: TLoginDialog
           Top = 40
           Width = 204
           Height = 23
-          Style = csDropDownList
+          Style = csOwnerDrawFixed
+          ItemHeight = 17
           TabOrder = 2
           OnChange = EncryptionComboChange
           Items.Strings = (
@@ -286,7 +289,8 @@ object LoginDialog: TLoginDialog
           Top = 40
           Width = 204
           Height = 23
-          Style = csDropDownList
+          Style = csOwnerDrawFixed
+          ItemHeight = 17
           TabOrder = 3
           OnChange = EncryptionComboChange
           Items.Strings = (
@@ -411,7 +415,6 @@ object LoginDialog: TLoginDialog
         Action = LoginAction
         Anchors = [akRight, akBottom]
         Default = True
-        Images = ActionImageList
         ModalResult = 1
         Style = bsSplitButton
         TabOrder = 0
@@ -651,7 +654,7 @@ object LoginDialog: TLoginDialog
     end
     object RunPageantAction: TAction
       Category = 'Other'
-      Caption = 'Run &Pageant'
+      Caption = 'Run Pagea&nt'
       OnExecute = RunPageantActionExecute
     end
     object RunPuttygenAction: TAction
@@ -661,7 +664,7 @@ object LoginDialog: TLoginDialog
     end
     object ImportAction: TAction
       Category = 'Other'
-      Caption = 'Import/Restore &Configuration...'
+      Caption = 'Import/&Restore Configuration...'
       OnExecute = ImportActionExecute
     end
     object ExportAction: TAction

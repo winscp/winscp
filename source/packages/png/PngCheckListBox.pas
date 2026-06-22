@@ -32,7 +32,7 @@ type
 implementation
 
 uses
-  Graphics, StdCtrls, Math;
+  Graphics, StdCtrls, Math, UITypes;
 
 { TPngCheckListBox }
 

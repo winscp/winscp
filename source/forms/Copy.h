@@ -8,11 +8,8 @@
 #include <Forms.hpp>
 #include <Mask.hpp>
 #include <ExtCtrls.hpp>
-#include <HistoryComboBox.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
+#include <HistoryComboBox.h>
 
-#include "Rights.h"
-#include "CopyParams.h"
 #include <Menus.hpp>
 //---------------------------------------------------------------------------
 class TCopyDialog : public TForm
@@ -35,7 +32,7 @@ __published:
   TLabel *ShortCutHintLabel;
   TPopupMenu *OkMenu;
   TMenuItem *DownloadItem;
-  TMenuItem *BrowseItem;
+  TMenuItem *ExploreItem;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
@@ -50,11 +47,10 @@ __published:
   void __fastcall ShortCutHintLabelClick(TObject *Sender);
   void __fastcall LocalDirectoryEditExit(TObject *Sender);
   void __fastcall DownloadItemClick(TObject *Sender);
-  void __fastcall BrowseItemClick(TObject *Sender);
+  void __fastcall ExploreItemClick(TObject *Sender);
   void __fastcall OkButtonDropDownClick(TObject *Sender);
   void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 private:
-  bool FDefaultToRemote;
   bool FToRemote;
   TStrings * FFileList;
   bool FMove;
@@ -67,7 +63,7 @@ private:
   int FCopyParamAttrs;
   TSessionData * FSessionData;
   bool FSaveSettings;
-  bool FBrowse;
+  bool FExplore;
   UnicodeString __fastcall GetDirectory();
   THistoryComboBox * __fastcall GetDirectoryEdit();
   void __fastcall SetParams(const TGUICopyParamType & value);
@@ -85,8 +81,9 @@ protected:
   bool __fastcall RemotePaths();
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
   int __fastcall ActualCopyParamAttrs();
+  virtual void __fastcall CreateWnd();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TCopyDialog(

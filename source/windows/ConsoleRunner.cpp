@@ -1,37 +1,21 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <Exceptions.h>
 #include <Script.h>
-#include <CoreMain.h>
 #include <Terminal.h>
 #include <PuttyTools.h>
 #include <Queue.h>
 #include <HierarchicalStorage.h>
-#include <Tools.h>
-
-#include <Consts.hpp>
-#include <StrUtils.hpp>
-
 #include "Console.h"
-#include "WinInterface.h"
 #include "ProgParams.h"
-#include "TextsWin.h"
-#include "TextsCore.h"
-#include "WinConfiguration.h"
 #include "SynchronizeController.h"
-#include "GUITools.h"
-#include "VCLCommon.h"
 #include "Setup.h"
 #include "FtpFileSystem.h"
 #include "SessionInfo.h"
 //---------------------------------------------------------------------------
 #define WM_INTERUPT_IDLE (WM_WINSCP_USER + 3)
 #define BATCH_INPUT_TIMEOUT 10000
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 void TrimNewLine(UnicodeString & Str)
 {
@@ -383,7 +367,7 @@ bool __fastcall TOwnConsole::Input(UnicodeString & Str, bool Echo, unsigned int 
 //---------------------------------------------------------------------------
 int __fastcall TOwnConsole::Choice(
   UnicodeString Options, int Cancel, int Break, int /*Continue*/, int Timeouted, bool /*Timeouting*/, unsigned int Timer,
-  UnicodeString Message)
+  UnicodeString DebugUsedArg(Message))
 {
   unsigned int ATimer = Timer;
   int Result = 0;
@@ -548,7 +532,6 @@ public:
   virtual UnicodeString __fastcall FinalLogMessage();
 
 private:
-  bool FPendingAbort;
   HANDLE FRequestEvent;
   HANDLE FResponseEvent;
   HANDLE FCancelEvent;
@@ -699,7 +682,7 @@ void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning, b
     TConsoleCommStruct * CommStruct = GetCommStruct();
     try
     {
-      size_t MaxLen = LENOF(CommStruct->PrintEvent.Message) - 1;
+      int MaxLen = static_cast<int>(std::size(CommStruct->PrintEvent.Message) - 1);
       UnicodeString Piece = Str.SubString(1, MaxLen);
       Str.Delete(1, MaxLen);
 
@@ -771,7 +754,7 @@ int __fastcall TExternalConsole::Choice(
   {
     CommStruct->Event = TConsoleCommStruct::CHOICE;
 
-    DebugAssert(Options.Length() < static_cast<int>(LENOF(CommStruct->ChoiceEvent.Options)));
+    DebugAssert(Options.Length() < static_cast<int>(std::size(CommStruct->ChoiceEvent.Options)));
     wcscpy(CommStruct->ChoiceEvent.Options, Options.c_str());
     CommStruct->ChoiceEvent.Cancel = Cancel;
     CommStruct->ChoiceEvent.Break = Break;
@@ -780,7 +763,7 @@ int __fastcall TExternalConsole::Choice(
     CommStruct->ChoiceEvent.Timeouted = Timeouted;
     CommStruct->ChoiceEvent.Timer = Timer;
     CommStruct->ChoiceEvent.Timeouting = Timeouting;
-    size_t MaxLen = LENOF(CommStruct->ChoiceEvent.Message) - 1;
+    int MaxLen = static_cast<int>(std::size(CommStruct->ChoiceEvent.Message) - 1);
     Message = Message.SubString(1, MaxLen);
     wcscpy(CommStruct->ChoiceEvent.Message, Message.c_str());
   }
@@ -817,7 +800,7 @@ void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
   try
   {
     // Truncate to maximum allowed. Title over 10 KB won't fit to screen anyway
-    Title = Title.SubString(1, LENOF(CommStruct->TitleEvent.Title) - 1);
+    Title = Title.SubString(1, static_cast<int>(std::size(CommStruct->TitleEvent.Title) - 1));
 
     CommStruct->Event = TConsoleCommStruct::TITLE;
     wcscpy(CommStruct->TitleEvent.Title, Title.c_str());
@@ -938,10 +921,10 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
         DebugFail();
     }
 
-    wcsncpy(ProgressEvent.FileName, Progress.FileName.c_str(), LENOF(ProgressEvent.FileName));
+    wcsncpy(ProgressEvent.FileName, Progress.FileName.c_str(), std::size(ProgressEvent.FileName));
     NULL_TERMINATE(ProgressEvent.FileName);
 
-    wcsncpy(ProgressEvent.Directory, Progress.Directory.c_str(), LENOF(ProgressEvent.Directory));
+    wcsncpy(ProgressEvent.Directory, Progress.Directory.c_str(), std::size(ProgressEvent.Directory));
     NULL_TERMINATE(ProgressEvent.Directory);
 
     ProgressEvent.OverallProgress = Progress.OverallProgress;
@@ -978,7 +961,7 @@ void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t
     try
     {
       CommStruct->Event = TConsoleCommStruct::TRANSFEROUT;
-      unsigned int BlockLen = std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data));
+      unsigned int BlockLen = static_cast<unsigned int>(std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data)));
       memcpy(CommStruct->TransferEvent.Data, Data + Offset, BlockLen);
       CommStruct->TransferEvent.Len = BlockLen;
       Offset += BlockLen;
@@ -1000,7 +983,7 @@ size_t __fastcall TExternalConsole::TransferIn(unsigned char * Data, size_t Len)
   while ((Result == Offset) && (Offset < Len))
   {
     TConsoleCommStruct * CommStruct;
-    size_t BlockLen = std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data));
+    unsigned int BlockLen = SizeToUIntChecked(std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data)));
 
     CommStruct = GetCommStruct();
     try
@@ -1374,7 +1357,7 @@ void __fastcall TConsoleRunner::ScriptPrintProgress(TScript * /*Script*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TTerminal * /*Terminal*/,
-  TPromptKind /*Kind*/, UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
+  TPromptKind /*Kind*/, UnicodeString DebugUsedArg(Name), UnicodeString Instructions, TStrings * Prompts,
   TStrings * Results, bool & Result, void * /*Arg*/)
 {
   if (!Instructions.IsEmpty())
@@ -1552,12 +1535,12 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   DebugAssert(Accels.Length() == static_cast<int>(Buttons.size()));
   int NumberAccel = 0;
   unsigned int CancelA = CancelAnswer(Answers);
-  int CancelIndex;
+  int CancelIndex = -1;
   // AbortAnswer call duplicated in qpWaitInBatch branch above
   unsigned int AbortA = AbortAnswer(Answers & ~NoBatchA);
-  int AbortIndex;
+  int AbortIndex = -1;
   unsigned int ContinueA = ContinueAnswer(Answers & ~NoBatchA);
-  int ContinueIndex;
+  int ContinueIndex = -1;
   int TimeoutIndex = 0;
 
   for (unsigned int Index = 0; Index < Buttons.size(); Index++)
@@ -1902,7 +1885,7 @@ void __fastcall TConsoleRunner::SynchronizeControllerSynchronize(
       FScript->Synchronize(LocalDirectory, RemoteDirectory, CopyParam,
         Params.Params, Checklist);
     }
-    catch (Exception & E)
+    catch (Exception &)
     {
       if ((FScript->Batch == TScript::BatchContinue) &&
           FScript->Terminal->Active)
@@ -2304,7 +2287,7 @@ void __fastcall Usage(TConsole * Console)
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s=<name>", (LowerCase(SESSIONNAME_SWICH))));
     PrintUsageSyntax(Console, L"[mysession] /newinstance");
     PrintUsageSyntax(Console, L"[mysession] /edit <path>");
-    PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s[=<file>]", (LowerCase(BROWSE_SWITCH))));
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s[=<file>]", (LowerCase(EXPLORE_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(SYNCHRONIZE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(KEEP_UP_TO_DATE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [path]", (LowerCase(REFRESH_SWITCH))));
@@ -2364,7 +2347,7 @@ void __fastcall Usage(TConsole * Console)
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(SESSIONNAME_SWICH) + L"=", USAGE_SESSIONNAME);
     RegisterSwitch(SwitchesUsage, L"/newinstance", USAGE_NEWINSTANCE);
     RegisterSwitch(SwitchesUsage, L"/edit", USAGE_EDIT);
-    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(BROWSE_SWITCH), USAGE_BROWSE);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(EXPLORE_SWITCH), USAGE_EXPLORE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(SYNCHRONIZE_SWITCH), USAGE_SYNCHRONIZE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH), USAGE_KEEPUPTODATE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(REFRESH_SWITCH), USAGE_REFRESH);
@@ -2515,7 +2498,8 @@ int __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
             Matches++;
             std::unique_ptr<TSessionData> OriginalData(new TSessionData(L""));
             OriginalData->CopyDataNoRecrypt(Data);
-            Data->ApplyRawSettings(OptionsStorage.get(), false, true);
+            bool UnsafeSettings; // unused
+            Data->ApplyRawSettings(OptionsStorage.get(), false, true, UnsafeSettings);
             bool Changed = !OriginalData->IsSame(Data, false);
             if (Changed)
             {
@@ -2739,9 +2723,9 @@ int __fastcall FingerprintScan(TConsole * Console, TProgramParams * Params)
     if (Params->ParamCount > 0)
     {
       UnicodeString SessionUrl = Params->Param[1];
-      bool DefaultsOnly;
-      SessionData.reset(StoredSessions->ParseUrl(SessionUrl, Params, DefaultsOnly));
-      if (DefaultsOnly || !SessionData->CanLogin ||
+      int ParsedInfo;
+      SessionData.reset(StoredSessions->ParseUrl(SessionUrl, Params, ParsedInfo));
+      if (FLAGSET(ParsedInfo, piDefaultsOnly) || !SessionData->CanLogin ||
           (!SessionData->UsesSsh && (SessionData->Ftps == ftpsNone)))
       {
         SessionData.reset(NULL);
@@ -3021,8 +3005,8 @@ int __fastcall Console(TConsoleMode Mode)
             // Check if the pending parameters will be consumed by ParseUrl (/rawsettings) in TManagementScript::Connect.
             // This way we parse the options twice, but we do not want to refactor the code just for nicer test for this minor warning.
             TOptions OptionsCopy(*Params);
-            bool DefaultsOnly = false;
-            StoredSessions->ParseUrl(Session, &OptionsCopy, DefaultsOnly);
+            int ParsedInfo;
+            StoredSessions->ParseUrl(Session, &OptionsCopy, ParsedInfo);
             if (OptionsCopy.ParamCount > 1)
             {
               Runner->PrintMessage(LoadStr(SCRIPT_CMDLINE_PARAMETERS));

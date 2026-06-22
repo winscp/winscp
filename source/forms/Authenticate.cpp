@@ -1,22 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
 #include "Authenticate.h"
-
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <Terminal.h>
-#include <CoreMain.h>
-#include <PasTools.hpp>
-#include <CustomWinConfiguration.h>
 #include <Character.hpp>
-#include <Tools.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-#pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner)
@@ -209,8 +197,9 @@ void __fastcall TAuthenticateForm::AdjustControls()
 //---------------------------------------------------------------------------
 TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString Caption)
 {
-  TLabel * Result = new TUIStateAwareLabel(this);
+  TLabel * Result = CreateLabel(this);
   Result->Parent = FPromptParent;
+  ApplyColorModeOnControl(Result); // noop
 
   Result->Anchors = TAnchors() << akLeft << akTop << akRight;
   Result->WordWrap = true;
@@ -230,9 +219,10 @@ TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString 
 //---------------------------------------------------------------------------
 TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo)
 {
-  TCustomEdit * Result = (Echo ? static_cast<TCustomEdit *>(new TEdit(this)) :
-    static_cast<TCustomEdit *>(new TPasswordEdit(this)));
+  TEdit * Result = CreateEdit(this);
+  SetEditPasswordMode(Result, !Echo);
   Result->Parent = FPromptParent;
+  ApplyColorModeOnControl(Result);
 
   Result->Anchors = TAnchors() << akLeft << akTop << akRight;
   Result->Top = Current;
@@ -354,7 +344,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
         TCustomEdit * Edit = reinterpret_cast<TCustomEdit *>(Edits->Items[Index]);
         Results->Strings[Index] = Edit->Text;
 
-        Prompts->Objects[Index] = (TObject *)
+        Prompts->Objects[Index] = reinterpret_cast<TObject *>
           ((int(Prompts->Objects[Index]) & ~pupRemember) |
            FLAGMASK(((Index == 0) && SessionRememberPasswordCheck->Checked), pupRemember));
       }
@@ -736,5 +726,11 @@ void __fastcall TAuthenticateForm::LabelOpenLinkAction2Execute(TObject *)
 void __fastcall TAuthenticateForm::LinkClick(TObject * Sender)
 {
   LabelOpen(DebugNotNull(dynamic_cast<TLabel *>(Sender)));
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
 }
 //---------------------------------------------------------------------------

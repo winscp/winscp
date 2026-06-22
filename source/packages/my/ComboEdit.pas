@@ -142,24 +142,19 @@ type
 
   TFileDirEdit = class(TCustomComboEdit)
   private
-    FErrMode: Cardinal;
     FAcceptFiles: Boolean;
-    FOnDropFiles: TNotifyEvent;
     FOnBeforeDialog: TExecOpenDialogEvent;
     FOnAfterDialog: TExecOpenDialogEvent;
     procedure SetDragAccept(Value: Boolean);
     procedure SetAcceptFiles(Value: Boolean);
     procedure WMDropFiles(var Msg: TWMDropFiles); message WM_DROPFILES;
   protected
-    FMultipleDirs: Boolean;
     procedure CreateHandle; override;
     procedure DestroyWindowHandle; override;
     procedure DoAfterDialog(var FileName: string; var Action: Boolean); dynamic;
     procedure DoBeforeDialog(var FileName: string; var Action: Boolean); dynamic;
     procedure ReceptFileDir(const AFileName: string); virtual; abstract;
     procedure ClearFileList; virtual;
-    procedure DisableSysErrors;
-    procedure EnableSysErrors;
     property MaxLength;
   published
     property AcceptFiles: Boolean read FAcceptFiles write SetAcceptFiles default False;
@@ -167,7 +162,6 @@ type
       write FOnBeforeDialog;
     property OnAfterDialog: TExecOpenDialogEvent read FOnAfterDialog
       write FOnAfterDialog;
-    property OnDropFiles: TNotifyEvent read FOnDropFiles write FOnDropFiles;
     property OnButtonClick;
   end;
 
@@ -290,7 +284,6 @@ type
   published
     property DialogText: string read FDialogText write FDialogText;
     property InitialDir: string read FInitialDir write FInitialDir;
-    property MultipleDirs: Boolean read FMultipleDirs write FMultipleDirs default False;
     property AutoSelect;
     property ButtonHint;
     property BorderStyle;
@@ -345,32 +338,37 @@ type
 
 procedure Register;
 
+function SelectDirectory(var Directory: string; Prompt: string): Boolean;
+
 implementation
 
 uses
-  ShellAPI, Consts, ExtDlgs, Variants, PasTools, UITypes;
+  ShellAPI, Consts, ExtDlgs, Variants, PasTools, UITypes, StrUtils;
 
 procedure Register;
 begin
   RegisterComponents('Martin', [TComboEdit, TFilenameEdit, TDirectoryEdit]);
 end;
 
-{ Utility functions }
-
-type
-  TCharSet = TSysCharSet;
-
-function ExtractSubstr(const S: string; var Pos: Integer;
-  const Delims: TCharSet): string;
+function SelectDirectory(var Directory: string; Prompt: string): Boolean;
 var
-  I: Integer;
+  Folders: TArray<string>;
 begin
-  I := Pos;
-  while (I <= Length(S)) and not CharInSet(S[I], Delims) do Inc(I);
-  Result := Copy(S, Pos, I - Pos);
-  if (I <= Length(S)) and CharInSet(S[I], Delims) then Inc(I);
-  Pos := I;
+  // Prompt was originally used with old-style SHBrowseForFolder directory browsing dialog,
+  // where it is displayed as instructions on a label. Hence it had a dot at the end.
+  // Now it is used in window title, so we are removing the trailing dot.
+  if EndsStr('.', Prompt) then
+    SetLength(Prompt, Length(Prompt) - 1);
+
+  Folders := [];
+  Result :=
+    FileCtrl.SelectDirectory(Directory, Folders, [], Prompt) and
+    (Length(Folders) > 0);
+  if Result then
+    Directory := Folders[0];
 end;
+
+{ Utility functions }
 
 function ValidFileName(const FileName: string): Boolean;
   function HasAny(const Str, Substr: string): Boolean;
@@ -467,7 +465,7 @@ begin
       with FButton do
         ControlStyle := ControlStyle - [csFixedWidth];
     end
-    else if (Value <> ButtonWidth) and (Value < ClientWidth) then
+    else if (Value <> ButtonWidth) then
     begin
       FButton.Width := Value;
       with FButton do
@@ -542,7 +540,7 @@ begin
   with BtnRect do
     FBtnControl.SetBounds(Left, Top, Right - Left, Bottom - Top);
   FButton.Height := FBtnControl.Height;
-  SetEditRect;
+  if HandleAllocated then SetEditRect;
 end;
 
 procedure TCustomComboEdit.CMCtl3DChanged(var Message: TMessage);
@@ -684,33 +682,19 @@ begin
   end;
 end;
 
-procedure TFileDirEdit.DisableSysErrors;
-begin
-  FErrMode := SetErrorMode(SEM_NOOPENFILEERRORBOX or SEM_FAILCRITICALERRORS);
-end;
-
-procedure TFileDirEdit.EnableSysErrors;
-begin
-  SetErrorMode(FErrMode);
-  FErrMode := 0;
-end;
-
 procedure TFileDirEdit.WMDropFiles(var Msg: TWMDropFiles);
 var
   AFileName: array[0..255] of Char;
-  I, Num: Cardinal;
+  Num: Cardinal;
 begin
   Msg.Result := 0;
   try
     Num := DragQueryFile(Msg.Drop, $FFFFFFFF, nil, 0);
-    if Num > 0 then begin
+    if Num > 0 then
+    begin
       ClearFileList;
-      for I := 0 to Num - 1 do begin
-        DragQueryFile(Msg.Drop, I, PChar(@AFileName), Pred(SizeOf(AFileName)));
-        ReceptFileDir(StrPas(AFileName));
-        if not FMultipleDirs then Break;
-      end;
-      if Assigned(FOnDropFiles) then FOnDropFiles(Self);
+      DragQueryFile(Msg.Drop, 0, PChar(@AFileName), Pred(SizeOf(AFileName)));
+      ReceptFileDir(StrPas(AFileName));
     end;
   finally
     DragFinish(Msg.Drop);
@@ -888,12 +872,7 @@ begin
       { ignore any exceptions }
     end;
   FDialog.HelpContext := Self.HelpContext;
-  DisableSysErrors;
-  try
-    Action := FDialog.Execute;
-  finally
-    EnableSysErrors;
-  end;
+  Action := FDialog.Execute;
   if Action then Temp := FDialog.FileName;
   if CanFocus then SetFocus;
   DoAfterDialog(Temp, Action);
@@ -924,11 +903,7 @@ end;
 
 procedure TFilenameEdit.ReceptFileDir(const AFileName: string);
 begin
-  if FMultipleDirs then begin
-    if FDialog.Files.Count = 0 then SetFileName(AFileName);
-    FDialog.Files.Add(AFileName);
-  end
-  else SetFileName(AFileName);
+  SetFileName(AFileName);
 end;
 
 function TFilenameEdit.GetDialogFiles: TStrings;
@@ -1016,10 +991,10 @@ end;
 
 procedure TFilenameEdit.SetOptions(Value: TOpenOptions);
 begin
-  if Value <> FDialog.Options then begin
+  if Value <> FDialog.Options then
+  begin
     FDialog.Options := Value;
-    FMultipleDirs := ofAllowMultiSelect in FDialog.Options;
-    if not FMultipleDirs then ClearFileList;
+    ClearFileList;
   end;
 end;
 
@@ -1050,30 +1025,23 @@ begin
     else Temp := '\';
   end;
   if not DirectoryExists(Temp) then Temp := '\';
-  DisableSysErrors;
-  try
-    Action := SelectDirectory(FDialogText, '', Temp);
-  finally
-    EnableSysErrors;
-  end;
+
+  Action := SelectDirectory(Temp, FDialogText);
+
   if CanFocus then SetFocus;
   DoAfterDialog(Temp, Action);
-  if Action then begin
+  if Action then
+  begin
     SelText := '';
-    if (Text = '') or not MultipleDirs then Text := Temp
-    else Text := Text + ';' + Temp;
+    Text := Temp;
     if (Temp <> '') and DirectoryExists(Temp) then InitialDir := Temp;
   end;
 end;
 
 procedure TDirectoryEdit.ReceptFileDir(const AFileName: string);
-var
-  Temp: string;
 begin
-  if FileExists(ApiPath(AFileName)) then Temp := ExtractFilePath(AFileName)
-  else Temp := AFileName;
-  if (Text = '') or not MultipleDirs then Text := Temp
-  else Text := Text + ';' + Temp;
+  if FileExists(ApiPath(AFileName)) then Text := ExtractFilePath(AFileName)
+    else Text := AFileName;
 end;
 
 initialization

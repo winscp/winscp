@@ -20,20 +20,17 @@ void *safemalloc(size_t factor1, size_t factor2, size_t addend)
 {
     if (factor1 > SIZE_MAX / factor2)
         goto fail;
-    { // WINSCP
     size_t product = factor1 * factor2;
 
     if (addend > SIZE_MAX)
         goto fail;
     if (product > SIZE_MAX - addend)
         goto fail;
-    { // WINSCP
     size_t size = product + addend;
 
     if (size == 0)
         size = 1;
 
-    { // WINSCP
     void *p;
 #ifdef MINEFIELD
     p = minefield_c_malloc(size);
@@ -53,9 +50,6 @@ void *safemalloc(size_t factor1, size_t factor2, size_t addend)
 
   fail:
     out_of_memory();
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }
 
 void *saferealloc(void *ptr, size_t n, size_t size)
@@ -104,7 +98,7 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
                     size_t oldlen, size_t extralen, bool secret)
 {
     /* The largest value we can safely multiply by eltsize */
-    pinitassert(eltsize > 0);
+    assert(eltsize > 0);
     size_t maxsize = (~(size_t)0) / eltsize;
 
     size_t oldsize = *allocated;
@@ -119,7 +113,6 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
         return ptr;
 
     /* Find out how much we need to grow the array by. */
-    { // WINSCP
     size_t increment = (oldlen + extralen) - oldsize;
 
     /* Invent a new size. We want to grow the array by at least
@@ -133,12 +126,10 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
         increment = oldsize / 16;
 
     /* But we also can't grow beyond maxsize. */
-    { // WINSCP
     size_t maxincr = maxsize - oldsize;
     if (increment > maxincr)
         increment = maxincr;
 
-    { // WINSCP
     size_t newsize = oldsize + increment;
     void *toret;
     if (secret) {
@@ -153,7 +144,4 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
     }
     *allocated = newsize;
     return toret;
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }

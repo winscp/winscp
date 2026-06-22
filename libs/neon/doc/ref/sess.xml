@@ -64,8 +64,8 @@ perform any global initialization needed by any libraries used by
 	linkend="ne_ssl_trust_default_ca"/>).</para>
 
         <para>The <parameter>host</parameter> parameter must follow
-        the definition of host <literal>host</literal> in <ulink
-        url="https://www.rfc-editor.org/rfc/rfc3986">RFC 3986</ulink>,
+        the "<literal>host</literal>" grammar in <ulink
+        url="https://www.rfc-editor.org/rfc/rfc3986#section-3.2.2">Section 3.2.2 of RFC 3986</ulink>,
         which can be an IP-literal or registered (DNS) hostname. Valid
         examples of each: <literal>"198.51.100.42"</literal> (IPv4
         literal address), <literal>"[2001:db8::42]"</literal> (IPv6
@@ -135,6 +135,13 @@ sess = ne_session_create("http", "host.example.com", 80);
 /* ... use sess ... */
 ne_session_destroy(sess);
 </programlisting>
+      </refsect1>
+
+      <refsect1>
+        <title>History</title>
+        
+        <para>The <parameter>scheme</parameter> passed to <function>ne_session_create</function> is lower-cased internally from &neon; 0.37.0 onward, so passing <literal>"HtTpS"</literal> and <literal>"https"</literal> are equivalent. In earlier releases, the scheme is case-sensitive.</para>
+        
       </refsect1>
 
       <refsect1>

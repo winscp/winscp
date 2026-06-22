@@ -95,13 +95,13 @@ object SelectMaskDialog: TSelectMaskDialog
       Top = 25
       Width = 341
       Height = 23
-      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 1000
       TabOrder = 0
       Text = '*.*'
       OnChange = MaskEditChange
       OnExit = MaskEditExit
+      HistoryKey = 'Mask'
     end
     object HintText: TStaticText
       Left = 235

@@ -25,12 +25,10 @@ void nullplug_sent(Plug *plug, size_t bufsize)
 }
 
 static const PlugVtable nullplug_plugvt = {
-    // WINSCP
-    /*.log =*/ nullplug_log,
-    /*.closing =*/ nullplug_closing,
-    /*.receive =*/ nullplug_receive,
-    /*.sent =*/ nullplug_sent,
-    NULL, // WINSCP
+    .log = nullplug_log,
+    .closing = nullplug_closing,
+    .receive = nullplug_receive,
+    .sent = nullplug_sent,
 };
 
 static Plug nullplug_plug = { &nullplug_plugvt };

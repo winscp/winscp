@@ -1,16 +1,16 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 
 __int64 GetLength64(CFile &file)
 {
   DWORD low;
   DWORD high;
-  low=GetFileSize((void *)file.m_hFile, &high);
-  _int64 size=((_int64)high<<32)+low;
+  low=GetFileSize(file.m_hFile, &high);
+  __int64 size=(static_cast<__int64>(high)<<32)+low;
   return size;
 }
 
-BOOL GetLength64(CString filename, _int64 &size)
+BOOL GetLength64(CString filename, __int64 &size)
 {
   WIN32_FIND_DATA findFileData;
   HANDLE hFind = FindFirstFile(filename, &findFileData);
@@ -18,15 +18,15 @@ BOOL GetLength64(CString filename, _int64 &size)
     return FALSE;
   DebugCheck(FindClose(hFind));
 
-  size=((_int64)findFileData.nFileSizeHigh<<32)+findFileData.nFileSizeLow;
+  size=(static_cast<__int64>(findFileData.nFileSizeHigh)<<32)+findFileData.nFileSizeLow;
 
   return TRUE;
 }
 
-BOOL PASCAL GetStatus64(LPCTSTR lpszFileName, CFileStatus64& rStatus)
+BOOL PASCAL GetFileStatus(const wchar_t * lpszFileName, CFileStatus& rStatus)
 {
   WIN32_FIND_DATA findFileData;
-  HANDLE hFind = FindFirstFile((LPTSTR)lpszFileName, &findFileData);
+  HANDLE hFind = FindFirstFile(lpszFileName, &findFileData);
   if (hFind == INVALID_HANDLE_VALUE)
   {
     return FALSE;
@@ -34,77 +34,14 @@ BOOL PASCAL GetStatus64(LPCTSTR lpszFileName, CFileStatus64& rStatus)
   DebugCheck(FindClose(hFind));
 
   // strip attribute of NORMAL bit, our API doesn't have a "normal" bit.
-  rStatus.m_attribute = (BYTE)
-    (findFileData.dwFileAttributes & ~FILE_ATTRIBUTE_NORMAL);
-
-  rStatus.m_size = ((_int64)findFileData.nFileSizeHigh<<32)+findFileData.nFileSizeLow;
+  rStatus.m_attribute = static_cast<BYTE>(findFileData.dwFileAttributes & ~FILE_ATTRIBUTE_NORMAL);
 
   // convert times as appropriate
-  TRY
-  {
-    rStatus.m_ctime = CTime(findFileData.ftCreationTime);
-    rStatus.m_has_ctime = true;
-  }
-  CATCH_ALL(e)
-  {
-    rStatus.m_has_ctime = false;
-  }
-  END_CATCH_ALL;
+  rStatus.m_mtime = CTime(findFileData.ftLastWriteTime);
 
-  TRY
+  if (rStatus.m_mtime.GetTime() == 0)
   {
-    rStatus.m_atime = CTime(findFileData.ftLastAccessTime);
-    rStatus.m_has_atime = true;
-  }
-  CATCH_ALL(e)
-  {
-    rStatus.m_has_atime = false;
-  }
-  END_CATCH_ALL;
-
-  TRY
-  {
-    rStatus.m_mtime = CTime(findFileData.ftLastWriteTime);
-    rStatus.m_has_mtime = true;
-  }
-  CATCH_ALL(e)
-  {
-    rStatus.m_has_mtime = false;
-  }
-  END_CATCH_ALL;
-
-  if (!rStatus.m_has_ctime || rStatus.m_ctime.GetTime() == 0)
-  {
-    if (rStatus.m_has_mtime)
-    {
-      rStatus.m_ctime = rStatus.m_mtime;
-      rStatus.m_has_ctime = true;
-    }
-    else
-      rStatus.m_has_ctime = false;
-  }
-
-
-  if (!rStatus.m_has_atime || rStatus.m_atime.GetTime() == 0)
-  {
-    if (rStatus.m_has_mtime)
-    {
-      rStatus.m_atime = rStatus.m_mtime;
-      rStatus.m_has_atime = true;
-    }
-    else
-      rStatus.m_has_atime = false;
-  }
-
-  if (!rStatus.m_has_mtime || rStatus.m_mtime.GetTime() == 0)
-  {
-    if (rStatus.m_has_ctime)
-    {
-      rStatus.m_mtime = rStatus.m_ctime;
-      rStatus.m_has_mtime = true;
-    }
-    else
-      rStatus.m_has_mtime = false;
+    rStatus.m_mtime = CTime(findFileData.ftCreationTime);
   }
 
   return TRUE;

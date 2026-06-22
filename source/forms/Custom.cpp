@@ -1,28 +1,14 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Dialogs.hpp>
-//---------------------------------------------------------------------
-#include <Common.h>
-#include <CustomWinConfiguration.h>
-#include <WinInterface.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <CoreMain.h>
-#include <PasTools.hpp>
 #include <ProgParams.h>
-#include <Tools.h>
-#include <GUITools.h>
 #include <PuttyTools.h>
-#include <HistoryComboBox.hpp>
-#include <Math.hpp>
+#include <HistoryComboBox.h>
 #include <System.Character.hpp>
 
 #include "Custom.h"
 //---------------------------------------------------------------------
-#pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 const int GroupBoxBorderWidth = 1;
@@ -179,7 +165,7 @@ TCheckBox * __fastcall TCustomDialog::CreateAndAddCheckBox(const UnicodeString &
 //---------------------------------------------------------------------------
 TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
 {
-  TLabel * Result = new TUIStateAwareLabel(this);
+  TLabel * Result = ::CreateLabel(this);
   Result->Caption = Label;
   return Result;
 }
@@ -198,7 +184,7 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
     if (OneLine)
     {
       DebugAssert(Edit->Height > Label->Height);
-      Label->Top = FPos + ((Edit->Height - Label->Height) / 2);
+      Label->Top = FPos + OffsetToVerticallyCenterWith(Label, Edit);
     }
     else
     {
@@ -467,7 +453,7 @@ void __fastcall TSaveSessionDialog::Init(bool CanSavePassword,
 
   FolderCombo = new TUIStateAwareComboBox(this);
   AddComboBox(FolderCombo, CreateLabel(LoadStr(SAVE_SESSION_FOLDER)));
-  FolderCombo->DropDownCount = Max(FolderCombo->DropDownCount, 16);
+  FolderCombo->DropDownCount = Max(FolderCombo->DropDownCount, DefaultHistoryDropDownCount);
   FolderCombo->Items->Add(FRootFolder);
   FolderCombo->Items->AddStrings(Folders.get());
 
@@ -629,7 +615,7 @@ void __fastcall SessionNameValidate(const UnicodeString & Text,
   TSessionData::ValidatePath(Text);
 
   DebugAssert(StoredSessions);
-  TSessionData * Data = (TSessionData *)StoredSessions->FindByName(Text);
+  TSessionData * Data = static_cast<TSessionData *>(StoredSessions->FindByName(Text));
   if (Data && Data->Special)
   {
     MessageDialog(FMTLOAD(CANNOT_OVERWRITE_SPECIAL_SESSION, (Text)),
@@ -675,7 +661,7 @@ __fastcall TSaveWorkspaceDialog::TSaveWorkspaceDialog(
   WorkspaceNameCombo = new TUIStateAwareComboBox(this);
   WorkspaceNameCombo->AutoComplete = false;
   AddComboBox(WorkspaceNameCombo, CreateLabel(LoadStr(SAVE_WORKSPACE_PROMPT)));
-  WorkspaceNameCombo->DropDownCount = Max(WorkspaceNameCombo->DropDownCount, 16);
+  WorkspaceNameCombo->DropDownCount = Max(WorkspaceNameCombo->DropDownCount, DefaultHistoryDropDownCount);
 
   std::unique_ptr<TStrings> Workspaces(StoredSessions->GetWorkspaces());
   WorkspaceNameCombo->Items->AddStrings(Workspaces.get());
@@ -833,13 +819,12 @@ __fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi, TDirectoryExistsEven
   AddImage(L"Move L to R");
 
   Combo = new THistoryComboBox(this);
-  Combo->AutoComplete = false;
   AddComboBox(Combo, CreateLabel(LoadStr(REMOTE_TRANSFER_PROMPT2)));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteMoveDialog::Execute(UnicodeString & Target, UnicodeString & FileMask)
 {
-  Combo->Items = CustomWinConfiguration->History[L"RemoteTarget"];
+  Combo->HistoryKey = L"RemoteTarget";
   Combo->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
   bool Result = TCustomDialog::Execute();
   if (Result)
@@ -847,7 +832,6 @@ bool __fastcall TRemoteMoveDialog::Execute(UnicodeString & Target, UnicodeString
     Target = UnixExtractFilePath(Combo->Text);
     FileMask = GetFileMask();
     Combo->SaveToHistory();
-    CustomWinConfiguration->History[L"RemoteTarget"] = Combo->Items;
   }
   return Result;
 }
@@ -913,11 +897,10 @@ private:
   UnicodeString FSite;
   TComboBox * FShortCutCombo;
 
-  UnicodeString __fastcall HistoryKey(const TCustomCommandType::TOption & Option);
   THistoryComboBox * __fastcall CreateHistoryComboBox(const TCustomCommandType::TOption & Option, const UnicodeString & Value);
   void __fastcall BrowseButtonClick(TObject * Sender);
   void __fastcall LinkLabelClick(TObject * Sender);
-  UnicodeString __fastcall SaveHistoryComboBoxValue(TControl * Control, const TCustomCommandType::TOption & Option);
+  UnicodeString __fastcall SaveHistoryComboBoxValue(TControl * Control);
   void __fastcall AddOptionComboBox(
     TComboBox * ComboBox, const UnicodeString & Value, const TCustomCommandType::TOption & Option,
     std::vector<UnicodeString> & Values);
@@ -1018,7 +1001,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       else if (Option.Kind == TCustomCommandType::okFile)
       {
         THistoryComboBox * ComboBox = CreateHistoryComboBox(Option, Value);
-        TButton * Button = new TButton(this);
+        TButton * Button = CreateButton(this);
         AddButtonNextToEdit(Button, ComboBox);
         Button->Tag = Tag;
         Button->Caption = LoadStr(EXTENSION_OPTIONS_BROWSE);
@@ -1126,12 +1109,12 @@ void __fastcall TCustomCommandOptionsDialog::AddOptionComboBox(
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandOptionsDialog::GetOptionIndex(TControl * Control)
 {
-  return (Control->Tag >> 16);
+  return static_cast<int>(Control->Tag >> 16);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandOptionsDialog::GetControlIndex(TControl * Control)
 {
-  return (Control->Tag & 0xFFFF);
+  return static_cast<int>(Control->Tag & 0xFFFF);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandOptionsDialog::LinkLabelClick(TObject * Sender)
@@ -1206,18 +1189,15 @@ THistoryComboBox * __fastcall TCustomCommandOptionsDialog::CreateHistoryComboBox
   const TCustomCommandType::TOption & Option, const UnicodeString & Value)
 {
   THistoryComboBox * ComboBox = new THistoryComboBox(this);
-  ComboBox->AutoComplete = false;
   AddComboBox(ComboBox, CreateLabel(Option.Caption));
-  ComboBox->Items = CustomWinConfiguration->History[HistoryKey(Option)];
+
+  UnicodeString HistoryKey = FCommand->GetOptionKey(Option, FSite);
+  HistoryKey = CustomWinConfiguration->GetValidHistoryKey(HistoryKey);
+  HistoryKey = L"CustomCommandOption_" + HistoryKey;
+  ComboBox->HistoryKey = HistoryKey;
+
   ComboBox->Text = Value;
   return ComboBox;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandOptionsDialog::HistoryKey(const TCustomCommandType::TOption & Option)
-{
-  UnicodeString Result = FCommand->GetOptionKey(Option, FSite);
-  Result = CustomWinConfiguration->GetValidHistoryKey(Result);
-  return L"CustomCommandOption_" + Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomCommandOptionsDialog::Execute(TShortCut * ShortCut)
@@ -1247,11 +1227,11 @@ bool __fastcall TCustomCommandOptionsDialog::Execute(TShortCut * ShortCut)
           UnicodeString Value;
           if (Option.Kind == TCustomCommandType::okTextBox)
           {
-            Value = SaveHistoryComboBoxValue(Control, Option);
+            Value = SaveHistoryComboBoxValue(Control);
           }
           else if (Option.Kind == TCustomCommandType::okFile)
           {
-            Value = SaveHistoryComboBoxValue(Control, Option);
+            Value = SaveHistoryComboBoxValue(Control);
           }
           else if (Option.Kind == TCustomCommandType::okDropDownList)
           {
@@ -1307,12 +1287,10 @@ UnicodeString __fastcall TCustomCommandOptionsDialog::GetComboBoxValue(
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomCommandOptionsDialog::SaveHistoryComboBoxValue(
-  TControl * Control, const TCustomCommandType::TOption & Option)
+UnicodeString __fastcall TCustomCommandOptionsDialog::SaveHistoryComboBoxValue(TControl * Control)
 {
   THistoryComboBox * ComboBox = DebugNotNull(dynamic_cast<THistoryComboBox *>(Control));
   ComboBox->SaveToHistory();
-  CustomWinConfiguration->History[HistoryKey(Option)] = ComboBox->Items;
   return ComboBox->Text;
 }
 //---------------------------------------------------------------------------
@@ -1405,7 +1383,7 @@ __fastcall TUsageStatisticsDialog::TUsageStatisticsDialog() :
   AddEdit(UsageMemo, NULL);
   ReadOnlyControl(UsageMemo);
 
-  ClipboardButton = new TButton(this);
+  ClipboardButton = CreateButton(this);
   ClipboardButton->Caption = LoadStr(USAGE_COPY);
   ClipboardButton->Width = ScaleByTextHeight(this, 179);
   ClipboardButton->OnClick = ClipboardButtonClick;
@@ -1457,6 +1435,7 @@ private:
   void __fastcall SettingsMemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
 
   void DeleteNames(TStrings * Names, TStrings * Options);
+  TStrings * GetSettings();
 };
 //---------------------------------------------------------------------------
 __fastcall TSiteRawDialog::TSiteRawDialog() :
@@ -1470,7 +1449,7 @@ __fastcall TSiteRawDialog::TSiteRawDialog() :
   SettingsMemo->OnKeyDown = SettingsMemoKeyDown;
   AddEdit(SettingsMemo, NULL);
 
-  TButton * AddButton = new TButton(this);
+  TButton * AddButton = CreateButton(this);
   AddButton->Caption = LoadStr(SITE_RAW_ADD);
   AddButton->Width = OKButton->Width;
   AddButton->OnClick = AddButtonClick;
@@ -1517,7 +1496,8 @@ bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
     Data->Password = BackupData->Password;
     Data->Ftps = BackupData->Ftps;
 
-    Data->ApplyRawSettings(SettingsMemo->Lines, false);
+    std::unique_ptr<TStrings> Settings(GetSettings());
+    Data->ApplyRawSettings(Settings.get(), false);
   }
   return Result;
 }
@@ -1525,6 +1505,11 @@ bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
 void __fastcall TSiteRawDialog::SettingsMemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift)
 {
   MemoKeyDown(Sender, Key, Shift);
+}
+//---------------------------------------------------------------------------
+TStrings * TSiteRawDialog::GetSettings()
+{
+  return GetUnwrappedMemoLines(SettingsMemo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
@@ -1549,13 +1534,14 @@ void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
     Names->Add(AllOptions->Names[Index]);
   }
   DeleteNames(Names.get(), BasicOptions.get());
-  DeleteNames(Names.get(), SettingsMemo->Lines);
+  std::unique_ptr<TStrings> Settings(GetSettings());
+  DeleteNames(Names.get(), Settings.get());
 
   std::unique_ptr<TCustomDialog> AddDialog(new TCustomDialog(HelpKeyword));
   AddDialog->Caption = LoadStr(SITE_RAW_ADD_CAPTION);
   TComboBox * AddComboBox = new TUIStateAwareComboBox(AddDialog.get());
   AddComboBox->Style = csDropDownList;
-  AddComboBox->DropDownCount = Max(AddComboBox->DropDownCount, 16);
+  AddComboBox->DropDownCount = Max(AddComboBox->DropDownCount, DefaultHistoryDropDownCount);
   AddDialog->AddComboBox(AddComboBox, CreateLabel(LoadStr(SITE_RAW_ADD_LABEL)), Names.get(), true);
   AddComboBox->ItemIndex = 0;
   if (AddDialog->Execute())
@@ -1630,7 +1616,7 @@ TSshHostCADialog::TSshHostCADialog(bool Add) :
   PublicKeyEdit = new TEdit(this);
   AddEdit(PublicKeyEdit, CreateLabel(LoadStr(SSH_HOST_CA_PUBLIC_KEY)));
 
-  TButton * BrowseButton = new TButton(this);
+  TButton * BrowseButton = CreateButton(this);
   BrowseButton->Caption = LoadStr(SSH_HOST_CA_BROWSE);
   BrowseButton->OnClick = BrowseButtonClick;
   AddButtonNextToEdit(BrowseButton, PublicKeyEdit);
@@ -1649,15 +1635,14 @@ TSshHostCADialog::TSshHostCADialog(bool Add) :
   AddText(Label);
 
   PermitRsaSha1Check = AddValidityCheckBox(1);
-  int PermitCheckBoxTop = Label->Top - (PermitRsaSha1Check->Height - Label->Height) / 2;
   PermitRsaSha1Check->Left = OKButton->Left + 1;
-  PermitRsaSha1Check->Top = PermitCheckBoxTop;
+  VerticallyCenterWith(PermitRsaSha1Check, Label);
   PermitRsaSha256Check = AddValidityCheckBox(2);
   PermitRsaSha256Check->Left = CancelButton->Left + 1;
-  PermitRsaSha256Check->Top = PermitCheckBoxTop;
+  PermitRsaSha256Check->Top = PermitRsaSha1Check->Top;
   PermitRsaSha512Check = AddValidityCheckBox(3);
   PermitRsaSha512Check->Left = HelpButton->Left + 1;
-  PermitRsaSha512Check->Top = PermitCheckBoxTop;
+  PermitRsaSha512Check->Top = PermitRsaSha1Check->Top;
 }
 //---------------------------------------------------------------------------
 TCheckBox * TSshHostCADialog::AddValidityCheckBox(int CaptionStrPart)

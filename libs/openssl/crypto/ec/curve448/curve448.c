@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2024 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2015-2016 Cryptography Research, Inc.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -26,8 +26,8 @@
 #define EDWARDS_D (-39081)
 
 static const curve448_scalar_t precomputed_scalarmul_adjustment = {
-    { { SC_LIMB(0xc873d6d54a7bb0cf), SC_LIMB(0xe933d8d723a70aad),
-        SC_LIMB(0xbb124b65129c96fd), SC_LIMB(0x00000008335dc163) } }
+    { { SC_LIMB(0xc873d6d54a7bb0cfULL), SC_LIMB(0xe933d8d723a70aadULL),
+        SC_LIMB(0xbb124b65129c96fdULL), SC_LIMB(0x00000008335dc163ULL) } }
 };
 
 #define TWISTED_D (EDWARDS_D - 1)
@@ -51,7 +51,9 @@ static void gf_invert(gf y, const gf x, int assert_nonzero)
 }
 
 /** identity = (0,1) */
-const curve448_point_t ossl_curve448_point_identity = { { { { { 0 } } }, { { { 1 } } }, { { { 1 } } }, { { { 0 } } } } };
+const curve448_point_t ossl_curve448_point_identity = {
+    { { { { 0 } } }, { { { 1 } } }, { { { 1 } } }, { { { 0 } } } }
+};
 
 static void point_double_internal(curve448_point_t p, const curve448_point_t q,
     int before_double)

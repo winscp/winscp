@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "FileZillaApi.h"
 #include "MainThread.h"
 
@@ -71,10 +71,8 @@ int CFileZillaApi::Connect(const t_server &server)
   BOOL bUseGSS = FALSE;
   if (GetOptionVal(OPTION_USEGSS))
   {
-    USES_CONVERSION;
-
     CString GssServers = GetOption(OPTION_GSSSERVERS);
-    hostent *fullname = gethostbyname(T2CA(server.host));
+    hostent *fullname = gethostbyname(AnsiString(server.host).c_str());
     CString host;
     if (fullname)
       host = fullname->h_name;
@@ -438,7 +436,7 @@ int CFileZillaApi::SetAsyncRequestResult(int nAction, CAsyncRequestData *pData)
   case FZ_ASYNCREQUEST_OVERWRITE:
     break;
   case FZ_ASYNCREQUEST_VERIFYCERT:
-    if (!((CVerifyCertRequestData *)pData)->pCertData)
+    if (!static_cast<CVerifyCertRequestData *>(pData)->pCertData)
     {
       delete pData;
       return FZ_REPLY_INVALIDPARAM;
@@ -463,7 +461,7 @@ int CFileZillaApi::SetAsyncRequestResult(int nAction, CAsyncRequestData *pData)
     return FZ_REPLY_NOTINITIALIZED;
   }
 
-  m_pMainThread->PostThreadMessage(m_nInternalMessageID, FZAPI_THREADMSG_ASYNCREQUESTREPLY,  (LPARAM)pData);
+  m_pMainThread->PostThreadMessage(m_nInternalMessageID, FZAPI_THREADMSG_ASYNCREQUESTREPLY, reinterpret_cast<LPARAM>(pData));
 
   return FZ_REPLY_OK;
 }

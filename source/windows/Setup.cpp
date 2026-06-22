@@ -2,70 +2,54 @@
 // Part of this code is
 // Copyright (C) 2002-2004, Marco Barisione <marco.bari@vene.ws>
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include <stdio.h>
 #include <tchar.h>
 #include <shlobj.h>
 #include <tlhelp32.h>
-#include <Common.h>
-#include <CoreMain.h>
-#include <Exceptions.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <HelpWin.h>
 #include <Http.h>
 #include <CompThread.hpp>
 #include <FileInfo.h>
-#include "WinConfiguration.h"
-#include "WinInterface.h"
-#include "Tools.h"
 #include "Setup.h"
-#include <StrUtils.hpp>
 #include "ProgParams.h"
-#include <Consts.hpp>
-#include <GUITools.h>
 #include <PuttyTools.h>
-#include <VCLCommon.h>
 #include <WebBrowserEx.hpp>
-#include <DateUtils.hpp>
 #include <OperationWithTimeout.hpp>
 #include <Soap.HTTPUtil.hpp>
 #include <Web.HTTPApp.hpp>
-#include <System.IOUtils.hpp>
 #include <WinApi.h>
 #include <System.NetEncoding.hpp>
 //---------------------------------------------------------------------------
-#define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
-            _T("Session Manager\\Environment")
+#define KEY L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment"
 // when the PATH registry key is over aprox 2048 characters,
 // PATH as well as WINDIR variables are actually not set, breaking the system
 #define MAX_PATH_LEN 2000
 
 /* Command line options. */
-UnicodeString LastPathError;
+static UnicodeString LastPathError;
 //---------------------------------------------------------------------------
-UnicodeString NetVersionStr;
-UnicodeString NetCoreVersionStr;
-UnicodeString PowerShellVersionStr;
-UnicodeString PowerShellCoreVersionStr;
+static UnicodeString NetVersionStr;
+static UnicodeString NetCoreVersionStr;
+static UnicodeString PowerShellVersionStr;
+static UnicodeString PowerShellCoreVersionStr;
 //---------------------------------------------------------------------------
 // Display the error "err_msg".
-void err_out(LPCTSTR err_msg)
+void err_out(const wchar_t * err_msg)
 {
   LastPathError = err_msg;
 }
 //---------------------------------------------------------------------------
 // Display "base_err_msg" followed by the description of the system error
 // identified by "sys_err".
-void err_out_sys(LPCTSTR base_err_msg, LONG sys_err)
+void err_out_sys(const wchar_t * base_err_msg, LONG sys_err)
 {
   LastPathError = FORMAT(L"%s %s", (base_err_msg, SysErrorMessage(sys_err)));
 }
 //---------------------------------------------------------------------------
 // Works as "strcmp" but the comparison is not case sensitive.
-int tcharicmp(LPCTSTR str1, LPCTSTR str2){
+int tcharicmp(const wchar_t * str1, const wchar_t * str2){
     for (; towlower(*str1) == towlower(*str2); ++str1, ++str2)
         if (*str1 == L'\0')
             return 0;
@@ -74,19 +58,19 @@ int tcharicmp(LPCTSTR str1, LPCTSTR str2){
 //---------------------------------------------------------------------------
 // Returns un unquoted copy of "str" (or a copy of "str" if the quotes are
 // not present). The returned value must be freed with "free".
-LPTSTR unquote(LPCTSTR str){
-    int last_pos;
-    LPTSTR ret;
+wchar_t * unquote(const wchar_t * str){
+    ssize_t last_pos;
+    wchar_t * ret;
     size_t new_len;
 
-    last_pos = _tcslen(str) - 1;
+    last_pos = wcslen(str) - 1;
     if (last_pos != -1 && str[0] == L'"' && str[last_pos] == L'"'){
-        new_len= (_tcslen(str) - 1);
-        ret = (LPTSTR)malloc(new_len * sizeof(TCHAR));
+        new_len= (wcslen(str) - 1);
+        ret = static_cast<wchar_t *>(malloc(new_len * sizeof(wchar_t)));
         lstrcpyn(ret, &str[1], new_len);
     }
     else
-        ret = _tcsdup(str);
+        ret = _wcsdup(str);
     return ret;
 }
 //---------------------------------------------------------------------------
@@ -94,33 +78,33 @@ LPTSTR unquote(LPCTSTR str){
 // the first letter of "what" in the string. If "next" is not "NULL" it
 // points to the first letter after "what" (excluding the trailing ";").
 // If "what" isn't find the functions returns "NULL".
-LPTSTR find_reg_str(LPTSTR str, LPCTSTR what, LPTSTR * next){
-    LPTSTR tok_buff;
-    LPTSTR curr_tok;
-    LPTSTR curr_tok_dup;
+wchar_t * find_reg_str(wchar_t * str, const wchar_t * what, wchar_t * * next){
+    wchar_t * tok_buff;
+    wchar_t * curr_tok;
+    wchar_t * curr_tok_dup;
     BOOL path_eq;
-    TCHAR sh_path1[MAX_PATH], sh_path2[MAX_PATH];
-    int pos = -1;
-    LPTSTR ret;
+    wchar_t sh_path1[MAX_PATH], sh_path2[MAX_PATH];
+    ssize_t pos = -1;
+    wchar_t * ret;
 
-    tok_buff = _tcsdup(str);
-    curr_tok = _tcstok(tok_buff, _T(";"));
+    tok_buff = _wcsdup(str);
+    curr_tok = wcstok(tok_buff, L";");
     while (pos == -1 && curr_tok){
         curr_tok_dup = unquote(curr_tok);
-        path_eq = GetShortPathName(what, sh_path1, LENOF(sh_path1)) &&
+        path_eq = GetShortPathName(what, sh_path1, std::size(sh_path1)) &&
                   GetShortPathName(curr_tok_dup, sh_path2,
-                                   LENOF(sh_path2)) &&
+                                   std::size(sh_path2)) &&
                   (tcharicmp(sh_path1, sh_path2) == 0);
         if (path_eq || tcharicmp(what, curr_tok_dup) == 0){
             pos = curr_tok - tok_buff;
         }
         free(curr_tok_dup);
-        curr_tok = _tcstok(NULL, _T(";"));
+        curr_tok = wcstok(NULL, L";");
         if (pos != -1 && next){
             if (curr_tok)
                 *next = str + (curr_tok - tok_buff);
             else
-                *next = str + _tcslen(str);
+                *next = str + wcslen(str);
         }
     }
     free(tok_buff);
@@ -141,15 +125,15 @@ void path_reg_propagate()
   }
   else
   {
-    DWORD send_message_result;
-    LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-                             (LPARAM)_T("Environment"), SMTO_ABORTIFHUNG,
+    DWORD_PTR send_message_result;
+    __int64 ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+                             reinterpret_cast<LPARAM>(L"Environment"), SMTO_ABORTIFHUNG,
                              5000, &send_message_result);
     if (ret != ERROR_SUCCESS && GetLastError() != 0)
     {
-      err_out_sys(_T("Cannot propagate the new enviroment to ")
-                  _T("other processes. The new value will be ")
-                  _T("available after a reboot."), GetLastError());
+      err_out_sys(
+        L"Cannot propagate the new enviroment to other processes. The new value will be available after a reboot.",
+        GetLastError());
       SimpleErrorDialog(LastPathError);
       LastPathError = L"";
     }
@@ -158,28 +142,29 @@ void path_reg_propagate()
 //---------------------------------------------------------------------------
 // Add "path" to the registry. Return "TRUE" if the path has been added or
 // was already in the registry, "FALSE" otherwise.
-BOOL add_path_reg(LPCTSTR path){
+BOOL add_path_reg(const wchar_t * path){
     HKEY key;
     LONG ret;
     DWORD data_size;
-    LPTSTR reg_str;
+    wchar_t * reg_str;
     BOOL func_ret = TRUE;
 
+    // HKLM\SYSTEM is shared (there's no WOW redirection)
     ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, KEY, 0,
                        KEY_WRITE | KEY_READ, &key);
     if (ret != ERROR_SUCCESS){
-        err_out_sys(_T("Cannot open registry."), ret);
+        err_out_sys(L"Cannot open registry.", ret);
         return FALSE;
     }
 
-    RegQueryValueEx(key, _T("PATH"), NULL, NULL, NULL, &data_size);
-    data_size += _tcslen(path) + 3 ; /* ";" and quotes, "data_size" already
+    RegQueryValueEx(key, L"PATH", NULL, NULL, NULL, &data_size);
+    data_size += wcslen(path) + 3 ; /* ";" and quotes, "data_size" already
                                         includes '\0'. */
-    reg_str = (LPTSTR)malloc(data_size * sizeof(TCHAR));
-    ret = RegQueryValueEx(key, _T("PATH"), NULL, NULL, (LPBYTE)reg_str,
+    reg_str = static_cast<wchar_t *>(malloc(data_size * sizeof(wchar_t)));
+    ret = RegQueryValueEx(key, L"PATH", NULL, NULL, reinterpret_cast<LPBYTE>(reg_str),
                           &data_size);
     if (ret != ERROR_SUCCESS){
-        err_out_sys(_T("Cannot read \"PATH\" key."), ret);
+        err_out_sys(L"Cannot read \"PATH\" key.", ret);
         func_ret = FALSE;
     }
     else{
@@ -190,9 +175,9 @@ BOOL add_path_reg(LPCTSTR path){
         }
         else
         {
-            _tcscat(reg_str, _T(";"));
-            _tcscat(reg_str, path);
-            size_t len = _tcslen(reg_str);
+            wcscat(reg_str, L";");
+            wcscat(reg_str, path);
+            size_t len = wcslen(reg_str);
             if (len >= MAX_PATH_LEN)
             {
               err_out(LoadStr(PATH_ENV_TOO_LONG).c_str());
@@ -200,11 +185,11 @@ BOOL add_path_reg(LPCTSTR path){
             }
             else
             {
-              ret = RegSetValueEx(key, _T("PATH"), 0, REG_EXPAND_SZ,
-                                  (LPBYTE)reg_str,
-                                  (_tcslen(reg_str) + 1) * sizeof(TCHAR));
+              ret = RegSetValueEx(key, L"PATH", 0, REG_EXPAND_SZ,
+                                  reinterpret_cast<LPBYTE>(reg_str),
+                                  (wcslen(reg_str) + 1) * sizeof(wchar_t));
               if (ret != ERROR_SUCCESS){
-                  err_out_sys(_T("Cannot write \"PATH\" key."), ret);
+                  err_out_sys(L"Cannot write \"PATH\" key.", ret);
                   func_ret = FALSE;
               }
               /* Is this needed to make the new key avaible? */
@@ -223,47 +208,47 @@ BOOL add_path_reg(LPCTSTR path){
 //---------------------------------------------------------------------------
 // Removes "path" from the registry. Return "TRUE" if the path has been
 // removed or it wasn't in the registry, "FALSE" otherwise.
-BOOL remove_path_reg(LPCTSTR path){
+BOOL remove_path_reg(const wchar_t * path){
     HKEY key;
     LONG ret;
     DWORD data_size;
-    LPTSTR reg_str;
-    LPTSTR reg_str2;
+    wchar_t * reg_str;
+    wchar_t * reg_str2;
     BOOL func_ret = TRUE;
-    LPTSTR next;
-    LPTSTR del_part;
-    int last_pos;
+    wchar_t * next;
+    wchar_t * del_part;
+    ssize_t last_pos;
 
     ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, KEY, 0,
                        KEY_WRITE | KEY_READ, &key);
     if (ret != ERROR_SUCCESS){
-        err_out_sys(_T("Cannot open registry."), ret);
+        err_out_sys(L"Cannot open registry.", ret);
         return FALSE;
     }
 
-    RegQueryValueEx(key, _T("PATH"), NULL, NULL, NULL, &data_size);
-    data_size += _tcslen(path) + 3; /* ";" and quotes,"data_size" already
+    RegQueryValueEx(key, L"PATH", NULL, NULL, NULL, &data_size);
+    data_size += wcslen(path) + 3; /* ";" and quotes,"data_size" already
                                         includes '\0'. */
-    reg_str = (LPTSTR)malloc(data_size * sizeof(TCHAR));
-    ret = RegQueryValueEx(key, _T("PATH"), NULL, NULL,
-                          (LPBYTE)reg_str, &data_size);
+    reg_str = static_cast<wchar_t *>(malloc(data_size * sizeof(wchar_t)));
+    ret = RegQueryValueEx(key, L"PATH", NULL, NULL,
+                          reinterpret_cast<LPBYTE>(reg_str), &data_size);
     if (ret != ERROR_SUCCESS){
-        err_out_sys(_T("Cannot read \"PATH\" key."), ret);
+        err_out_sys(L"Cannot read \"PATH\" key.", ret);
         func_ret = FALSE;
     }
     else{
         if ((del_part = find_reg_str(reg_str, path, &next)) != NULL){
-            reg_str2 = (LPTSTR)malloc((_tcslen(reg_str) + 1) * sizeof(TCHAR));
+            reg_str2 = static_cast<wchar_t *>(malloc((wcslen(reg_str) + 1) * sizeof(wchar_t)));
             *del_part = '\0';
-            _stprintf(reg_str2, _T("%s%s"), reg_str, next);
-            last_pos = _tcslen(reg_str2) - 1;
+            swprintf(reg_str2, L"%s%s", reg_str, next);
+            last_pos = wcslen(reg_str2) - 1;
             if (last_pos != -1 && reg_str2[last_pos] == ';')
                 reg_str2[last_pos] = '\0';
-            ret = RegSetValueEx(key, _T("PATH"), 0, REG_EXPAND_SZ,
-                                (LPBYTE)reg_str2,
-                                (_tcslen(reg_str2) + 1) * sizeof(TCHAR));
+            ret = RegSetValueEx(key, L"PATH", 0, REG_EXPAND_SZ,
+                                reinterpret_cast<LPBYTE>(reg_str2),
+                                (wcslen(reg_str2) + 1) * sizeof(wchar_t));
             if (ret != ERROR_SUCCESS){
-                err_out_sys(_T("Cannot write \"PATH\" key."), ret);
+                err_out_sys(L"Cannot write \"PATH\" key.", ret);
                 func_ret = FALSE;
             }
             free(reg_str2);
@@ -399,7 +384,10 @@ static TRegistry * __fastcall CreateRegistry(HKEY RootKey)
 {
   std::unique_ptr<TRegistry> Registry(new TRegistry());
 
-  Registry->Access = KEY_WRITE | KEY_READ;
+  // Most locations we write to (Software\Classes, Software\RegisteredApplications),
+  // are shared between 32-bit and 64-bit, so the WOW flag has no effect.
+  // For WinSCPCapabilities we want the 32-bit key for backward compatibility.
+  Registry->Access = KEY_WRITE | KEY_READ | KEY_WOW64_32KEY;
   Registry->RootKey = RootKey;
 
   return Registry.release();
@@ -442,7 +430,7 @@ static void __fastcall RegisterAsUrlHandler(const UnicodeString & Protocol, Unic
       Registry->DeleteKey(SoftwareClassesBaseKey + Protocol);
     }
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     try
     {
@@ -659,7 +647,7 @@ static void __fastcall RegisterForDefaultPrograms()
     // this is needed for Windows Vista+7
     UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, true);
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     try
     {
@@ -728,33 +716,14 @@ void __fastcall LaunchAdvancedAssociationUI()
 
   if (IsWin10())
   {
-    // WORKAROUND: On Windows 10, the IApplicationAssociationRegistrationUI::LaunchAdvancedAssociationUI does not work.
-    // https://stackoverflow.com/q/32178986/850848
-    // This approach (IOpenControlPanel::Open) works on Windows 7 too, but not on Windows Vista.
-    IOpenControlPanel * OpenControlPanel;
-
-    HRESULT Result =
-      CoCreateInstance(CLSID_OpenControlPanel,
-        NULL, CLSCTX_INPROC, __uuidof(IOpenControlPanel), (void**)&OpenControlPanel);
-    if (SUCCEEDED(Result))
-    {
-      // This does not work anymore since April 2018 Update, it now has the same effect as mere "pageDefaultProgram".
-      UnicodeString Page = FORMAT(L"pageDefaultProgram\\pageAdvancedSettings?pszAppName=%s", (AppNameString()));
-      OpenControlPanel->Open(L"Microsoft.DefaultPrograms", Page.c_str(), NULL);
-      OpenControlPanel->Release();
-    }
+    ShellOpen(L"ms-settings:defaultapps");
   }
   else
   {
-    IApplicationAssociationRegistrationUI * AppAssocRegUI;
-
-    HRESULT Result =
-      CoCreateInstance(CLSID_ApplicationAssociationRegistrationUI,
-        NULL, CLSCTX_INPROC, __uuidof(IApplicationAssociationRegistrationUI), (void**)&AppAssocRegUI);
-    if (SUCCEEDED(Result))
+    TComPtr<IApplicationAssociationRegistrationUI> AppAssocRegUI;
+    if (AppAssocRegUI.TryCreate(CLSID_ApplicationAssociationRegistrationUI, CLSCTX_INPROC))
     {
       AppAssocRegUI->LaunchAdvancedAssociationUI(AppNameString().c_str());
-      AppAssocRegUI->Release();
     }
   }
 }
@@ -774,7 +743,7 @@ void __fastcall TemporaryDirectoryCleanup()
       Aliases[0].Alias = LoadStr(OPEN_BUTTON);
       TMessageParams Params(mpNeverAskAgainCheck);
       Params.Aliases = Aliases;
-      Params.AliasesCount = LENOF(Aliases);
+      Params.AliasesCount = std::size(Aliases);
 
       unsigned int Answer = MoreMessageDialog(
         FMTLOAD(CLEANTEMP_CONFIRM2, (Folders->Count)), Folders.get(),
@@ -1293,7 +1262,8 @@ static int __fastcall DownloadSizeToProgress(__int64 Size)
 //---------------------------------------------------------------------------
 static UnicodeString GetInstallationPath(HKEY RootKey)
 {
-  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ));
+  // As long as we use 32-bit Inno Setup
+  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ | KEY_WOW64_32KEY));
   Registry->RootKey = RootKey;
   UnicodeString Result;
   if (Registry->OpenKey(L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\winscp3_is1", false))
@@ -1336,7 +1306,7 @@ protected:
   void __fastcall HttpDownload(THttp * Sender, __int64 Size, bool & Cancel);
   void __fastcall UpdateProgress();
   void __fastcall ShowException();
-  void __fastcall DownloadNotVerified();
+  NORETURN void __fastcall DownloadNotVerified();
   void __fastcall CancelForm();
 
 private:
@@ -1441,7 +1411,7 @@ void __fastcall TUpdateDownloadThread::CancelForm()
 //---------------------------------------------------------------------------
 void __fastcall TUpdateDownloadThread::UpdateDownloaded()
 {
-  size_t Size = static_cast<size_t>(FHttp->ResponseLength);
+  int Size = SizeToIntChecked(FHttp->ResponseLength);
   const char * Buffer = FHttp->ResponseRaw.c_str();
 
   if (FHttp->ResponseLength != FUpdates.Results.DownloadSize)
@@ -1478,7 +1448,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   {
     Params += L" /OpenGettingStarted";
   }
-  if (ApplicationLog->Logging)
+  if (!ApplicationLog->Path.IsEmpty())
   {
     Params += FORMAT(" /LOG=\"%s\"", (ApplicationLog->Path + L".setup"));
   }
@@ -1506,7 +1476,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   TerminateApplication();
 }
 //---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::DownloadNotVerified()
+NORETURN void __fastcall TUpdateDownloadThread::DownloadNotVerified()
 {
   throw Exception(MainInstructions(LoadStr(UPDATE_VERIFY_ERROR)));
 }
@@ -1645,11 +1615,6 @@ static void __fastcall DownloadUpdate(void * /*Data*/, TObject * Sender, unsigne
   Thread->Resume();
 }
 //---------------------------------------------------------------------------
-static void __fastcall UpdatesDonateClick(void * /*Data*/, TObject * /*Sender*/)
-{
-  EnableAutomaticUpdates();
-}
-//---------------------------------------------------------------------------
 static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
 {
   const UnicodeString DonatePanelName = L"DonatePanel";
@@ -1669,7 +1634,7 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
     UnicodeString StoreLink = FORMAT(L"<a href=\"%s\">%s</a>", (StoreUrl, StoreButton));
 
     UnicodeString PlainBody = TNetEncoding::HTML->Decode(DocumentBody);
-    int P1, P2;
+    int P1, P2 = 0; // shut up
     while (((P1 = PlainBody.Pos(L"<")) > 0) && ((P2 = PlainBody.Pos(L">")) > 0) && (P1 < P2))
     {
       PlainBody.Delete(P1, P2 - P1 + 1);
@@ -1795,7 +1760,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
   Params.MoreMessagesUrl = Updates.Results.NewsUrl;
   Params.MoreMessagesSize = Updates.Results.NewsSize;
   // alias "ok" button to "upgrade" only if we have new version
-  Params.AliasesCount = LENOF(Aliases) - (New ? 0 : 1);
+  Params.AliasesCount = std::size(Aliases) - (New ? 0 : 1);
   Params.CustomCaption = LoadStr(CHECK_FOR_UPDATES_TITLE);
 
   if (New)
@@ -1851,7 +1816,7 @@ protected:
   TThreadMethod FOnUpdatesChecked;
 };
 //---------------------------------------------------------------------------
-TUpdateThread * UpdateThread = NULL;
+static TUpdateThread * UpdateThread = NULL;
 //---------------------------------------------------------------------------
 __fastcall TUpdateThread::TUpdateThread(TThreadMethod OnUpdatesChecked) :
   TCompThread(false),
@@ -1893,6 +1858,10 @@ void __fastcall SetupInitialize()
 {
   try
   {
+    AppLog(L"Updating jumplist...");
+    // This takes about 1s when debugging
+    // (particularly the first time DestinationList::BeginList and IShellLink::SetPath are called)
+    // but it's quick otherwise
     WinConfiguration->UpdateJumpList();
   }
   catch (Exception & E)
@@ -1901,134 +1870,90 @@ void __fastcall SetupInitialize()
   }
 }
 //---------------------------------------------------------------------------
-static bool __fastcall AddJumpListCategory(TStrings * Names,
-  UnicodeString AdditionalParams, TStringList * Removed,
+static void AddJumpListCategory(
+  TStrings * Names, UnicodeString AdditionalParams, TStringList * Removed,
   ICustomDestinationList * DestinationList, UnicodeString CategoryName,
   int IconIndex)
 {
-  bool Result = false;
-  IObjectCollection * Collection = NULL;
-  if (SUCCEEDED(CoCreateInstance(CLSID_EnumerableObjectCollection, NULL,
-        CLSCTX_INPROC_SERVER, IID_IObjectCollection, (void**)&Collection)))
+  TComPtr<IObjectCollection> Collection;
+  if (Collection.TryCreate(CLSID_EnumerableObjectCollection, CLSCTX_INPROC_SERVER))
   {
-    try
+    AddToList(AdditionalParams, TProgramParams::FormatSwitch(JUMPLIST_SWITCH), L" ");
+
+    int Count = 0;
+    for (int Index = 0; Index < Names->Count; Index++)
     {
-      AddToList(AdditionalParams, TProgramParams::FormatSwitch(JUMPLIST_SWITCH), L" ");
+      TComPtr<IShellLink> Link(
+        CreateDesktopSessionShortCut(
+          Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true));
 
-      int Count = 0;
-      for (int Index = 0; Index < Names->Count; Index++)
+      wchar_t Desc[2048];
+      if (SUCCEEDED(Link->GetDescription(Desc, std::size(Desc) - 1)))
       {
-        IShellLink * Link =
-          CreateDesktopSessionShortCut(
-            Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true);
-
-        wchar_t Desc[2048];
-        if (SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
+        if (Removed->IndexOf(Desc) < 0)
         {
-          if (Removed->IndexOf(Desc) < 0)
-          {
-            try
-            {
-              DebugCheck(SUCCEEDED(Collection->AddObject(Link)));
-              Count++;
-            }
-            __finally
-            {
-              Link->Release();
-            }
-          }
-          else
-          {
-            Names->Delete(Index);
-            Index--;
-          }
+          DebugCheck(SUCCEEDED(Collection->AddObject(Link.Get())));
+          Count++;
         }
-      }
-
-      if (Count > 0)
-      {
-        IObjectArray * Array;
-        if (SUCCEEDED(Collection->QueryInterface(IID_IObjectArray, (void**)&Array)))
+        else
         {
-          try
-          {
-            Result = SUCCEEDED(
-              DestinationList->AppendCategory(CategoryName.c_str(), Array));
-          }
-          __finally
-          {
-            Array->Release();
-          }
+          Names->Delete(Index);
+          Index--;
         }
       }
     }
-    __finally
+
+    if (Count > 0)
     {
-      Collection->Release();
+      TComPtr<IObjectArray> Array;
+      if (SUCCEEDED(Collection->QueryInterface(IID_PPV_ARGS(&Array))))
+      {
+        DestinationList->AppendCategory(CategoryName.c_str(), Array.Get());
+      }
     }
   }
-  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceNames)
 {
-  ICustomDestinationList * DestinationList = NULL;
-  IObjectArray * RemovedArray;
-  TStringList * Removed = NULL;
-  int OldErrMode = SetErrorMode(SEM_FAILCRITICALERRORS);
-
-  try
+  TComPtr<ICustomDestinationList> DestinationList;
+  if (DestinationList.TryCreate(CLSID_DestinationList, CLSCTX_INPROC_SERVER))
   {
-    if (SUCCEEDED(CoCreateInstance(CLSID_DestinationList, NULL,
-          CLSCTX_INPROC_SERVER, IID_ICustomDestinationList, (void**)&DestinationList)))
+    unsigned int MinSlots;
+    void * ppv = NULL;
+    HRESULT Result = DestinationListBeginList(DestinationList.Get(), MinSlots, IID_IObjectArray, ppv, 50000);
+    if (SUCCEEDED(Result) && DebugAlwaysTrue(ppv != NULL))
     {
+      IObjectArray * RemovedArray = static_cast<IObjectArray *>(ppv);
 
-      unsigned int MinSlots;
-      HRESULT Result = DestinationListBeginList(DestinationList, MinSlots, IID_IObjectArray, reinterpret_cast<void *>(RemovedArray), 50000);
-      if (SUCCEEDED(Result) && DebugAlwaysTrue(RemovedArray != NULL))
+      unsigned int RemovedCount;
+      if (FAILED(RemovedArray->GetCount(&RemovedCount)))
       {
-        Removed = new TStringList();
+        RemovedCount = 0;
+      }
 
-        unsigned int RemovedCount;
-        if (FAILED(RemovedArray->GetCount(&RemovedCount)))
+      std::unique_ptr<TStringList> Removed(new TStringList());
+      for (unsigned int Index = 0; Index < RemovedCount; Index++)
+      {
+        IShellLink * Link;
+        wchar_t Desc[2048];
+        if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, reinterpret_cast<void**>(&Link))) &&
+            SUCCEEDED(Link->GetDescription(Desc, std::size(Desc) - 1)))
         {
-          RemovedCount = 0;
-        }
-
-        for (unsigned int Index = 0; Index < RemovedCount; Index++)
-        {
-          IShellLink * Link;
-          wchar_t Desc[2048];
-          if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, (void**)&Link)) &&
-              SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
-          {
-            Removed->Add(Desc);
-          }
-        }
-
-        AddJumpListCategory(
-          WorkspaceNames, L"", Removed, DestinationList,
-          LoadStr(JUMPLIST_WORKSPACES), WORKSPACE_ICON);
-
-        AddJumpListCategory(
-          SessionNames, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), Removed, DestinationList,
-          LoadStr(JUMPLIST_RECENT), SITE_ICON);
-
-        if (DestinationList != NULL)
-        {
-          DestinationList->CommitList();
+          Removed->Add(Desc);
         }
       }
+
+      AddJumpListCategory(
+        WorkspaceNames, L"", Removed.get(), DestinationList.Get(),
+        LoadStr(JUMPLIST_WORKSPACES), WORKSPACE_ICON);
+
+      AddJumpListCategory(
+        SessionNames, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), Removed.get(), DestinationList.Get(),
+        LoadStr(JUMPLIST_RECENT), SITE_ICON);
+
+      DestinationList->CommitList();
     }
-  }
-  __finally
-  {
-    SetErrorMode(OldErrMode);
-    if (DestinationList != NULL)
-    {
-      DestinationList->Release();
-    }
-    delete Removed;
   }
 }
 //---------------------------------------------------------------------------
@@ -2239,7 +2164,7 @@ static void __fastcall ShowTip(bool AutoShow)
   Params.MoreMessagesSize = Updates.Results.TipsSize;
   Params.MoreMessagesUrl = TipUrl(TipsData.get());
   Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
+  Params.AliasesCount = std::size(Aliases);
   Params.ImageName = L"Bulb On";
 
   if (AutoShow)
@@ -2316,7 +2241,8 @@ UnicodeString GetNetVersionStr()
   {
     NetVersionStr = L"0"; // not to retry on failure
 
-    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP", HKEY_LOCAL_MACHINE));
+    UnicodeString NDPKey = L"SOFTWARE\\Microsoft\\NET Framework Setup\\NDP";
+    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(NDPKey, HKEY_LOCAL_MACHINE, KEY_WOW64_64KEY));
     if (Registry->OpenRootKey(false))
     {
       std::unique_ptr<TStringList> Keys(new TStringList());
@@ -2413,7 +2339,8 @@ UnicodeString GetPowerShellVersionStr()
   {
     PowerShellVersionStr = L"0"; // not to retry on failure
 
-    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\PowerShell", HKEY_LOCAL_MACHINE));
+    std::unique_ptr<TRegistryStorage> Registry(
+      new TRegistryStorage(L"SOFTWARE\\Microsoft\\PowerShell", HKEY_LOCAL_MACHINE, KEY_WOW64_64KEY));
     if (Registry->OpenRootKey(false))
     {
       std::unique_ptr<TStringList> Keys(new TStringList());
@@ -2444,8 +2371,7 @@ UnicodeString GetPowerShellCoreVersionStr()
   {
     PowerShellCoreVersionStr = L"0"; // not to retry on failure
 
-    // TRegistryStorage does not support KEY_WOW64_64KEY
-    unsigned int Access = KEY_READ | FLAGMASK(IsWin64(), KEY_WOW64_64KEY);
+    unsigned int Access = KEY_READ | KEY_WOW64_64KEY;
     std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
     Registry->RootKey = HKEY_LOCAL_MACHINE;
     UnicodeString RootKey(L"SOFTWARE\\Microsoft\\PowerShellCore\\InstalledVersions");
@@ -2558,7 +2484,9 @@ static UnicodeString PlatformStr(int PlatformSet)
 static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
 {
   UnicodeString TypeLib = L"{A0B93468-D98A-4845-A234-8076229AD93F}"; // Duplicated in AssemblyInfo.cs
-  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT));
+  // CLSID is separate for 32-bit and 64-bit, so scan both.
+  // The TypeLib is shared.
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT, KEY_WOW64_32KEY));
   Storage->MungeStringValues = false;
   Storage->AccessMode = smRead;
   std::unique_ptr<TRegistryStorage> Storage64;
@@ -2809,7 +2737,7 @@ bool DoUnregisterChoice(TConsole * Console)
   return (Console->Choice(L"U", -1, -1, -1, 0, 0, 0, UnicodeString()) == 1);
 }
 //---------------------------------------------------------------------------
-typedef HRESULT WINAPI (* RegDeleteTreeProc)(HKEY Key, LPCWSTR SubKey);
+typedef HRESULT WINAPI (* RegDeleteTreeProc)(HKEY Key, const wchar_t * SubKey);
 static RegDeleteTreeProc ARegDeleteTree = NULL;
 //---------------------------------------------------------------------------
 void DoDeleteKey(TConsole * Console, TRegistry * Registry, const UnicodeString & Key, int Platform, bool & AnyDeleted, bool & AllDeleted)

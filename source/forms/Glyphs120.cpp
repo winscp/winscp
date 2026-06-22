@@ -1,10 +1,9 @@
 //---------------------------------------------------------------------------
+#include <ResourcesPCH.h>
 #pragma hdrstop
 
-#include "Global.h"
 #include "Glyphs120.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "PngImageList"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

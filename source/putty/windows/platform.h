@@ -45,11 +45,7 @@ typedef const char *HelpCtx;
 #elif defined _MSC_VER
 #define THREADLOCAL __declspec(thread)
 #else
-#ifdef WINSCP
-#define THREADLOCAL __thread
-#else
 #error Do not know how to declare thread-local storage with this toolchain
-#endif
 #endif
 
 /* Randomly-chosen dwData value identifying a WM_COPYDATA message as
@@ -151,14 +147,10 @@ void ShinyEndDialog(HWND hwnd, int ret);
 void centre_window(HWND hwnd);
 
 #ifndef __WINE__
-#ifdef MPEXT
-/* use them as is in bcb */
-#else
 /* Up-to-date Windows headers warn that the unprefixed versions of
  * these names are deprecated. */
 #define stricmp _stricmp
 #define strnicmp _strnicmp
-#endif
 #else
 /* Compiling with winegcc, _neither_ version of these functions
  * exists. Use the POSIX names. */
@@ -217,8 +209,10 @@ void centre_window(HWND hwnd);
 
 #define PUTTY_CHM_FILE "putty.chm"
 
+int get_caret_blink_time(void);
+
 #define GETTICKCOUNT GetTickCount
-#define CURSORBLINK GetCaretBlinkTime()
+#define CURSORBLINK get_caret_blink_time()
 #define TICKSPERSEC 1000               /* GetTickCount returns milliseconds */
 
 #define DEFAULT_CODEPAGE CP_ACP
@@ -285,7 +279,8 @@ const SeatDialogPromptDescriptions *win_seat_prompt_descriptions(Seat *seat);
  */
 void write_aclip(HWND hwnd, int clipboard, char *, int);
 
-#define WM_NETEVENT  (WM_APP + 5)
+#define WM_NETEVENT          (WM_APP + 5)
+#define WM_DONE_WITH_SOCKET  (WM_APP + 8)
 
 /*
  * On Windows, we send MA_2CLK as the only event marking the second
@@ -361,6 +356,7 @@ DECL_WINDOWS_FUNCTION(extern, int, select,
  * called by network.c to turn on or off WSA*Select for a given socket.
  */
 const char *do_select(Plug * plug, SOCKET skt, bool enable); // WINSCP
+void done_with_socket(SOCKET skt);
 
 /*
  * Exports from select-{gui,cli}.c, each of which provides an
@@ -368,7 +364,7 @@ const char *do_select(Plug * plug, SOCKET skt, bool enable); // WINSCP
  */
 void winselgui_set_hwnd(HWND hwnd);
 void winselgui_clear_hwnd(void);
-void winselgui_response(WPARAM wParam, LPARAM lParam);
+void winselgui_response(UINT message, WPARAM wParam, LPARAM lParam);
 
 void winselcli_setup(void);
 SOCKET winselcli_unique_socket(void);
@@ -385,14 +381,14 @@ Socket *make_deferred_handle_socket(DeferredSocketOpener *opener,
 void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
                          HANDLE stderr_H, bool overlapped);
 void handle_socket_set_psb_prefix(Socket *s, const char *prefix);
-Socket *new_named_pipe_client(const char *pipename, Plug *plug); /* winnpc */
+Socket *new_named_pipe_client(const char *pipename, Plug *plug, bool allow_system); /* winnpc */ // WINSCP
 Socket *new_named_pipe_listener(const char *pipename, Plug *plug); /* winnps */
 
 /* A lower-level function in named-pipe-client.c, which does most of
  * the work of new_named_pipe_client (including checking the ownership
  * of what it's connected to), but returns a plain HANDLE instead of
  * wrapping it into a Socket. */
-HANDLE connect_to_named_pipe(const char *pipename, char **err);
+HANDLE connect_to_named_pipe(const char *pipename, char **err, bool allow_system); // WINSCP
 
 /*
  * Exports from controls.c.
@@ -716,7 +712,7 @@ struct handle *handle_output_new(struct callback_set * callback_set, HANDLE hand
                                  void *privdata, int flags);
 size_t handle_write(struct handle *h, const void *data, size_t len);
 void handle_write_eof(struct handle *h);
-void handle_free(struct handle *h); // WINSCP
+void handle_free(struct handle *h);
 void handle_unthrottle(struct handle *h, size_t backlog);
 size_t handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);
@@ -883,5 +879,8 @@ const wchar_t *cmdline_arg_remainder_wide(CmdlineArg *);
 char *cmdline_arg_remainder_acp(CmdlineArg *);
 char *cmdline_arg_remainder_utf8(CmdlineArg *);
 CmdlineArg *cmdline_arg_from_utf8(CmdlineArgList *list, const char *string);
+
+/* Windows-specific API for making a SubprocessWaiter */
+SubprocessWaiter *subproc_waiter_from_hprocess(HANDLE hprocess);
 
 #endif /* PUTTY_WINDOWS_PLATFORM_H */

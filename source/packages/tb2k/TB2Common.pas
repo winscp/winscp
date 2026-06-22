@@ -28,14 +28,12 @@ unit TB2Common;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Classes, SysUtils, Messages, Controls, Forms;
 
 type
   TListSortExCompare = function(const Item1, Item2, ExtraData: Pointer): Integer;
-  THandleWMPrintNCPaintProc = procedure(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
+  THandleWMPrintNCPaintProc = procedure(Control: TControl; Wnd: HWND; DC: HDC; AppData: NativeUInt);
 
 function AddToFrontOfList(var List: TList; Item: Pointer): Boolean;
 function AddToList(var List: TList; Item: Pointer): Boolean;
@@ -55,7 +53,6 @@ procedure DrawInvertRect(const DC: HDC; const NewRect, OldRect: PRect;
   const NewSize, OldSize: TSize; const Brush: HBRUSH; BrushLast: HBRUSH);
 function EscapeAmpersands(const S: String): String;
 function FindAccelChar(const S: String): Char;
-function GetInputLocaleCodePage: UINT;
 function GetMenuShowDelay: Integer;
 function GetRectOfMonitorContainingPoint(const P: TPoint; const WorkArea: Boolean): TRect;
 function GetRectOfMonitorContainingRect(const R: TRect; const WorkArea: Boolean): TRect;
@@ -64,7 +61,7 @@ function GetRectOfPrimaryMonitor(const WorkArea: Boolean): TRect;
 function GetTextHeight(const DC: HDC): Integer;
 function GetTextWidth(const DC: HDC; S: String; const Prefix: Boolean): Integer;
 procedure HandleWMPrint(Control: TControl; const Wnd: HWND; var Message: TMessage;
-  const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
+  const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: NativeUInt);
 procedure HandleWMPrintClient(const Control: TWinControl;
   var Message: TMessage);
 procedure ListSortEx(const List: TList; const Compare: TListSortExCompare;
@@ -171,7 +168,7 @@ begin
 end;
 
 procedure HandleWMPrint(Control: TControl; const Wnd: HWND; var Message: TMessage;
-  const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
+  const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: NativeUInt);
 { note: AppData is an application-defined value which is passed to NCPaintFunc }
 var
   DC: HDC;
@@ -1005,28 +1002,6 @@ begin
     end;
     Inc(P);
   end;
-end;
-
-function GetInputLocaleCodePage: UINT;
-{ Returns the code page identifier of the active input locale, or CP_ACP if
-  for some unknown reason it couldn't be determined. }
-var
-  Buf: array[0..15] of Char;
-  ErrorCode: Integer;
-begin
-  if GetLocaleInfo(GetKeyboardLayout(0) and $FFFF, LOCALE_IDEFAULTANSICODEPAGE,
-     Buf, SizeOf(Buf)) > 0 then begin
-    Buf[High(Buf)] := #0;  { ensure null termination, just in case... }
-    Val(Buf, Result, ErrorCode);
-    { Just to be *completely* safe, verify that the code page returned by
-      GetLocaleInfo actually exists. The result of this function may be fed
-      into WideCharToMultiByte, and we don't want WideCharToMultiByte to fail
-      entirely because of a bad code page. }
-    if (ErrorCode <> 0) or not IsValidCodePage(Result) then
-      Result := CP_ACP;
-  end
-  else
-    Result := CP_ACP;
 end;
 
 end.

@@ -746,9 +746,13 @@ void EC_POINT_free(EC_POINT *point)
     if (point == NULL)
         return;
 
+#ifdef OPENSSL_PEDANTIC_ZEROIZATION
+    EC_POINT_clear_free(point);
+#else
     if (point->meth->point_finish != 0)
         point->meth->point_finish(point);
     OPENSSL_free(point);
+#endif
 }
 
 void EC_POINT_clear_free(EC_POINT *point)
@@ -1679,7 +1683,8 @@ EC_GROUP *EC_GROUP_new_from_params(const OSSL_PARAM params[],
     /* generator base point */
     ptmp = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_EC_GENERATOR);
     if (ptmp == NULL
-        || ptmp->data_type != OSSL_PARAM_OCTET_STRING) {
+        || ptmp->data_type != OSSL_PARAM_OCTET_STRING
+        || ptmp->data_size == 0) {
         ERR_raise(ERR_LIB_EC, EC_R_INVALID_GENERATOR);
         goto err;
     }

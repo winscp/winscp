@@ -2,6 +2,8 @@ unit PngImageListEditor;
 
 interface
 
+{$IFDEF CPUX86}
+
 uses
   Windows, Classes, Graphics, Controls, Forms, Dialogs, StdCtrls, ExtCtrls,
   ExtDlgs, pngimage, PngFunctions, PngBitBtn, PngImageList, Buttons;
@@ -100,7 +102,11 @@ type
 var
   PngImageListEditorDlg: TPngImageListEditorDlg;
 
+{$ENDIF}
+
 implementation
+
+{$IFDEF CPUX86}
 
 {$WARN UNIT_PLATFORM OFF}
 uses
@@ -1294,5 +1300,7 @@ end;
 
 initialization
   InitResolution;
+
+{$ENDIF}
 
 end.

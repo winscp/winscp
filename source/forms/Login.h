@@ -3,7 +3,6 @@
 #define LoginH
 //----------------------------------------------------------------------------
 #include "ComboEdit.hpp"
-#include "PasswordEdit.hpp"
 #include "UpDownEdit.hpp"
 #include "PngImageList.hpp"
 #include <System.Classes.hpp>
@@ -90,7 +89,7 @@ __published:
   TLabel *WebDavsLabel;
   TEdit *HostNameEdit;
   TEdit *UserNameEdit;
-  TPasswordEdit *PasswordEdit;
+  TEdit *PasswordEdit;
   TUpDownEdit *PortNumberEdit;
   TComboBox *TransferProtocolCombo;
   TComboBox *FtpsCombo;
@@ -415,7 +414,7 @@ private:
   bool __fastcall IsEditable();
   TSessionData * __fastcall CloneSelectedSession();
   void __fastcall CloneToNewSite();
-  void DoParseUrl(TSessionData * SessionData, const UnicodeString & Url);
+  void DoParseUrl(TSessionData * SessionData, const UnicodeString & Url, int & ParsedInfo);
   void __fastcall ParseUrl(const UnicodeString & Url);
   void __fastcall ParseHostName();
   void __fastcall ResetNewSiteData();
@@ -445,9 +444,10 @@ protected:
   void __fastcall EditSession();
   void __fastcall Login();
   void SetSiteSearch(TIncrementalSearch SiteSearch);
+  virtual void __fastcall CreateWnd();
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);

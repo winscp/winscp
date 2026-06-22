@@ -12,14 +12,14 @@ resourcestring
   SDirViewNameCol = 'Name';
   SDirViewSizeCol = 'Size';
   SDirViewTypeCol = 'Type';
-  SDirViewChangedCol = 'Changed';
+  SDirViewChangedCol2 = 'Date modified';
   SDirViewAttrCol = 'Attr';
   SDirViewExtCol = 'Ext';
 
 const
   DirViewColumns = 6;
   DefaultDirViewCaptions: array[0..DirViewColumns-1] of Pointer =
-    (@SDirViewNameCol, @SDirViewSizeCol, @SDirViewTypeCol, @SDirViewChangedCol,
+    (@SDirViewNameCol, @SDirViewSizeCol, @SDirViewTypeCol, @SDirViewChangedCol2,
      @SDirViewAttrCol, @SDirViewExtCol);
   DefaultDirViewWidths: array[0..DirViewColumns-1] of Integer =
     (150, 80, 125, 130, 45, 20);

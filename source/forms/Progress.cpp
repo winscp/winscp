@@ -1,19 +1,7 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <WinInterface.h>
-#include <VCLCommon.h>
-#include <CustomWinConfiguration.h>
-#include <GUITools.h>
-#include <BaseUtils.hpp>
-#include <DateUtils.hpp>
-#include <Consts.hpp>
-#include <HistoryComboBox.hpp>
 #include <windowsx.h>
 
 #include "Progress.h"
@@ -28,7 +16,7 @@
 #pragma link "TBXExtItems"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-static IsIndeterminate(const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
+static bool IsIndeterminate(const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
 {
   bool Result;
   // TSynchronizeProgress has its own way how to take atomic operations into account
@@ -50,7 +38,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
     PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
     PROGRESS_REMOTE_MOVE, PROGRESS_REMOTE_COPY, PROGRESS_GETPROPERTIES,
     PROGRESS_CALCULATE_CHECKSUM, PROGRESS_LOCK, PROGRESS_UNLOCK };
-  DebugAssert((unsigned int)ProgressData->Operation >= 1 && ((unsigned int)ProgressData->Operation - 1) < LENOF(Captions));
+  DebugAssert(static_cast<unsigned int>(ProgressData->Operation) >= 1 && (static_cast<unsigned int>(ProgressData->Operation) - 1) < std::size(Captions));
   int Id;
   if (ProgressData->IsTransfer())
   {
@@ -58,7 +46,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
   }
   else
   {
-    Id = Captions[(int)ProgressData->Operation - 1];
+    Id = Captions[static_cast<int>(ProgressData->Operation) - 1];
     DebugAssert(Id != 0);
   }
   UnicodeString Result = LoadStr(Id);
@@ -84,10 +72,10 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
 //---------------------------------------------------------------------
 __fastcall TProgressForm::TProgressForm(
   TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, TSynchronizeProgress * SynchronizeProgress)
-    : FData(), TForm(AOwner)
+    : TForm(AOwner), FData()
 {
   FLastOperation = foNone;
-  FLastSide = (TOperationSide)-1;
+  FLastSide = static_cast<TOperationSide>(-1);
   FLastTotalSizeSet = false;
   FDataGot = false;
   FDataReceived = false;
@@ -127,7 +115,7 @@ __fastcall TProgressForm::~TProgressForm()
 
   ClearGlobalMinimizeHandler(GlobalMinimize);
 
-  if (IsApplicationMinimized() && FMinimizedByMe)
+  if (IsMainFormMinimized() && FMinimizedByMe)
   {
     ShowNotification(
       NULL, MainInstructions(LoadStr(BALLOON_OPERATION_COMPLETE)),
@@ -420,7 +408,7 @@ bool __fastcall TProgressForm::ReceiveData(bool Force, int ModalLevelOffset)
       // Delay showing the progress until the application is restored,
       // otherwise the form popups up unminimized.
       // See solution in TMessageForm::CMShowingChanged.
-      if (!IsApplicationMinimized() &&
+      if (!IsMainFormMinimized() &&
           (Force || (MilliSecondsBetween(Now(), FStarted) > DelayStartInterval)))
       {
         FDataReceived = true;
@@ -869,5 +857,12 @@ void __fastcall TProgressForm::MouseWheelHandler(TMessage & Message)
   }
 
   TForm::MouseWheelHandler(Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
+  Toolbar->Color = Color;
 }
 //---------------------------------------------------------------------------

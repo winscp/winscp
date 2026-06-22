@@ -1,14 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "PuttyIntf.h"
-#include "Interface.h"
 #include "SecureShell.h"
 #include "Exceptions.h"
-#include "CoreMain.h"
-#include "TextsCore.h"
-#include <StrUtils.hpp>
 #include <Soap.EncdDecd.hpp>
 //---------------------------------------------------------------------------
 char sshver[50];
@@ -50,10 +46,10 @@ void __fastcall PuttyInitialize()
   sk_init();
 
   AnsiString VersionString = AnsiString(SshVersionString());
-  DebugAssert(!VersionString.IsEmpty() && (static_cast<size_t>(VersionString.Length()) < LENOF(sshver)));
+  DebugAssert(!VersionString.IsEmpty() && (static_cast<size_t>(VersionString.Length()) < std::size(sshver)));
   strcpy(sshver, VersionString.c_str());
   AnsiString AppName = AnsiString(AppNameString());
-  DebugAssert(!AppName.IsEmpty() && (static_cast<size_t>(AppName.Length()) < LENOF(appname_)));
+  DebugAssert(!AppName.IsEmpty() && (static_cast<size_t>(AppName.Length()) < std::size(appname_)));
   strcpy(appname_, AppName.c_str());
 }
 //---------------------------------------------------------------------------
@@ -210,7 +206,7 @@ static SeatPromptResult get_userpass_input(Seat * seat, prompts_t * p)
       {
         S = UnicodeString(AnsiString(Prompt->prompt));
       }
-      Prompts->AddObject(S, (TObject *)(FLAGMASK(Prompt->echo, pupEcho)));
+      Prompts->AddObject(S, reinterpret_cast<TObject *>(FLAGMASK(Prompt->echo, pupEcho)));
       // this fails, when new passwords do not match on change password prompt,
       // and putty retries the prompt
       DebugAssert(strlen(prompt_get_result_ref(Prompt)) == 0);
@@ -333,7 +329,7 @@ void old_keyfile_warning(void)
 size_t banner(Seat * seat, const void * data, size_t len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  UnicodeString Banner(UTF8String(static_cast<const char *>(data), len));
+  UnicodeString Banner(UTF8String(static_cast<const char *>(data), SizeToIntChecked(len)));
   SecureShell->DisplayBanner(Banner);
   return 0; // PuTTY never uses the value
 }
@@ -341,8 +337,11 @@ size_t banner(Seat * seat, const void * data, size_t len)
 NORETURN static void SSHFatalError(const char * Format, va_list Param)
 {
   char Buf[200];
-  vsnprintf(Buf, LENOF(Buf), Format, Param);
-  Buf[LENOF(Buf) - 1] = '\0';
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+  vsnprintf(Buf, std::size(Buf), Format, Param);
+#pragma clang diagnostic pop
+  Buf[std::size(Buf) - 1] = '\0';
 
   // Only few calls from putty\winnet.c might be connected with specific
   // TSecureShell. Otherwise called only for really fatal errors
@@ -438,7 +437,7 @@ static const SeatVtable ScpSeatVtable =
     prompt_descriptions,
     nullseat_is_always_utf8,
     nullseat_echoedit_update,
-    nullseat_get_x_display,
+    nullseat_get_display,
     nullseat_get_windowid,
     nullseat_get_window_pixel_size,
     nullseat_stripctrl_new,
@@ -622,7 +621,10 @@ char * get_reg_sz_winscp(HKEY Key, const char * Name)
     else
     {
       AnsiString ValueAnsi = AnsiString(Value);
+      #pragma clang diagnostic push
+      #pragma clang diagnostic ignored "-Wold-style-cast"
       Result = snewn(ValueAnsi.Length() + 1, char);
+      #pragma clang diagnostic pop
       strcpy(Result, ValueAnsi.c_str());
     }
   }
@@ -705,7 +707,7 @@ TKeyType KeyType(UnicodeString FileName)
   DebugAssert(ktSSH2PublicOpenSSH == SSH_KEYTYPE_SSH2_PUBLIC_OPENSSH);
   UTF8String UtfFileName = UTF8String(FileName);
   Filename * KeyFile = filename_from_utf8(UtfFileName.c_str());
-  TKeyType Result = (TKeyType)key_type(KeyFile);
+  TKeyType Result = static_cast<TKeyType>(key_type(KeyFile));
   filename_free(KeyFile);
   return Result;
 }
@@ -842,6 +844,8 @@ void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment)
 }
 //---------------------------------------------------------------------------
 // Based on cmdgen.c
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 void AddCertificateToKey(TPrivateKey * PrivateKey, const UnicodeString & CertificateFileName)
 {
   struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
@@ -994,7 +998,7 @@ void FreeKey(TPrivateKey * PrivateKey)
 //---------------------------------------------------------------------------
 RawByteString StrBufToString(strbuf * StrBuf)
 {
-  return RawByteString(reinterpret_cast<char *>(StrBuf->s), StrBuf->len);
+  return RawByteString(reinterpret_cast<char *>(StrBuf->s), SizeToIntChecked(StrBuf->len));
 }
 //---------------------------------------------------------------------------
 RawByteString LoadPublicKey(
@@ -1034,9 +1038,7 @@ UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & C
 {
   UnicodeString Algorithm;
   RawByteString PublicKey = LoadPublicKey(FileName, Algorithm, Comment, HasCertificate);
-  UnicodeString PublicKeyBase64 = EncodeBase64(PublicKey.c_str(), PublicKey.Length());
-  PublicKeyBase64 = ReplaceStr(PublicKeyBase64, L"\r", L"");
-  PublicKeyBase64 = ReplaceStr(PublicKeyBase64, L"\n", L"");
+  UnicodeString PublicKeyBase64 = EncodeStrToBase64(PublicKey);
   UnicodeString Result = FORMAT(L"%s %s %s", (Algorithm, PublicKeyBase64, Comment));
   return Result;
 }
@@ -1149,36 +1151,43 @@ UnicodeString __fastcall GetPuTTYVersion()
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall Sha256(const char * Data, size_t Size)
+static const ssh_hashalg * GetHashAlg(const UnicodeString & Alg)
 {
-  unsigned char Digest[32];
-  hash_simple(&ssh_sha256, make_ptrlen(Data, Size), Digest);
-  UnicodeString Result(BytesToHex(Digest, LENOF(Digest)));
-  return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
-{
-  const ssh_hashalg * HashAlg;
   if (SameIdent(Alg, Sha256ChecksumAlg))
   {
-    HashAlg = &ssh_sha256;
+    return &ssh_sha256;
   }
   else if (SameIdent(Alg, Sha1ChecksumAlg))
   {
-    HashAlg = &ssh_sha1;
+    return &ssh_sha1;
   }
   else if (SameIdent(Alg, Md5ChecksumAlg))
   {
-    HashAlg = &ssh_md5;
+    return &ssh_md5;
   }
   else
   {
     throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
   }
-
+}
+//---------------------------------------------------------------------------
+UnicodeString DoCalculateChecksum(const void * Data, size_t Size, const ssh_hashalg * Hash)
+{
+  size_t Len = Hash->hlen;
+  unsigned char Digest[Len];
+  hash_simple(Hash, make_ptrlen(Data, Size), Digest);
+  return BytesToHex(Digest, Len);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall Sha256(const void * Data, size_t Size)
+{
+  return DoCalculateChecksum(Data, Size, &ssh_sha256);
+}
+//---------------------------------------------------------------------------
+UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
+{
   RawByteString Buf;
-  ssh_hash * Hash = ssh_hash_new(HashAlg);
+  ssh_hash * Hash = ssh_hash_new(GetHashAlg(Alg));
   try
   {
     const int BlockSize = 32 * 1024;
@@ -1197,7 +1206,7 @@ UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
   }
   __finally
   {
-    Buf.SetLength(ssh_hash_alg(Hash)->hlen);
+    Buf.SetLength(SizeToIntChecked(ssh_hash_alg(Hash)->hlen));
     ssh_hash_final(Hash, reinterpret_cast<unsigned char *>(Buf.c_str()));
   }
 
@@ -1282,7 +1291,7 @@ void ParseCertificatePublicKey(const UnicodeString & Str, RawByteString & Public
       throw Exception(LoadStr(SSH_HOST_CA_NO_KEY_TYPE));
     }
 
-    UnicodeString AlgName = UnicodeString(AnsiString(static_cast<const char *>(AlgNamePtrLen.ptr), AlgNamePtrLen.len));
+    UnicodeString AlgName = UnicodeString(AnsiString(static_cast<const char *>(AlgNamePtrLen.ptr), SizeToIntChecked(AlgNamePtrLen.len)));
     const ssh_keyalg * Alg = find_pubkey_alg_len(AlgNamePtrLen);
     if (Alg == NULL)
     {
@@ -1324,8 +1333,8 @@ bool IsCertificateValidityExpressionValid(
   {
     Error = UnicodeString(ErrorMsg);
     sfree(ErrorMsg);
-    ErrorStart = static_cast<const char *>(ErrorLoc.ptr) - StrPtr;
-    ErrorLen = ErrorLoc.len;
+    ErrorStart = SizeToIntChecked(static_cast<const char *>(ErrorLoc.ptr) - StrPtr);
+    ErrorLen = SizeToIntChecked(ErrorLoc.len);
   }
   return Result;
 }
@@ -1359,7 +1368,7 @@ static TCipherGroup Ciphers[] =
 TStrings * SshCipherList()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
-  for (unsigned int Index = 0; Index < LENOF(Ciphers); Index++)
+  for (unsigned int Index = 0; Index < std::size(Ciphers); Index++)
   {
     const ssh2_ciphers * Cipher = Ciphers[Index].Cipher;
     for (int Index2 = 0; Index2 < Cipher->nciphers; Index2++)
@@ -1374,7 +1383,7 @@ TStrings * SshCipherList()
 int GetCipherGroup(const ssh_cipher * TheCipher)
 {
   DebugAssert(strlen(TheCipher->vt->ssh2_id) > 0);
-  for (unsigned int Index = 0; Index < LENOF(Ciphers); Index++)
+  for (unsigned int Index = 0; Index < std::size(Ciphers); Index++)
   {
     TCipherGroup & CipherGroup = Ciphers[Index];
     const ssh2_ciphers * Cipher = CipherGroup.Cipher;
@@ -1399,7 +1408,7 @@ TStrings * SshKexList()
     &ssh_ntru_hybrid_kex, &ssh_mlkem_curve25519_hybrid_kex, &ssh_mlkem_nist_hybrid_kex, &ssh_ecdh_kex, &ssh_diffiehellman_gex,
     &ssh_diffiehellman_group18, &ssh_diffiehellman_group17, &ssh_diffiehellman_group16, &ssh_diffiehellman_group15, &ssh_diffiehellman_group14,
     &ssh_rsa_kex, &ssh_diffiehellman_group1 };
-  for (unsigned int Index = 0; Index < LENOF(Kexes); Index++)
+  for (unsigned int Index = 0; Index < std::size(Kexes); Index++)
   {
     for (int Index2 = 0; Index2 < Kexes[Index]->nkexes; Index2++)
     {
@@ -1593,6 +1602,7 @@ bool enum_host_ca_next(host_ca_enum * Enum, strbuf * StrBuf)
   }
   return Result;
 }
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 void enum_host_ca_finish(host_ca_enum * Enum)
 {
@@ -1615,6 +1625,11 @@ host_ca * host_ca_load(const char * NameStr)
     Result->opts.permit_rsa_sha512 = SshHostCA->PermitRsaSha512;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void done_with_socket(SOCKET)
+{
+  // noop (no callbacks queued by our code)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

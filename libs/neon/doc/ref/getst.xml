@@ -8,6 +8,7 @@
       <refnamediv>
 	<refname id="ne_get_status">ne_get_status</refname>
 	<refname id="ne_get_response_location">ne_get_response_location</refname>
+	<refname id="ne_get_response_retry_after">ne_get_response_retry_after</refname>
 	<refpurpose>retrieve HTTP response properties</refpurpose>
       </refnamediv>
       
@@ -26,8 +27,11 @@
 	    <funcdef>ne_uri *<function>ne_get_response_location</function></funcdef>
 	    <paramdef>ne_request *<parameter>request</parameter></paramdef>
 	  </funcprototype>
+	  <funcprototype>
+	    <funcdef>time_t <function>ne_get_response_retry_after</function></funcdef>
+	    <paramdef>ne_request *<parameter>request</parameter></paramdef>
+	  </funcprototype>
 	</funcsynopsis>
-
       </refsynopsisdiv>
 
       <refsect1>
@@ -45,6 +49,13 @@ the <function>ne_get_response_location</function> function parses and
 resolves the URI-reference relative to the request target. If a
 fragment ("#fragment") is applicable to the request target, it can be
 passed as an argument to allow appropriate relative resolution.</para>
+
+<para>The <function>ne_get_response_retry_after</function> function
+parses any <literal>Retry-After</literal> header included in the
+response. If the header value uses a relative time, it is interpreted
+relative to the time the function was invoked, rather than the time
+the response was received, so the function should be used directly
+after dispatching the request.</para>
       </refsect1>
 
       <refsect1>
@@ -59,6 +70,10 @@ passed as an argument to allow appropriate relative resolution.</para>
         malloc-allocated ne_uri object, or NULL if either the URI in
         the Location header could not be parsed or the Location header
         was not present.</para>
+
+        <para><function>ne_get_response_retry_after</function> returns
+        a time_t value, or zero if either no Retry-After header was
+        included or the header value could not be parsed.</para>
       </refsect1>
 
       <refsect1>

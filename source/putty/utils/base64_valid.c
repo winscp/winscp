@@ -16,8 +16,7 @@ bool base64_valid(ptrlen data)
 {
     size_t blocklen = 0, nequals = 0;
 
-    size_t i; // WINSCP
-    for (i = 0; i < data.len; i++) {
+    for (size_t i = 0; i < data.len; i++) {
         char c = ((const char *)data.ptr)[i];
 
         if (c == '\n' || c == '\r')

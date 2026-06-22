@@ -42,7 +42,7 @@ private:
   void __fastcall AddLocation(int CaptionId, const UnicodeString & Location, TCleanupEvent Event);
   void __fastcall AddRegistryLocation(int CaptionId, const UnicodeString & Location, TCleanupEvent Event);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall TCleanupDialog(TComponent * AOwner);

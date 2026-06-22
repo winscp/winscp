@@ -67,7 +67,7 @@ static S3Status convertBlsXmlCallback(const char *elementPath,
         if (!strcmp(elementPath, "BucketLoggingStatus/LoggingEnabled/"
                     "TargetBucket")) {
             caData->targetBucketReturnLen +=
-                snprintf_S(&(caData->targetBucketReturn
+                snprintf(&(caData->targetBucketReturn
                            [caData->targetBucketReturnLen]),
                          255 - caData->targetBucketReturnLen - 1,
                          "%.*s", dataLen, data);
@@ -78,7 +78,7 @@ static S3Status convertBlsXmlCallback(const char *elementPath,
         else if (!strcmp(elementPath, "BucketLoggingStatus/LoggingEnabled/"
                     "TargetPrefix")) {
             caData->targetPrefixReturnLen +=
-                snprintf_S(&(caData->targetPrefixReturn
+                snprintf(&(caData->targetPrefixReturn
                            [caData->targetPrefixReturnLen]),
                          255 - caData->targetPrefixReturnLen - 1,
                          "%.*s", dataLen, data);

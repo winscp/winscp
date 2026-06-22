@@ -46,7 +46,7 @@
 
 	<variablelist>
 	  <varlistentry>
-            <term><constant>NE_REQFLAG_EXPECT100</constant></term>
+            <term><constant>NE_REQFLAG_EXPECT100</constant> (default off)</term>
 	    <listitem>
 	      <simpara>enable this flag to use the "Expect:
 	      100-continue" feature of HTTP/1.1, which allows the
@@ -58,7 +58,7 @@
 	    </listitem>
 	  </varlistentry>
 	  <varlistentry>
-            <term><constant>NE_REQFLAG_IDEMPOTENT</constant></term>
+            <term><constant>NE_REQFLAG_IDEMPOTENT</constant>  (default on)</term>
 	    <listitem>
 	      <simpara>disable this flag if the request uses a
 	      non-idempotent method such as
@@ -69,7 +69,7 @@
             <term><constant>NE_REQFLAG_1XXTIMEOUT</constant> (default on)</term>
 	    <listitem>
 	      <simpara>disable this flag to disable overall timeout
-	      when reading interim (1xx) responses; </simpara>
+	      when reading interim (1xx) responses</simpara>
 	    </listitem>
 	  </varlistentry>
         </variablelist>

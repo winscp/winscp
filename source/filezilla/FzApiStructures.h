@@ -2,7 +2,10 @@
 #ifndef FzApiStructuresH
 #define FzApiStructuresH
 //---------------------------------------------------------------------------
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/pkcs12.h>
+#pragma clang diagnostic pop
 #include <FileBuffer.h>
 //---------------------------------------------------------------------------
 class t_server
@@ -35,7 +38,7 @@ typedef struct
     __int64 size;
     t_server server;
     int nType;
-    int nUserData;
+    NativeInt nUserData;
     TTransferOutEvent OnTransferOut;
     TTransferInEvent OnTransferIn;
 } t_transferfile;

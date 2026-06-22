@@ -28,8 +28,6 @@ unit TB2ExtItems;
 
 interface
 
-{$I TB2Ver.inc}
-
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, CommCtrl, Menus, ActnList,
@@ -740,9 +738,9 @@ function TTBEditItemViewer.EditLoop(const CapHandle: HWND): Boolean;
                  (Msg.wParam <> VK_HANJA) then begin
                 IsKeypadDigit := False;
                 { This detect digits regardless of whether Num Lock is on: }
-                if Lo(LongRec(Msg.lParam).Hi) <> 0 then
+                if Byte((Msg.lParam shr 16) and $FF) <> 0 then
                   for V := VK_NUMPAD0 to VK_NUMPAD9 do
-                    if MapVirtualKey(V, 0) = Lo(LongRec(Msg.lParam).Hi) then begin
+                    if MapVirtualKey(V, 0) = Byte((Msg.lParam shr 16) and $FF) then begin
                       IsKeypadDigit := True;
                       Break;
                     end;

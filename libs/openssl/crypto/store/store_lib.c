@@ -749,7 +749,8 @@ EVP_PKEY *OSSL_STORE_INFO_get0_PARAMS(const OSSL_STORE_INFO *info)
 EVP_PKEY *OSSL_STORE_INFO_get1_PARAMS(const OSSL_STORE_INFO *info)
 {
     if (info->type == OSSL_STORE_INFO_PARAMS) {
-        EVP_PKEY_up_ref(info->_.params);
+        if (!EVP_PKEY_up_ref(info->_.params))
+            return NULL;
         return info->_.params;
     }
     ERR_raise(ERR_LIB_OSSL_STORE, OSSL_STORE_R_NOT_PARAMETERS);
@@ -766,7 +767,8 @@ EVP_PKEY *OSSL_STORE_INFO_get0_PUBKEY(const OSSL_STORE_INFO *info)
 EVP_PKEY *OSSL_STORE_INFO_get1_PUBKEY(const OSSL_STORE_INFO *info)
 {
     if (info->type == OSSL_STORE_INFO_PUBKEY) {
-        EVP_PKEY_up_ref(info->_.pubkey);
+        if (!EVP_PKEY_up_ref(info->_.pubkey))
+            return NULL;
         return info->_.pubkey;
     }
     ERR_raise(ERR_LIB_OSSL_STORE, OSSL_STORE_R_NOT_A_PUBLIC_KEY);
@@ -783,7 +785,8 @@ EVP_PKEY *OSSL_STORE_INFO_get0_PKEY(const OSSL_STORE_INFO *info)
 EVP_PKEY *OSSL_STORE_INFO_get1_PKEY(const OSSL_STORE_INFO *info)
 {
     if (info->type == OSSL_STORE_INFO_PKEY) {
-        EVP_PKEY_up_ref(info->_.pkey);
+        if (!EVP_PKEY_up_ref(info->_.pkey))
+            return NULL;
         return info->_.pkey;
     }
     ERR_raise(ERR_LIB_OSSL_STORE, OSSL_STORE_R_NOT_A_PRIVATE_KEY);
@@ -800,7 +803,8 @@ X509 *OSSL_STORE_INFO_get0_CERT(const OSSL_STORE_INFO *info)
 X509 *OSSL_STORE_INFO_get1_CERT(const OSSL_STORE_INFO *info)
 {
     if (info->type == OSSL_STORE_INFO_CERT) {
-        X509_up_ref(info->_.x509);
+        if (!X509_up_ref(info->_.x509))
+            return NULL;
         return info->_.x509;
     }
     ERR_raise(ERR_LIB_OSSL_STORE, OSSL_STORE_R_NOT_A_CERTIFICATE);
@@ -817,7 +821,8 @@ X509_CRL *OSSL_STORE_INFO_get0_CRL(const OSSL_STORE_INFO *info)
 X509_CRL *OSSL_STORE_INFO_get1_CRL(const OSSL_STORE_INFO *info)
 {
     if (info->type == OSSL_STORE_INFO_CRL) {
-        X509_CRL_up_ref(info->_.crl);
+        if (!X509_CRL_up_ref(info->_.crl))
+            return NULL;
         return info->_.crl;
     }
     ERR_raise(ERR_LIB_OSSL_STORE, OSSL_STORE_R_NOT_A_CRL);
@@ -939,15 +944,22 @@ OSSL_STORE_SEARCH *OSSL_STORE_SEARCH_by_key_fingerprint(const EVP_MD *digest,
     size_t len)
 {
     OSSL_STORE_SEARCH *search = OPENSSL_zalloc(sizeof(*search));
+    int md_size;
 
     if (search == NULL)
         return NULL;
 
-    if (digest != NULL && len != (size_t)EVP_MD_get_size(digest)) {
+    md_size = EVP_MD_get_size(digest);
+    if (md_size <= 0) {
+        OPENSSL_free(search);
+        return NULL;
+    }
+
+    if (digest != NULL && len != (size_t)md_size) {
         ERR_raise_data(ERR_LIB_OSSL_STORE,
             OSSL_STORE_R_FINGERPRINT_SIZE_DOES_NOT_MATCH_DIGEST,
             "%s size is %d, fingerprint size is %zu",
-            EVP_MD_get0_name(digest), EVP_MD_get_size(digest), len);
+            EVP_MD_get0_name(digest), md_size, len);
         OPENSSL_free(search);
         return NULL;
     }

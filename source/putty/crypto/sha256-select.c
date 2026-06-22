@@ -22,9 +22,7 @@ static ssh_hash *sha256_select(const ssh_hashalg *alg)
         NULL,
     };
 
-    { // WINSCP
-    size_t i;
-    for (i = 0; real_algs[i]; i++) {
+    for (size_t i = 0; real_algs[i]; i++) {
         const ssh_hashalg *alg = real_algs[i];
         const struct sha256_extra *alg_extra =
             (const struct sha256_extra *)alg->extra;
@@ -36,18 +34,11 @@ static ssh_hash *sha256_select(const ssh_hashalg *alg)
      * the last non-NULL entry should be software-only SHA-256, which
      * is always available. */
     unreachable("sha256_select ran off the end of its list");
-    } // WINSCP
 }
 
 const ssh_hashalg ssh_sha256 = {
-    // WINSCP
-    /*.new =*/ sha256_select,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    /*.hlen =*/ 32,
-    /*.blocklen =*/ 64,
+    .new = sha256_select,
+    .hlen = 32,
+    .blocklen = 64,
     HASHALG_NAMES_ANNOTATED("SHA-256", "dummy selector vtable"),
-    NULL,
 };

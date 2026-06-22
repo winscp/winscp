@@ -1,6 +1,6 @@
 /* 
    HTTP request/response handling
-   Copyright (C) 1999-2024, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2026, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -51,6 +51,7 @@
 #include "ne_utils.h"
 #include "ne_socket.h"
 #include "ne_uri.h"
+#include "ne_dates.h"
 
 #include "ne_private.h"
 
@@ -84,6 +85,10 @@ struct field {
 /* Size of hash table; 43 is the smallest prime for which the common
  * header names hash uniquely using the *33 hash function. */
 #define HH_HASHSIZE (43)
+
+/* Array type for storing a hash of the header fields. */
+typedef struct field *field_hash[HH_HASHSIZE];
+
 /* Hash iteration step: *33 known to be a good hash for ASCII, see RSE. */
 #define HH_ITERATE(hash, ch) (((hash)*33 + (unsigned char)(ch)) % HH_HASHSIZE)
 
@@ -93,13 +98,17 @@ struct field {
 #define HH_HV_CONTENT_LENGTH    (0x13)
 #define HH_HV_TRANSFER_ENCODING (0x07)
 #define HH_HV_LOCATION          (0x05)
+#define HH_HV_RETRY_AFTER       (0x28)
 
 struct ne_request_s {
-    char *method, *target; /* method and request-target */
+    /* Buffer for reading the response message lines or body. */
+    char respbuf[NE_BUFSIZ];
 
+    char *method, *target; /* method and request-target */
     ne_buffer *headers; /* request headers */
 
-    /* Request body. */
+    /* Request body provider callback, must be non-NULL if body_length
+     * is non-zero. */
     ne_provide_body body_cb;
     void *body_ud;
     #ifdef WINSCP
@@ -121,15 +130,10 @@ struct ne_request_s {
 	    size_t length, remain;
 	} buf;
     } body;
-	    
-    ne_off_t body_length; /* length of request body */
+    /* Length of request body, -1 means chunked */
+    ne_off_t body_length;
 
-    /* temporary store for response lines. */
-    char respbuf[NE_BUFSIZ];
-
-    /**** Response ***/
-
-    /* The transfer encoding types */
+    /* Response transfer encoding types */
     struct ne_response {
 	enum {
 	    R_TILLEOF = 0, /* read till eof */
@@ -152,16 +156,17 @@ struct ne_request_s {
         ne_off_t progress; /* number of bytes read of response */
     } resp;
     
-    struct hook *private;
+    /* Response header fields; response_trailers is allocated only if
+     * (rarely) required. */
+    field_hash *response_trailers, response_headers;
 
-    /* response header fields */
-    struct field *response_headers[HH_HASHSIZE];
-    
-    unsigned int current_index; /* response_headers cursor for iterator */
+    /* Iterators for the response_headers and trailers. */
+    unsigned int headers_index, trailers_index;
 
-    /* List of callbacks which are passed response body blocks */
+    /* Callbacks and hooks. */
     struct body_reader *body_readers;
     struct interim_handler *interim_handler;
+    struct hook *private;
 
     /*** Miscellaneous ***/
     ne_uri *target_uri;
@@ -175,7 +180,7 @@ struct ne_request_s {
 };
 
 static int open_connection(ne_session *sess);
-static int read_response_headers(ne_request *req, int clear);
+static int read_header_fields(ne_request *req, field_hash **fields);
 
 /* Returns hash value for header 'name', converting it to lower-case
  * in-place. */
@@ -568,7 +573,7 @@ ne_request *ne_request_create(ne_session *sess, const char *method,
     return req;
 }
 
-/* Reconstruct the request target URI following RFC 9112ẞ3.3. Returns
+/* Reconstruct the request target URI following RFC 9112§3.3. Returns
  * zero on success or non-zero on error. */
 static int get_request_target_uri(ne_request *req, ne_uri *uri)
 {
@@ -714,53 +719,87 @@ void ne_print_request_header(ne_request *req, const char *name,
 
 /* Returns the value of the response header 'name', for which the hash
  * value is 'h', or NULL if the header is not found. */
-static inline char *get_response_header_hv(ne_request *req, unsigned int h,
-                                           const char *name)
+static char *get_field_hv(field_hash *fh, unsigned int h, const char *name)
 {
     struct field *f;
 
-    for (f = req->response_headers[h]; f; f = f->next)
+    for (f = (*fh)[h]; f; f = f->next)
         if (strcmp(f->name, name) == 0)
             return f->value;
 
     return NULL;
 }
 
-const char *ne_get_response_header(ne_request *req, const char *name)
+static char *get_response_header_hv(ne_request *req, unsigned int h,
+                                    const char *name)
+{
+    return get_field_hv(&req->response_headers, h, name);
+}
+
+static const char *get_header_field(field_hash *hv, const char *name)
 {
     char *lcname = ne_strdup(name);
     unsigned int hash = hash_and_lower(lcname);
-    char *value = get_response_header_hv(req, hash, lcname);
+    char *value = get_field_hv(hv, hash, lcname);
     ne_free(lcname);
     return value;
 }
 
-/* The return value of the iterator function is a pointer to the
- * struct field of the previously returned header. */
-void *ne_response_header_iterate(ne_request *req, void *iterator,
-                                 const char **name, const char **value)
+const char *ne_get_response_header(ne_request *req, const char *name)
 {
-    struct field *f = iterator;
+    return get_header_field(&req->response_headers, name);
+}
+
+const char *ne_get_response_trailer(ne_request *req, const char *name)
+{
+    if (req->response_trailers)
+        return get_header_field(req->response_trailers, name);
+    else
+        return NULL;
+}
+
+static void *header_iterate(struct field *f,
+                            field_hash *hash, unsigned int *index,
+                            const char **name, const char **value)
+{
     unsigned int n;
+
+    /* Short circuit when there is no trailers array. */
+    if (f == NULL && hash == NULL) return NULL;
 
     if (f == NULL) {
         n = 0;
-    } else if ((f = f->next) == NULL) {
-        n = req->current_index + 1;
+    }
+    else if ((f = f->next) == NULL) {
+        n = *index + 1;
     }
 
     if (f == NULL) {
-        while (n < HH_HASHSIZE && req->response_headers[n] == NULL)
+        while (n < HH_HASHSIZE && (*hash)[n] == NULL)
             n++;
         if (n == HH_HASHSIZE)
             return NULL; /* no more headers */
-        f = req->response_headers[n];
-        req->current_index = n;
+        f = (*hash)[n];
+        *index = n;
     }
     
     *name = f->name;
     *value = f->value;
     return f;
+}
+
+void *ne_response_header_iterate(ne_request *req, void *cursor,
+                                 const char **name, const char **value)
+{
+    return header_iterate(cursor, &req->response_headers, &req->headers_index,
+                          name, value);
+}
+
+void *ne_response_trailer_iterate(ne_request *req, void *cursor,
+                                  const char **name, const char **value)
+{
+    return header_iterate(cursor, req->response_trailers, &req->trailers_index,
+                          name, value);
 }
 
 /* Removes the response header 'name', which has hash value 'hash'. */
@@ -785,12 +824,12 @@ static void remove_response_header(ne_request *req, const char *name,
 }
 
 /* Free all stored response headers. */
-static void free_response_headers(ne_request *req)
+static void free_fields(field_hash *fields)
 {
     int n;
 
     for (n = 0; n < HH_HASHSIZE; n++) {
-        struct field **ptr = req->response_headers + n;
+        struct field **ptr = &(*fields)[n];
 
         while (*ptr) {
             struct field *const f = *ptr;
@@ -800,6 +839,24 @@ static void free_response_headers(ne_request *req)
             ne_free(f);
 	}
     }
+}
+
+static void free_response_headers(ne_request *req)
+{
+    free_fields(&req->response_headers);
+    if (req->response_trailers) free_fields(req->response_trailers);
+}
+
+/* Read response headers. */
+static int read_response_headers(ne_request *req)
+{
+    field_hash *fh = &req->response_headers;
+
+    /* Clear any response headers from previous invocations
+     * (e.g. retried requests, interim responses. */
+    free_response_headers(req);
+
+    return read_header_fields(req, &fh);
 }
 
 ne_uri *ne_get_response_location(ne_request *req, const char *fragment)
@@ -814,7 +871,7 @@ ne_uri *ne_get_response_location(ne_request *req, const char *fragment)
 
     memset(&dest, 0, sizeof dest);
 
-    /* Location is a URI-reference (RFC9110ẞ10.2.2) relative to the
+    /* Location is a URI-reference (RFC9110§10.2.2) relative to the
      * request target URI; determine each of these then resolve. */
 
     /* Parse the Location header */
@@ -833,13 +890,35 @@ ne_uri *ne_get_response_location(ne_request *req, const char *fragment)
     ret = ne_malloc(sizeof *ret);
     ne_uri_resolve(base, &dest, ret);
 
-    /* HTTP-specific fragment handling is a MUST in RFC9110ẞ10.2.2: */
+    /* HTTP-specific fragment handling is a MUST in RFC9110§10.2.2: */
     if (fragment && !dest.fragment) {
         ret->fragment = ne_strdup(fragment);
     }
 
 fail:
     ne_uri_free(&dest);
+
+    return ret;
+}
+
+time_t ne_get_response_retry_after(ne_request *req)
+{
+    char *val, *endp;
+    unsigned long abs;
+    time_t ret;
+
+    val = get_response_header_hv(req, HH_HV_RETRY_AFTER, "retry-after");
+    if (!val) return 0;
+
+    errno = 0;
+    abs = strtoul(val, &endp, 10);
+    if (errno == 0 && abs != ULONG_MAX && *endp == '\0') {
+        ret = time(NULL) + abs;
+    }
+    else {
+        if ((ret = ne_httpdate_parse(val)) == -1)
+            ret = 0;
+    }
 
     return ret;
 }
@@ -873,6 +952,8 @@ void ne_request_destroy(ne_request *req)
     struct interim_handler *ih, *next_ih;
     struct hook *hk, *next_hk;
 
+    NE_DEBUG(NE_DBG_HTTP, "req: Destroy (%s %s).\n", req->method, req->target);
+
     ne_free(req->target);
     ne_free(req->method);
     if (req->target_uri) {
@@ -891,6 +972,7 @@ void ne_request_destroy(ne_request *req)
     }
 
     free_response_headers(req);
+    if (req->response_trailers) ne_free(req->response_trailers);
 
     ne_buffer_destroy(req->headers);
 
@@ -909,11 +991,10 @@ void ne_request_destroy(ne_request *req)
     if (req->status.reason_phrase)
 	ne_free(req->status.reason_phrase);
 
-    NE_DEBUG(NE_DBG_HTTP, "Request ends.\n");
     ne_free(req);
 }
 
-/* Read an HTTP message line following RFC 9112ẞ2.2, returning <0 on
+/* Read an HTTP message line following RFC 9112§2.2, returning <0 on
  * error, >= 0 for line length excluding trailing CRLF. Bare CR are
  * converted to spaces. */
 static ssize_t read_message_line(ne_socket *sock, char *const buf, size_t buflen)
@@ -963,7 +1044,6 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
 {
     NE_DEBUG_WINSCP_CONTEXT(req->session);
     ne_socket *const sock = req->session->socket;
-    size_t willread;
     ssize_t readlen;
     
     switch (resp->mode) {
@@ -974,6 +1054,7 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
          * number of bytes left to read in the current chunk. */
 	if (resp->body.chunk.remain == 0) {
             unsigned long chunk_len;
+            const char *cptr;
             char *ptr;
 
             /* Read chunk-size. */
@@ -995,46 +1076,41 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
                 *ptr = '\0';
             }
 
-            /* Reject things strtoul would otherwise allow */
-            ptr = req->respbuf;
-            if (*ptr == '\0' || *ptr == '-' || *ptr == '+'
-                || (ptr[0] == '0' && ptr[1] == 'x')) {
-                return aborted(req, _("Could not parse chunk size"), 0);
-            }
-
             /* Limit chunk size to <= UINT_MAX, for sanity; must have
              * a following NUL due to chunk-ext handling above. */
-            errno = 0;
-            chunk_len = strtoul(req->respbuf, &ptr, 16);
-            if (errno || ptr == req->respbuf || (*ptr != '\0' && *ptr != '\r')
-                || chunk_len == ULONG_MAX || chunk_len > UINT_MAX) {
+            chunk_len = ne_strhextoul(req->respbuf, &cptr);
+            if (errno || (*cptr != '\0' && *cptr != '\r')
+                || chunk_len > UINT_MAX) {
                 return aborted(req, _("Could not parse chunk size"), 0);
             }
             NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "req: Chunk size: %lu\n", chunk_len);
             resp->body.chunk.remain = chunk_len;
 	}
-	willread = resp->body.chunk.remain > *buflen
-            ? *buflen : resp->body.chunk.remain;
+        if (resp->body.chunk.remain < *buflen)
+            *buflen = resp->body.chunk.remain;
 	break;
     case R_CLENGTH:
-	willread = resp->body.clen.remain > (off_t)*buflen 
-            ? *buflen : (size_t)resp->body.clen.remain;
+        if (resp->body.clen.remain < (off_t)*buflen)
+            *buflen = (size_t)resp->body.clen.remain;
 	break;
     case R_TILLEOF:
-	willread = *buflen;
+	/* fill whatever buffer space. */
 	break;
     case R_NO_BODY:
     default:
-	willread = 0;
+	*buflen = 0;
 	break;
     }
-    if (willread == 0) {
-	*buflen = 0;
+
+    NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "req: Reading %" NE_FMT_SIZE_T " bytes "
+             "of response body.\n", *buflen);
+    /* Special case when reaching the end of a known-length response,
+     * *buflen is set to zero and nothing further is read from the
+     * socket. */
+    if (*buflen == 0) {
 	return 0;
     }
-    NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL,
-	     "Reading %" NE_FMT_SIZE_T " bytes of response body.\n", willread);
-    readlen = ne_sock_read(sock, buffer, willread);
+    readlen = ne_sock_read(sock, buffer, *buflen);
 
     /* EOF is only valid when response body is delimited by it.
      * Strictly, an SSL truncation should not be treated as an EOF in
@@ -1076,25 +1152,29 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
 ssize_t ne_read_response_block(ne_request *req, char *buffer, size_t buflen)
 {
     struct body_reader *rdr;
-    size_t readlen = buflen;
     struct ne_response *const resp = &req->resp;
+    ne_session_status_info *const info = &req->session->status;
 
-    if (read_response_block(req, resp, buffer, &readlen))
+    if (read_response_block(req, resp, buffer, &buflen))
 	return -1;
 
-    if (readlen) {
-        req->session->status.sr.progress += readlen;
+    if (buflen) {
+        info->sr.progress += buflen;
+        notify_status(req->session, ne_status_recving);
+    }
+    else if (info->sr.total == -1) {
+        info->sr.total = info->sr.progress;
         notify_status(req->session, ne_status_recving);
     }
 
     for (rdr = req->body_readers; rdr!=NULL; rdr=rdr->next) {
-	if (rdr->use && rdr->handler(rdr->userdata, buffer, readlen) != 0) {
+	if (rdr->use && rdr->handler(rdr->userdata, buffer, buflen) != 0) {
             ne_close_connection(req->session);
             return -1;
         }
     }
     
-    return readlen;
+    return buflen;
 }
 
 /* Build the request string, returning the buffer. */
@@ -1157,12 +1237,6 @@ static void dump_request(const char *request)
 #define DEBUG_DUMP_REQUEST(x)
 #endif /* DEBUGGING */
 
-#ifdef NE_HAVE_SSL
-#define SSL_CC_REQUESTED(_r) (_r->session->ssl_cc_requested)
-#else
-#define SSL_CC_REQUESTED(_r) (0)
-#endif
-
 /* Read and parse response status-line into 'status'.  'retry' is non-zero
  * if an NE_RETRY should be returned if an EOF is received. */
 static int read_status_line(ne_request *req, ne_status *status, int retry)
@@ -1173,10 +1247,7 @@ static int read_status_line(ne_request *req, ne_status *status, int retry)
 
     ret = read_message_line(req->session->socket, buffer, sizeof req->respbuf);
     if (ret <= 0) {
-        const char *errstr = SSL_CC_REQUESTED(req)
-            ? _("Could not read status line (TLS client certificate was requested)")
-            : _("Could not read status line");
-        int aret = aborted(req, errstr, ret);
+        int aret = aborted(req, _("Could not read status line"), ret);
         return RETRY_RET(retry, ret, aret);
     }
     
@@ -1265,7 +1336,7 @@ static int send_request(ne_request *req, const ne_buffer *request)
 	retry = 0; /* successful read() => never retry now. */
 
 	/* Discard headers with the interim response. */
-	if ((ret = read_response_headers(req, 1)) != NE_OK) break;
+	if ((ret = read_response_headers(req)) != NE_OK) break;
 
         /* Run interim handlers. */
         for (ih = req->interim_handler; ih; ih = ih->next) {
@@ -1287,7 +1358,7 @@ static int send_request(ne_request *req, const ne_buffer *request)
         }
     }
 
-    /* Per RFC 9110ẞ15.5.9 a client MAY retry an outstanding request
+    /* Per RFC 9110§15.5.9 a client MAY retry an outstanding request
      * after a 408. Some modern servers generate this. */
     if (sess->persisted && status->code == 408) {
         NE_DEBUG(NE_DBG_HTTP, "req: Retrying after 408.\n");
@@ -1323,7 +1394,7 @@ static int read_message_header(ne_request *req, char *buf, size_t buflen)
     buf += n;
     buflen -= n;
 
-    /* Per RFC9112ẞ5.2, append any folded headers extended over
+    /* Per RFC9112§5.2, append any folded headers extended over
      * multiple lines. */
     while (buflen > 0) {
 	char ch;
@@ -1356,13 +1427,21 @@ static int read_message_header(ne_request *req, char *buf, size_t buflen)
 
 #define MAX_HEADER_LEN (16384)
 
-/* Add a respnose header field for the given request, using
- * precalculated hash value. */
-static void add_response_header(ne_request *req, unsigned int hash,
-                                char *name, char *value)
+#define add_response_header(req_, hash, name, value) \
+    add_field(&(req_)->response_headers, (hash), (name), (value))
+
+/* Add a response header field, using precalculated hash value. The
+ * fields parameter is a pointer to a pointer to an array of pointers;
+ * *fields may be NULL in which case it is lazily-initialized on
+ * demand. */
+static void add_field(field_hash **fh, unsigned int hash,
+                      const char *name, char *value)
 {
-    struct field **nextf = &req->response_headers[hash];
+    struct field **nextf;
     size_t vlen = strlen(value);
+
+    if (*fh == NULL) *fh = ne_calloc(sizeof **fh);
+    nextf = &(**fh)[hash];
 
     while (*nextf) {
         struct field *const f = *nextf;
@@ -1386,7 +1465,7 @@ static void add_response_header(ne_request *req, unsigned int hash,
     (*nextf)->next = NULL;
 }
 
-/* HTTP token lookup per RFC9110ẞ5.6.2 - returns tolower(ch) or 0 for
+/* HTTP token lookup per RFC9110§5.6.2 - returns tolower(ch) or 0 for
  * non-token characters. */
 
 /* Generated with 'mktable http_token', do not alter here -- */
@@ -1425,27 +1504,22 @@ static const unsigned char table_http_token[256] = {
 /* xF8 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 }; /* -- Generated code from 'mktable http_token' ends. */
 
-/* Read response headers. If 'clear' is non-zero, clears existing
- * response header hash first. Returns NE_* code, sets session error
- * and closes connection on error. */
-static int read_response_headers(ne_request *req, int clear)
+/* Read headers into fields. Returns NE_* code, sets session error and
+ * closes connection on error. */
+static int read_header_fields(ne_request *req, field_hash **fields)
 {
     NE_DEBUG_WINSCP_CONTEXT(req->session);
     char hdr[MAX_HEADER_LEN];
     int ret, count = 0;
-
-    /* Clear any response headers from previous invocations
-     * (e.g. retired requests, interim responses. */
-    if (clear) free_response_headers(req);
 
     while ((ret = read_message_header(req, hdr, sizeof hdr)) == NE_RETRY 
            && ++count < MAX_HEADER_FIELDS) {
         char *pnt, ch;
         unsigned int hash = 0;
 
-        /* Parse field-line per RFC9110ẞ5:
+        /* Parse field-line per RFC9110§5:
          *    field-line   = field-name ":" OWS field-value OWS
-         * where field-name is defined as a token, RFC9110ẞ5.1. */
+         * where field-name is defined as a token, RFC9110§5.1. */
 
         /* Strip trailing OWS */
         pnt = hdr + strlen(hdr) - 1;
@@ -1461,7 +1535,7 @@ static int read_response_headers(ne_request *req, int clear)
         }
 
         /* Ignore header lines where ':' is not directly after the
-         * token (per RFC9112ẞ5.1). */
+         * token (per RFC9112§5.1). */
         if (pnt[0] != ':') {
             NE_DEBUG(NE_DBG_HTTP, "req: Ignoring invalid field %s\n", hdr);
             continue;
@@ -1476,7 +1550,7 @@ static int read_response_headers(ne_request *req, int clear)
 
         /* pnt now points to the header value. */
         NE_DEBUG(NE_DBG_HTTP, "req: Header: [%s] = [%s]\n", hdr, pnt);
-        add_response_header(req, hash, hdr, pnt);
+        add_field(fields, hash, hdr, pnt);
     }
 
     if (count == MAX_HEADER_FIELDS)
@@ -1547,8 +1621,8 @@ int ne_begin_request(ne_request *req)
 
     ne_set_error(req->session, "%d %s", st->code, st->reason_phrase);
 
-    /* Read the headers */
-    ret = read_response_headers(req, 1);
+    /* Read response headers. */
+    ret = read_response_headers(req);
     if (ret) return ret;
 
     /* check the Connection header */
@@ -1669,15 +1743,13 @@ int ne_end_request(ne_request *req)
 {
     NE_DEBUG_WINSCP_CONTEXT(req->session);
     struct hook *hk;
-    int ret;
+    int ret = NE_OK;
 
     if (req->resp.mode == R_CHUNKED) {
-        /* Read headers in chunked trailers WITHOUT clearing existing
-         * header hash. */
-	ret = read_response_headers(req, 0);
+        /* Read headers in chunked trailer, lazy-init the array. Per
+         * RFC9110§6.5, trailer fields are stored separately. */
+        ret = read_header_fields(req, &req->response_trailers);
         if (ret) return ret;
-    } else {
-        ret = NE_OK;
     }
     
     NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "Running post_send hooks\n");
@@ -1723,6 +1795,44 @@ int ne_read_response_to_fd(ne_request *req, int fd)
     }
     
     return len == 0 ? NE_OK : NE_ERROR;
+}
+
+int ne_read_response_to_buffer(ne_request *req, char *buf, size_t *buflen)
+{
+    size_t remain = *buflen;
+    ssize_t rlen = -1;
+    char ch, *ptr = buf;
+    int ret = NE_OK;
+
+    while (ret == NE_OK && remain) {
+        rlen = ne_read_response_block(req, ptr, remain);
+        if (rlen > 0) {
+            remain -= rlen;
+            ptr += rlen;
+        }
+        else if (rlen == 0) {
+            *buflen = ptr - buf;
+            break;
+        }
+        else if (rlen < 0) {
+            ret = NE_ERROR;
+        }
+    }
+
+    /* If the buffer was filled, check whether the entire response
+     * body has been read, and fail with NE_FAILED if not. */
+    if (ret == NE_OK && remain == 0 && rlen > 0) {
+        if ((rlen = ne_read_response_block(req, &ch, sizeof ch)) == 0)
+            *buflen = ptr - buf; /* success, entire response read. */
+        else if (rlen < 0)
+            ret = NE_ERROR;
+        else /* rlen > 0 => more response to read, fail */ {
+            ret = NE_FAILED;
+            ne_set_error(req->session, _("Response buffer size too small"));
+        }
+    }
+
+    return ret;
 }
 
 int ne_discard_response(ne_request *req)
@@ -1996,12 +2106,9 @@ static int open_connection(ne_session *sess)
         /* Set up CONNECT tunnel if using an HTTP proxy. */
         if (sess->nexthop->proxy == PROXY_HTTP)
             ret = proxy_tunnel(sess);
-        
-        if (ret == NE_OK) {
-            ret = ne__negotiate_ssl(sess);
-            if (ret != NE_OK)
-                ne_close_connection(sess);
-        }
+
+        if (ret == NE_OK) ret = ne__negotiate_ssl(sess);
+        if (ret != NE_OK) ne_close_connection(sess);
     }
 #endif
     

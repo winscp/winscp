@@ -3,8 +3,6 @@ unit TB2Consts;
 
 interface
 
-{$I TB2Ver.inc}
-
 resourcestring
   { Exceptions }
   STBToolbarIndexOutOfBounds = 'Toolbar item index out of range';

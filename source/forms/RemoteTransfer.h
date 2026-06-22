@@ -6,9 +6,8 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include <Vcl.ExtCtrls.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 //---------------------------------------------------------------------------
 class TRemoteTransferDialog : public TForm
 {
@@ -57,7 +56,7 @@ private:
   bool FTargetConfirmed;
   UnicodeString FOriginalTarget;
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

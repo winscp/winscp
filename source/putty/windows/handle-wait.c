@@ -95,16 +95,12 @@ HandleWait *add_handle_wait(struct callback_set * callback_set, HANDLE h, handle
     hw->callback = callback;
     hw->callback_ctx = callback_ctx;
 
-    { // WINSCP
     tree234 *t = ensure_handlewaits_tree_exists(callback_set);
     hw->index = allocate_index(callback_set);
-    { // WINSCP
     HandleWait *added = add234(t, hw);
     assert(added == hw);
 
     return hw;
-    } // WINSCP
-    } // WINSCP
 }
 
 void delete_handle_wait(struct callback_set * callback_set, HandleWait *hw)
@@ -121,8 +117,7 @@ HandleWaitList *get_handle_wait_list(struct callback_set * callback_set)
     struct HandleWaitListInner *hwli = snew(struct HandleWaitListInner);
     size_t n = 0;
     HandleWait *hw;
-    int i; // WINSCP
-    for (i = 0; (hw = index234(t, i)) != NULL; i++) {
+    for (int i = 0; (hw = index234(t, i)) != NULL; i++) {
         assert(n < MAXIMUM_WAIT_OBJECTS);
         hwli->hws[n] = hw;
         hwli->hwl.handles[n] = hw->handle;
@@ -138,10 +133,8 @@ bool handle_wait_activate(struct callback_set * callback_set, HandleWaitList *hw
         container_of(hwl, struct HandleWaitListInner, hwl);
     assert(0 <= index);
     assert(index < hwli->hwl.nhandles);
-    { // WINSCP
     HandleWait *hw = hwli->hws[index];
     return hw->callback(callback_set, hw->callback_ctx);
-    } // WINSCP
 }
 
 void handle_wait_list_free(HandleWaitList *hwl)

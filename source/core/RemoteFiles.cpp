@@ -1,20 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "RemoteFiles.h"
-
-#include <SysUtils.hpp>
-#include <StrUtils.hpp>
-#include <DateUtils.hpp>
-
-#include "Exceptions.h"
-#include "Interface.h"
 #include "Terminal.h"
-#include "TextsCore.h"
-#include "HelpCore.h"
 #include "Cryptography.h"
+#include <System.Win.ComObj.hpp>
 /* TODO 1 : Path class instead of UnicodeString (handle relativity...) */
 //---------------------------------------------------------------------------
 const UnicodeString PartialExt(L".filepart");
@@ -45,6 +36,11 @@ UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString & Path
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString UniversalIncludeTrailingBackslash(bool Unix, const UnicodeString & Path)
+{
+  return Unix ? UnixIncludeTrailingBackslash(Path) : IncludeTrailingBackslash(Path);
+}
+//---------------------------------------------------------------------------
 // Keeps "/" for root path
 UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString & Path, bool Simple)
 {
@@ -61,14 +57,44 @@ UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString & Path
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString UniversalExcludeTrailingBackslash(bool Unix, const UnicodeString & Path)
+{
+  return Unix ? UnixExcludeTrailingBackslash(Path) : ExcludeTrailingBackslash(Path);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString & Path)
 {
   return UnixExcludeTrailingBackslash(Path, true);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2)
+UnicodeString UnixCombinePathsForce(const UnicodeString & Path1, const UnicodeString & Path2)
 {
   return UnixIncludeTrailingBackslash(Path1) + Path2;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  DebugAssert(!Path2.IsEmpty());
+  return UnixCombinePathsForce(Path1, Path2);
+}
+//---------------------------------------------------------------------------
+UnicodeString UniversalCombinePaths(bool Unix, const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  return Unix ? UnixCombinePaths(Path1, Path2) : CombinePaths(Path1, Path2);
+}
+//---------------------------------------------------------------------------
+// Eventually make UnixCombinePaths do this,
+// once we verify that no use of UnixCombinePaths relies on it adding backslash even for empty second arg
+UnicodeString UnixCombinePathsSmart(const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  if (Path2.IsEmpty())
+  {
+    return Path1;
+  }
+  else
+  {
+    return UnixCombinePaths(Path1, Path2);
+  }
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall UnixSamePath(const UnicodeString & Path1, const UnicodeString & Path2)
@@ -526,7 +552,7 @@ int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
   // this should be somewhere else, probably in TUnixDirView,
   // as the "partial" overlay is added there too
   int PartialFileExtLen = GetPartialFileExtLen(FileName);
-  if (GetPartialFileExtLen(FileName) > 0)
+  if (PartialFileExtLen > 0)
   {
     FileName.SetLength(FileName.Length() - PartialFileExtLen);
   }
@@ -841,7 +867,7 @@ void __fastcall TRemoteTokenList::Log(TTerminal * Terminal, const wchar_t * Titl
 //---------------------------------------------------------------------------
 int __fastcall TRemoteTokenList::Count() const
 {
-  return (int)FTokens.size();
+  return static_cast<int>(FTokens.size());
 }
 //---------------------------------------------------------------------------
 const TRemoteToken * __fastcall TRemoteTokenList::Token(int Index) const
@@ -1029,7 +1055,7 @@ wchar_t __fastcall TRemoteFile::GetType() const
 void __fastcall TRemoteFile::SetType(wchar_t AType)
 {
   FType = AType;
-  FIsSymLink = ((wchar_t)towupper(FType) == FILETYPE_SYMLINK);
+  FIsSymLink = (static_cast<wchar_t>(towupper(FType)) == FILETYPE_SYMLINK);
 }
 //---------------------------------------------------------------------------
 const TRemoteFile * __fastcall TRemoteFile::GetLinkedFile() const
@@ -1106,6 +1132,11 @@ UnicodeString __fastcall TRemoteFile::GetRightsStr()
   // note that HumanRights is typically an empty string
   // (with an exception of Perm-fact-only MLSD FTP listing)
   return FRights->Unknown ? HumanRights : FRights->Text;
+}
+//---------------------------------------------------------------------------
+inline Word StrToWord(const UnicodeString & S)
+{
+  return static_cast<Word>(StrToInt(S));
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
@@ -1211,7 +1242,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
       else
       {
         // format dd mmm or mmm dd ?
-        Day = (Word)StrToIntDef(Col, 0);
+        Day = static_cast<Word>(StrToIntDef(Col, 0));
         if (Day > 0)
         {
           DayMonthFormat = true;
@@ -1226,15 +1257,15 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
         // for --full-time format
         if ((Month == 0) && (Col.Length() == 10) && (Col[5] == L'-') && (Col[8] == L'-'))
         {
-          Year = (Word)Col.SubString(1, 4).ToInt();
-          Month = (Word)Col.SubString(6, 2).ToInt();
-          Day = (Word)Col.SubString(9, 2).ToInt();
+          Year = StrToWord(Col.SubString(1, 4));
+          Month = StrToWord(Col.SubString(6, 2));
+          Day = StrToWord(Col.SubString(9, 2));
           GETCOL;
-          Hour = (Word)Col.SubString(1, 2).ToInt();
-          Min = (Word)Col.SubString(4, 2).ToInt();
+          Hour = StrToWord(Col.SubString(1, 2));
+          Min = StrToWord(Col.SubString(4, 2));
           if (Col.Length() >= 8)
           {
-            Sec = (Word)StrToInt(Col.SubString(7, 2));
+            Sec = StrToWord(StrToInt(Col.SubString(7, 2)));
           }
           else
           {
@@ -1267,7 +1298,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
           if (Day == 0)
           {
             GETNCOL;
-            Day = (Word)StrToInt(Col);
+            Day = StrToWord(Col);
           }
           if ((Day < 1) || (Day > 31)) Abort();
 
@@ -1280,13 +1311,13 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             {
               Abort();
             }
-            Hour = (Word)StrToInt(Col.SubString(1, 2));
-            Min = (Word)StrToInt(Col.SubString(4, 2));
-            Sec = (Word)StrToInt(Col.SubString(7, 2));
+            Hour = StrToWord(Col.SubString(1, 2));
+            Min = StrToWord(Col.SubString(4, 2));
+            Sec = StrToWord(Col.SubString(7, 2));
             FModificationFmt = mfFull;
             // do not trim leading space of filename
             GETNCOL;
-            Year = (Word)StrToInt(Col);
+            Year = StrToWord(Col);
           }
           else
           {
@@ -1307,11 +1338,11 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             }
             // GETNCOL; // We don't want to trim input strings (name with space at beginning???)
             // Check if we got time (contains :) or year
-            if ((P = (Word)Col.Pos(L':')) > 0)
+            if ((P = static_cast<Word>(Col.Pos(L':'))) > 0)
             {
               Word CurrMonth, CurrDay;
-              Hour = (Word)StrToInt(Col.SubString(1, P-1));
-              Min = (Word)StrToInt(Col.SubString(P+1, Col.Length() - P));
+              Hour = StrToWord(Col.SubString(1, P-1));
+              Min = StrToWord(Col.SubString(P+1, Col.Length() - P));
               if (Hour > 23 || Min > 59) Abort();
               // When we don't got year, we assume current year
               // with exception that the date would be in future
@@ -1324,7 +1355,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             }
               else
             {
-              Year = (Word)StrToInt(Col);
+              Year = StrToWord(Col);
               if (Year > 10000) Abort();
               // When we didn't get time we assume midnight
               Hour = 0; Min = 0; Sec = 0;
@@ -1367,7 +1398,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
           if (P)
           {
             FLinkTo = Line.SubString(
-              P + wcslen(SYMLINKSTR), Line.Length() - P + wcslen(SYMLINKSTR) + 1);
+              SizeToIntChecked(P + wcslen(SYMLINKSTR)), SizeToIntChecked(Line.Length() - P + wcslen(SYMLINKSTR) + 1));
             Line.SetLength(P - 1);
           }
           else
@@ -1565,10 +1596,11 @@ __fastcall TRemoteFileList::TRemoteFileList():
   FTimestamp = Now();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteFileList::AddFile(TRemoteFile * File)
+bool TRemoteFileList::AddFile(TRemoteFile * File)
 {
   Add(File);
   File->Directory = this;
+  return true;
 }
 //---------------------------------------------------------------------------
 void TRemoteFileList::ExtractFile(TRemoteFile * File)
@@ -1617,7 +1649,7 @@ void __fastcall TRemoteFileList::Reset()
   Clear();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteFileList::SetDirectory(UnicodeString value)
+void TRemoteFileList::SetDirectory(const UnicodeString & value)
 {
   FDirectory = UnixExcludeTrailingBackslash(value);
 }
@@ -1629,7 +1661,7 @@ UnicodeString __fastcall TRemoteFileList::GetFullDirectory()
 //---------------------------------------------------------------------------
 TRemoteFile * __fastcall TRemoteFileList::GetFiles(Integer Index)
 {
-  return (TRemoteFile *)Items[Index];
+  return static_cast<TRemoteFile *>(Items[Index]);
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFileList::GetIsRoot()
@@ -1660,16 +1692,13 @@ TRemoteFile * __fastcall TRemoteFileList::FindFile(const UnicodeString &FileName
 __fastcall TRemoteDirectory::TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template) :
   TRemoteFileList(), FTerminal(aTerminal)
 {
-  FThisDirectory = NULL;
   FParentDirectory = NULL;
   if (Template == NULL)
   {
-    FIncludeThisDirectory = false;
     FIncludeParentDirectory = true;
   }
   else
   {
-    FIncludeThisDirectory = Template->FIncludeThisDirectory;
     FIncludeParentDirectory = Template->FIncludeParentDirectory;
   }
 }
@@ -1681,12 +1710,7 @@ __fastcall TRemoteDirectory::~TRemoteDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::ReleaseRelativeDirectories()
 {
-  if ((ThisDirectory != NULL) && !IncludeThisDirectory)
-  {
-    delete FThisDirectory;
-    FThisDirectory = NULL;
-  }
-  if ((ParentDirectory != NULL) && !IncludeParentDirectory)
+  if ((FParentDirectory != NULL) && !IncludeParentDirectory)
   {
     delete FParentDirectory;
     FParentDirectory = NULL;
@@ -1699,34 +1723,35 @@ void __fastcall TRemoteDirectory::Reset()
   TRemoteFileList::Reset();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteDirectory::SetDirectory(UnicodeString value)
+bool TRemoteDirectory::AddFile(TRemoteFile * File)
 {
-  TRemoteFileList::SetDirectory(value);
-}
-//---------------------------------------------------------------------------
-void __fastcall TRemoteDirectory::AddFile(TRemoteFile * File)
-{
-  if (File->IsThisDirectory) FThisDirectory = File;
-  if (File->IsParentDirectory) FParentDirectory = File;
-
-  if ((!File->IsThisDirectory || IncludeThisDirectory) &&
-      (!File->IsParentDirectory || IncludeParentDirectory))
+  bool Result = !File->IsThisDirectory;
+  if (!Result)
   {
-    TRemoteFileList::AddFile(File);
+    delete File;
   }
-  File->Terminal = Terminal;
+  else
+  {
+    if (File->IsParentDirectory)
+    {
+      FParentDirectory = File;
+    }
+
+    if (!File->IsParentDirectory || IncludeParentDirectory)
+    {
+      DebugCheck(TRemoteFileList::AddFile(File));
+    }
+    File->Terminal = Terminal;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::DuplicateTo(TRemoteFileList * Copy)
 {
   TRemoteFileList::DuplicateTo(Copy);
-  if (ThisDirectory && !IncludeThisDirectory)
+  if ((FParentDirectory != NULL) && !IncludeParentDirectory)
   {
-    Copy->AddFile(ThisDirectory->Duplicate(false));
-  }
-  if (ParentDirectory && !IncludeParentDirectory)
-  {
-    Copy->AddFile(ParentDirectory->Duplicate(false));
+    Copy->AddFile(FParentDirectory->Duplicate(false));
   }
 }
 //---------------------------------------------------------------------------
@@ -1740,33 +1765,15 @@ void __fastcall TRemoteDirectory::SetIncludeParentDirectory(Boolean value)
   if (IncludeParentDirectory != value)
   {
     FIncludeParentDirectory = value;
-    if (value && ParentDirectory)
+    if (value && (FParentDirectory != NULL))
     {
-      DebugAssert(IndexOf(ParentDirectory) < 0);
-      AddFile(ParentDirectory);
+      DebugAssert(IndexOf(FParentDirectory) < 0);
+      AddFile(FParentDirectory);
     }
-    else if (!value && ParentDirectory)
+    else if (!value && (FParentDirectory != NULL))
     {
-      DebugAssert(IndexOf(ParentDirectory) >= 0);
-      ExtractFile(ParentDirectory);
-    }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TRemoteDirectory::SetIncludeThisDirectory(Boolean value)
-{
-  if (IncludeThisDirectory != value)
-  {
-    FIncludeThisDirectory = value;
-    if (value && ThisDirectory)
-    {
-      DebugAssert(IndexOf(ThisDirectory) < 0);
-      Add(ThisDirectory);
-    }
-    else if (!value && ThisDirectory)
-    {
-      DebugAssert(IndexOf(ThisDirectory) >= 0);
-      Extract(ThisDirectory);
+      DebugAssert(IndexOf(FParentDirectory) >= 0);
+      ExtractFile(FParentDirectory);
     }
   }
 }
@@ -1793,7 +1800,7 @@ void __fastcall TRemoteDirectoryCache::Clear()
   {
     for (int Index = 0; Index < Count; Index++)
     {
-      delete (TRemoteFileList *)Objects[Index];
+      delete static_cast<TRemoteFileList *>(Objects[Index]);
       Objects[Index] = NULL;
     }
   }
@@ -2683,7 +2690,7 @@ TRights TRights::Combine(const TRights & Other) const
 {
   TRights Result = (*this);
   Result |= Other.NumberSet;
-  Result &= (unsigned short)~Other.NumberUnset;
+  Result &= static_cast<unsigned short>(~Other.NumberUnset);
   return Result;
 }
 //=== TRemoteProperties -------------------------------------------------------
@@ -2751,7 +2758,7 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
   TRemoteProperties CommonProperties;
   for (int Index = 0; Index < FileList->Count; Index++)
   {
-    TRemoteFile * File = (TRemoteFile *)(FileList->Objects[Index]);
+    TRemoteFile * File = static_cast<TRemoteFile *>(FileList->Objects[Index]);
     DebugAssert(File);
     if (!Index)
     {
@@ -2865,12 +2872,12 @@ void __fastcall TRemoteProperties::Save(THierarchicalStorage * Storage) const
 TSynchronizeChecklist::TItem::TItem() :
   Action(saNone), IsDirectory(false), ImageIndex(-1), Checked(true), RemoteFile(NULL), FDirectoryHasSize(false)
 {
-  Local.ModificationFmt = mfFull;
-  Local.Modification = 0;
-  Local.Size = 0;
-  Remote.ModificationFmt = mfFull;
-  Remote.Modification = 0;
-  Remote.Size = 0;
+  Info1.ModificationFmt = mfFull;
+  Info1.Modification = 0;
+  Info1.Size = 0;
+  Info2.ModificationFmt = mfFull;
+  Info2.Modification = 0;
+  Info2.Size = 0;
 }
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TItem::~TItem()
@@ -2880,14 +2887,14 @@ TSynchronizeChecklist::TItem::~TItem()
 //---------------------------------------------------------------------------
 const UnicodeString& TSynchronizeChecklist::TItem::GetFileName() const
 {
-  if (!Remote.FileName.IsEmpty())
+  if (!Info2.FileName.IsEmpty())
   {
-    return Remote.FileName;
+    return Info2.FileName;
   }
   else
   {
-    DebugAssert(!Local.FileName.IsEmpty());
-    return Local.FileName;
+    DebugAssert(!Info1.FileName.IsEmpty());
+    return Info1.FileName;
   }
 }
 //---------------------------------------------------------------------------
@@ -2920,12 +2927,12 @@ __int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize(TAction AAction) co
     case saUploadNew:
     case saUploadUpdate:
     case saDeleteLocal:
-      return Local.Size;
+      return Info1.Size;
 
     case saDownloadNew:
     case saDownloadUpdate:
     case saDeleteRemote:
-      return Remote.Size;
+      return Info2.Size;
 
     default:
       DebugFail();
@@ -2935,22 +2942,47 @@ __int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize(TAction AAction) co
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetLocalPath() const
 {
-  return CombinePaths(Local.Directory, Local.FileName);
+  return CombinePaths(Info1.Directory, Info1.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalPath2() const
+{
+  return CombinePaths(Info2.Directory, Info2.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::ForceGetLocalPath() const
+{
+  return CombinePaths(Info1.Directory, DefaultStr(Info1.FileName, Info2.FileName));
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::ForceGetLocalPath2() const
+{
+  return CombinePaths(Info2.Directory, DefaultStr(Info2.FileName, Info1.FileName));
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetRemotePath() const
 {
-  return UnixCombinePaths(Remote.Directory, Remote.FileName);
+  return UnixCombinePaths(Info2.Directory, Info2.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::ForceGetRemotePath() const
+{
+  return UnixCombinePaths(Info2.Directory, GetFileName());
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget() const
 {
-  return IncludeTrailingBackslash(Local.Directory);
+  return IncludeTrailingBackslash(Info1.Directory);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget2() const
+{
+  return IncludeTrailingBackslash(Info2.Directory);
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetRemoteTarget() const
 {
-  return UnixIncludeTrailingBackslash(Remote.Directory);
+  return UnixIncludeTrailingBackslash(Info2.Directory);
 };
 //---------------------------------------------------------------------------
 TStrings * TSynchronizeChecklist::TItem::GetFileList() const
@@ -2998,35 +3030,87 @@ void TSynchronizeChecklist::Add(TItem * Item)
   FList->Add(Item);
 }
 //---------------------------------------------------------------------------
-int TSynchronizeChecklist::Compare(const TItem * Item1, const TItem * Item2)
+static inline int __fastcall DoCompare(const TSynchronizeChecklist::TItem * Item1, const TSynchronizeChecklist::TItem * Item2)
 {
   int Result;
-  if (!Item1->Local.Directory.IsEmpty())
+  // VCL's Sort calls the func for the same items, optimize that
+  if (Item1 == Item2)
   {
-    Result = AnsiCompareText(Item1->Local.Directory, Item2->Local.Directory);
+    Result = 0;
   }
   else
   {
-    DebugAssert(!Item1->Remote.Directory.IsEmpty());
-    Result = AnsiCompareText(Item1->Remote.Directory, Item2->Remote.Directory);
-  }
+    if (!Item1->Info1.Directory.IsEmpty())
+    {
+      // Magnitude faster that AnsiCompareText
+      if (Item1->Info1.Directory == Item2->Info1.Directory)
+      {
+        Result = 0;
+      }
+      else
+      {
+        Result = AnsiCompareText(Item1->Info1.Directory, Item2->Info1.Directory);
+      }
+    }
+    else
+    {
+      DebugAssert(!Item1->Info2.Directory.IsEmpty());
+      if (Item1->Info2.Directory == Item2->Info2.Directory)
+      {
+        Result = 0;
+      }
+      else
+      {
+        Result = AnsiCompareText(Item1->Info2.Directory, Item2->Info2.Directory);
+      }
+    }
 
-  if (Result == 0)
-  {
-    Result = AnsiCompareText(Item1->GetFileName(), Item2->GetFileName());
+    if (Result == 0)
+    {
+      Result = AnsiCompareText(Item1->GetFileName(), Item2->GetFileName());
+    }
   }
-
   return Result;
+}
+//---------------------------------------------------------------------------
+int TSynchronizeChecklist::Compare(const TItem * Item1, const TItem * Item2)
+{
+  return DoCompare(Item1, Item2);
 }
 //---------------------------------------------------------------------------
 int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
 {
-  return Compare(static_cast<TItem *>(AItem1), static_cast<TItem *>(AItem2));
+  return DoCompare(static_cast<TItem *>(AItem1), static_cast<TItem *>(AItem2));
 }
 //---------------------------------------------------------------------------
 void TSynchronizeChecklist::Sort()
 {
-  FList->Sort(Compare);
+  // Quick sort is slow if the list is huge and almost sorted (what is usually true),
+  // so as an optimization, doing linear comparison to test if it is really sorted.
+  // Though in real live, locale-aware comparison might cause the list not to be really sorted.
+  // We might consider optimize the sorting by blocks of files in the same folder.
+  int C = FList->Count;
+  if (C > 0)
+  {
+    int Index = 0;
+    bool Sorted = true;
+    TItem * Item0 = static_cast<TItem *>(FList->Items[Index]);
+    while (Sorted && (Index < C - 1))
+    {
+      Index++;
+      TItem * Item1 = static_cast<TItem *>(FList->Items[Index]);
+      if (Compare(Item0, Item1) > 0)
+      {
+        Sorted = false;
+      }
+      Item0 = Item1;
+    }
+
+    if (!Sorted)
+    {
+      FList->Sort(Compare);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 int TSynchronizeChecklist::GetCount() const
@@ -3097,11 +3181,11 @@ void __fastcall TSynchronizeChecklist::UpdateDirectorySize(const TItem * Item, _
 
     if (Item->IsRemoteOnly())
     {
-      MutableItem->Remote.Size = Size;
+      MutableItem->Info2.Size = Size;
     }
     else if (Item->IsLocalOnly())
     {
-      MutableItem->Local.Size = Size;
+      MutableItem->Info1.Size = Size;
     }
     else
     {
@@ -3151,6 +3235,170 @@ bool __fastcall TSynchronizeChecklist::IsItemSizeIrrelevant(TAction Action)
 
     default:
       return false;
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TFileOperationProgressSink : public TCppInterfacedObject<IFileOperationProgressSink>
+{
+public:
+  TFileOperationProgressSink(TSynchronizeChecklistFileOperation * FileOperation) : FFileOperation(FileOperation)
+  {
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE StartOperations() { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE FinishOperations(HRESULT) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PreRenameItem(DWORD, IShellItem *, const wchar_t *) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostRenameItem(DWORD, IShellItem * Item, const wchar_t *, HRESULT, IShellItem *)
+  {
+    DebugFail();
+    FFileOperation->ProcessedItem(Item);
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE PreMoveItem(DWORD, IShellItem *, IShellItem *, const wchar_t *) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostMoveItem(DWORD, IShellItem * Item, IShellItem *, const wchar_t *, HRESULT, IShellItem *)
+  {
+    DebugFail();
+    FFileOperation->ProcessedItem(Item);
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE PreCopyItem(DWORD, IShellItem *, IShellItem *, const wchar_t *) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostCopyItem(DWORD, IShellItem * Item, IShellItem *, const wchar_t *, HRESULT, IShellItem *)
+  {
+    FFileOperation->ProcessedItem(Item);
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE PreDeleteItem(DWORD, IShellItem *) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostDeleteItem(DWORD, IShellItem * Item, HRESULT, IShellItem *)
+  {
+    FFileOperation->ProcessedItem(Item);
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE PreNewItem(DWORD, IShellItem *, const wchar_t *) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostNewItem(DWORD, IShellItem *, const wchar_t *, const wchar_t *, DWORD, HRESULT, IShellItem *)
+  {
+    DebugFail();
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE UpdateProgress(UINT, UINT) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE ResetTimer() { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PauseTimer() { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE ResumeTimer() { return S_OK; }
+
+private:
+  TSynchronizeChecklistFileOperation * FFileOperation;
+};
+//---------------------------------------------------------------------------
+IShellItem * CreateShellItemFromParsingName(const UnicodeString & Path)
+{
+  IShellItem * Result;
+  OleCheck(SHCreateItemFromParsingName(Path.c_str(), nullptr, IID_PPV_ARGS(&Result)));
+  return Result;
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklistFileOperation::TSynchronizeChecklistFileOperation(
+    const TSynchronizeChecklist * Checklist, TProcessedSynchronizationChecklistItem OnProcessedItem, void * Token) :
+  FOnProcessedItem(OnProcessedItem),
+  FToken(Token)
+{
+  FFileOperation.Create(CLSID_FileOperation, CLSCTX_ALL);
+
+  FProgressSink = new TFileOperationProgressSink(this);
+  DWORD UnusedCookie;
+  OleCheck(FFileOperation->Advise(FProgressSink, &UnusedCookie));
+
+  int Index = 0;
+  FAny = false;
+  const TSynchronizeChecklist::TItem * ChecklistItem;
+  while (Checklist->GetNextChecked(Index, ChecklistItem))
+  {
+    UnicodeString ItemPath;
+    switch (ChecklistItem->Action)
+    {
+      case TSynchronizeChecklist::saDownloadNew:
+      case TSynchronizeChecklist::saDownloadUpdate:
+      case TSynchronizeChecklist::saUploadNew:
+      case TSynchronizeChecklist::saUploadUpdate:
+        {
+          UnicodeString DestinationFolderPath;
+          if ((ChecklistItem->Action == TSynchronizeChecklist::saDownloadNew) ||
+              (ChecklistItem->Action == TSynchronizeChecklist::saDownloadUpdate))
+          {
+            ItemPath = ChecklistItem->GetLocalPath2();
+            DestinationFolderPath = ChecklistItem->GetLocalTarget();
+          }
+          else
+          {
+            ItemPath = ChecklistItem->GetLocalPath();
+            DestinationFolderPath = ChecklistItem->GetLocalTarget2();
+          }
+          TComPtr<IShellItem> Item = CreateShellItemFromParsingName(ItemPath);
+          TComPtr<IShellItem> DestinationFolder = CreateShellItemFromParsingName(DestinationFolderPath);
+          OleCheck(FFileOperation->CopyItem(Item.Get(), DestinationFolder.Get(), nullptr, nullptr));
+          FAny = true;
+        }
+        break;
+
+      case TSynchronizeChecklist::saDeleteRemote:
+      case TSynchronizeChecklist::saDeleteLocal:
+        {
+          bool Left = (ChecklistItem->Action == TSynchronizeChecklist::saDeleteLocal);
+          ItemPath = Left ? ChecklistItem->GetLocalPath() : ChecklistItem->GetLocalPath2();
+          TComPtr<IShellItem> Item = CreateShellItemFromParsingName(ItemPath);
+          OleCheck(FFileOperation->DeleteItem(Item.Get(), nullptr));
+          FAny = true;
+        }
+        break;
+
+      default:
+        DebugFail();
+        break;
+    }
+
+    if (!ItemPath.IsEmpty())
+    {
+      FShellItems.insert(std::make_pair(ItemPath.LowerCase(), ChecklistItem));
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklistFileOperation::~TSynchronizeChecklistFileOperation()
+{
+  FProgressSink->Release();
+}
+//---------------------------------------------------------------------------
+void TSynchronizeChecklistFileOperation::ProcessedItem(IShellItem * ShellItem)
+{
+  wchar_t * NamePtr;
+  // It's different IShellItem than what we pass to IFileOperation above, so we have to use underlying path for lookup
+  if (DebugAlwaysTrue(SUCCEEDED(ShellItem->GetDisplayName(SIGDN_FILESYSPATH, &NamePtr))))
+  {
+    UnicodeString Name = NamePtr;
+    CoTaskMemFree(NamePtr);
+    auto I = FShellItems.find(Name.LowerCase());
+    // The callback are triggered even for files in folders, so we do not get here only for top level checklist items.
+    // The folder is triggered before the files, so we unfortunatelly mark the folder as processed before its files are processed.
+    // Solution would be to wait until we get (Pre?) trigger for another checklist item (or until the end of whole operation).
+    if (I != FShellItems.end())
+    {
+      auto ChecklistItem = I->second;
+      FOnProcessedItem(FToken, ChecklistItem);
+    }
   }
 }
 //---------------------------------------------------------------------------

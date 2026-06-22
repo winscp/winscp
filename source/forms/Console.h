@@ -2,7 +2,7 @@
 #ifndef ConsoleH
 #define ConsoleH
 //----------------------------------------------------------------------------
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 #include "PathLabel.hpp"
 #include <System.Classes.hpp>
 #include <Vcl.ActnList.hpp>
@@ -81,7 +81,7 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall DoAdjustWindow();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall ~TConsoleDialog();

@@ -214,7 +214,9 @@ update-copyright: Makefile
 	@rm -f README.orig
 
 doc-status:
-	@echo -n "Missing docs for:"
-	@for f in `nm src/.libs/libneon.so | grep ' T ' | colrm 1 11`; do \
-	   test -f doc/man/$$f.3 || echo -n " $$f"; \
-	done; echo
+	@echo "Missing docs for:"
+	@pass=0; fail=0; for f in `nm -D src/.libs/libneon.so | sed -n '/ T /{s/.* T //;s/@@.*//g;p;}' | sort`; do	\
+	   if test -f doc/man/$$f.3; then										\
+		echo "PASS: $$f"; pass=$$((pass + 1)); else								\
+		echo "FAIL: $$f"; fail=$$((fail + 1)); fi;								\
+	done; echo "Overall: Coverage=$$((100*pass / fail))%"; test $$fail -eq 0

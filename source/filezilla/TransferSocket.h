@@ -7,10 +7,6 @@
 #include "FtpControlSocket.h"
 #include "ApiLog.h"
 //---------------------------------------------------------------------------
-#ifndef MPEXT_NO_ZLIB
-#include <zlib.h>
-#endif
-//---------------------------------------------------------------------------
 class CFtpControlSocket;
 class CAsyncProxySocketLayer;
 class CAsyncSslSocketLayer;
@@ -42,9 +38,6 @@ public:
 #ifndef MPEXT_NO_GSS
   void UseGSS(CAsyncGssSocketLayer * pGssLayer);
 #endif
-#ifndef MPEXT_NO_ZLIB
-  bool InitZlib(int level);
-#endif
 
 public:
   virtual void OnReceive(int nErrorCode);
@@ -59,7 +52,7 @@ protected:
   int ReadDataFromFile(char * buffer, int len);
   int ReadData(char * buffer, int len);
   void WriteData(const char * buffer, int len);
-  virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
+  virtual void LogSocketMessageRaw(int nMessageType, const wchar_t * pMsg);
   virtual int GetSocketOptionVal(int OptionID) const;
   virtual void ConfigureSocket();
   bool Activate();
@@ -75,11 +68,8 @@ protected:
   BOOL m_bSentClose;
   int m_bufferpos;
   char * m_pBuffer;
-#ifndef MPEXT_NO_ZLIB
-  char * m_pBuffer2; // Used by zlib transfers
-#endif
   BOOL m_bCheckTimeout;
-  CTime m_LastActiveTime;
+  TDateTime m_LastActiveTime;
   int m_nTransferState;
   int m_nMode;
   int m_nNotifyWaiting;
@@ -89,15 +79,11 @@ protected:
   void EnsureSendClose(int Mode);
   void CloseOnShutDownOrError(int Mode);
   void SetBuffers();
+  __int64 GetTransferSize(CFtpControlSocket::transferDirection direction, bool & beenWaiting);
 
   LARGE_INTEGER m_LastUpdateTime;
   unsigned int m_LastSendBufferUpdate;
   DWORD m_SendBuf;
-
-#ifndef MPEXT_NO_ZLIB
-  z_stream m_zlibStream;
-  bool m_useZlib;
-#endif
 };
 //---------------------------------------------------------------------------
 #endif // TransferSocketH

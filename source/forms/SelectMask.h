@@ -6,7 +6,7 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 #include <CustomDirView.hpp>
 #include <Buttons.hpp>
 //---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ private:
   void __fastcall ColorChange(TColor Color);
   void __fastcall UpdateControls();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   enum TMode { smSelect, smDeselect, smFilter, smFileColor };

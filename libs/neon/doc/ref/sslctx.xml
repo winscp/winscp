@@ -1,0 +1,187 @@
+<refentry id="refsslctx">
+
+  <refmeta>
+    <refentrytitle>ne_ssl_context_create</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname id="ne_ssl_context_create">ne_ssl_context_create</refname>
+    <refname id="ne_ssl_context_trustcert">ne_ssl_context_trustcert</refname>
+    <refname id="ne_ssl_context_trustdefca">ne_ssl_context_trustdefca</refname>
+    <refname id="ne_ssl_context_keypair">ne_ssl_context_keypair</refname>
+    <refname id="ne_ssl_context_set_clicert">ne_ssl_context_set_clicert</refname>
+    <refname id="ne_ssl_context_set_ccprovide">ne_ssl_context_set_ccprovide</refname>
+    <refname id="ne_ssl_context_set_versions">ne_ssl_context_set_versions</refname>
+    <refname id="ne_ssl_context_set_verify">ne_ssl_context_set_verify</refname>
+    <refname id="ne_ssl_context_set_flag">ne_ssl_context_set_flag</refname>
+    <refname id="ne_ssl_context_get_flag">ne_ssl_context_get_flag</refname>
+    <refname id="ne_ssl_context_destroy">ne_ssl_context_destroy</refname>
+    <refpurpose>SSL context management functions</refpurpose>
+  </refnamediv>
+  
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+
+      <funcsynopsisinfo>#include &lt;ne_ssl.h&gt;</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>ne_ssl_context *<function>ne_ssl_context_create</function></funcdef>
+        <paramdef>int <parameter>mode</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>void <function>ne_ssl_context_trustcert</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>const ne_ssl_certificate *<parameter>cert</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>void <function>ne_ssl_context_trustdefca</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>int <function>ne_ssl_context_keypair</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>const char *<parameter>cert</parameter></paramdef>
+        <paramdef>const char *<parameter>key</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>void <function>ne_ssl_context_set_clicert</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>const ne_ssl_client_cert *<parameter>cc</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>void <function>ne_ssl_context_set_ccprovide</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>ne_ssl_ccprovide_fn <parameter>provider</parameter></paramdef>
+        <paramdef>void *<parameter>userdata</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>int <function>ne_ssl_context_set_versions</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>enum ne_ssl_protocol <parameter>min</parameter></paramdef>
+        <paramdef>enum ne_ssl_protocol <parameter>max</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>int <function>ne_ssl_context_set_verify</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>int <parameter>required</parameter></paramdef>
+        <paramdef>const char *<parameter>ca_names</parameter></paramdef>
+        <paramdef>const char *<parameter>verify_cas</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>void <function>ne_ssl_context_set_flag</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>int <parameter>flag</parameter></paramdef>
+        <paramdef>int <parameter>value</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>int <function>ne_ssl_context_get_flag</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+        <paramdef>int <parameter>flag</parameter></paramdef>
+      </funcprototype>
+
+      <funcprototype>
+        <funcdef>void <function>ne_ssl_context_destroy</function></funcdef>
+        <paramdef>ne_ssl_context *<parameter>ctx</parameter></paramdef>
+      </funcprototype>
+
+    </funcsynopsis>
+    
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>The <function>ne_ssl_context_create</function> function creates
+    an SSL context object. The <parameter>mode</parameter> parameter should
+    be <constant>NE_SSL_CTX_CLIENT</constant> for a client context,
+    <constant>NE_SSL_CTX_SERVER</constant> for a server context.</para>
+
+    <para>For a client context, the <function>ne_ssl_context_trustcert</function>
+    function configures the context to trust the certificate
+    <parameter>cert</parameter>. The <function>ne_ssl_context_trustdefca</function>
+    function configures the context to trust the default system certificate
+    authorities.</para>
+
+    <para>For a server context, the <function>ne_ssl_context_keypair</function>
+    function configures the server certificate and private key. The
+    <parameter>cert</parameter> and <parameter>key</parameter> parameters are
+    filenames to PEM-encoded certificates.</para>
+
+    <para>The <function>ne_ssl_context_set_clicert</function> function
+    configures a client certificate for a client context. The client
+    certificate <parameter>cc</parameter> must be in the decrypted state. The
+    certificate object is duplicated internally and may be destroyed by the
+    caller after the function returns.</para>
+
+    <para>The <function>ne_ssl_context_set_ccprovide</function> function
+    registers a callback to provide a client certificate on demand if
+    requested by the server. The <parameter>provider</parameter> callback
+    is passed the <parameter>userdata</parameter> pointer, an array of
+    acceptable CA distinguished names, and the count of names in the
+    array.</para>
+
+    <para>The <function>ne_ssl_context_set_versions</function> function
+    sets the minimum and maximum SSL/TLS protocol versions allowed for
+    the connection. This must be called before initiating the SSL handshake.</para>
+
+    <para>For a server context, the <function>ne_ssl_context_set_verify</function>
+    function configures client certificate verification. If
+    <parameter>required</parameter> is non-zero, a client certificate is
+    required. If <parameter>ca_names</parameter> is non-&null;, it specifies
+    a filename containing PEM certificates from which CA names are sent in
+    the client certificate request. The <parameter>verify_cas</parameter>
+    parameter specifies CAs used for verification.</para>
+
+    <para>The <function>ne_ssl_context_set_flag</function> function
+    sets a flag for the SSL context. The
+    <function>ne_ssl_context_get_flag</function> function retrieves
+    the current value of a flag. No flags are currently
+    defined.</para>
+
+    <para>The <function>ne_ssl_context_destroy</function> function destroys
+    an SSL context object and frees all associated resources.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Return value</title>
+
+    <para><function>ne_ssl_context_create</function> returns an SSL context
+    object, or &null; on error.</para>
+
+    <para><function>ne_ssl_context_keypair</function>,
+    <function>ne_ssl_context_set_versions</function>, and
+    <function>ne_ssl_context_set_verify</function> return zero on success,
+    or non-zero on error.</para>
+
+    <para><function>ne_ssl_context_get_flag</function> returns the flag
+    value.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_ssl_context_set_clicert</function> and
+    <function>ne_ssl_context_trustdefca</function> are available in
+    &neon; 0.37.0 and later.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+
+    <para><xref linkend="ne_sock_handshake"/></para>
+  </refsect1>
+
+</refentry>

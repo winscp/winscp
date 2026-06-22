@@ -1,28 +1,12 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <StrUtils.hpp>
-#include <System.IOUtils.hpp>
-#include <Common.h>
-#include <math.h>
-#include <limits>
-
 #include "Preferences.h"
-#include "Custom.h"
 
-#include <CoreMain.h>
+#include "Custom.h"
 #include <Terminal.h>
 #include <Bookmarks.h>
-
-#include "VCLCommon.h"
-#include "GUITools.h"
-#include "Tools.h"
-#include "TextsCore.h"
-#include "TextsWin.h"
-#include "HelpWin.h"
-#include "WinInterface.h"
-#include "WinConfiguration.h"
 #include "Setup.h"
 #include "ProgParams.h"
 #include "Http.h"
@@ -176,13 +160,12 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
 //---------------------------------------------------------------------
 bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
 {
-  PuttyPathEdit->Items = CustomWinConfiguration->History[L"PuttyPath"];
   FDialogData = DialogData;
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     SaveConfiguration();
-    CustomWinConfiguration->History[L"PuttyPath"] = PuttyPathEdit->Items;
+    PuttyPathEdit->SaveToHistory();
   }
   else
   {
@@ -330,6 +313,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BeepOnFinishAfterEdit->AsInteger =
       int(static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * SecsPerDay);
     BOOLPROP(BalloonNotifications);
+    BOOLPROP(FlashTaskbar);
 
     DDFakeFileEnabledButton->Checked = WinConfiguration->DDFakeFile;
     DDFakeFileDisabledButton->Checked = !DDFakeFileEnabledButton->Checked;
@@ -415,6 +399,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     FEditorFont->Color = WinConfiguration->Editor.FontColor;
     FEditorBackgroundColor = WinConfiguration->Editor.BackgroundColor;
     EditorDisableSmoothScrollCheck->Checked = WinConfiguration->Editor.DisableSmoothScroll;
+    EditorWarnLargeFileCheck->Checked = WinConfiguration->Editor.WarnOrLargeFileSize;
+    EditorLargeFileSizeEdit->AsInteger = WinConfiguration->Editor.LargeFileSize;
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
     BOOLPROP(EditorCheckNotModified);
@@ -427,9 +413,12 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     SessionReopenAutoCheck->Checked = (Configuration->SessionReopenAuto > 0);
     SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
       (Configuration->SessionReopenAuto / MSecsPerSec) : 5);
-    SessionReopenAutoIdleCheck->Checked = (GUIConfiguration->SessionReopenAutoIdle > 0);
-    SessionReopenAutoIdleEdit->Value = (GUIConfiguration->SessionReopenAutoIdle > 0 ?
-      (GUIConfiguration->SessionReopenAutoIdle / MSecsPerSec) : 5);
+    SessionReopenAutoIdleCheck->Checked =
+      GUIConfiguration->SessionReopenAutoIdleOn && (GUIConfiguration->SessionReopenAutoIdle > 0);
+    SessionReopenAutoInactiveCheck->Checked = GUIConfiguration->SessionReopenAutoInactive;
+    int SessionReopenAutoIdle =
+      (GUIConfiguration->SessionReopenAutoIdle > 0 ? GUIConfiguration->SessionReopenAutoIdle : SessionReopenAutoIdleDefault);
+    SessionReopenAutoIdleEdit->Value = (SessionReopenAutoIdle / MSecsPerSec);
     SessionReopenAutoStallCheck->Checked = (Configuration->SessionReopenAutoStall > 0);
     SessionReopenAutoStallEdit->Value = (Configuration->SessionReopenAutoStall > 0 ?
       (Configuration->SessionReopenAutoStall / MSecsPerSec) : SecsPerMin);
@@ -504,14 +493,15 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     }
 
     // window
-    AutoSaveWorkspaceCheck->Checked = WinConfiguration->AutoSaveWorkspace;
+    BOOLPROP(AutoSaveWorkspace);
     AutoWorkspaceCombo->Text =
       DefaultStr(WinConfiguration->AutoWorkspace,
         // It will rarely happen that LastWorkspace is set, while AutoWorkspace not.
         // It can happen only when user saved workspace before opening the Preferences
         // dialog for the first time
         DefaultStr(WinConfiguration->LastWorkspace, LoadStr(NEW_WORKSPACE)));
-    AutoSaveWorkspacePasswordsCheck->Checked = WinConfiguration->AutoSaveWorkspacePasswords;
+    BOOLPROP(AutoSaveWorkspacePasswords);
+    BOOLPROP(WorkspaceConnectAll);
     if (WinConfiguration->PathInCaption == picFull)
     {
       PathInCaptionFullButton->Checked = true;
@@ -528,6 +518,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ExternalSessionInExistingInstance);
     BOOLPROP(ShowLoginWhenNoSession);
     BOOLPROP(KeepOpenWhenNoSession);
+    BOOLPROP(SessionSilentDisconnect);
     BOOLPROP(SessionTabCaptionTruncation);
     BOOLPROP(ShowTips);
 
@@ -660,6 +651,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // security
     UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
     SessionRememberPasswordCheck->Checked = GUIConfiguration->SessionRememberPassword;
+    AuthAgentCombo->ItemIndex = Configuration->AuthAgent;
     SshHostCAsFromPuTTYCheck->Checked = Configuration->SshHostCAsFromPuTTY;
     FSshHostCAPlainList = Configuration->SshHostCAList->GetList();
     Configuration->RefreshPuttySshHostCAList();
@@ -750,6 +742,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     GUIConfiguration->BeepOnFinishAfter =
       static_cast<double>(BeepOnFinishAfterEdit->Value / SecsPerDay);
     BOOLPROP(BalloonNotifications);
+    BOOLPROP(FlashTaskbar);
 
     WinConfiguration->DDFakeFile = DDFakeFileEnabledButton->Checked;
     WinConfiguration->DDDrives = DDDrivesMemo->Lines->CommaText;
@@ -817,6 +810,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->Editor.FontColor = FEditorFont->Color;
     WinConfiguration->Editor.BackgroundColor = FEditorBackgroundColor;
     WinConfiguration->Editor.DisableSmoothScroll = EditorDisableSmoothScrollCheck->Checked;
+    WinConfiguration->Editor.WarnOrLargeFileSize = EditorWarnLargeFileCheck->Checked;
+    WinConfiguration->Editor.LargeFileSize = EditorLargeFileSizeEdit->AsInteger;
     WinConfiguration->EditorList = FEditorList;
     BOOLPROP(EditorCheckNotModified);
 
@@ -829,8 +824,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     Configuration->SessionReopenAuto =
       (SessionReopenAutoCheck->Checked ? (SessionReopenAutoEdit->AsInteger * MSecsPerSec) : 0);
-    GUIConfiguration->SessionReopenAutoIdle =
-      (SessionReopenAutoIdleCheck->Checked ? (SessionReopenAutoIdleEdit->AsInteger * MSecsPerSec) : 0);
+    GUIConfiguration->SessionReopenAutoIdleOn = SessionReopenAutoIdleCheck->Checked;
+    GUIConfiguration->SessionReopenAutoInactive = SessionReopenAutoInactiveCheck->Checked;
+    GUIConfiguration->SessionReopenAutoIdle = (SessionReopenAutoIdleEdit->AsInteger * MSecsPerSec);
     Configuration->SessionReopenAutoStall =
       (SessionReopenAutoStallCheck->Checked ? (SessionReopenAutoStallEdit->AsInteger * MSecsPerSec) : 0);
     Configuration->SessionReopenTimeout = (SessionReopenTimeoutEdit->AsInteger * MSecsPerSec);
@@ -855,10 +851,11 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
     CopyParam.QueueParallel = QueueParallelCheck->Checked;
-    __int64 ParallelTransferThreshold;
+    __int64 ParallelTransferThreshold = 0; // shut up
     if (ParallelTransferCheck->Checked && TryStrToSize(ParallelTransferThresholdCombo->Text, ParallelTransferThreshold))
     {
-      Configuration->ParallelTransferThreshold = std::min(ParallelTransferThreshold / 1024, static_cast<__int64>(std::numeric_limits<int>::max()));
+      Configuration->ParallelTransferThreshold =
+        static_cast<int>(std::min(ParallelTransferThreshold / 1024, static_cast<__int64>(std::numeric_limits<int>::max())));
     }
     else
     {
@@ -911,7 +908,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       WinConfiguration->AutoWorkspace = AutoWorkspaceCombo->Text;
     }
-    WinConfiguration->AutoSaveWorkspacePasswords = AutoSaveWorkspacePasswordsCheck->Checked;
+    BOOLPROP(AutoSaveWorkspacePasswords);
+    BOOLPROP(WorkspaceConnectAll);
     if (PathInCaptionFullButton->Checked)
     {
        WinConfiguration->PathInCaption = picFull;
@@ -928,11 +926,12 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ExternalSessionInExistingInstance);
     BOOLPROP(ShowLoginWhenNoSession);
     BOOLPROP(KeepOpenWhenNoSession);
+    BOOLPROP(SessionSilentDisconnect);
     BOOLPROP(SessionTabCaptionTruncation);
     BOOLPROP(ShowTips);
 
     // panels
-    WinConfiguration->DoubleClickAction = (TDoubleClickAction)DoubleClickActionCombo->ItemIndex;
+    WinConfiguration->DoubleClickAction = static_cast<TDoubleClickAction>(DoubleClickActionCombo->ItemIndex);
     BOOLPROP(AutoReadDirectoryAfterOp);
     BOOLPROP(RefreshRemotePanel);
     WinConfiguration->RefreshRemotePanelInterval =
@@ -1025,6 +1024,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // security
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
+    Configuration->AuthAgent = AuthAgentCombo->ItemIndex;
     Configuration->SshHostCAsFromPuTTY = SshHostCAsFromPuTTYCheck->Checked;
     std::unique_ptr<TSshHostCAList> SshHostCAList(new TSshHostCAList(FSshHostCAPlainList));
     Configuration->SshHostCAList = SshHostCAList.get();
@@ -1034,7 +1034,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->LogProtocol = LogProtocolCombo2->ItemIndex - BelowNormalLogLevels;
     Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
-    __int64 LogMaxSize;
+    __int64 LogMaxSize = 0; // shut up
     // TryStrToSize can fail, only if LogMaxSizeComboExit is bypassed due to IsCancelButtonBeingClicked
     if (LogMaxSizeCheck->Checked && TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize))
     {
@@ -1076,7 +1076,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
   }
 
   bool MoveStorage = true;
-  TStorage Storage;
+  TStorage Storage = TStorage(); // shut up
   if (RegistryStorageButton->Checked)
   {
     Storage = stRegistry;
@@ -1289,7 +1289,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
     EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
     EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
-    EnableControl(SessionReopenAutoIdleEdit, SessionReopenAutoIdleCheck->Checked);
+    EnableControl(SessionReopenAutoIdleEdit, SessionReopenAutoIdleCheck->Checked || SessionReopenAutoInactiveCheck->Checked);
     EnableControl(SessionReopenAutoIdleLabel, SessionReopenAutoIdleEdit->Enabled);
     EnableControl(SessionReopenAutoIdleSecLabel, SessionReopenAutoIdleEdit->Enabled);
     EnableControl(SessionReopenAutoStallEdit, SessionReopenAutoStallCheck->Checked);
@@ -1325,6 +1325,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     EnableControl(RefreshRemotePanelIntervalEdit, RefreshRemotePanelCheck->Checked);
     EnableControl(RefreshRemoteDirectoryUnitLabel, RefreshRemotePanelCheck->Checked);
+    EnableControl(EditorLargeFileSizeEdit, EditorWarnLargeFileCheck->Checked);
+    EnableControl(EditorLargeFileSizeUnitLabel, EditorWarnLargeFileCheck->Checked);
 
     UnicodeString EditorFontLabelText;
     EditorFontLabelText = FMTLOAD(EDITOR_FONT_FMT,
@@ -1605,7 +1607,7 @@ void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 {
   UnicodeString IconName, Params;
-  int SpecialFolder;
+  int SpecialFolder = 0; // shut up
 
   if (Sender == DesktopIconButton)
   {
@@ -2301,15 +2303,15 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   DebugAssert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else if (M->Msg == WM_HELP)
   {
-    WMHelp(*((TWMHelp *)Message));
+    WMHelp(*static_cast<TWMHelp *>(Message));
   }
   else if (M->Msg == WM_ACTIVATE)
   {
-    WMActivate(*((TWMActivate *)Message));
+    WMActivate(*static_cast<TWMActivate *>(Message));
   }
   else if (M->Msg == CM_FOCUSCHANGED)
   {
@@ -2726,7 +2728,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewWindowProc(TMessage & Mess
       Message.Result |= CDRF_NOTIFYPOSTPAINT | CDRF_NOTIFYSUBITEMDRAW;
 
       TNMLVCustomDraw * CustomDraw = reinterpret_cast<TNMLVCustomDraw *>(NotifyMessage.NMHdr);
-      int Index = CustomDraw->nmcd.dwItemSpec;
+      int Index = SizeToIntChecked(CustomDraw->nmcd.dwItemSpec);
       int CommandIndex = GetCommandIndex(Index);
       TCustomCommandList * List = GetCommandList(Index);
       // after end of every list, except for the last last list
@@ -3044,7 +3046,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Send
 //---------------------------------------------------------------------------
 void TPreferencesDialog::HideFocus(int State)
 {
-  Perform(WM_CHANGEUISTATE, MAKEWPARAM(State, UISF_HIDEFOCUS), 0);
+  Perform(WM_CHANGEUISTATE, MAKEWPARAM(State, UISF_HIDEFOCUS), NativeInt(0));
 }
 //---------------------------------------------------------------------------
 void TPreferencesDialog::SetFocusIfEnabled(TControl * Control)
@@ -3106,7 +3108,7 @@ void TPreferencesDialog::FocusAndHighlightControl(TControl * Control, const Unic
     }
   }
 
-  FHideFocus = ((Perform(WM_QUERYUISTATE, 0, 0) & UISF_HIDEFOCUS) != 0);
+  FHideFocus = ((Perform(WM_QUERYUISTATE, 0, NativeInt(0)) & UISF_HIDEFOCUS) != 0);
   HideFocus(UIS_CLEAR);
 }
 //---------------------------------------------------------------------------
@@ -3291,7 +3293,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateFileColorsView()
 {
-  FileColorsView->Items->Count = FFileColors.size();
+  FileColorsView->Items->Count = SizeToIntChecked(FFileColors.size());
   AutoSizeListColumnsWidth(FileColorsView);
 }
 //---------------------------------------------------------------------------
@@ -3333,7 +3335,7 @@ void __fastcall TPreferencesDialog::AddEditFileColor(bool Edit)
       }
       else
       {
-        FFileColors.insert(&FFileColors[Index], FileColorData);
+        FFileColors.insert(FFileColors.begin() + Index, FileColorData);
       }
     }
 
@@ -3464,7 +3466,7 @@ void __fastcall TPreferencesDialog::SshHostCAsViewKeyDown(TObject *, WORD & Key,
 //---------------------------------------------------------------------------
 void TPreferencesDialog::UpdateSshHostCAsViewView()
 {
-  SshHostCAsView->Items->Count = GetSshHostCAPlainList().size();
+  SshHostCAsView->Items->Count = SizeToIntChecked(GetSshHostCAPlainList().size());
   AutoSizeListColumnsWidth(SshHostCAsView, 1);
   if (SshHostCAsFromPuTTYCheck->Checked && (SshHostCAsView->Items->Count > 0))
   {
@@ -3480,7 +3482,7 @@ void __fastcall TPreferencesDialog::AddSshHostCAButtonClick(TObject *)
   {
     FSshHostCAPlainList.push_back(SshHostCA);
     UpdateSshHostCAsViewView();
-    SshHostCAsView->ItemIndex = FSshHostCAPlainList.size() - 1;
+    SshHostCAsView->ItemIndex = SizeToIntChecked(FSshHostCAPlainList.size() - 1);
     SshHostCAsView->ItemFocused->MakeVisible(false);
     UpdateControls();
   }
@@ -3551,7 +3553,7 @@ int __fastcall TPreferencesDialog::CompareControlByLocation(void * Item1, void *
     Result = Control1->Left - Control2->Left;
     if (Result == 0)
     {
-      Result = reinterpret_cast<IntPtr>(Control1) - reinterpret_cast<IntPtr>(Control2);
+      Result = (Control1 == Control2) ? 0 : ((Control1 > Control2) ? 1 : -1);
     }
   }
   return Result;
@@ -3643,8 +3645,9 @@ void TPreferencesDialog::Search(TControl * Control, TStrings * Results, bool & N
 void __fastcall TPreferencesDialog::SearchResultClick(TObject * Sender)
 {
   TStaticText * LinkLabel = DebugNotNull(dynamic_cast<TStaticText *>(Sender));
-  UnicodeString Caption = FSearchResults->Strings[LinkLabel->Tag];
-  TControl * Control = dynamic_cast<TControl *>(FSearchResults->Objects[LinkLabel->Tag]);
+  int Index = SizeToIntChecked(LinkLabel->Tag);
+  UnicodeString Caption = FSearchResults->Strings[Index];
+  TControl * Control = dynamic_cast<TControl *>(FSearchResults->Objects[Index]);
 
   FSearchResults.reset(NULL);
 

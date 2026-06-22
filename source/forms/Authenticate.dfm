@@ -123,22 +123,24 @@ object AuthenticateForm: TAuthenticateForm
         FocusControl = PromptEdit2
         WordWrap = True
       end
-      object PromptEdit1: TPasswordEdit
+      object PromptEdit1: TEdit
         Left = 8
         Top = 74
         Width = 400
         Height = 23
         Anchors = [akLeft, akTop, akRight]
         MaxLength = 250
+        PasswordChar = '*'
         TabOrder = 0
       end
-      object PromptEdit2: TPasswordEdit
+      object PromptEdit2: TEdit
         Left = 8
         Top = 121
         Width = 400
         Height = 23
         Anchors = [akLeft, akTop, akRight]
         MaxLength = 250
+        PasswordChar = '*'
         TabOrder = 1
       end
     end

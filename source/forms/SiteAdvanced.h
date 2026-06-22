@@ -3,7 +3,6 @@
 #define SiteAdvancedH
 //----------------------------------------------------------------------------
 #include "ComboEdit.hpp"
-#include "PasswordEdit.hpp"
 #include "UpDownEdit.hpp"
 #include <System.Classes.hpp>
 #include <Vcl.ActnList.hpp>
@@ -15,7 +14,6 @@
 #include <Vcl.Mask.hpp>
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
-#include "PngImageList.hpp"
 //----------------------------------------------------------------------------
 #include <Configuration.h>
 #include <SessionData.h>
@@ -56,7 +54,7 @@ __published:
   TEdit *ProxyUsernameEdit;
   TLabel *ProxyUsernameLabel;
   TLabel *ProxyPasswordLabel;
-  TPasswordEdit *ProxyPasswordEdit;
+  TEdit *ProxyPasswordEdit;
   TGroupBox *ProxySettingsGroup;
   TLabel *ProxyTelnetCommandLabel;
   TEdit *ProxyTelnetCommandEdit;
@@ -143,7 +141,7 @@ __published:
   TLabel *Label18;
   TEdit *TunnelHostNameEdit;
   TEdit *TunnelUserNameEdit;
-  TPasswordEdit *TunnelPasswordEdit;
+  TEdit *TunnelPasswordEdit;
   TUpDownEdit *TunnelPortNumberEdit;
   TFilenameEdit *TunnelPrivateKeyEdit3;
   TLabel *Label19;
@@ -155,7 +153,6 @@ __published:
   TGroupBox *TunnelOptionsGroup;
   TLabel *Label21;
   TComboBox *TunnelLocalPortNumberEdit;
-  TRadioButton *DSTModeKeepCheck;
   TGroupBox *ConnectionGroup;
   TCheckBox *FtpPasvModeCheck;
   TTabSheet *RecycleBinSheet;
@@ -176,7 +173,7 @@ __published:
   TLabel *Label9;
   TComboBox *ListingCommandEdit;
   TCheckBox *SshNoUserAuthCheck;
-  TCheckBox *TryAgentCheck;
+  TCheckBox *TryAgentCheck2;
   TLabel *ProxyMethodLabel;
   TComboBox *SshProxyMethodCombo;
   TComboBox *ProxyDNSCombo;
@@ -257,7 +254,7 @@ __published:
   TCheckBox *EncryptFilesCheck;
   TGroupBox *EncryptFilesGroup;
   TLabel *Label13;
-  TPasswordEdit *EncryptKeyPasswordEdit;
+  TEdit *EncryptKeyPasswordEdit;
   TCheckBox *ShowEncryptionKeyCheck;
   TButton *GenerateKeyButton;
   TEdit *EncryptKeyVisibleEdit;
@@ -289,6 +286,7 @@ __published:
   TLabel *S3RoleArnLabel;
   TEdit *S3RoleArnEdit;
   TPanel *NavigationPanel;
+  TCheckBox *WebDavCrossDomainRedirectsCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -349,9 +347,7 @@ private:
   int NoUpdate;
   int FAlgDragSource;
   int FAlgDragDest;
-  int FOptions;
   UnicodeString FBeforeDialogPath;
-  TFSProtocol FFSProtocol;
   TSessionData * FSessionData;
   TColor FColor;
   UnicodeString FLastPrivateKey;
@@ -387,7 +383,7 @@ private:
   void SerializePuttyRegistry(const UnicodeString & Key, TStrings * Values);
   bool HasCertificate(const UnicodeString & FileName);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

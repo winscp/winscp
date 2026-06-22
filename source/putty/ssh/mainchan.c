@@ -27,29 +27,28 @@ static bool mainchan_rcvd_exit_signal_numeric(
 static void mainchan_request_response(Channel *chan, bool success);
 
 static const ChannelVtable mainchan_channelvt = {
-    // WINSCP
-    /*.free =*/ mainchan_free,
-    /*.open_confirmation =*/ mainchan_open_confirmation,
-    /*.open_failed =*/ mainchan_open_failure,
-    /*.send =*/ mainchan_send,
-    /*.send_eof =*/ mainchan_send_eof,
-    /*.set_input_wanted =*/ mainchan_set_input_wanted,
-    /*.log_close_msg =*/ mainchan_log_close_msg,
-    /*.want_close =*/ chan_default_want_close,
-    /*.rcvd_exit_status =*/ mainchan_rcvd_exit_status,
-    /*.rcvd_exit_signal =*/ mainchan_rcvd_exit_signal,
-    /*.rcvd_exit_signal_numeric =*/ mainchan_rcvd_exit_signal_numeric,
-    /*.run_shell =*/ chan_no_run_shell,
-    /*.run_command =*/ chan_no_run_command,
-    /*.run_subsystem =*/ chan_no_run_subsystem,
-    /*.enable_x11_forwarding =*/ chan_no_enable_x11_forwarding,
-    /*.enable_agent_forwarding =*/ chan_no_enable_agent_forwarding,
-    /*.allocate_pty =*/ chan_no_allocate_pty,
-    /*.set_env =*/ chan_no_set_env,
-    /*.send_break =*/ chan_no_send_break,
-    /*.send_signal =*/ chan_no_send_signal,
-    /*.change_window_size =*/ chan_no_change_window_size,
-    /*.request_response =*/ mainchan_request_response,
+    .free = mainchan_free,
+    .open_confirmation = mainchan_open_confirmation,
+    .open_failed = mainchan_open_failure,
+    .send = mainchan_send,
+    .send_eof = mainchan_send_eof,
+    .set_input_wanted = mainchan_set_input_wanted,
+    .log_close_msg = mainchan_log_close_msg,
+    .want_close = chan_default_want_close,
+    .rcvd_exit_status = mainchan_rcvd_exit_status,
+    .rcvd_exit_signal = mainchan_rcvd_exit_signal,
+    .rcvd_exit_signal_numeric = mainchan_rcvd_exit_signal_numeric,
+    .run_shell = chan_no_run_shell,
+    .run_command = chan_no_run_command,
+    .run_subsystem = chan_no_run_subsystem,
+    .enable_x11_forwarding = chan_no_enable_x11_forwarding,
+    .enable_agent_forwarding = chan_no_enable_agent_forwarding,
+    .allocate_pty = chan_no_allocate_pty,
+    .set_env = chan_no_set_env,
+    .send_break = chan_no_send_break,
+    .send_signal = chan_no_send_signal,
+    .change_window_size = chan_no_change_window_size,
+    .request_response = mainchan_request_response,
 };
 
 typedef enum MainChanType {
@@ -114,7 +113,7 @@ mainchan *mainchan_new(
 
 static void mainchan_free(Channel *chan)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     conf_free(mc->conf);
     sfree(mc);
@@ -227,7 +226,7 @@ static void mainchan_try_fallback_command(mainchan *mc)
 
 static void mainchan_request_response(Channel *chan, bool success)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     PacketProtocolLayer *ppl = mc->ppl; /* for ppl_logevent */
 
@@ -347,7 +346,7 @@ static void mainchan_ready(mainchan *mc)
 
 static void mainchan_open_failure(Channel *chan, const char *errtext)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
 
     ssh_sw_abort_deferred(mc->ppl->ssh,
@@ -357,14 +356,14 @@ static void mainchan_open_failure(Channel *chan, const char *errtext)
 static size_t mainchan_send(Channel *chan, bool is_stderr,
                             const void *data, size_t length)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     return seat_output(mc->ppl->seat, is_stderr, data, length);
 }
 
 static void mainchan_send_eof(Channel *chan)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     PacketProtocolLayer *ppl = mc->ppl; /* for ppl_logevent */
 
@@ -385,7 +384,7 @@ static void mainchan_send_eof(Channel *chan)
 
 static void mainchan_set_input_wanted(Channel *chan, bool wanted)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
 
     /*
@@ -404,7 +403,7 @@ static char *mainchan_log_close_msg(Channel *chan)
 
 static bool mainchan_rcvd_exit_status(Channel *chan, int status)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     PacketProtocolLayer *ppl = mc->ppl; /* for ppl_logevent */
 
@@ -429,7 +428,7 @@ static void mainchan_log_exit_signal_common(
 static bool mainchan_rcvd_exit_signal(
     Channel *chan, ptrlen signame, bool core_dumped, ptrlen msg)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     int exitcode;
     char *signame_str;
@@ -464,7 +463,7 @@ static bool mainchan_rcvd_exit_signal(
 static bool mainchan_rcvd_exit_signal_numeric(
     Channel *chan, int signum, bool core_dumped, ptrlen msg)
 {
-    pinitassert(chan->vt == &mainchan_channelvt);
+    assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     char *signum_str;
 

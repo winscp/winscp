@@ -64,6 +64,13 @@
 	last call has effect.  If one of the functions is to be used,
 	it must be used before the creation of any request object for
 	the session.</para>
+
+        <para>The <parameter>hostname</parameter> parameter used with
+        <function>ne_session_proxy</function> and
+        <function>ne_session_socks_proxy</function> must follow the
+        same rules as the <parameter>host</parameter> for
+        <function>ne_session_create</function>; see <xref
+        linkend="ne_session_create"/> for examples.</para>
         
         <refsect2>
           <title>HTTP proxy specification</title>
@@ -170,7 +177,7 @@ ne_session_destroy(sess);
       <refsect1>
 	<title>See Also</title>
 
-	<para><xref linkend="ne_ssl_set_verify"/>, <xref linkend="ne_ssl_trust_cert"/>, <xref linkend="ne_sock_init"/>, <xref linkend="ne_set_session_flag"/></para>
+	<para><xref linkend="ne_session_create"/>, <xref linkend="ne_set_proxy_auth"/></para>
       </refsect1>
 
     </refentry>

@@ -70,7 +70,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 22
             Width = 261
             Height = 15
-            Caption = 'End-of-line &characters (if not indicated by server):'
+            Caption = 'End-&of-line characters (if not indicated by server):'
             FocusControl = EOLTypeCombo
           end
           object UtfLabel: TLabel
@@ -180,13 +180,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 8
           Top = 164
           Width = 438
-          Height = 93
+          Height = 73
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Daylight saving time'
           TabOrder = 1
           DesignSize = (
             438
-            93)
+            73)
           object DSTModeUnixCheck: TRadioButton
             Left = 11
             Top = 23
@@ -207,20 +207,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 1
             OnClick = DataChange
           end
-          object DSTModeKeepCheck: TRadioButton
-            Left = 11
-            Top = 69
-            Width = 418
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Preser&ve remote timestamp'
-            TabOrder = 2
-            OnClick = DataChange
-          end
         end
         object PuttyGroup: TGroupBox
           Left = 8
-          Top = 263
+          Top = 243
           Width = 438
           Height = 103
           Anchors = [akLeft, akTop, akRight]
@@ -235,7 +225,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 129
             Height = 15
             Caption = '&PuTTY terminal settings:'
-            FocusControl = EncryptKeyPasswordEdit
+            FocusControl = PuttySettingsEdit
           end
           object PuttySettingsButton: TButton
             Left = 9
@@ -345,7 +335,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Syn&chronize browsing'
+            Caption = '&Synchronize browsing'
             TabOrder = 0
           end
         end
@@ -481,8 +471,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           450
           388)
         object EncryptFilesCheck: TCheckBox
-          Left = 8
-          Top = 8
+          Left = 10
+          Top = 2
           Width = 438
           Height = 17
           Anchors = [akLeft, akTop, akRight]
@@ -492,7 +482,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         end
         object EncryptFilesGroup: TGroupBox
           Left = 8
-          Top = 31
+          Top = 25
           Width = 438
           Height = 127
           Anchors = [akLeft, akTop, akRight]
@@ -522,13 +512,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
             OnExit = EncryptKeyEditExit
           end
-          object EncryptKeyPasswordEdit: TPasswordEdit
+          object EncryptKeyPasswordEdit: TEdit
             Left = 9
             Top = 40
             Width = 420
             Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 64
+            PasswordChar = '*'
             TabOrder = 0
             Text = 'EncryptKeyPasswordEdit'
             OnChange = DataChange
@@ -642,7 +633,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 80
             Width = 170
             Height = 15
-            Caption = '&Canonicalize paths on the server'
+            Caption = 'Ca&nonicalize paths on the server'
             FocusControl = SFTPRealPathCombo
           end
           object SFTPMaxVersionCombo: TComboBox
@@ -1168,7 +1159,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 419
             Height = 93
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 10000
+            MaxLength = 4096
             TabOrder = 0
             OnChange = DataChange
             OnKeyDown = NoteMemoKeyDown
@@ -1199,13 +1190,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 8
           Top = 2
           Width = 438
-          Height = 49
+          Height = 72
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             438
-            49)
+            72)
           object WebDavLiberalEscapingCheck: TCheckBox
             Left = 11
             Top = 22
@@ -1214,6 +1205,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Tolerate non-encoded special characters in filenames'
             TabOrder = 0
+            OnClick = DataChange
+          end
+          object WebDavCrossDomainRedirectsCheck: TCheckBox
+            Left = 11
+            Top = 45
+            Width = 418
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Allow redirects to other hosts'
+            TabOrder = 1
             OnClick = DataChange
           end
         end
@@ -1498,9 +1499,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object ProxyHostLabel: TLabel
             Left = 9
             Top = 48
-            Width = 91
+            Width = 88
             Height = 15
-            Caption = 'Pro&xy host name:'
+            Caption = 'Pro&xy hostname:'
             FocusControl = ProxyHostEdit
           end
           object ProxyPortLabel: TLabel
@@ -1515,9 +1516,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object ProxyUsernameLabel: TLabel
             Left = 9
             Top = 95
-            Width = 59
+            Width = 56
             Height = 15
-            Caption = '&User name:'
+            Caption = '&Username:'
             FocusControl = ProxyUsernameEdit
           end
           object ProxyPasswordLabel: TLabel
@@ -1577,13 +1578,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Text = 'ProxyUsernameEdit'
             OnChange = DataChange
           end
-          object ProxyPasswordEdit: TPasswordEdit
+          object ProxyPasswordEdit: TEdit
             Left = 222
             Top = 113
             Width = 207
             Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 100
+            PasswordChar = '*'
             TabOrder = 6
             Text = 'ProxyPasswordEdit'
             OnChange = DataChange
@@ -1774,9 +1776,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object Label6: TLabel
             Left = 9
             Top = 22
-            Width = 61
+            Width = 58
             Height = 15
-            Caption = '&Host name:'
+            Caption = '&Hostname:'
             FocusControl = TunnelHostNameEdit
           end
           object Label14: TLabel
@@ -1791,9 +1793,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object Label15: TLabel
             Left = 9
             Top = 69
-            Width = 59
+            Width = 56
             Height = 15
-            Caption = '&User name:'
+            Caption = '&Username:'
             FocusControl = TunnelUserNameEdit
           end
           object Label16: TLabel
@@ -1825,13 +1827,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Text = 'TunnelUserNameEdit'
             OnChange = DataChange
           end
-          object TunnelPasswordEdit: TPasswordEdit
+          object TunnelPasswordEdit: TEdit
             Left = 222
             Top = 87
             Width = 207
             Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 100
+            PasswordChar = '*'
             TabOrder = 3
             Text = 'TunnelPasswordEdit'
             OnChange = DataChange
@@ -1855,7 +1858,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Width = 436
           Height = 17
           Anchors = [akLeft, akTop, akRight]
-          Caption = '&Connect through SSH tunnel'
+          Caption = 'Connect &through SSH tunnel'
           TabOrder = 0
           OnClick = DataChange
         end
@@ -2078,7 +2081,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Enable &compression'
+            Caption = '&Enable compression'
             TabOrder = 0
             OnClick = DataChange
           end
@@ -2307,13 +2310,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           DesignSize = (
             438
             95)
-          object TryAgentCheck: TCheckBox
+          object TryAgentCheck2: TCheckBox
             Left = 11
             Top = 22
             Width = 416
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Attempt authentication using &Pageant'
+            Caption = '&Attempt authentication using agent'
             TabOrder = 0
             OnClick = DataChange
           end
@@ -2457,7 +2460,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 401
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Allow GSSAPI &credential delegation'
+            Caption = 'Allow GSSAPI c&redential delegation'
             TabOrder = 1
             OnClick = AuthGSSAPICheck3Click
           end

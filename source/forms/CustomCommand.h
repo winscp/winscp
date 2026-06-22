@@ -6,7 +6,7 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include "HistoryComboBox.hpp"
+#include "HistoryComboBox.h"
 //---------------------------------------------------------------------------
 class TCustomCommands;
 //---------------------------------------------------------------------------
@@ -35,9 +35,9 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall CommandEditGetData(THistoryComboBox *Sender,
-    Pointer & Data);
+    TObject *& Data);
   void __fastcall CommandEditSetData(THistoryComboBox *Sender,
-    Pointer Data);
+    TObject * Data);
   void __fastcall FormShow(TObject *Sender);
 
 private:
@@ -55,7 +55,7 @@ private:
 protected:
   void __fastcall UpdateControls();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TCustomCommandDialog(TComponent* Owner,

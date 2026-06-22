@@ -79,20 +79,15 @@ static void aesgcm_sw_setkey_impl(aesgcm_sw *gcm, const unsigned char *var)
      * logical specification so that's where the logical constant term
      * lives. (See more detailed comment in aesgcm-ref-poly.c.)
      */
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         gcm->table[127 - i] = v;
 
         /* Multiply v by x, which means shifting right (bit reversal
          * again) and then adding 0xE1 at the top if we shifted a 1 out. */
-        { // WINSCP
         uint64_t lobit = v.lo & 1;
         v.lo = (v.lo >> 1) ^ (v.hi << 63);
         v.hi = (v.hi >> 1) ^ (0xE100000000000000ULL & -lobit);
-        } // WINSCP
     }
-    } // WINSCP
 }
 
 static inline void aesgcm_sw_setup(aesgcm_sw *gcm, const unsigned char *mask)
@@ -112,38 +107,29 @@ static inline void aesgcm_sw_coeff(aesgcm_sw *gcm, const unsigned char *coeff)
      * by XORing together the entries of 'table' corresponding to set
      * bits. */
 
-    { // WINSCP
     value128_t out;
     out.lo = out.hi = 0;
 
-    { // WINSCP
     const value128_t *tableptr = gcm->table;
 
-    size_t i;
-    for (i = 0; i < 64; i++) {
+    for (size_t i = 0; i < 64; i++) {
         uint64_t bit = 1 & gcm->acc.lo;
         gcm->acc.lo >>= 1;
-        { // WINSCP
         uint64_t mask = -bit;
         out.hi ^= mask & tableptr->hi;
         out.lo ^= mask & tableptr->lo;
         tableptr++;
-        } // WINSCP
     }
-    for (i = 0; i < 64; i++) {
+    for (size_t i = 0; i < 64; i++) {
         uint64_t bit = 1 & gcm->acc.hi;
         gcm->acc.hi >>= 1;
-        { // WINSCP
         uint64_t mask = -bit;
         out.hi ^= mask & tableptr->hi;
         out.lo ^= mask & tableptr->lo;
         tableptr++;
-        } // WINSCP
     }
 
     gcm->acc = out;
-    } // WINSCP
-    } // WINSCP
 }
 
 static inline void aesgcm_sw_output(aesgcm_sw *gcm, unsigned char *output)

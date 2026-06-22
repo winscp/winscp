@@ -54,7 +54,7 @@
 // 0 if it did not
 #define string_buffer_append(sb, str, len, all_fit)                     \
     do {                                                                \
-        sb##Len += snprintf_S(&(sb[sb##Len]), sizeof(sb) - sb##Len - 1,   \
+        sb##Len += snprintf(&(sb[sb##Len]), sizeof(sb) - sb##Len - 1,   \
                             "%.*s", (int) (len), str);                  \
         if (sb##Len > (int) (sizeof(sb) - 1)) {                         \
             sb##Len = sizeof(sb) - 1;                                   \
@@ -64,6 +64,7 @@
             all_fit = 1;                                                \
         }                                                               \
     } while (0)
+
 
 // Declare a string multibuffer with the given name of the given maximum size
 #define string_multibuffer(name, size)                                  \
@@ -86,7 +87,7 @@
 // Adds a new string to the string_multibuffer
 #define string_multibuffer_add(smb, str, len, all_fit)                  \
     do {                                                                \
-        smb##Size += (snprintf_S(&(smb[smb##Size]),                       \
+        smb##Size += (snprintf(&(smb[smb##Size]),                       \
                                sizeof(smb) - smb##Size,                 \
                                "%.*s", (int) (len), str) + 1);          \
         if (smb##Size > (int) sizeof(smb)) {                            \

@@ -1450,11 +1450,11 @@ object ConsoleDialog: TConsoleDialog
     Top = 8
     Width = 208
     Height = 23
-    AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
     MaxLength = 2048
     TabOrder = 0
     OnChange = CommandEditChange
+    HistoryKey = 'Commands'
   end
   object ExecuteButton: TButton
     Left = 377

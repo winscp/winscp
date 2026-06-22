@@ -1,16 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <TextsWin.h>
-#include <GUIConfiguration.h>
-#include <GUITools.h>
-#include <Tools.h>
 #include "CopyParamCustom.h"
-#include "VCLCommon.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "CopyParams"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -60,6 +53,7 @@ bool __fastcall TCopyParamCustomDialog::Execute(TCopyParamType & CopyParam)
 void __fastcall TCopyParamCustomDialog::FormCloseQuery(TObject * /*Sender*/,
   bool & /*CanClose*/)
 {
+  CopyParamsFrame->Closing();
   if (ModalResult == DefaultResult(this))
   {
     ExitActiveControl(this);

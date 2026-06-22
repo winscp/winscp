@@ -6,16 +6,17 @@
 #include "Configuration.h"
 #include "Exceptions.h"
 #include <ComCtrls.hpp>
-#include <HistoryComboBox.hpp>
+#include <HistoryComboBox.h>
 //---------------------------------------------------------------------------
-const TColor LinkColor = clBlue;
 extern const UnicodeString ContextSeparator;
 //---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index);
 void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex = -1);
+bool UseDarkModeForControl(TControl * Control);
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
 void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, bool Enabled);
+void SetEditPasswordMode(TEdit * Edit, bool Password = true);
 int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption);
 void AutoSizeCheckBox(TCheckBox * CheckBox);
 void __fastcall InitializeSystemSettings();
@@ -25,6 +26,11 @@ void __fastcall UseSystemSettingsPre(TForm * Control);
 void __fastcall UseSystemSettingsPost(TForm * Control);
 void __fastcall UseSystemSettings(TForm * Control);
 void __fastcall ResetSystemSettings(TForm * Control);
+TColor GetControlColor(TControl * Control);
+void UseDarkMode(TForm * Form);
+void ApplyColorMode(TForm * Form);
+void ApplyColorModeOnControl(TControl * Control);
+void UsesCustomColorMode(TForm * Form);
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url = L"",
   TNotifyEvent OnEnter = NULL);
 void __fastcall LinkActionLabel(TStaticText * StaticText);
@@ -38,8 +44,6 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = t
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
 bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
 bool __fastcall IsMainFormLike(TCustomForm * Form);
-bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
-  bool PreserveFileName);
 void SelectDirectoryForEdit(THistoryComboBox * Edit);
 enum TListViewCheckAll { caCheck, caUncheck, caToggle };
 bool __fastcall ListViewAnyChecked(TListView * ListView, bool Checked = true);
@@ -55,12 +59,17 @@ void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count);
 void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count);
 void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After);
 void __fastcall CutFormToDesktop(TForm * Form);
+TRect GetCenterRect(TControl * CenterControl, Forms::TMonitor * CenterMonitor);
+void CenterFormOn(TRect & Bounds, const TRect & CenterRect);
+void CenterFormOn(TRect & Bounds, TControl * CenterControl, Forms::TMonitor * CenterMonitor);
 void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position);
 void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height);
 TComponent * __fastcall GetFormOwner();
 TForm * __fastcall GetMainForm();
 void __fastcall SetCorrectFormParent(TForm * Form);
 void __fastcall InvokeHelp(TWinControl * Control);
+int OffsetToVerticallyCenterWith(TControl * Control, TControl * CenterWithControl);
+void VerticallyCenterWith(TControl * Control, TControl * CenterWithControl);
 void __fastcall FixFormIcons(TForm * Form);
 Forms::TMonitor *  __fastcall FormMonitor(TCustomForm * Form);
 int __fastcall GetLastMonitor();
@@ -85,7 +94,6 @@ void __fastcall RealignControl(TControl * Control);
 void __fastcall HookFormActivation(TCustomForm * Form);
 void __fastcall UnhookFormActivation(TCustomForm * Form);
 void __fastcall ShowFormNoActivate(TForm * Form);
-TPanel * __fastcall CreateBlankPanel(TComponent * Owner);
 typedef void __fastcall (*TRescaleEvent)(TComponent * Sender, TObject * Token);
 void __fastcall SetRescaleFunction(
   TComponent * Component, TRescaleEvent OnRescale, TObject * Token = NULL, bool OwnsToken = false);
@@ -98,7 +106,33 @@ void AutoSizeButton(TButton * Button);
 namespace Tb2item { class TTBCustomItem; }
 void GiveTBItemPriority(Tb2item::TTBCustomItem * Item);
 void DeleteChildren(TWinControl * Control);
+TSize CalculateLabelSize(TCanvas * Canvas, int Width, const UnicodeString & Caption, int Flags);
 void AutoSizeLabel(TLabel * Label);
 void AutoSizeLabel(TStaticText * Label);
+void SetAccessibleName(TWinControl * Control, const UnicodeString & Name);
+void SetAccessibleRole(TWinControl * Control, int Role);
+template<class ComponentType>
+ComponentType * FindComponentInstance(TComponent * Owner)
+{
+  TComponent * Component = Owner->FindComponent(ComponentType::QualifiedClassName());
+  return (Component == nullptr) ? nullptr : DebugNotNull(dynamic_cast<ComponentType *>(Component));
+}
+template<class ComponentType>
+void InsertComponentInstance(TComponent * Owner, ComponentType * Component)
+{
+  Component->Name = ComponentType::QualifiedClassName();
+  Owner->InsertComponent(Component);
+}
+template<class ComponentType>
+ComponentType * GetComponentInstance(TComponent * Owner)
+{
+  auto Component = FindComponentInstance<ComponentType>(Owner);
+  if (Component == nullptr)
+  {
+    Component = new ComponentType();
+    InsertComponentInstance(Owner, Component);
+  }
+  return Component;
+}
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

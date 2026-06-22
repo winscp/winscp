@@ -66,21 +66,10 @@ unit FileOperator;
 |   Title: String to use as the title for a progress dialog box.               |
 |          This member is used only if Options includes fofSimpleProgress.     |
 |                                                                              |
-|   OperationAborted: Value that receives True if the user aborted any file    |
-|          operations before they were completed or FALSE otherwise.           |
-|                                                                              |
-|   LastOperandFrom        Stringlist of last performed value of Operandfrom.  |
-|                                                                              |
-|   LastOperandTo          Stringlist of last performed value of OperandTo.    |
-|                                                                              |
-|   LastOperation          Value of last performed operation.                  |
-|                                                                              |
 |   WantMappingHandle      After execution should a file mapping be returned.  |
 |                          Works only, when option foMultiDestFiles used.      |
 |                          Note: don't know, how to use this.                  |
 |                                                                              |
-|   NameMappings           Pointer to namemappings, if property wantmapping-   |
-|                          handle set.                                         |
 +------------------------------------------------------------------------------+
 | Methods:                                                                     |
 |                                                                              |
@@ -88,17 +77,6 @@ unit FileOperator;
 |     Performs the copy, move, rename, or delete operation.                    |
 |     Returns zero if successful or nonzero value if an error occurs.          |
 |                                                                              |
-|   Function UndoExecute : Boolean;                                            |
-|     Reverses the last copy, move or rename operation.                        |
-|     Note: works currently only, if only a single OperandTo is used. This     |
-|     OperandTo must be the target directory.                                  |
-|                                                                              |
-|   Function CanUndo : Boolean;                                                |
-|     Returns TRUE, if undo of last operation is possible.                     |
-|                                                                              |
-|   Procedure ClearUndo;                                                       |
-|     Clears the preserved undo informations. After that, CanUndo allways      |
-|     returns false.                                                           |
 +------------------------------------------------------------------------------+
 | Events:                                                                      |
 +------------------------------------------------------------------------------+
@@ -120,18 +98,14 @@ Type
   TFileOperationFlags = set of TFileOperationFlag;
 
 {==============================================================}
-  TFileOperator = class( TComponent )
+  TFileOperator = class
 {==============================================================}
   private
 {==============================================================}
     FData          : TShFileOpStruct;
     FFrom          : TStringList;
     FTo            : TStringList;
-    FLastFrom      : TStringList;
-    FLastTo        : TStringList;
-    FLastOperation : TFileOperation;
-    fLastFlags     : TFileOperationFlags;
-    fCanUndo       : Boolean;
+    fOwner         : TWinControl;
     Procedure SetOperation( Value :TFileOperation );
     Function  GetOperation :TFileOperation;
     Function  GetWantMappingHandle :Boolean;
@@ -140,32 +114,16 @@ Type
     Function  GetFlags :TFileOperationFlags;
     Function  GetOperFlag( F :Cardinal ) :Boolean;
     Procedure SetOperFlag( F :Cardinal; V :Boolean );
-    Procedure ReadData( Reader :TReader );
-    Procedure WriteData( Writer :TWriter );
-    Procedure SwapStringList(Var FromL, ToL : TStringList);
-    Function  GetOperationAborted: Bool;
-
-{==============================================================}
-  protected
-{==============================================================}
-    Procedure DefineProperties( Filer :TFiler ); override;
 
 {==============================================================}
   public
 {==============================================================}
-    Property OperationAborted : Bool        Read GetOperationAborted;
     Property OperandFrom      : TStringList Read fFrom Write fFrom;
     Property OperandTo        : TStringList Read FTo   Write fTo;
-    Property CanUndo          : Boolean     Read fCanUndo;
-    Property LastOperation    : TFileOperation Read fLastOperation;
-    Property LastOperandFrom  : TStringList Read fLastFrom;
-    Property LastOperandTo    : TStringList Read fLastTo;
 
-    Constructor Create(aOwner :TComponent); Override;
+    Constructor Create(Owner: TWinControl);
     Destructor  Destroy; override;
     Function    Execute          : Boolean;
-    Function    UndoExecute      : Boolean;
-    Procedure   ClearUndo;
 {==============================================================}
   published
 {==============================================================}
@@ -176,8 +134,6 @@ Type
 
 const
   FileOperatorDefaultFlags = [foAllowUndo, foNoConfirmMkDir];
-
-procedure Register;
 
 {==============================================================}
 implementation
@@ -268,33 +224,12 @@ begin
 end;
 
 
-procedure TFileOperator.DefineProperties( Filer :TFiler );
+Constructor TFileOperator.Create(Owner: TWinControl);
 begin
- Inherited DefineProperties( Filer );
- Filer.DefineProperty( 'data', ReadData, WriteData, true );
-end;
-
-
-procedure TFileOperator.ReadData( Reader :TReader );
-begin
-  Reader.Read( FData, SizeOf( FData ) );
-end;
-
-
-procedure TFileOperator.WriteData( Writer :TWriter );
-begin
-  writer.write( FData, SizeOf( FData ) );
-end;
-
-
-Constructor TFileOperator.Create(aOwner :TComponent);
-begin
- inherited Create(aOwner);
+ inherited Create;
  fFrom     := TStringList.Create;
  fTo       := TStringList.Create;
- fLastFrom := TStringList.Create;
- fLastTo   := TStringList.Create;
- fCanUndo  := False;
+ fOwner    := Owner;
  FData.fFlags := 0;
  Flags := FileOperatorDefaultFlags;
 end; {Create}
@@ -325,8 +260,8 @@ begin {Execute}
   STo   := ConvertOperand(FTo);
   FData.pFrom := PChar( SFrom );
   FData.pTo := PChar( STo );
-  IF (Owner is TWinControl) And TWinControl(Owner).HandleAllocated Then
-    FData.Wnd := GetParentForm(TWinControl(Owner)).Handle
+  IF Assigned(fOwner) and fOwner.HandleAllocated Then
+    FData.Wnd := fOwner.Handle
   Else
     FData.Wnd := Application.Handle;
 
@@ -344,23 +279,6 @@ begin {Execute}
       Else
       Result := ShFileOperation( FData ) = 0;
     Finally
-      IF GetOperFlag(FOF_ALLOWUNDO) And
-         Not GetOperFlag(FOF_MULTIDESTFILES) And
-         Not GetOperFlag(FOF_RENAMEONCOLLISION) And
-        (Operation <> foDelete) Then
-      Begin
-        SwapStringList(fLastFrom, fFrom);
-        SwapStringList(fLastTo,   fTo);
-        fLastFlags := Flags;
-        fCanUndo   := True;
-        fLastOperation := Operation;
-      End
-      Else
-      Begin
-        FLastFrom.Clear;
-        FLastTo.Clear;
-        fCanUndo := False;
-      End;
       FFrom.Clear;
       FTo.Clear;
     End;
@@ -376,96 +294,9 @@ begin
   FFrom.Free;
   IF Assigned(FTo) Then
   FTo.Free;
-  IF Assigned(FLastFrom) Then
-  FLastFrom.Free;
-  IF Assigned(FLastTo) Then
-  FLastTo.Free;
   IF Assigned(FData.hNameMappings) Then
   shFreeNameMappings(THandle(FData.hNameMappings));
   inherited Destroy;
 end; {Destroy}
-
-
-
-Procedure TFileOperator.SwapStringList(Var FromL, ToL : TStringList);
-Var StrL  : TStringList;
-Begin
-    StrL  := FromL;
-    FromL := ToL;
-    ToL   := StrL;
-End; {SwapStringList}
-
-Function  TFileOperator.GetOperationAborted: Bool;
-Begin
-  Result := FData.fAnyOperationsAborted;
-End;
-
-Function TFileOperator.UndoExecute : Boolean;
-Var SaveFlags : TFileOperationFlags;
-    SaveOperation : TFileOperation;
-    i             : Integer;
-
-Begin
-  Result := False;
-  IF Not fCanUndo Or
-     (fLastFrom.Count = 0) Or
-     (FLastTo.Count  <> 1) Then
-  Exit;
-
-  SaveFlags := Flags;
-  SaveOperation := Operation;
-  Flags := fLastFlags;
-  Case SaveOperation OF
-    foCopy  : IF fLastTo.Count = 1 Then
-              Begin
-                 Operation := foDelete;
-                 Flags := Flags - [foAllowUndo] + [foNoConfirmation];
-                 OperandFrom.Clear;
-                 For i := 0 To fLastFrom.Count - 1 Do
-                   OperandFrom.Add(IncludeTrailingPathDelimiter(fLastTo[0]) + ExtractFilename(fLastFrom[i]));
-                 Result := Execute;
-              End;
-    foMove  : IF fLastTo.Count = 1 Then
-              Begin
-                 Operation := foMove;
-                 Flags := Flags + [foAllowUndo, foNoConfirmation];
-                 OperandFrom.Clear;
-                 OperandTo.Clear;
-                 OperandTo.Add(ExtractFilePath(fLastFrom[0]));
-                 For i := 0 To fLastFrom.Count - 1 Do
-                   OperandFrom.Add(IncludeTrailingPathDelimiter(fLastTo[0]) + ExtractFilename(fLastFrom[i]));
-                 Result := Execute;
-              End;
-
-    foRename: IF (FLastFrom.Count = 1) And (FLastTo.Count = 1) Then
-              Begin
-                Operation := foRename;
-                Flags := Flags + [foAllowUndo, foNoConfirmation];
-                OperandFrom.Clear;
-                OperandTo.Clear;
-                OperandFrom.Add(fLastTo[0]);
-                OperandTo.Add(fLastFrom[0]);
-                Result := Execute;
-              End;
-  End; {Case}
-
-  Flags := SaveFlags;
-  Operation := SaveOperation;
-End; {UndoExecute}
-
-
-Procedure TFileOperator.ClearUndo;
-Begin
-  fCanUndo := False;
-  fLastFrom.Clear;
-  fLastTo.Clear;
-End; {ClearUndo}
-
-
-procedure Register;
-begin
-  {MP}RegisterComponents( {'Tools'}'DriveDir', [ TFileOperator ] );
-end;
-
 
 end.

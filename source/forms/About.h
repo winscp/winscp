@@ -41,6 +41,7 @@ __published:
   void __fastcall IconPaintBoxPaint(TObject *Sender);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
   void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
+
 private:
   TConfiguration * FConfiguration;
   TNotifyEvent FOnRegistrationLink;
@@ -52,10 +53,17 @@ private:
   void __fastcall AddPara(UnicodeString & Text, const UnicodeString & S);
   UnicodeString __fastcall CreateLink(const UnicodeString & URL, const UnicodeString & Title = L"");
   void __fastcall ExpatLicenceHandler(TObject * Sender);
-  void __fastcall AccessViolationTest();
+  #ifdef _WIN64
+  [[noreturn]]
+  #endif
+  void AccessViolationTest();
   void __fastcall LookupAddress();
+  void InternalExceptionTest();
   void __fastcall DoLoadThirdParty();
   void __fastcall ShiftControls(int From, int Diff);
+
+protected:
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall TAboutDialog(TComponent * AOwner,

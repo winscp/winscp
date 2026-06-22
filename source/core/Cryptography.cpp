@@ -1,20 +1,20 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "PuttyIntf.h"
 #include "Cryptography.h"
 #include "FileBuffer.h"
-#include "TextsCore.h"
-#include "CoreMain.h"
 #include "Exceptions.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl\rand.h>
 #include <openssl\err.h>
 #include <openssl\ssl.h>
+#pragma clang diagnostic pop
 #include <process.h>
 #include <Soap.EncdDecd.hpp>
-#include <System.StrUtils.hpp>
 
 /*
  ---------------------------------------------------------------------------
@@ -97,6 +97,9 @@ static void hmac_sha1_begin(hmac_ctx cx[1])
     memset(cx, 0, sizeof(hmac_ctx));
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
+
 /* input the HMAC key (can be called multiple times)    */
 static void hmac_sha1_key(const unsigned char key[], unsigned long key_len, hmac_ctx cx[1])
 {
@@ -175,12 +178,9 @@ static void hmac_sha1_end(unsigned char mac[], unsigned long mac_len, hmac_ctx c
         mac[i] = dig[i];
 }
 
-#define BLOCK_SIZE  16
+#pragma clang diagnostic pop
 
-void aes_set_encrypt_key(const unsigned char in_key[], unsigned int klen, void * cx)
-{
-  call_aes_setup(cx, const_cast<unsigned char *>(in_key), klen);
-}
+#define BLOCK_SIZE  16
 
 void aes_encrypt_block(const unsigned char in_blk[], unsigned char out_blk[], void * cx)
 {
@@ -274,10 +274,10 @@ static void derive_key(const unsigned char pwd[],  /* the PASSWORD     */
         c3->CopyFrom(c2);
 
         /* enter additional data for 1st block into uu  */
-        uu[0] = (unsigned char)((i + 1) >> 24);
-        uu[1] = (unsigned char)((i + 1) >> 16);
-        uu[2] = (unsigned char)((i + 1) >> 8);
-        uu[3] = (unsigned char)(i + 1);
+        uu[0] = static_cast<unsigned char>((i + 1) >> 24);
+        uu[1] = static_cast<unsigned char>((i + 1) >> 16);
+        uu[2] = static_cast<unsigned char>((i + 1) >> 8);
+        uu[3] = static_cast<unsigned char>(i + 1);
 
         /* this is the key mixing iteration         */
         for(j = 0, k = 4; j < iter; ++j)
@@ -538,19 +538,19 @@ RawByteString __fastcall ScramblePassword(UnicodeString Password)
     int P = 0;
     while ((P <= 0) || (P > 255) || IsDigit(static_cast<wchar_t>(P)))
     {
-      P = (int)((double)rand() / ((double)RAND_MAX / 256.0));
+      P = static_cast<int>(static_cast<double>(rand()) / (static_cast<double>(RAND_MAX) / 256.0));
     }
-    Buf[Index] = (unsigned char)P;
+    Buf[Index] = static_cast<unsigned char>(P);
   }
-  Buf[Padding] = (char)('0' + (Len % 10));
-  Buf[Padding + 1] = (char)('0' + ((Len / 10) % 10));
-  Buf[Padding + 2] = (char)('0' + ((Len / 100) % 10));
+  Buf[Padding] = static_cast<char>('0' + (Len % 10));
+  Buf[Padding + 1] = static_cast<char>('0' + ((Len / 10) % 10));
+  Buf[Padding + 2] = static_cast<char>('0' + ((Len / 100) % 10));
   strcpy(Buf + Padding + 3, UtfPassword.c_str());
   char * S = Buf;
   int Last = 31;
   while (*S != '\0')
   {
-    Last = (Last + (unsigned char)*S) % 255 + 1;
+    Last = (Last + static_cast<unsigned char>(*S)) % 255 + 1;
     *S = ScrambleTable[Last];
     S++;
   }
@@ -567,12 +567,12 @@ bool __fastcall UnscramblePassword(RawByteString Scrambled, UnicodeString & Pass
   int Last = 31;
   while (*S != '\0')
   {
-    int X = (int)UnscrambleTable[(unsigned char)*S] - 1 - (Last % 255);
+    int X = static_cast<int>(UnscrambleTable[static_cast<unsigned char>(*S)] - 1 - (Last % 255));
     if (X <= 0)
     {
       X += 255;
     }
-    *S = (char)X;
+    *S = static_cast<char>(X);
     Last = (Last + X) % 255 + 1;
     S++;
   }
@@ -623,9 +623,9 @@ void __fastcall CryptographyInitialize()
   UnscrambleTable = new unsigned char[256];
   for (int Index = 0; Index < 256; Index++)
   {
-    UnscrambleTable[SScrambleTable[Index]] = (unsigned char)Index;
+    UnscrambleTable[SScrambleTable[Index]] = static_cast<unsigned char>(Index);
   }
-  srand((unsigned int)time(NULL) ^ (unsigned int)getpid());
+  srand(static_cast<unsigned int>(time(NULL)) ^ static_cast<unsigned int>(getpid()));
 
   // The results are partly cached. So when later some OpenSSL function is called, which internally
   // calls OPENSSL_init_crypto, it will fail, without doing full initialization. So afterwards
@@ -726,8 +726,9 @@ TEncryption::TEncryption(const RawByteString & Key)
   if (!FKey.IsEmpty())
   {
     DebugAssert(FKey.Length() == KEY_LENGTH(PASSWORD_MANAGER_AES_MODE));
-    FContext = aes_make_context();
-    aes_set_encrypt_key(reinterpret_cast<unsigned char *>(FKey.c_str()), FKey.Length(), FContext);
+    DebugAssert(FKey.Length() == 32);
+    FContext = ssh_cipher_new(&ssh_aes256_sdctr);
+    ssh_cipher_setkey(static_cast<ssh_cipher *>(FContext), FKey.c_str());
   }
   else
   {
@@ -739,7 +740,7 @@ TEncryption::~TEncryption() EXCEPT
 {
   if (FContext != NULL)
   {
-    aes_free_context(FContext);
+    ssh_cipher_free(static_cast<ssh_cipher *>(FContext));
   }
   Shred(FKey);
   if ((FInputHeader.Length() > 0) && (FInputHeader.Length() < GetOverhead()))
@@ -750,7 +751,7 @@ TEncryption::~TEncryption() EXCEPT
 //---------------------------------------------------------------------------
 void TEncryption::SetSalt()
 {
-  aes_iv(FContext, reinterpret_cast<const void *>(FSalt.c_str()));
+  ssh_cipher_setiv(static_cast<ssh_cipher *>(FContext), FSalt.c_str());
 }
 //---------------------------------------------------------------------------
 void TEncryption::NeedSalt()
@@ -783,7 +784,7 @@ int TEncryption::RoundToBlockDown(int Size)
 void TEncryption::Aes(char * Buffer, int Size)
 {
   DebugAssert(!FSalt.IsEmpty());
-  call_aes_sdctr(reinterpret_cast<unsigned char *>(Buffer), Size, FContext);
+  ssh_cipher_encrypt(static_cast<ssh_cipher *>(FContext), Buffer, Size);
 }
 //---------------------------------------------------------------------------
 void TEncryption::Aes(TFileBuffer & Buffer, bool Last)
@@ -883,9 +884,8 @@ UnicodeString TEncryption::EncryptFileName(const UnicodeString & FileName)
   RawByteString Buffer(FileNameUtf);
   Aes(Buffer);
   Buffer = FSalt + Buffer;
-  UnicodeString Base64 = UnicodeString(EncodeBase64(Buffer.c_str(), Buffer.Length()));
+  UnicodeString Base64 = UnicodeString(EncodeStrToBase64(Buffer));
   Base64 = ReplaceChar(Base64, L'/', L'_');
-  Base64 = ReplaceStr(Base64, L"\r\n", "");
   while (DebugAlwaysTrue(!Base64.IsEmpty()) && (Base64.SubString(Base64.Length(), 1) == L'='))
   {
     Base64.SetLength(Base64.Length() - 1);
@@ -907,7 +907,12 @@ UnicodeString TEncryption::DecryptFileName(const UnicodeString & FileName)
     Base64 += UnicodeString::StringOfChar(L'=', Padding);
   }
   RawByteString Buffer = DecodeBase64ToStr(Base64);
-  FSalt = Buffer.SubString(1, SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
+  int SaltLength = SALT_LENGTH(PASSWORD_MANAGER_AES_MODE);
+  if (Buffer.Length() <= SaltLength)
+  {
+    throw Exception(L"Empty encrypted filename");
+  }
+  FSalt = Buffer.SubString(1, SaltLength);
   SetSalt();
   Buffer.Delete(1, FSalt.Length());
   Aes(Buffer);
@@ -917,7 +922,10 @@ UnicodeString TEncryption::DecryptFileName(const UnicodeString & FileName)
 //---------------------------------------------------------------------------
 bool TEncryption::IsEncryptedFileName(const UnicodeString & FileName)
 {
-  return EndsStr(AesCtrExt, FileName);
+  const int SaltBase64Len = (4 * SALT_LENGTH(PASSWORD_MANAGER_AES_MODE) + 2) / 3;
+  return
+    EndsStr(AesCtrExt, FileName) &&
+    (FileName.Length() > AesCtrExt.Length() + SaltBase64Len);
 }
 //---------------------------------------------------------------------------
 int TEncryption::GetOverhead()

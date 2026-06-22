@@ -1,29 +1,15 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <StrUtils.hpp>
-#include <CoreMain.h>
-#include <Common.h>
 #include <PuttyTools.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <HelpWin.h>
-#include <VCLCommon.h>
-#include <limits>
-
-#include "WinInterface.h"
 #include "Login.h"
-#include "GUITools.h"
-#include "Tools.h"
 #include "Setup.h"
-#include "WinConfiguration.h"
 #include "ProgParams.h"
 #include "WinApi.h"
 #include "S3FileSystem.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
-#pragma link "PasswordEdit"
 #pragma link "UpDownEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -493,7 +479,7 @@ void __fastcall TLoginDialog::Default()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadContents()
 {
-  bool UseContentsPanel;
+  bool UseContentsPanel = false;
   TTreeNode * Node = SessionTree->Selected;
   if (IsSessionNode(Node))
   {
@@ -1299,7 +1285,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
     UnicodeString ClipboardUrl;
     Action->Enabled =
       NonEmptyTextFromClipboard(ClipboardUrl) &&
-      StoredSessions->IsUrl(ClipboardUrl);
+      FLAGSET(StoredSessions->GetUrlInfo(ClipboardUrl), piProtocolDefined);
   }
   else if (Action == GenerateUrlAction2)
   {
@@ -1733,7 +1719,7 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
   DebugAssert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else if (M->Msg == WM_MANAGES_CAPTION)
   {
@@ -1900,6 +1886,14 @@ void __fastcall TLoginDialog::SessionTreeCustomDrawItem(
   }
 
   Sender->Canvas->Font->Style = Styles;
+
+  DebugAssert(Sender == SessionTree);
+  if (Node->Selected && !SessionTree->Focused() && UseDarkModeForControl(SessionTree))
+  {
+    // Otherwise it is rendered black on black. See also TCustomDriveView.InternalOnDrawItem.
+    SessionTree->Canvas->Font->Color = SessionTree->Font->Color;
+  }
+
   DefaultDraw = true;
 }
 //---------------------------------------------------------------------------
@@ -2115,7 +2109,7 @@ int __fastcall TLoginDialog::FSProtocolToIndex(TFSProtocol FSProtocol,
 //---------------------------------------------------------------------------
 TFSProtocol __fastcall TLoginDialog::IndexToFSProtocol(int Index, bool AllowScpFallback)
 {
-  bool InBounds = (Index >= 0) && (Index < static_cast<int>(LENOF(FSOrder)));
+  bool InBounds = (Index >= 0) && (Index < static_cast<int>(std::size(FSOrder)));
   // can be temporary "unselected" while new language is being loaded
   DebugAssert(InBounds || (Index == -1));
   TFSProtocol Result = fsSFTP;
@@ -2651,7 +2645,7 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
   if (!NoUpdate)
   {
     bool WellKnownPort = false;
-    TFSProtocol FSProtocol;
+    TFSProtocol FSProtocol = TFSProtocol(); // shut up
     TFtps Ftps = ftpsNone;
 
     // For ambiguous port numbers, keep the current protocol, even if it is not the default protocol for the port
@@ -3185,12 +3179,11 @@ void __fastcall TLoginDialog::LoginButtonDropDownClick(TObject * /*Sender*/)
   MenuPopup(LoginDropDownMenu, LoginButton);
 }
 //---------------------------------------------------------------------------
-void TLoginDialog::DoParseUrl(TSessionData * SessionData, const UnicodeString & Url)
+void TLoginDialog::DoParseUrl(TSessionData * SessionData, const UnicodeString & Url, int & ParsedInfo)
 {
   // We do not want to pass in StoredSessions as we do not want the URL be
   // parsed as pointing to a stored site.
-  bool DefaultsOnly; // unused
-  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, pufPreferProtocol);
+  SessionData->ParseUrl(Url, NULL, NULL, ParsedInfo, NULL, NULL, pufPreferProtocol);
   SessionData->RequireDirectories = false;
 }
 //---------------------------------------------------------------------------
@@ -3212,7 +3205,13 @@ void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
   }
   else
   {
-    DoParseUrl(SessionData.get(), Url);
+    int ParsedInfo;
+    DoParseUrl(SessionData.get(), Url, ParsedInfo);
+    if (FLAGSET(ParsedInfo, piUnsafeSettings) &&
+        (MessageDialog(LoadStr(UNSAFE_SESSION), qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaOK))
+    {
+      Abort();
+    }
   }
 
   LoadSession(SessionData.get());
@@ -3248,7 +3247,8 @@ void __fastcall TLoginDialog::ParseHostName()
   {
     // All this check is probably unnecessary, keeping it just to be safe
     std::unique_ptr<TSessionData> SessionData(new TSessionData(EmptyStr));
-    DoParseUrl(SessionData.get(), HostName);
+    int ParsedInfo; // unused
+    DoParseUrl(SessionData.get(), HostName, ParsedInfo);
     std::unique_ptr<TSessionData> HostNameSessionData(new TSessionData(EmptyStr));
     HostNameSessionData->HostName = HostName;
     if ((HostNameSessionData->HostName != HostName) || // Has legacy HostName property parsing intervened?
@@ -3395,5 +3395,11 @@ void __fastcall TLoginDialog::SearchSiteStartActionExecute(TObject *)
 void __fastcall TLoginDialog::SitesIncrementalSearchPanelContextPopup(TObject * Sender, TPoint & MousePos, bool & Handled)
 {
   MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
 }
 //---------------------------------------------------------------------------

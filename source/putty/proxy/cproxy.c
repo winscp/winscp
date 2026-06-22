@@ -78,18 +78,13 @@ void http_digest_response(BinarySink *bs, ptrlen username, ptrlen password,
 
     enable_dit(); /* just in case main() forgot */
 
-    { // WINSCP
     unsigned char ncbuf[4];
     PUT_32BIT_MSB_FIRST(ncbuf, nonce_count);
 
-    { // WINSCP
     unsigned char client_nonce_raw[33];
     random_read(client_nonce_raw, lenof(client_nonce_raw));
-    { // WINSCP
     char client_nonce_base64[lenof(client_nonce_raw) / 3 * 4];
-    { // WINSCP
-    unsigned i;
-    for (i = 0; i < lenof(client_nonce_raw)/3; i++)
+    for (unsigned i = 0; i < lenof(client_nonce_raw)/3; i++)
         base64_encode_atom(client_nonce_raw + 3*i, 3,
                            client_nonce_base64 + 4*i);
 
@@ -99,7 +94,6 @@ void http_digest_response(BinarySink *bs, ptrlen username, ptrlen password,
      * "MD5-sess" which as far as I know don't sensibly apply to
      * proxies and HTTP CONNECT).
      */
-    { // WINSCP
     ssh_hash *h = ssh_hash_new(alg);
     put_datapl(h, username);
     put_byte(h, ':');
@@ -195,9 +189,4 @@ void http_digest_response(BinarySink *bs, ptrlen username, ptrlen password,
     smemclr(rsphash, lenof(rsphash));
     smemclr(client_nonce_raw, lenof(client_nonce_raw));
     smemclr(client_nonce_base64, lenof(client_nonce_base64));
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
-    } // WINSCP
 }

@@ -1,29 +1,15 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <StrUtils.hpp>
-#include <CoreMain.h>
-#include <Common.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <HelpCore.h>
-#include <HelpWin.h>
-#include <VCLCommon.h>
 #include <Cryptography.h>
 #include <S3FileSystem.h>
-
-#include "WinInterface.h"
 #include "SiteAdvanced.h"
-#include "GUITools.h"
-#include "Tools.h"
-#include "WinConfiguration.h"
 #include "PuttyTools.h"
 #include "TerminalManager.h"
 #include "Authenticate.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
-#pragma link "PasswordEdit"
 #pragma link "UpDownEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -134,11 +120,8 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
         DSTModeWinCheck->Checked = true;
         break;
 
-      case dstmKeep:
-        DSTModeKeepCheck->Checked = true;
-        break;
-
       default:
+      case dstmKeep: // deprecated
       case dstmUnix:
         DSTModeUnixCheck->Checked = true;
         break;
@@ -254,7 +237,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
-    TryAgentCheck->Checked = FSessionData->TryAgent;
+    TryAgentCheck2->Checked = FSessionData->TryAgent;
     AuthKICheck->Checked = FSessionData->AuthKI;
     AuthKIPasswordCheck->Checked = FSessionData->AuthKIPassword;
     AuthGSSAPICheck3->Checked = FSessionData->AuthGSSAPI;
@@ -273,7 +256,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       CipherListBox->Items->AddObject(
         LoadStr(CIPHER_NAME_WARN+FSessionData->Cipher[Index]),
-        (TObject*)FSessionData->Cipher[Index]);
+        reinterpret_cast<TObject*>(FSessionData->Cipher[Index]));
     }
 
     // KEX page
@@ -284,7 +267,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       KexListBox->Items->AddObject(
         LoadStr(KEX_NAME_WARN+FSessionData->Kex[Index]),
-        (TObject*)FSessionData->Kex[Index]);
+        reinterpret_cast<TObject*>(FSessionData->Kex[Index]));
     }
 
     AuthGSSAPIKEXCheck->Checked = FSessionData->AuthGSSAPIKEX;
@@ -440,9 +423,10 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 
     // webdav page
     WebDavLiberalEscapingCheck->Checked = FSessionData->WebDavLiberalEscaping;
+    WebDavCrossDomainRedirectsCheck->Checked = FSessionData->WebDavCrossDomainRedirects;
 
     // color
-    FColor = (TColor)FSessionData->Color;
+    FColor = static_cast<TColor>(FSessionData->Color);
   }
 
   EnableControl(PuttyGroup, !DoesSessionExistInPutty(FSessionData->StorageKey));
@@ -469,14 +453,14 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   for (int Index = 0; Index < CIPHER_COUNT; Index++)
   {
-    SessionData->Cipher[Index] = (TCipher)CipherListBox->Items->Objects[Index];
+    SessionData->Cipher[Index] = static_cast<TCipher>(reinterpret_cast<uintptr_t>(CipherListBox->Items->Objects[Index]));
   }
 
   // Kex page
 
   for (int Index = 0; Index < KEX_COUNT; Index++)
   {
-    SessionData->Kex[Index] = (TKex)KexListBox->Items->Objects[Index];
+    SessionData->Kex[Index] = static_cast<TKex>(reinterpret_cast<uintptr_t>(KexListBox->Items->Objects[Index]));
   }
 
   FSessionData->AuthGSSAPIKEX = AuthGSSAPIKEXCheck->Checked;
@@ -486,7 +470,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // Authentication page
   SessionData->SshNoUserAuth = SshNoUserAuthCheck->Checked;
-  SessionData->TryAgent = TryAgentCheck->Checked;
+  SessionData->TryAgent = TryAgentCheck2->Checked;
   SessionData->AuthKI = AuthKICheck->Checked;
   SessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
   SessionData->AuthGSSAPI = AuthGSSAPICheck3->Checked;
@@ -558,10 +542,6 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   if (DSTModeUnixCheck->Checked)
   {
     SessionData->DSTMode = dstmUnix;
-  }
-  else if (DSTModeKeepCheck->Checked)
-  {
-    SessionData->DSTMode = dstmKeep;
   }
   else
   {
@@ -693,7 +673,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   SessionData->ProxyTelnetCommand = ProxyTelnetCommandEdit->Text;
   SessionData->ProxyLocalCommand = ProxyLocalCommandEdit->Text;
   SessionData->ProxyLocalhost = ProxyLocalhostCheck->Checked;
-  SessionData->ProxyDNS = (TAutoSwitch)(2 - ProxyDNSCombo->ItemIndex);
+  SessionData->ProxyDNS = static_cast<TAutoSwitch>(2 - ProxyDNSCombo->ItemIndex);
 
   // Bugs page
   #define SAVE_BUG_COMBO(BUG) SessionData->Bug[sb ## BUG] = ComboAutoSwitchSave(Bug ## BUG ## Combo)
@@ -737,6 +717,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // webdav page
   SessionData->WebDavLiberalEscaping = WebDavLiberalEscapingCheck->Checked;
+  SessionData->WebDavCrossDomainRedirects = WebDavCrossDomainRedirectsCheck->Checked;
 
   // color
   SessionData->Color = FColor;
@@ -827,7 +808,7 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
         }
 
         Node->Text = Label;
-        Node->SelectedIndex = reinterpret_cast<int>(Tab);
+        Node->Data = Tab;
         PrevNode = Node;
         if (PageControl->ActivePage == Tab)
         {
@@ -911,7 +892,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(AuthKIPasswordCheck,
       AuthenticationGroup->Enabled && (AuthKICheck->Enabled && AuthKICheck->Checked));
     EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
-    EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && TryAgentCheck->Checked);
+    EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && TryAgentCheck2->Checked);
     if (PrivateKeyEdit3->Text != FLastPrivateKey)
     {
       FLastPrivateKey = PrivateKeyEdit3->Text;
@@ -934,10 +915,11 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
 
     // ssh/kex sheet
-    KexSheet->Enabled = SshProtocol && (BugRekey2Combo->ItemIndex != 2);
+    KexSheet->Enabled = SshProtocol;
     EnableControl(KexUpButton, KexListBox->ItemIndex > 0);
     EnableControl(KexDownButton, KexListBox->ItemIndex >= 0 &&
       KexListBox->ItemIndex < KexListBox->Items->Count-1);
+    EnableControl(KexReexchangeGroup, (BugRekey2Combo->ItemIndex != 2));
 
     // ssh/bugs sheet
     BugsSheet->Enabled = SshProtocol;
@@ -1036,7 +1018,6 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(EOLTypeCombo, (SftpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
     EnableControl(EOLTypeLabel, EOLTypeCombo->Enabled);
     EnableControl(DSTModeGroup, (SftpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
-    EnableControl(DSTModeKeepCheck, UsesDaylightHack() && DSTModeGroup->Enabled);
     EnableControl(UtfCombo, (SftpProtocol || FtpProtocol || ScpProtocol) && EnvironmentSheet->Enabled);
     EnableControl(UtfLabel, UtfCombo->Enabled);
     // should be enabled for fsSFTP (SCP fallback) too, but it would cause confusion
@@ -1056,8 +1037,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     // environment/recycle bin sheet
     EnableControl(OverwrittenToRecycleBinCheck, SftpProtocol && RecycleBinSheet->Enabled);
     EnableControl(RecycleBinPathEdit,
-      (DeleteToRecycleBinCheck->Enabled && DeleteToRecycleBinCheck->Checked) ||
-      (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked) &&
+      ((DeleteToRecycleBinCheck->Enabled && DeleteToRecycleBinCheck->Checked) ||
+       (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked)) &&
       RecycleBinSheet->Enabled);
     EnableControl(RecycleBinPathLabel, RecycleBinPathEdit->Enabled &&
       RecycleBinSheet->Enabled);
@@ -1112,6 +1093,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     // environment/webdav
     WebDavSheet->Enabled = WebDavProtocol;
 
+    // Currently no page is dynamically hidden/shown anymore,
+    // so there is in general no need to update the tree here anymore.
     UpdateNavigationTree();
 
     // color
@@ -1174,7 +1157,7 @@ void __fastcall TSiteAdvancedDialog::NavigationTreeChange(TObject * /*Sender*/,
   {
     TAutoNestingCounter Guard(NoUpdate);
 
-    TTabSheet * Tab = reinterpret_cast<TTabSheet *>(Node->SelectedIndex);
+    TTabSheet * Tab = static_cast<TTabSheet *>(Node->Data);
     // should happen only while loading language
     // (UpdateNavigationTree may not be called yet)
     if (Tab != NULL)
@@ -1205,8 +1188,7 @@ void __fastcall TSiteAdvancedDialog::PageChanged()
   {
     for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
     {
-      if (NavigationTree->Items->Item[Index]->SelectedIndex ==
-            reinterpret_cast<int>(PageControl->ActivePage))
+      if (NavigationTree->Items->Item[Index]->Data == PageControl->ActivePage)
       {
         NavigationTree->Items->Item[Index]->Selected = true;
         Found = true;
@@ -1284,11 +1266,11 @@ void __fastcall TSiteAdvancedDialog::Dispatch(void * Message)
   DebugAssert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
-    CMDialogKey(*((TWMKeyDown *)Message));
+    CMDialogKey(*static_cast<TWMKeyDown *>(Message));
   }
   else if (M->Msg == WM_HELP)
   {
-    WMHelp(*((TWMHelp *)Message));
+    WMHelp(*static_cast<TWMHelp *>(Message));
   }
   else
   {
@@ -1407,7 +1389,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender
           }
         }
       }
-      catch (Exception & E)
+      catch (Exception &)
       {
         // swallow
       }
@@ -1494,13 +1476,13 @@ TProxyMethod __fastcall TSiteAdvancedDialog::GetProxyMethod()
   TFSProtocol FSProtocol = FSessionData->FSProtocol;
   if (FSessionData->UsesSsh)
   {
-    Result = (TProxyMethod)SshProxyMethodCombo->ItemIndex;
+    Result = static_cast<TProxyMethod>(SshProxyMethodCombo->ItemIndex);
   }
   else if (FSProtocol == fsFTP)
   {
     if (SupportedFtpProxyMethod(FtpProxyMethodCombo->ItemIndex))
     {
-      Result = (TProxyMethod)FtpProxyMethodCombo->ItemIndex;
+      Result = static_cast<TProxyMethod>(FtpProxyMethodCombo->ItemIndex);
     }
     else
     {
@@ -1509,7 +1491,7 @@ TProxyMethod __fastcall TSiteAdvancedDialog::GetProxyMethod()
   }
   else if (IsNeon(FSProtocol))
   {
-    Result = (TProxyMethod)NeonProxyMethodCombo->ItemIndex;
+    Result = static_cast<TProxyMethod>(NeonProxyMethodCombo->ItemIndex);
   }
   else
   {
@@ -1720,7 +1702,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyViewButtonClick(TObject * /*Sende
   Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
   Aliases[0].OnSubmit = &ClipboardHandler.Copy;
   Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
+  Params.AliasesCount = std::size(Aliases);
 
   UnicodeString Message = LoadStr(HasCertificate ? LOGIN_KEY_WITH_CERTIFICATE : LOGIN_AUTHORIZED_KEYS);
   int Answers = qaOK | qaRetry;
@@ -1761,7 +1743,7 @@ void __fastcall TSiteAdvancedDialog::GenerateKeyButtonClick(TObject * /*Sender*/
   Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
   Aliases[0].OnSubmit = &ClipboardHandler.Copy;
   Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
+  Params.AliasesCount = std::size(Aliases);
 
   MessageDialog(LoadStr(ENCRYPT_KEY_GENERATED), qtInformation, qaOK | qaRetry, HELP_FILE_ENCRYPTION, &Params);
 }

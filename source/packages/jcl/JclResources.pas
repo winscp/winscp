@@ -1960,6 +1960,7 @@ resourcestring
   RsOSVersionWinServer2016      = 'Windows Server 2016';
   RsOSVersionWinServer2019      = 'Windows Server 2019';
   RsOSVersionWinServer2022      = 'Windows Server 2022';
+  RsOSVersionWinServer2025      = 'Windows Server 2025';
   RsOSVersionWinServer          = 'Windows Server';
   RsOSVersionWin11              = 'Windows 11';
 

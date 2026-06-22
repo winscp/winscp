@@ -14,6 +14,12 @@ class TCustomUnixDriveView;
 class TRemoteFile;
 class TRemoteProperties;
 //---------------------------------------------------------------------------
+#ifdef DESIGN_ONLY
+class TRemoteFile
+{
+};
+#endif
+//---------------------------------------------------------------------------
 enum TTransferDirection { tdToRemote, tdToLocal };
 enum TTransferType { ttCopy, ttMove };
 typedef void __fastcall (__closure *TDDDragFileName)
@@ -90,8 +96,8 @@ protected:
 public:
   __fastcall TUnixDirView(TComponent* Owner);
   virtual __fastcall ~TUnixDirView();
-  virtual void __fastcall CreateDirectory(UnicodeString DirName);
-  void __fastcall CreateDirectoryEx(UnicodeString DirName, const TRemoteProperties * Properties);
+  virtual void __fastcall CreateDir(UnicodeString DirName);
+  void __fastcall CreateDirEx(UnicodeString DirName, const TRemoteProperties * Properties);
   virtual void __fastcall DisplayPropertiesMenu();
   virtual void __fastcall ExecuteHomeDirectory();
   virtual void __fastcall ExecuteParentDirectory();
@@ -128,7 +134,6 @@ __published:
   __property AddParentDir;
   __property DimmHiddenFiles;
   __property ShowHiddenFiles;
-  __property WantUseDragImages;
   __property TargetPopupMenu;
   __property OnSelectItem;
   __property OnStartLoading;

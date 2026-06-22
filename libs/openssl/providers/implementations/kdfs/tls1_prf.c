@@ -106,6 +106,8 @@ typedef struct {
     /* Concatenated seed data */
     unsigned char *seed;
     size_t seedlen;
+
+    OSSL_FIPS_IND_DECLARE
 } TLS1_PRF;
 
 static void *kdf_tls1_prf_new(void *provctx)
@@ -115,8 +117,10 @@ static void *kdf_tls1_prf_new(void *provctx)
     if (!ossl_prov_is_running())
         return NULL;
 
-    if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) != NULL)
+    if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) != NULL) {
         ctx->provctx = provctx;
+        OSSL_FIPS_IND_INIT(ctx)
+    }
     return ctx;
 }
 
@@ -161,6 +165,7 @@ static void *kdf_tls1_prf_dup(void *vctx)
         if (!ossl_prov_memdup(src->seed, src->seedlen, &dest->seed,
                 &dest->seedlen))
             goto err;
+        OSSL_FIPS_IND_COPY(dest, src)
     }
     return dest;
 
@@ -169,11 +174,81 @@ err:
     return NULL;
 }
 
+#ifdef FIPS_MODULE
+
+static int fips_ems_check_passed(TLS1_PRF *ctx)
+{
+    OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(ctx->provctx);
+    /*
+     * Check that TLS is using EMS.
+     *
+     * The seed buffer is prepended with a label.
+     * If EMS mode is enforced then the label "master secret" is not allowed,
+     * We do the check this way since the PRF is used for other purposes, as well
+     * as "extended master secret".
+     */
+    int ems_approved = (ctx->seedlen < TLS_MD_MASTER_SECRET_CONST_SIZE
+        || memcmp(ctx->seed, TLS_MD_MASTER_SECRET_CONST,
+               TLS_MD_MASTER_SECRET_CONST_SIZE)
+            != 0);
+
+    if (!ems_approved) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(ctx, OSSL_FIPS_IND_SETTABLE0,
+                libctx, "TLS_PRF", "EMS",
+                ossl_fips_config_tls1_prf_ems_check)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_EMS_NOT_ENABLED);
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int fips_digest_check_passed(TLS1_PRF *ctx, const EVP_MD *md)
+{
+    OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(ctx->provctx);
+    /*
+     * Perform digest check
+     *
+     * According to NIST SP 800-135r1 section 5.2, the valid hash functions are
+     * specified in FIPS 180-3. ACVP also only lists the same set of hash
+     * functions.
+     */
+    int digest_unapproved = !EVP_MD_is_a(md, SN_sha256)
+        && !EVP_MD_is_a(md, SN_sha384)
+        && !EVP_MD_is_a(md, SN_sha512);
+
+    if (digest_unapproved) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(ctx, OSSL_FIPS_IND_SETTABLE1,
+                libctx, "TLS_PRF", "Digest",
+                ossl_fips_config_tls1_prf_digest_check)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_DIGEST_NOT_ALLOWED);
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int fips_key_check_passed(TLS1_PRF *ctx)
+{
+    OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(ctx->provctx);
+    int key_approved = ossl_kdf_check_key_size(ctx->seclen);
+
+    if (!key_approved) {
+        if (!OSSL_FIPS_IND_ON_UNAPPROVED(ctx, OSSL_FIPS_IND_SETTABLE2,
+                libctx, "TLS_PRF", "Key size",
+                ossl_fips_config_tls1_prf_key_check)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY_LENGTH);
+            return 0;
+        }
+    }
+    return 1;
+}
+#endif
+
 static int kdf_tls1_prf_derive(void *vctx, unsigned char *key, size_t keylen,
     const OSSL_PARAM params[])
 {
     TLS1_PRF *ctx = (TLS1_PRF *)vctx;
-    OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(ctx->provctx);
 
     if (!ossl_prov_is_running() || !kdf_tls1_prf_set_ctx_params(ctx, params))
         return 0;
@@ -195,21 +270,10 @@ static int kdf_tls1_prf_derive(void *vctx, unsigned char *key, size_t keylen,
         return 0;
     }
 
-    /*
-     * The seed buffer is prepended with a label.
-     * If EMS mode is enforced then the label "master secret" is not allowed,
-     * We do the check this way since the PRF is used for other purposes, as well
-     * as "extended master secret".
-     */
-    if (ossl_tls1_prf_ems_check_enabled(libctx)) {
-        if (ctx->seedlen >= TLS_MD_MASTER_SECRET_CONST_SIZE
-            && memcmp(ctx->seed, TLS_MD_MASTER_SECRET_CONST,
-                   TLS_MD_MASTER_SECRET_CONST_SIZE)
-                == 0) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_EMS_NOT_ENABLED);
-            return 0;
-        }
-    }
+#ifdef FIPS_MODULE
+    if (!fips_ems_check_passed(ctx))
+        return 0;
+#endif
 
     return tls1_prf_alg(ctx->P_hash, ctx->P_sha1,
         ctx->sec, ctx->seclen,
@@ -223,10 +287,23 @@ static int kdf_tls1_prf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     TLS1_PRF *ctx = vctx;
     OSSL_LIB_CTX *libctx = PROV_LIBCTX_OF(ctx->provctx);
 
-    if (params == NULL)
+    if (ossl_param_is_empty(params))
         return 1;
 
+    if (!OSSL_FIPS_IND_SET_CTX_PARAM(ctx, OSSL_FIPS_IND_SETTABLE0, params,
+            OSSL_KDF_PARAM_FIPS_EMS_CHECK))
+        return 0;
+    if (!OSSL_FIPS_IND_SET_CTX_PARAM(ctx, OSSL_FIPS_IND_SETTABLE1, params,
+            OSSL_KDF_PARAM_FIPS_DIGEST_CHECK))
+        return 0;
+    if (!OSSL_FIPS_IND_SET_CTX_PARAM(ctx, OSSL_FIPS_IND_SETTABLE2, params,
+            OSSL_KDF_PARAM_FIPS_KEY_CHECK))
+        return 0;
+
     if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_DIGEST)) != NULL) {
+        PROV_DIGEST digest;
+        const EVP_MD *md = NULL;
+
         if (OPENSSL_strcasecmp(p->data, SN_md5_sha1) == 0) {
             if (!ossl_prov_macctx_load_from_params(&ctx->P_hash, params,
                     OSSL_MAC_NAME_HMAC,
@@ -243,6 +320,26 @@ static int kdf_tls1_prf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
                     NULL, NULL, libctx))
                 return 0;
         }
+
+        memset(&digest, 0, sizeof(digest));
+        if (!ossl_prov_digest_load_from_params(&digest, params, libctx))
+            return 0;
+
+        md = ossl_prov_digest_md(&digest);
+        if (EVP_MD_xof(md)) {
+            ERR_raise(ERR_LIB_PROV, PROV_R_XOF_DIGESTS_NOT_ALLOWED);
+            ossl_prov_digest_reset(&digest);
+            return 0;
+        }
+
+#ifdef FIPS_MODULE
+        if (!fips_digest_check_passed(ctx, md)) {
+            ossl_prov_digest_reset(&digest);
+            return 0;
+        }
+#endif
+
+        ossl_prov_digest_reset(&digest);
     }
 
     if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_SECRET)) != NULL) {
@@ -250,6 +347,11 @@ static int kdf_tls1_prf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
         ctx->sec = NULL;
         if (!OSSL_PARAM_get_octet_string(p, (void **)&ctx->sec, 0, &ctx->seclen))
             return 0;
+
+#ifdef FIPS_MODULE
+        if (!fips_key_check_passed(ctx))
+            return 0;
+#endif
     }
     /* The seed fields concatenate, so process them all */
     if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_SEED)) != NULL) {
@@ -291,7 +393,10 @@ static const OSSL_PARAM *kdf_tls1_prf_settable_ctx_params(
         OSSL_PARAM_utf8_string(OSSL_KDF_PARAM_DIGEST, NULL, 0),
         OSSL_PARAM_octet_string(OSSL_KDF_PARAM_SECRET, NULL, 0),
         OSSL_PARAM_octet_string(OSSL_KDF_PARAM_SEED, NULL, 0),
-        OSSL_PARAM_END
+        OSSL_FIPS_IND_SETTABLE_CTX_PARAM(OSSL_KDF_PARAM_FIPS_EMS_CHECK)
+            OSSL_FIPS_IND_SETTABLE_CTX_PARAM(OSSL_KDF_PARAM_FIPS_DIGEST_CHECK)
+                OSSL_FIPS_IND_SETTABLE_CTX_PARAM(OSSL_KDF_PARAM_FIPS_KEY_CHECK)
+                    OSSL_PARAM_END
     };
     return known_settable_ctx_params;
 }
@@ -300,9 +405,13 @@ static int kdf_tls1_prf_get_ctx_params(void *vctx, OSSL_PARAM params[])
 {
     OSSL_PARAM *p;
 
-    if ((p = OSSL_PARAM_locate(params, OSSL_KDF_PARAM_SIZE)) != NULL)
-        return OSSL_PARAM_set_size_t(p, SIZE_MAX);
-    return -2;
+    if ((p = OSSL_PARAM_locate(params, OSSL_KDF_PARAM_SIZE)) != NULL) {
+        if (!OSSL_PARAM_set_size_t(p, SIZE_MAX))
+            return 0;
+    }
+    if (!OSSL_FIPS_IND_GET_CTX_PARAM(((TLS1_PRF *)vctx), params))
+        return 0;
+    return 1;
 }
 
 static const OSSL_PARAM *kdf_tls1_prf_gettable_ctx_params(
@@ -310,7 +419,8 @@ static const OSSL_PARAM *kdf_tls1_prf_gettable_ctx_params(
 {
     static const OSSL_PARAM known_gettable_ctx_params[] = {
         OSSL_PARAM_size_t(OSSL_KDF_PARAM_SIZE, NULL),
-        OSSL_PARAM_END
+        OSSL_FIPS_IND_GETTABLE_CTX_PARAM()
+            OSSL_PARAM_END
     };
     return known_gettable_ctx_params;
 }

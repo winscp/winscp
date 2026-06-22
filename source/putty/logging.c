@@ -369,11 +369,8 @@ void log_packet(LogContext *ctx, int direction, int type,
         /* (Re-)initialise dumpdata as necessary
          * (start of row, or if we've just stopped omitting) */
         if (!output_pos && !omitted)
-        {
-            // WINSCP: otherwise it fails with access violation with codeguard on
-            sprintf(dumpdata, "  %08"SIZEx, p-(p%16));
-            sprintf(dumpdata + strlen(dumpdata), "%*s\r\n", 1+3*16+2+16, "");
-        }
+            sprintf(dumpdata, "  %08"SIZEx"%*s\r\n",
+                    p-(p%16), 1+3*16+2+16, "");
 
         /* Deal with the current byte. */
         if (blktype == PKTLOG_OMIT) {

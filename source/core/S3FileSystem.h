@@ -17,7 +17,10 @@ struct TS3FileProperties;
 #ifdef NEED_LIBS3
 // resolve clash
 #define S3Protocol _S3Protocol
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include "libs3.h"
+#pragma clang diagnostic pop
 #undef S3Protocol
 #else
 struct ne_session_s;

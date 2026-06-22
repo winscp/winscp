@@ -201,7 +201,6 @@ static Token lex(ptrlen *text, ptrlen *token, char **err)
     while (p < e && is_space(*p))
         p++;
 
-    { // WINSCP
     const char *start = p;
 
     if (!(p < e)) {
@@ -222,9 +221,7 @@ static Token lex(ptrlen *text, ptrlen *token, char **err)
             {PTRLEN_DECL_LITERAL("!"), TOK_NOT},
         };
 
-        { // WINSCP
-        size_t i;
-        for (i = 0; i < lenof(operators); i++) {
+        for (size_t i = 0; i < lenof(operators); i++) {
             const struct operator *op = &operators[i];
             if (e - p >= op->text.len &&
                 ptrlen_eq_ptrlen(op->text, make_ptrlen(p, op->text.len))) {
@@ -233,7 +230,6 @@ static Token lex(ptrlen *text, ptrlen *token, char **err)
                 goto out;
             }
         }
-        } // WINSCP
 
         /*
          * Report an error if one of the operator characters is used
@@ -272,7 +268,6 @@ static Token lex(ptrlen *text, ptrlen *token, char **err)
     text->ptr = p;
     text->len = e - p;
     return type;
-    } // WINSCP
 }
 
 typedef enum Operator {
@@ -319,11 +314,8 @@ static void exprnode_free(ExprNode *en)
     switch (en->op) {
       case OP_AND:
       case OP_OR:
-        { // WINSCP
-        size_t i;
-        for (i = 0; i < en->nsubexprs; i++)
+        for (size_t i = 0; i < en->nsubexprs; i++)
             exprnode_free(en->subexprs[i]);
-        } // WINSCP
         sfree(en->subexprs);
         break;
       case OP_NOT:
@@ -344,8 +336,7 @@ static void exprnode_free(ExprNode *en)
 static unsigned ptrlen_to_port_number(ptrlen input)
 {
     unsigned val = 0;
-    const char *p, *end; // WINSCP
-    for (p = input.ptr, end = p + input.len; p < end; p++) {
+    for (const char *p = input.ptr, *end = p + input.len; p < end; p++) {
         assert('0' <= *p && *p <= '9'); /* expect parser to have checked */
         val = 10 * val + (*p - '0');
         if (val >= 65536)
@@ -395,7 +386,6 @@ static ExprNode *parse_atom(ParserState *ps)
         ptrlen openpar = ps->toktext;
         advance(ps);                   /* eat the ( */
 
-        { // WINSCP
         ExprNode *subexpr = parse_expr(ps);
         if (!subexpr)
             return NULL;
@@ -407,7 +397,6 @@ static ExprNode *parse_atom(ParserState *ps)
             return NULL;
         }
 
-        { // WINSCP
         ptrlen closepar = ps->toktext;
         advance(ps);                   /* eat the ) */
 
@@ -417,27 +406,21 @@ static ExprNode *parse_atom(ParserState *ps)
         subexpr->text = make_ptrlen_startend(
             openpar.ptr, ptrlen_end(closepar));
         return subexpr;
-        } // WINSCP
-        } // WINSCP
     }
 
     if (ps->tok == TOK_NOT) {
         ptrlen notloc = ps->toktext;
         advance(ps);                   /* eat the ! */
 
-        { // WINSCP
         ExprNode *subexpr = parse_atom(ps);
         if (!subexpr)
             return NULL;
 
-        { // WINSCP
         ExprNode *en = exprnode_new(
             OP_NOT, make_ptrlen_startend(
                 notloc.ptr, ptrlen_end(subexpr->text)));
         en->subexpr = subexpr;
         return en;
-        } // WINSCP
-        } // WINSCP
     }
 
     if (ps->tok == TOK_ATOM) {
@@ -449,7 +432,6 @@ static ExprNode *parse_atom(ParserState *ps)
             return en;
         }
 
-        { // WINSCP
         ptrlen tail;
         if (ptrlen_startswith(ps->toktext, PTRLEN_LITERAL("port:"), &tail)) {
             /* Port number (single or range). */
@@ -502,15 +484,12 @@ static ExprNode *parse_atom(ParserState *ps)
             }
 
 
-            { // WINSCP
             ExprNode *en = exprnode_new(OP_PORT_RANGE, ps->toktext);
             en->lo = lo;
             en->hi = hi;
             advance(ps);
             return en;
-            } // WINSCP
         }
-        } // WINSCP
     }
 
     error(ps, dupstr("expected a predicate or a parenthesised subexpression"),
@@ -527,7 +506,6 @@ static ExprNode *parse_expr(ParserState *ps)
     if (ps->tok != TOK_AND && ps->tok != TOK_OR)
         return subexpr;
 
-    { // WINSCP
     Token operator = ps->tok;
     ExprNode *en = exprnode_new(ps->tok == TOK_AND ? OP_AND : OP_OR,
                                 subexpr->text);
@@ -559,7 +537,6 @@ static ExprNode *parse_expr(ParserState *ps)
             return NULL;
         }
     }
-    } // WINSCP
 }
 
 static ExprNode *parse(ptrlen expr, char **error_msg, ptrlen *error_loc)
@@ -569,7 +546,6 @@ static ExprNode *parse(ptrlen expr, char **error_msg, ptrlen *error_loc)
     ps->err = NULL;
     advance(ps);
 
-    { // WINSCP
     ExprNode *en = parse_expr(ps);
     if (en && ps->tok != TOK_END) {
         error(ps, dupstr("unexpected text at end of expression"),
@@ -589,29 +565,22 @@ static ExprNode *parse(ptrlen expr, char **error_msg, ptrlen *error_loc)
     }
 
     return en;
-    } // WINSCP
 }
 
 static bool eval(ExprNode *en, const char *hostname, unsigned port)
 {
     switch (en->op) {
       case OP_AND:
-        { // WINSCP
-        size_t i;
-        for (i = 0; i < en->nsubexprs; i++)
+        for (size_t i = 0; i < en->nsubexprs; i++)
             if (!eval(en->subexprs[i], hostname, port))
                 return false;
         return true;
-        } // WINSCP
 
       case OP_OR:
-        { // WINSCP
-        size_t i;
-        for (i = 0; i < en->nsubexprs; i++)
+        for (size_t i = 0; i < en->nsubexprs; i++)
             if (eval(en->subexprs[i], hostname, port))
                 return true;
         return false;
-        } // WINSCP
 
       case OP_NOT:
         return !eval(en->subexpr, hostname, port);
@@ -634,11 +603,9 @@ bool cert_expr_match_str(const char *expression,
     if (!en)
         return false;
 
-    { // WINSCP
     bool matched = eval(en, hostname, port);
     exprnode_free(en);
     return matched;
-    } // WINSCP
 }
 
 bool cert_expr_valid(const char *expression,
@@ -668,8 +635,7 @@ CertExprBuilder *cert_expr_builder_new(void)
 
 void cert_expr_builder_free(CertExprBuilder *eb)
 {
-    size_t i; // WINSCP
-    for (i = 0; i < eb->nwcs; i++)
+    for (size_t i = 0; i < eb->nwcs; i++)
         sfree(eb->wcs[i]);
     sfree(eb->wcs);
     sfree(eb);
@@ -698,8 +664,7 @@ void cert_expr_builder_add(CertExprBuilder *eb, const char *wildcard)
 char *cert_expr_expression(CertExprBuilder *eb)
 {
     strbuf *sb = strbuf_new();
-    size_t i; // WINSCP
-    for (i = 0; i < eb->nwcs; i++) {
+    for (size_t i = 0; i < eb->nwcs; i++) {
         if (i)
             put_dataz(sb, " || ");
         put_dataz(sb, eb->wcs[i]);

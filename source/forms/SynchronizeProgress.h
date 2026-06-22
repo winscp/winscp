@@ -21,10 +21,10 @@
 class TSynchronizeProgressForm : public TForm
 {
 __published:
-  TLabel *Label1;
-  TLabel *Label2;
-  TPathLabel *RemoteDirectoryLabel;
-  TPathLabel *LocalDirectoryLabel;
+  TLabel *LeftLabel;
+  TLabel *RightLabel;
+  TPathLabel *RightDirectoryLabel;
+  TPathLabel *LeftDirectoryLabel;
   TLabel *StartTimeLabel;
   TLabel *StartTimeLabelLabel;
   TLabel *Label3;
@@ -49,12 +49,12 @@ __published:
   void __fastcall CancelItemClick(TObject *Sender);
 
 public:
-  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files);
+  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files, bool LocalLocal);
   virtual __fastcall ~TSynchronizeProgressForm();
 
   void __fastcall Start();
   int __fastcall SetData(
-    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory, int Progress, bool & Continue);
+    const UnicodeString & Directory1, const UnicodeString & Directory2, int Progress, bool & Continue);
 
   __property bool Started = { read = FStarted };
 
@@ -75,7 +75,7 @@ private:
   void __fastcall CancelOperation();
   void __fastcall CMDialogKey(TCMDialogKey & Message);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

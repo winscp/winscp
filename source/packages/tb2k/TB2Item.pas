@@ -29,7 +29,6 @@ unit TB2Item;
 
 interface
 
-{$I TB2Ver.inc}
 {x$DEFINE TB2K_NO_ANIMATION}
   { Enabling the above define disables all menu animation. For debugging
     purpose only. }
@@ -3597,7 +3596,7 @@ end;
 
 function TTBView.HandleWMGetObject(var Message: TMessage): Boolean;
 begin
-  if (Message.LParam = Integer(OBJID_CLIENT)) then begin
+  if (Integer(Message.LParam) = Integer(OBJID_CLIENT)) then begin
     Message.Result := LresultFromObject(ITBAccessible, Message.WParam, GetAccObject);
     Result := True;
   end
@@ -4702,7 +4701,6 @@ var
   Ctl: TControl;
   ChangedBold: Boolean;
   HighestSameWidthViewerWidth, Total, J, TotalVisibleItems: Integer;
-  IsFirst: Boolean;
   Viewer: TTBItemViewer;
   UseChevron, NonControlsOffEdge, TempViewerCreated: Boolean;
   Margins: TRect;
@@ -5796,7 +5794,6 @@ begin
   end
   else
     EndModal;
-  Exit; asm db 0,'Toolbar2000 (C) 1998-2005 Jordan Russell',0 end;
 end;
 
 procedure TTBView.Scroll(ADown: Boolean);
@@ -6216,7 +6213,7 @@ begin
       end;
       case Msg.message of
         WM_LBUTTONDOWN, WM_RBUTTONDOWN: begin
-            P := SmallPointToPoint(TSmallPoint(Msg.lParam));
+            P := Point(SmallInt(LOWORD(NativeUInt(Msg.lParam))), SmallInt(HIWORD(NativeUInt(Msg.lParam))));
             Windows.ClientToScreen(Msg.hwnd, P);
             Ctl := FindDragTarget(P, True);
             { Was the mouse not clicked on a popup, or was it clicked on a
@@ -6337,7 +6334,7 @@ begin
             WM_MOUSEWHEEL:
               if GetSelectedViewer(View, Viewer) then begin
                 P := Viewer.ScreenToClient(Msg.pt);
-                Viewer.MouseWheel(Smallint(LongRec(Msg.wParam).Hi), P.X, P.Y);
+                Viewer.MouseWheel(Smallint(HiWord(Msg.wParam)), P.X, P.Y);
               end;
             WM_LBUTTONDOWN, WM_LBUTTONDBLCLK, WM_RBUTTONDOWN:
               if (Msg.message <> WM_RBUTTONDOWN) or TrackRightButton then begin
@@ -6691,7 +6688,7 @@ begin
   inherited;
 end;
 
-procedure PopupWindowNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
+procedure PopupWindowNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: NativeUInt);
 var
   R: TRect;
   {$IFNDEF TB2K_USE_STRICT_O2K_MENU_STYLE}
@@ -6725,7 +6722,7 @@ begin
   DC := GetWindowDC(Handle);
   try
     SelectNCUpdateRgn(Handle, DC, HRGN(Message.WParam));
-    PopupWindowNCPaintProc(Self, Handle, DC, Longint(Self));
+    PopupWindowNCPaintProc(Self, Handle, DC, NativeUInt(Self));
   finally
     ReleaseDC(Handle, DC);
   end;
@@ -6733,7 +6730,7 @@ end;
 
 procedure TTBPopupWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Self, Handle, Message, PopupWindowNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, PopupWindowNCPaintProc, NativeUInt(Self));
 end;
 
 procedure TTBPopupWindow.WMPrintClient(var Message: TMessage);

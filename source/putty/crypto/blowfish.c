@@ -648,60 +648,50 @@ static void blowfish_ssh2_sdctr(ssh_cipher *cipher, void *blk, int len)
 }
 
 const ssh_cipheralg ssh_blowfish_ssh1 = {
-    // WINSCP
-    /*.new =*/ blowfish_new,
-    /*.free =*/ blowfish_free,
-    /*.setiv =*/ blowfish_ssh1_setiv,
-    /*.setkey =*/ blowfish_ssh_setkey,
-    /*.encrypt =*/ blowfish_ssh1_encrypt_blk,
-    /*.decrypt =*/ blowfish_ssh1_decrypt_blk,
-    NULL, NULL, // WINSCP
-    /*.next_message =*/ nullcipher_next_message,
-    NULL, // WINSCP
-    /*.blksize =*/ 8,
-    /*.real_keybits =*/ 128,
-    /*.padded_keybytes =*/ SSH1_SESSION_KEY_LENGTH,
-    /*.flags =*/ SSH_CIPHER_IS_CBC,
-    /*.text_name =*/ "Blowfish-256 CBC",
-    NULL, NULL, // WINSCP
+    .new = blowfish_new,
+    .free = blowfish_free,
+    .setiv = blowfish_ssh1_setiv,
+    .setkey = blowfish_ssh_setkey,
+    .encrypt = blowfish_ssh1_encrypt_blk,
+    .decrypt = blowfish_ssh1_decrypt_blk,
+    .next_message = nullcipher_next_message,
+    .blksize = 8,
+    .real_keybits = 128,
+    .padded_keybytes = SSH1_SESSION_KEY_LENGTH,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "Blowfish-256 CBC",
 };
 
 const ssh_cipheralg ssh_blowfish_ssh2 = {
-    // WINSCP
-    /*.new =*/ blowfish_new,
-    /*.free =*/ blowfish_free,
-    /*.setiv =*/ blowfish_ssh2_setiv,
-    /*.setkey =*/ blowfish_ssh_setkey,
-    /*.encrypt =*/ blowfish_ssh2_encrypt_blk,
-    /*.decrypt =*/ blowfish_ssh2_decrypt_blk,
-    NULL, NULL, // WINSCP
-    /*.next_message =*/ nullcipher_next_message,
-    /*.ssh2_id =*/ "blowfish-cbc",
-    /*.blksize =*/ 8,
-    /*.real_keybits =*/ 128,
-    /*.padded_keybytes =*/ 16,
-    /*.flags =*/ SSH_CIPHER_IS_CBC,
-    /*.text_name =*/ "Blowfish-128 CBC",
-    NULL, NULL, // WINSCP
+    .new = blowfish_new,
+    .free = blowfish_free,
+    .setiv = blowfish_ssh2_setiv,
+    .setkey = blowfish_ssh_setkey,
+    .encrypt = blowfish_ssh2_encrypt_blk,
+    .decrypt = blowfish_ssh2_decrypt_blk,
+    .next_message = nullcipher_next_message,
+    .ssh2_id = "blowfish-cbc",
+    .blksize = 8,
+    .real_keybits = 128,
+    .padded_keybytes = 16,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "Blowfish-128 CBC",
 };
 
 const ssh_cipheralg ssh_blowfish_ssh2_ctr = {
-    // WINSCP
-    /*.new =*/ blowfish_new,
-    /*.free =*/ blowfish_free,
-    /*.setiv =*/ blowfish_ssh2_setiv,
-    /*.setkey =*/ blowfish_ssh_setkey,
-    /*.encrypt =*/ blowfish_ssh2_sdctr,
-    /*.decrypt =*/ blowfish_ssh2_sdctr,
-    NULL, NULL, // WINSCP
-    /*.next_message =*/ nullcipher_next_message,
-    /*.ssh2_id =*/ "blowfish-ctr",
-    /*.blksize =*/ 8,
-    /*.real_keybits =*/ 256,
-    /*.padded_keybytes =*/ 32,
-    /*.flags =*/ 0,
-    /*.text_name =*/ "Blowfish-256 SDCTR",
-    NULL, NULL, // WINSCP
+    .new = blowfish_new,
+    .free = blowfish_free,
+    .setiv = blowfish_ssh2_setiv,
+    .setkey = blowfish_ssh_setkey,
+    .encrypt = blowfish_ssh2_sdctr,
+    .decrypt = blowfish_ssh2_sdctr,
+    .next_message = nullcipher_next_message,
+    .ssh2_id = "blowfish-ctr",
+    .blksize = 8,
+    .real_keybits = 256,
+    .padded_keybytes = 32,
+    .flags = 0,
+    .text_name = "Blowfish-256 SDCTR",
 };
 
 static const ssh_cipheralg *const blowfish_list[] = {

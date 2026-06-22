@@ -1,19 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
-#include <Common.h>
+
 #include "GUIConfiguration.h"
-#include "GUITools.h"
+
 #include <FileInfo.h>
-#include <TextsCore.h>
-#include <TextsWin.h>
 #include <Terminal.h>
-#include <CoreMain.h>
 #include <shlobj.h>
-#include <System.IOUtils.hpp>
-#include <System.StrUtils.hpp>
-//---------------------------------------------------------------------------
-#pragma package(smart_init)
 //---------------------------------------------------------------------------
 const int ccLocal = ccUser;
 const int ccShowResults = ccUser << 1;
@@ -21,6 +14,7 @@ const int ccCopyResults = ccUser << 2;
 const int ccRemoteFiles = ccUser << 3;
 const int ccShowResultsInMsgBox = ccUser << 4;
 const int ccSet = 0x80000000;
+const int SessionReopenAutoIdleDefault = 9000;
 //---------------------------------------------------------------------------
 static const unsigned int AdditionalLanguageMask = 0xFFFFFF00;
 static const UnicodeString AdditionalLanguagePrefix(L"XX");
@@ -531,7 +525,6 @@ __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
   FLocales = new TObjectList();
   FLastLocalesExts = L"*";
   FCopyParamList = new TCopyParamList();
-  CoreSetResourceModule(GetResourceModule());
 }
 //---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::~TGUIConfiguration()
@@ -564,7 +557,7 @@ void __fastcall TGUIConfiguration::Default()
   FQueueAutoPopup = true;
   FSessionRememberPassword = true;
   UnicodeString ProgramsFolder;
-  SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+  ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
   FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\" + OriginalPuttyExecutable;
   FDefaultPuttyPath = L"%ProgramFiles%\\PuTTY\\" + OriginalPuttyExecutable;
   FPuttyPath = FormatCommand(FDefaultPuttyPath, L"");
@@ -578,7 +571,10 @@ void __fastcall TGUIConfiguration::Default()
   FCopyParamCurrent = L"";
   FKeepUpToDateChangeDelay = 500;
   FChecksumAlg = L"sha1";
-  FSessionReopenAutoIdle = 9000;
+  FSessionReopenAutoIdle = SessionReopenAutoIdleDefault;
+  FSessionReopenAutoIdleOn = true;
+  FSessionReopenAutoInactive = false;
+  FSessionSilentDisconnect = false;
 
   FNewDirectoryProperties.Default();
   FNewDirectoryProperties.Rights = TRights::rfDefault | TRights::rfExec;
@@ -645,7 +641,7 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEYEX(Bool,   SessionRememberPassword, L"QueueRememberPassword"); \
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
-    KEY(Integer,  UsePuttyPwFile); \
+    KEY(Enum,     UsePuttyPwFile); \
     KEY(Bool,     PuttyPassword); \
     KEY(Bool,     TelnetForFtpInPutty); \
     KEY(DateTime, IgnoreCancelBeforeFinish); \
@@ -655,6 +651,9 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEY(Integer,  KeepUpToDateChangeDelay); \
     KEY(String,   ChecksumAlg); \
     KEY(Integer,  SessionReopenAutoIdle); \
+    KEY(Bool,     SessionReopenAutoIdleOn); \
+    KEY(Bool,     SessionReopenAutoInactive); \
+    KEY(Bool,     SessionSilentDisconnect); \
   ); \
 //---------------------------------------------------------------------------
 bool __fastcall TGUIConfiguration::DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults)
@@ -816,11 +815,10 @@ UnicodeString __fastcall TGUIConfiguration::GetTranslationModule(const UnicodeSt
   return Result;
 }
 //---------------------------------------------------------------------------
-HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
-  UnicodeString & FileName)
+HMODULE TGUIConfiguration::LoadNewResourceModule(LCID ALocale, UnicodeString & FileName)
 {
   UnicodeString LibraryFileName;
-  HINSTANCE NewInstance = 0;
+  HMODULE NewInstance = 0;
   LCID AInternalLocale = InternalLocale();
   bool Internal = (ALocale == AInternalLocale);
   DWORD PrimaryLang = PRIMARYLANGID(ALocale);
@@ -833,7 +831,7 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     if ((ALocale & AdditionalLanguageMask) != AdditionalLanguageMask)
     {
       wchar_t LocaleStr[4];
-      GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, LENOF(LocaleStr));
+      GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, std::size(LocaleStr));
       LocaleName = LocaleStr;
       DebugAssert(!LocaleName.IsEmpty());
     }
@@ -939,12 +937,12 @@ UnicodeString __fastcall TGUIConfiguration::GetAppliedLocaleHex()
   return IntToHex(__int64(AppliedLocale), 4);
 }
 //---------------------------------------------------------------------------
-int __fastcall TGUIConfiguration::GetResourceModuleCompleteness(HINSTANCE /*Module*/)
+int TGUIConfiguration::GetResourceModuleCompleteness(HMODULE /*Module*/)
 {
   return 100;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TGUIConfiguration::IsTranslationComplete(HINSTANCE /*Module*/)
+bool TGUIConfiguration::IsTranslationComplete(HMODULE /*Module*/)
 {
   return true;
 }
@@ -957,7 +955,7 @@ void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe, bool
     L = GetUserDefaultUILanguage();
   }
 
-  HINSTANCE Module = NULL;
+  HMODULE Module = NULL;
   UnicodeString FileName;
 
   try
@@ -1046,41 +1044,36 @@ void __fastcall TGUIConfiguration::SetAppliedLocale(LCID AppliedLocale, const Un
   FLocaleModuleName = LocaleModuleName;
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
+void TGUIConfiguration::FreeResourceModule(HMODULE Instance)
 {
   TLibModule * MainModule = FindModule(HInstance);
-  if ((unsigned)Instance != MainModule->Instance)
+  DebugAssert(sizeof(Instance) == sizeof(MainModule->Instance));
+  if (Instance != reinterpret_cast<HMODULE>(MainModule->Instance))
   {
-    FreeLibrary(static_cast<HMODULE>(Instance));
+    FreeLibrary(Instance);
   }
 }
 //---------------------------------------------------------------------------
-HANDLE __fastcall TGUIConfiguration::ChangeToDefaultResourceModule()
+HMODULE TGUIConfiguration::ChangeToDefaultResourceModule()
 {
   return ChangeResourceModule(NULL);
 }
 //---------------------------------------------------------------------------
-HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
+HINSTANCE TGUIConfiguration::ChangeResourceModule(HMODULE Instance)
 {
   if (Instance == NULL)
   {
     Instance = HInstance;
   }
   TLibModule * MainModule = FindModule(HInstance);
-  HANDLE Result = (HANDLE)MainModule->ResInstance;
-  MainModule->ResInstance = (unsigned)Instance;
-  CoreSetResourceModule(Instance);
+  HMODULE Result = reinterpret_cast<HMODULE>(MainModule->ResInstance);
+  MainModule->ResInstance = reinterpret_cast<HINST>(Instance);
   return Result;
 }
 //---------------------------------------------------------------------------
-HANDLE __fastcall TGUIConfiguration::GetResourceModule()
+void TGUIConfiguration::SetResourceModule(HMODULE Instance)
 {
-  return (HANDLE)FindModule(HInstance)->ResInstance;
-}
-//---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
-{
-  HANDLE PrevHandle = ChangeResourceModule(Instance);
+  HMODULE PrevHandle = ChangeResourceModule(Instance);
   FreeResourceModule(PrevHandle);
 
   DefaultLocalized();
@@ -1118,10 +1111,10 @@ void __fastcall TGUIConfiguration::AddLocale(LCID Locale, const UnicodeString & 
   if (Name.IsEmpty())
   {
     wchar_t LocaleStr[255];
-    GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE, LocaleStr, LENOF(LocaleStr));
+    GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE, LocaleStr, std::size(LocaleStr));
     Name = UnicodeString(LocaleStr) + TitleSeparator;
     // LOCALE_SNATIVELANGNAME
-    GetLocaleInfo(Locale, LOCALE_SLANGUAGE, LocaleStr, LENOF(LocaleStr));
+    GetLocaleInfo(Locale, LOCALE_SLANGUAGE, LocaleStr, std::size(LocaleStr));
     Name += LocaleStr;
   }
 
@@ -1405,7 +1398,7 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
   }
 
   TSessionData * PuttySessionData =
-    (TSessionData *)ImportSessionList->FindByName(PuttySession);
+    static_cast<TSessionData *>(ImportSessionList->FindByName(PuttySession));
   if (PuttySessionData != NULL)
   {
     ImportSessionList->Remove(PuttySessionData);

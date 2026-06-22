@@ -17,6 +17,8 @@
 #include "ciphercommon_local.h"
 #include "prov/provider_ctx.h"
 #include "prov/providercommon.h"
+#include "internal/skey.h"
+#include "crypto/types.h"
 
 /*-
  * Generic cipher functions for OSSL_PARAM gettables and settables
@@ -114,7 +116,7 @@ CIPHER_DEFAULT_GETTABLE_CTX_PARAMS_START(ossl_cipher_generic) { OSSL_CIPHER_PARA
     PROV_CIPHER_CTX *ctx = (PROV_CIPHER_CTX *)vctx;
     const OSSL_PARAM *p;
 
-    if (params == NULL)
+    if (ossl_param_is_empty(params))
         return 1;
 
     if (!ossl_cipher_generic_set_ctx_params(vctx, params))
@@ -152,6 +154,7 @@ OSSL_PARAM_size_t(OSSL_CIPHER_PARAM_KEYLEN, NULL),
           OSSL_PARAM_octet_string(OSSL_CIPHER_PARAM_AEAD_TAG, NULL, 0),
           OSSL_PARAM_size_t(OSSL_CIPHER_PARAM_AEAD_TLS1_AAD_PAD, NULL),
           OSSL_PARAM_octet_string(OSSL_CIPHER_PARAM_AEAD_TLS1_GET_IV_GEN, NULL, 0),
+          OSSL_PARAM_uint(OSSL_CIPHER_PARAM_AEAD_IV_GENERATED, NULL),
           OSSL_PARAM_END
       };
 const OSSL_PARAM *ossl_cipher_aead_gettable_ctx_params(
@@ -236,6 +239,28 @@ int ossl_cipher_generic_dinit(void *vctx, const unsigned char *key,
     size_t ivlen, const OSSL_PARAM params[])
 {
     return cipher_generic_init_internal((PROV_CIPHER_CTX *)vctx, key, keylen,
+        iv, ivlen, params, 0);
+}
+
+int ossl_cipher_generic_skey_einit(void *vctx, void *skeydata,
+    const unsigned char *iv, size_t ivlen,
+    const OSSL_PARAM params[])
+{
+    PROV_SKEY *key = skeydata;
+
+    return cipher_generic_init_internal((PROV_CIPHER_CTX *)vctx,
+        key->data, key->length,
+        iv, ivlen, params, 1);
+}
+
+int ossl_cipher_generic_skey_dinit(void *vctx, void *skeydata,
+    const unsigned char *iv, size_t ivlen,
+    const OSSL_PARAM params[])
+{
+    PROV_SKEY *key = skeydata;
+
+    return cipher_generic_init_internal((PROV_CIPHER_CTX *)vctx,
+        key->data, key->length,
         iv, ivlen, params, 0);
 }
 
@@ -621,7 +646,7 @@ int ossl_cipher_generic_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     PROV_CIPHER_CTX *ctx = (PROV_CIPHER_CTX *)vctx;
     const OSSL_PARAM *p;
 
-    if (params == NULL)
+    if (ossl_param_is_empty(params))
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_PADDING);

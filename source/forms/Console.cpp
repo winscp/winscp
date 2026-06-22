@@ -1,18 +1,8 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <TextsWin.h>
-#include <Interface.h>
-#include <CoreMain.h>
-#include <VCLCommon.h>
-#include <CustomWinConfiguration.h>
-
 #include "Console.h"
-#include <Tools.h>
-#include <PasTools.hpp>
-#include <GUITools.h>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
@@ -45,7 +35,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FDirectoryChanged = false;
   FExecuting = false;
   OutputMemo->Color = clBlack;
-  OutputMemo->Font->Color = (TColor)0x00BBBBBB;
+  OutputMemo->Font->Color = static_cast<TColor>(0x00BBBBBB);
   FixComboBoxResizeBug(CommandEdit);
   UseSystemSettings(this);
   SelectScaledImageList(Images);
@@ -132,8 +122,6 @@ bool __fastcall TConsoleDialog::Execute(const UnicodeString Command,
 {
   try
   {
-    CommandEdit->Items = CustomWinConfiguration->History[L"Commands"];
-
     if (Log != NULL)
     {
       OutputMemo->Lines->BeginUpdate();
@@ -172,7 +160,6 @@ bool __fastcall TConsoleDialog::Execute(const UnicodeString Command,
     if (FTerminal)
     {
       CommandEdit->SaveToHistory();
-      CustomWinConfiguration->History[L"Commands"] = CommandEdit->Items;
     }
   }
   return true;
@@ -289,7 +276,7 @@ void __fastcall TConsoleDialog::DoAdjustWindow()
   {
     GetTextMetrics(DC, &TM);
 
-    OutputMemo->Perform(EM_GETRECT, 0, ((int)&Rect));
+    OutputMemo->Perform(EM_GETRECT, 0, reinterpret_cast<NativeInt>(&Rect));
   }
   __finally
   {
