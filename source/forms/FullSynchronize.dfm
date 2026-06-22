@@ -94,7 +94,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Width = 80
       Height = 25
       Anchors = [akTop, akRight]
-      Caption = 'Bro&wse...'
+      Caption = 'Brows&e...'
       TabOrder = 3
       OnClick = OtherLocalDirectoryBrowseButtonClick
     end
@@ -270,7 +270,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Width = 232
       Height = 17
       Anchors = [akLeft, akTop, akRight]
-      Caption = 'C&hecksum'
+      Caption = 'Checks&um'
       TabOrder = 2
       OnClick = ControlChange
     end

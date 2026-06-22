@@ -717,7 +717,7 @@ BEGIN
         TAG_KEY, "&Key:"
         TAG_VALUE, "&Value (optional):"
         SYNCHRONIZE_LEFT_DIR, "Left dire&ctory:"
-        SYNCHRONIZE_RIGHT_DIR, "Right dir&ectory:"
+        SYNCHRONIZE_RIGHT_DIR, "Right director&y:"
         SYNCHRONIZE_LEFT, "&Left"
         SYNCHRONIZE_RIGHT, "&Right"
         SYNCHRONIZE_PROGRESS_LEFT_DIR, "Left:"
