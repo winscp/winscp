@@ -1,6 +1,15 @@
 @echo off
 rem See 'readme.md' file
 
+setlocal
+
+set PLATFORM=%1
+if "%PLATFORM%" == "" set PLATFORM=Win32
+if "%PLATFORM%" neq "Win32" if "%PLATFORM%" neq "Win64" (
+  echo Unknown plaform, use Win32 or Win64
+  exit /B 1
+)
+
 if "%PROCESSOR_ARCHITECTURE%"=="x86" (
   set "PROGRAMFILES32=%ProgramFiles%"
   set "PROGRAMFILES64=%ProgramW6432%"
@@ -31,14 +40,14 @@ set BUILDTOOLS=%~dp0\buildtools
 
 cd libs
 set INTERM_PATH=%~dp0\source
-call buildlibs.bat
+call buildlibs.bat %PLATFORM%
 if errorlevel 1 echo Error building libs & exit /B 1
 set INTERM_PATH=
 
 cd ..\source
 set BDS_BUILD_PROPERTIES=RELEASE_TYPE=%RELEASE_TYPE%;CONFIG=%BUILD_CONFIG%;INTERM_PATH=.;FINAL_PATH=.
-"%MSBUILD%" WinSCP.groupproj /t:%BUILD_TARGET% /p:%BDS_BUILD_PROPERTIES%
-"%MSBUILD%" DragExt.cbproj /t:%BUILD_TARGET% /p:%BDS_BUILD_PROPERTIES%;Platform=Win64
+"%MSBUILD%" WinSCP.groupproj /t:%BUILD_TARGET% /p:%BDS_BUILD_PROPERTIES%;Platform=%PLATFORM%
+if "%PLATFORM%" == "Win32" "%MSBUILD%" DragExt.cbproj /t:%BUILD_TARGET% /p:%BDS_BUILD_PROPERTIES%;Platform=Win64
 
 if "%WITH_DOTNET%"=="0" goto SKIP_DOTNET
 cd ..\dotnet
