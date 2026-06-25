@@ -52,6 +52,7 @@ namespace WinSCP
 
                 foreach (KeyValuePair<string, string> rawSetting in parameters)
                 {
+                    // Needs MungeStr-like encoding
                     arguments += string.Format(CultureInfo.InvariantCulture, " {0}=\"{1}\"", rawSetting.Key, ArgumentEscape(rawSetting.Value));
                 }
             }

@@ -514,7 +514,7 @@ private:
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
   void DefaultProxy();
-  void ApplyRawSettings(TStrings * RawSettings, bool Unsafe, int & ParsedInfo);
+  void ApplyRawSettings(TStrings * RawSettings, bool Unsafe, int & ParsedInfo, bool LoadName);
   static void __fastcall Remove(THierarchicalStorage * Storage, const UnicodeString & Name);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };

@@ -72,6 +72,7 @@ const UnicodeString RawSettingsOption(L"rawsettings");
 const UnicodeString S3HostName(S3LibDefaultHostName());
 const UnicodeString S3GoogleCloudHostName(L"storage.googleapis.com");
 const UnicodeString OpensshHostDirective(L"Host");
+const UnicodeString SessionNameSettingsName(L"Name");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -1317,7 +1318,7 @@ TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default, 
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Options.get(), true));
   if (SaveName)
   {
-    OptionsStorage->WriteString(L"Name", Name);
+    OptionsStorage->WriteString(SessionNameSettingsName, Name);
   }
   DoSave(OptionsStorage.get(), PuttyExport, Default, true);
   return Options.release();
@@ -2451,20 +2452,14 @@ bool TSessionData::ParseUrl(
           UnicodeString AName = RightStr(ConnectionParamName, ConnectionParamName.Length() - UrlRawSettingsParamNamePrefix.Length());
           AName = DecodeUrlChars(AName);
           UnicodeString Value = DecodeUrlChars(ConnectionParam);
-          if (SameText(AName, L"Name"))
-          {
-            Name = Value;
-          }
-          else
-          {
-            RawSettings->Values[AName] = Value;
-          }
+          RawSettings->Values[AName] = Value;
         }
       }
 
       if (RawSettings->Count > 0) // optimization
       {
-        ApplyRawSettings(RawSettings.get(), Unsafe, ParsedInfo);
+        const bool LoadName = true;
+        ApplyRawSettings(RawSettings.get(), Unsafe, ParsedInfo, LoadName);
       }
 
       bool HasPassword = (UserInfo.Pos(L':') > 0);
@@ -2621,7 +2616,7 @@ bool TSessionData::ParseUrl(
       std::unique_ptr<TStrings> RawSettings(new TStringList());
       if (Options->FindSwitch(RawSettingsOption, RawSettings.get()))
       {
-        ApplyRawSettings(RawSettings.get(), Unsafe, ParsedInfo);
+        ApplyRawSettings(RawSettings.get(), Unsafe, ParsedInfo, false);
       }
     }
     if (Options->FindSwitch(PASSWORDSFROMFILES_SWITCH) &&
@@ -2640,14 +2635,18 @@ bool TSessionData::ParseUrl(
 void TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe)
 {
   int ParsedInfo;
-  ApplyRawSettings(RawSettings, Unsafe, ParsedInfo);
+  ApplyRawSettings(RawSettings, Unsafe, ParsedInfo, false);
 }
 //---------------------------------------------------------------------
-void TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe, int & ParsedInfo)
+void TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe, int & ParsedInfo, bool LoadName)
 {
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings, false));
   bool UnsafeSettings;
   ApplyRawSettings(OptionsStorage.get(), Unsafe, false, UnsafeSettings);
+  if (LoadName && OptionsStorage->ValueExists(SessionNameSettingsName))
+  {
+    Name = OptionsStorage->ReadString(SessionNameSettingsName, EmptyStr);
+  }
   if (UnsafeSettings)
   {
     ParsedInfo |= piUnsafeSettings;

@@ -252,6 +252,7 @@ namespace WinSCP
                     }
                     else if (parameterName.StartsWith(RawSettingsPrefix, StringComparison.OrdinalIgnoreCase))
                     {
+                        // Needs UnMungeStr-like decoding
                         parameterName = UriUnescape(parameterName.Substring(RawSettingsPrefix.Length));
                         if (parameterName.Equals("name", StringComparison.OrdinalIgnoreCase))
                         {
