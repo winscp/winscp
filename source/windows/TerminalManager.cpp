@@ -522,7 +522,7 @@ bool __fastcall TTerminalManager::ConnectTerminal(TTerminal * Terminal)
   }
   catch (Exception & E)
   {
-    ShowExtendedExceptionEx(Terminal, &E);
+    ShowExtendedExceptionEx(Terminal, &E, false);
     Result = false;
   }
   return Result;
@@ -645,7 +645,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
     }
     catch(Exception & E)
     {
-      ShowExtendedExceptionEx(NULL, &E);
+      ShowExtendedExceptionEx(NULL, &E, false);
     }
   }
 
@@ -1437,7 +1437,7 @@ void __fastcall TTerminalManager::TerminalShowExtendedException(
   }
   else
   {
-    ShowExtendedExceptionEx(Terminal, E);
+    ShowExtendedExceptionEx(Terminal, E, false);
   }
 }
 //---------------------------------------------------------------------------

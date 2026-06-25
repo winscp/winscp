@@ -6101,7 +6101,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
     {
       if (!Terminal->Active)
       {
-        ShowExtendedExceptionEx(Terminal, &E);
+        ShowExtendedExceptionEx(Terminal, &E, false);
         // Do not abort the "keep up to date" when the session was succesfully reconnected.
         if (!Terminal->Active)
         {
@@ -6119,7 +6119,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
         {
           // We get mostly EAbort here, so this is noop.
           // Exception is an error when listing directories while looking for differences.
-          ShowExtendedExceptionEx(Terminal, &E);
+          ShowExtendedExceptionEx(Terminal, &E, false);
           throw;
         }
       }
@@ -8082,12 +8082,13 @@ void __fastcall TCustomScpExplorerForm::ShowExtendedException(
     PopupTrayBalloon(Terminal, L"", qtError, E);
   }
 
+  bool WhileIdle = !NonVisualDataModule->Busy;
   // particularly prevent opening new session from jump list,
   // while exception is shown
   NonVisualDataModule->StartBusy();
   try
   {
-    ShowExtendedExceptionEx(Terminal, E);
+    ShowExtendedExceptionEx(Terminal, E, WhileIdle);
   }
   __finally
   {
@@ -11615,7 +11616,7 @@ bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, co
   {
     if (!Remote || Terminal->Active)
     {
-      ShowExtendedExceptionEx(Terminal, &E);
+      ShowExtendedExceptionEx(Terminal, &E, false);
       Result = false;
     }
     else
