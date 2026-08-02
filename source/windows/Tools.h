@@ -22,11 +22,11 @@ void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeStr
 UnicodeString GetIniFileParam();
 IShellLink * __fastcall CreateAppDesktopShortCut(
   const UnicodeString & Name, const UnicodeString & Params, const UnicodeString & Description,
-  int SpecialFolder = -1, int IconIndex = 0, bool Return = false);
+  const KNOWNFOLDERID * FolderID, int IconIndex = 0, bool Return = false);
 IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,
   const UnicodeString & AdditionalParams,
-  int SpecialFolder = -1, int IconIndex = SITE_ICON, bool Return = false);
+  const KNOWNFOLDERID * FolderID, int IconIndex, bool Return = false);
 UnicodeString __fastcall GetListViewStr(TCustomListView * ListView);
 void __fastcall LoadListViewStr(TCustomListView * ListView, UnicodeString LayoutStr);
 void RestoreForm(const UnicodeString & Data, TForm * Form, bool PositionOnly = false, const UnicodeString & DefaultData = EmptyStr);

@@ -6997,7 +6997,7 @@ bool __fastcall TCustomScpExplorerForm::SaveWorkspace(bool EnableAutoSave)
     {
       TOperationVisualizer Visualizer;
       UnicodeString AdditionalParams = TProgramParams::FormatSwitch(DESKTOP_SWITCH);
-      CreateDesktopSessionShortCut(Name, L"", AdditionalParams, -1, WORKSPACE_ICON);
+      CreateDesktopSessionShortCut(Name, L"", AdditionalParams, nullptr, WORKSPACE_ICON);
     }
 
     if (EnableAutoSave)

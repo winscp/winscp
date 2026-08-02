@@ -1886,7 +1886,7 @@ static void AddJumpListCategory(
     {
       TComPtr<IShellLink> Link(
         CreateDesktopSessionShortCut(
-          Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true));
+          Names->Strings[Index], L"", AdditionalParams, nullptr, IconIndex, true));
 
       wchar_t Desc[2048];
       if (SUCCEEDED(Link->GetDescription(Desc, std::size(Desc) - 1)))
@@ -2284,7 +2284,7 @@ UnicodeString GetNetCoreVersionStr()
     UnicodeString ProgramsFolder = DefaultStr(GetEnvironmentVariable(L"ProgramW6432"), GetEnvironmentVariable(L"ProgramFiles"));
     if (ProgramsFolder.IsEmpty())
     {
-      ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+      KnownFolderPath(FOLDERID_ProgramFiles, ProgramsFolder);
     }
     UnicodeString RuntimeFolder = L"shared\\Microsoft.NETCore.App";
     UnicodeString DotNetPath = CombinePaths(CombinePaths(ProgramsFolder, L"dotnet"), RuntimeFolder);

@@ -27,7 +27,7 @@ bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 bool DoesSessionExistInPutty(const UnicodeString & StorageKey);
 bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExisting, const UnicodeString & SessionName);
 void OpenSessionInPutty(TSessionData * SessionData);
-bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
+bool KnownFolderPath(REFKNOWNFOLDERID FolderID, UnicodeString & Path);
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 int __fastcall GetSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);

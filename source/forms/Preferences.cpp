@@ -1607,7 +1607,7 @@ void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 {
   UnicodeString IconName, Params;
-  int SpecialFolder = 0; // shut up
+  const KNOWNFOLDERID * FolderID = nullptr; // shut up
 
   if (Sender == DesktopIconButton)
   {
@@ -1618,11 +1618,11 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
     switch (Result)
     {
       case qaYes:
-        SpecialFolder = CSIDL_COMMON_DESKTOPDIRECTORY;
+        FolderID = &FOLDERID_PublicDesktop;
         break;
 
       case qaNo:
-        SpecialFolder = CSIDL_DESKTOPDIRECTORY;
+        FolderID = &FOLDERID_Desktop;
         break;
 
       default:
@@ -1636,7 +1636,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
           qtConfirmation, qaYes | qaNo, HELP_CREATE_ICON) == qaYes)
     {
       IconName = FMTLOAD(SENDTO_HOOK_NAME2, (AppName));
-      SpecialFolder = CSIDL_SENDTO;
+      FolderID = &FOLDERID_SendTo;
       Params = TProgramParams::FormatSwitch(UPLOAD_SWITCH);
     }
     else
@@ -1652,7 +1652,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 
   TInstantOperationVisualizer Visualizer;
 
-  CreateAppDesktopShortCut(IconName, Params, L"", SpecialFolder);
+  CreateAppDesktopShortCut(IconName, Params, EmptyStr, FolderID);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,

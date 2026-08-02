@@ -602,7 +602,7 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
       UnicodeString AdditionalParams =
         TProgramParams::FormatSwitch(DESKTOP_SWITCH) + L" " +
         TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH);
-      CreateDesktopSessionShortCut(SessionName, L"", AdditionalParams, -1, SITE_ICON);
+      CreateDesktopSessionShortCut(SessionName, L"", AdditionalParams, nullptr, SITE_ICON);
     }
   }
 

@@ -1823,7 +1823,7 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
   if (MessageDialog(Message, qtConfirmation, qaYes | qaNo, HELP_CREATE_SHORTCUT) == qaYes)
   {
     TInstantOperationVisualizer Visualizer;
-    CreateDesktopSessionShortCut(Name, L"", AdditionalParams, -1, IconIndex);
+    CreateDesktopSessionShortCut(Name, L"", AdditionalParams, nullptr, IconIndex);
   }
 }
 //---------------------------------------------------------------------------
@@ -1839,10 +1839,11 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
     UnicodeString AdditionalParams =
       TProgramParams::FormatSwitch(SEND_TO_HOOK_SWITCH) + L" " +
       TProgramParams::FormatSwitch(UPLOAD_SWITCH);
-    CreateDesktopSessionShortCut(SelectedSession->Name,
+    REFKNOWNFOLDERID FolderID = FOLDERID_SendTo;
+    CreateDesktopSessionShortCut(
+      SelectedSession->Name,
       FMTLOAD(SESSION_SENDTO_HOOK_NAME2, (SelectedSession->LocalName, AppName)),
-      AdditionalParams,
-      CSIDL_SENDTO, SITE_ICON);
+      AdditionalParams, &FolderID, SITE_ICON);
   }
 }
 //---------------------------------------------------------------------------
