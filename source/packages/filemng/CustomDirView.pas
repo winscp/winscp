@@ -78,14 +78,11 @@ type
 
 type
   TCustomDirView = class;
-  TSelAttr = (selDontCare, selYes, selNo);
   TFileFilter = record
     Masks: string;
     Directories: Boolean;
   end;
   TDirViewNotifyEvent = procedure(Sender: TCustomDirView) of object;
-  TDVGetFilterEvent = procedure(Sender: TCustomDirView; Select: Boolean;
-    var Filter: TFileFilter) of object;
   TDVHistoryGoEvent = procedure(Sender: TCustomDirView; Index: Integer; var Cancel: Boolean) of object;
   TCompareCriteria = (ccTime, ccSize);
   TCompareCriterias = set of TCompareCriteria;
