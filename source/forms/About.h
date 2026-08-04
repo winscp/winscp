@@ -50,8 +50,10 @@ private:
 
   void __fastcall LoadData();
   void __fastcall LoadThirdParty();
-  void __fastcall AddPara(UnicodeString & Text, const UnicodeString & S);
-  UnicodeString __fastcall CreateLink(const UnicodeString & URL, const UnicodeString & Title = L"");
+  UnicodeString GenerateThirdParty(bool Html);
+  void AddPara(bool Html, UnicodeString & Text, const UnicodeString & S);
+  UnicodeString CreateLink(bool Html, const UnicodeString & URL, const UnicodeString & Title = L"");
+  UnicodeString CreateLicenseLinkLine(bool Html, const UnicodeString & URL);
   void __fastcall ExpatLicenceHandler(TObject * Sender);
   #ifdef _WIN64
   [[noreturn]]
