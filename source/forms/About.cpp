@@ -405,7 +405,7 @@ void TAboutDialog::InternalExceptionTest()
   }
   catch (Exception & E)
   {
-    throw ExtException(&E, MainInstructions(L"Internal error test."));
+    RaiseInternalError(&E);
   }
 }
 //---------------------------------------------------------------------------
