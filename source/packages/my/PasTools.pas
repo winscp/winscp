@@ -1084,7 +1084,10 @@ begin
     Result := GetLastError;
 end;
 
-type TPreferredAppMode = (pamDefault, pamAllowDark, pamForceDark, pamForceLight, pamMax);
+{$MINENUMSIZE 4}
+type
+  TPreferredAppMode = (pamDefault, pamAllowDark, pamForceDark, pamForceLight, pamMax);
+{$MINENUMSIZE 1}
 
 var
   AAllowDarkModeForWindow: function(hWnd: HWND; Allow: BOOL): BOOL; stdcall;
