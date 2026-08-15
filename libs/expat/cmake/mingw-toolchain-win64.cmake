@@ -1,4 +1,3 @@
-#! /usr/bin/env bash
 #                          __  __            _
 #                       ___\ \/ /_ __   __ _| |_
 #                      / _ \\  /| '_ \ / _` | __|
@@ -6,7 +5,7 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2019-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2026 Expat development team
 # Licensed under the MIT license:
 #
 # Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -27,12 +26,12 @@
 # DAMAGES OR  OTHER LIABILITY, WHETHER  IN AN  ACTION OF CONTRACT,  TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 # USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-# SPDX-License-Identifier: MIT
 
-./xmlwf/xmlwf_helpgen.py | sed \
-        -e 's,usage: ,usage:,' \
-        -e 's,  xmlwf,  %s,' \
-        -e 's, \[-h | -v\],,' \
-        -e 's,^,      T(",' \
-        -e 's,$,\\n"),'
+set(CMAKE_SYSTEM_NAME Windows)
+
+set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+
+set(WIN32 ON)
+set(MINGW ON)

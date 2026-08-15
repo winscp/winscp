@@ -43,7 +43,7 @@ cmake_minimum_required(VERSION 3.17.0)
 
 project(expat
     VERSION
-        2.8.2
+        2.8.3
     LANGUAGES
         C
 )
@@ -88,6 +88,15 @@ if(DEFINED BUILD_SHARED_LIBS)
 else()
     set(_EXPAT_SHARED_LIBS_DEFAULT ON)
 endif()
+
+# AIX has none(!) of the high quality entropy sources supported by Expat (e.g.
+# getentropy(3)) but, unlike UNIX, has /dev/urandom availability guaranteed.
+if(AIX)  # needs CMake >=4.0 (or explicit `-DAIX=ON`)
+    set(_EXPAT_DEV_URANDOM_DEFAULT ON)
+else()
+    set(_EXPAT_DEV_URANDOM_DEFAULT OFF)
+endif()
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE NoConfig)  # so that accessing EXPAT_*_POSTFIX will be waterproof
 endif()
@@ -152,7 +161,7 @@ expat_shy_set(EXPAT_NS ON CACHE BOOL "Define to make XML Namespaces functionalit
 mark_as_advanced(EXPAT_NS)
 expat_shy_set(EXPAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Treat all compiler warnings as errors")
 if(UNIX OR _EXPAT_HELP)
-    expat_shy_set(EXPAT_DEV_URANDOM OFF CACHE BOOL "Define to include code reading entropy from `/dev/urandom'.")
+    expat_shy_set(EXPAT_DEV_URANDOM ${_EXPAT_DEV_URANDOM_DEFAULT} CACHE BOOL "Define to include code reading entropy from `/dev/urandom'.")
     mark_as_advanced(EXPAT_DEV_URANDOM)
 endif()
 if(UNIX OR WASI OR _EXPAT_HELP)
@@ -182,6 +191,8 @@ endif()
 if(NOT _EXPAT_HELP)
     expat_shy_set(_EXPAT_M32 OFF CACHE BOOL "(Unofficial!) Produce 32bit code with -m32")
     mark_as_advanced(_EXPAT_M32)
+    expat_shy_set(_EXPAT_MSVC_ASAN OFF CACHE BOOL "(Unofficial!) Activate AddressSanitizer with MSVC")
+    mark_as_advanced(_EXPAT_MSVC_ASAN)
 endif()
 
 if(EXPAT_BUILD_FUZZERS)
@@ -206,7 +217,7 @@ if(MSVC)
     # - https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
     # - https://sourceforge.net/p/predef/wiki/Compilers/
     # - https://en.wikipedia.org/wiki/Microsoft_Visual_Studio#History
-    set(_EXPAT_MSVC_REQUIRED_INT 1800)  # i.e. 12.0/2013/1800; see PR #426
+    set(_EXPAT_MSVC_REQUIRED_INT 1900)  # i.e. 14.0/2015(Update 2)/1900
     set(_EXPAT_MSVC_SUPPORTED_INT 1930)
     set(_EXPAT_MSVC_SUPPORTED_DISPLAY "Visual Studio 17.0/2022/${_EXPAT_MSVC_SUPPORTED_INT}")
 
@@ -219,6 +230,12 @@ if(MSVC)
             message(WARNING "Please use ${_EXPAT_MSVC_SUPPORTED_DISPLAY} or later.  Thank you!")
         endif()
     endif()
+
+    # Stop MSVC from trying to decode the source files using
+    # the Windows system code page encoding that could e.g. be Windows-936
+    # on a Chinese Windows system rather than UTF-8.
+    # https://devblogs.microsoft.com/cppblog/new-options-for-managing-character-sets-in-the-microsoft-cc-compiler/
+    add_compile_options(/source-charset:utf-8)
 endif()
 
 macro(_expat_copy_bool_int source_ref dest_ref)
@@ -381,6 +398,10 @@ if(_EXPAT_M32 AND NOT MSVC)
     endforeach()
 endif()
 
+if(_EXPAT_MSVC_ASAN)
+    add_compile_options(/fsanitize=address /Zi)
+endif()
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -wd4996)
@@ -533,7 +554,7 @@ foreach(build_type_upper
 endforeach()
 
 set(LIBCURRENT 13)  # sync
-set(LIBREVISION 2)  # with
+set(LIBREVISION 3)  # with
 set(LIBAGE 12)      # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
