@@ -1235,7 +1235,10 @@ initialization
         // dark list view headers and dark list view and tree view scrollbars
         if Assigned(ASetPreferredAppMode) then
         begin
-          ASetPreferredAppMode(pamAllowDark);
+          // With pamForceDark, everything follows the AllowDarkModeForWindow setting.
+          // With pamAllowDark, some controls (list view headers, buttons, etc) counterintuitively
+          // do not, and always render in system-wide theme instead.
+          ASetPreferredAppMode(pamForceDark);
         end;
         ARefreshImmersiveColorPolicyState;
       end;

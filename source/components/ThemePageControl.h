@@ -58,8 +58,8 @@ public:
 
   __property TThemeTabSheet * Pages[int Index] = { read = GetPage };
   __property TThemeTabSheet * ActivePage = { read = GetActivePage };
-  __property TTBXTheme * TabTheme = { read = FTabTheme, write = SetTabTheme };
   __property TTBXTheme * ActiveTabTheme = { read = FActiveTabTheme, write = SetActiveTabTheme };
+  __property bool DarkMode = { read = FDarkMode, write = SetDarkMode };
 
   int __fastcall GetTabsHeight();
   TRect __fastcall TabButtonRect(int Index);
@@ -67,6 +67,7 @@ public:
   void UpdateTabsCaptionTruncation();
 
 protected:
+  virtual void __fastcall CreateWnd();
   virtual void __fastcall PaintWindow(HDC DC);
   DYNAMIC bool __fastcall CanChange();
   DYNAMIC void __fastcall Change();
@@ -81,7 +82,7 @@ private:
   void __fastcall DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab);
   void __fastcall DrawThemesXpTabItem(
     HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Selected, TTBXTheme * ATabTheme);
-  void __fastcall DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed, TTBXTheme * ATabTheme);
+  void DrawTabItem(HDC DC, HTHEME Theme, int Item, TRect Rect, int State, bool Shadowed, TTBXTheme * ATabTheme);
   void __fastcall InvalidateTab(int Index);
   int __fastcall TabButtonSize();
   int __fastcall GetCrossPadding();
@@ -98,8 +99,8 @@ private:
   TThemeTabSheet * GetPage(int Index);
   TThemeTabSheet * GetActivePage();
   void CMHintShow(TCMHintShow & Message);
-  void SetTabTheme(TTBXTheme * value);
   void SetActiveTabTheme(TTBXTheme * value);
+  void SetDarkMode(bool Value);
 
   int FOldTabIndex;
   int FHotTabButton;
@@ -107,9 +108,9 @@ private:
   TPageControlTabButtonClick FOnTabButtonClick;
   TPageControlTabHint FOnTabHint;
   int FSessionTabShrink;
-  TTBXTheme * FTabTheme;
   TTBXTheme * FActiveTabTheme;
   int FTextHeight;
+  bool FDarkMode;
 };
 //---------------------------------------------------------------------------
 #endif

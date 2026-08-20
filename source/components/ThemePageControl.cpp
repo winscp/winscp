@@ -4,6 +4,7 @@
 
 #include <Common.h>
 #include <vsstyle.h>
+#include <vssym32.h>
 #include <memory>
 #include <PasTools.hpp>
 #include <TBXOfficeXPTheme.hpp>
@@ -148,7 +149,6 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   FSessionTabShrink = 0;
   FOnTabButtonClick = NULL;
   FOnTabHint = NULL;
-  FTabTheme = NULL;
   FActiveTabTheme = NULL;
   FTextHeight = -1;
 }
@@ -187,7 +187,7 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
     return;
   }
 
-  HTHEME Theme = OpenThemeData(NULL, IDS_UTIL_TAB);
+  HTHEME Theme = OpenThemeData(Handle, IDS_UTIL_TAB);
 
   // TODO use GetClipBox
 
@@ -230,6 +230,15 @@ TThemeTabSheetButtons __fastcall TThemePageControl::GetTabButton(int Index)
   TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(Pages[Index]);
   return (UseThemes() && (ThemeTabSheet != NULL)) ? ThemeTabSheet->Button : ttbNone;
 }
+//---------------------------------------------------------------------------
+static bool SupportsDarkTheme()
+{
+#ifndef DESIGN_ONLY
+  return IsWin11();
+#else
+  return true;
+#endif
+}
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab)
 {
@@ -238,18 +247,19 @@ void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab
   TRect Rect = TabRect(Tab);
   ItemTabRect(Tab, Rect);
   int State;
+  TTBXTheme * DefaultTheme = (!SupportsDarkTheme() && DarkMode) ? CurrentTheme : nullptr;
   TTBXTheme * ATabTheme;
   if (Tab != TabIndex)
   {
     TPoint Point = ScreenToClient(Mouse->CursorPos);
     int HotIndex = IndexOfTabAt(Point.X, Point.Y);
     State = (Tab == HotIndex ? TIS_HOT : (Shadowed ? TIS_DISABLED : TIS_NORMAL));
-    ATabTheme = TabTheme;
+    ATabTheme = DefaultTheme;
   }
   else
   {
     State = TIS_SELECTED;
-    ATabTheme = (ActiveTabTheme != NULL) ? ActiveTabTheme : TabTheme;
+    ATabTheme = (ActiveTabTheme != NULL) ? ActiveTabTheme : DefaultTheme;
   }
   DrawThemesXpTabItem(DC, Theme, Tab, Rect, State, Shadowed, ATabTheme);
 }
@@ -288,7 +298,7 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(
 
   if (Item >= 0)
   {
-    DrawTabItem(DC, Item, Rect, State, Shadowed, ATabTheme);
+    DrawTabItem(DC, Theme, Item, Rect, State, Shadowed, ATabTheme);
   }
 }
 //----------------------------------------------------------------------------------------------------------
@@ -361,8 +371,13 @@ static int VCenter(const TRect & Rect, int Height)
   return (A / 2) + (A % 2);
 }
 //----------------------------------------------------------------------------------------------------------
+static COLORREF ColorToColorRef(TColor Color)
+{
+  return static_cast<COLORREF>(ColorToRGB(Color));
+}
+//----------------------------------------------------------------------------------------------------------
 // Draw tab item context: possible icon and text
-void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed, TTBXTheme * ATabTheme)
+void TThemePageControl::DrawTabItem(HDC DC, HTHEME Theme, int Item, TRect Rect, int State, bool Shadowed, TTBXTheme * ATabTheme)
 {
   TRect OrigRect = Rect;
   ItemContentsRect(Item, Rect);
@@ -391,10 +406,17 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
   int OldMode = SetBkMode(DC, TRANSPARENT);
   if (!Text.IsEmpty())
   {
+    COLORREF ThemeTextColor;
     if (ATabTheme != NULL)
     {
-      SetTextColor(DC, static_cast<COLORREF>(ATabTheme->GetItemTextColor(GetItemInfo(State))));
+      ThemeTextColor = ColorToColorRef(ATabTheme->GetItemTextColor(GetItemInfo(State)));
     }
+    else if (FAILED(GetThemeColor(Theme, TABP_TABITEM, State, TMT_TEXTCOLOR, &ThemeTextColor)))
+    {
+      ThemeTextColor = ColorToColorRef(clWindowText);
+    }
+    SetTextColor(DC, ThemeTextColor);
+
     HGDIOBJ OldFont = SelectObject(DC, Font->Handle);
     wchar_t * Buf = new wchar_t[static_cast<size_t>(Text.Length() + 1 + 4)];
     wcscpy(Buf, Text.c_str());
@@ -422,15 +444,8 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
       }
 
       COLORREF BackColor = GetPixel(DC, Rect.Left + (Rect.Width() / 2), Rect.Top + (Rect.Height() / 2));
-      COLORREF ShapeColor;
-      if (ATabTheme != NULL)
-      {
-        ShapeColor = static_cast<COLORREF>(ColorToRGB(ATabTheme->GetItemTextColor(ButtonItemInfo)));
-      }
-      else
-      {
-        ShapeColor = static_cast<COLORREF>(ColorToRGB(Font->Color));
-      }
+      TTBXTheme * ShapeTheme = (ATabTheme != nullptr) ? ATabTheme : CurrentTheme;
+      COLORREF ShapeColor = ColorToColorRef(ShapeTheme->GetItemTextColor(ButtonItemInfo));
       #define BlendValue(FN) (((4 * static_cast<int>(FN(BackColor))) + static_cast<int>(FN(ShapeColor))) / 5)
       COLORREF BlendColor = RGB(BlendValue(GetRValue), BlendValue(GetGValue), BlendValue(GetBValue));
       #undef BlendValue
@@ -745,13 +760,23 @@ void TThemePageControl::SetActiveTabTheme(TTBXTheme * value)
     }
   }
 }
-//----------------------------------------------------------------------------------------------------------
-void TThemePageControl::SetTabTheme(TTBXTheme * value)
+//---------------------------------------------------------------------------
+void __fastcall TThemePageControl::CreateWnd()
 {
-  if (FTabTheme != value)
+  TPageControl::CreateWnd();
+  if (DarkMode && SupportsDarkTheme())
   {
-    FTabTheme = value;
-    Invalidate();
+    DebugAssert(HandleAllocated);
+    SetDarkModeTheme(this, L"DarkMode_DarkTheme");
+  }
+}
+//---------------------------------------------------------------------------
+void TThemePageControl::SetDarkMode(bool Value)
+{
+  if (DarkMode != Value)
+  {
+    FDarkMode = Value;
+    RecreateWnd();
   }
 }
 //----------------------------------------------------------------------------------------------------------

@@ -9623,8 +9623,15 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
       UpdateDarkMode();
     }
 
-    SessionsPageControl->TabTheme = UseDarkTheme ? CurrentTheme : NULL;
     QueueView3->DarkMode = UseDarkTheme;
+
+    if (SessionsPageControl->DarkMode != UseDarkTheme)
+    {
+      // Having window proc hooked to drag drop component, while recreating the control when checking the theme, breaks it forver
+      FSessionsDragDropFilesEx->DragDropControl = nullptr;
+      SessionsPageControl->DarkMode = UseDarkTheme;
+      FSessionsDragDropFilesEx->DragDropControl = SessionsPageControl;
+    }
 
     UnicodeString CurrentHiContrastThemeName = (FHiContrastTheme != NULL) ? FHiContrastTheme->Name : EmptyStr;
     bool HiContrast = WinConfiguration->HiContrast;
