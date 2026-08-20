@@ -729,7 +729,7 @@ void TThemePageControl::UpdateTabsCaptionTruncation()
   }
   __finally
   {
-    Tabs->BeginUpdate();
+    Tabs->EndUpdate();
     EnableAlign();
   }
 }
