@@ -1,4 +1,4 @@
-/*
+/* This file is included from other .c files!
                             __  __            _
                          ___\ \/ /_ __   __ _| |_
                         / _ \\  /| '_ \ / _` | __|
@@ -6,7 +6,7 @@
                         \___/_/\_\ .__/ \__,_|\__|
                                  |_| XML parser
 
-   Copyright (c) 2026 Sebastian Pipping <sebastian@pipping.org>
+   Copyright (c) 2022-2026 Sebastian Pipping <sebastian@pipping.org>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -31,12 +31,24 @@
    SPDX-License-Identifier: MIT
 */
 
-#if ! defined(RANDOM_DEV_URANDOM_H)
-#  define RANDOM_DEV_URANDOM_H 1
+#if defined(XML_UNICODE) && defined(XML_UNICODE_WCHAR_T)
+#  include <wchar.h>
+#endif
 
-#  include <stdbool.h>
-#  include <stddef.h> // for size_t
-
-bool writeRandomBytes_dev_urandom(void *target, size_t count);
-
-#endif // ! defined(RANDOM_DEV_URANDOM_H)
+static size_t
+xcslen(const XML_Char *s) {
+#ifdef XML_UNICODE
+#  ifdef XML_UNICODE_WCHAR_T
+  return wcslen(s);
+#  else
+  // XML_Char is unsigned short
+  size_t len = 0;
+  while (s[len]) {
+    len++;
+  }
+  return len;
+#  endif
+#else
+  return strlen(s);
+#endif
+}

@@ -20,6 +20,7 @@
    Copyright (c) 2021      Donghee Na <donghee.na@python.org>
    Copyright (c) 2023      Sony Corporation / Snild Dolkow <snild@sony.com>
    Copyright (c) 2026      Berkay Eren Ürün <berkay.ueruen@siemens.com>
+   Copyright (c) 2026      Kartik Kenchi <netliomax25@gmail.com>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -40,6 +41,8 @@
    DAMAGES OR  OTHER LIABILITY, WHETHER  IN AN  ACTION OF CONTRACT,  TORT OR
    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
    USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+   SPDX-License-Identifier: MIT
 */
 
 #ifdef __cplusplus
@@ -612,6 +615,19 @@ typedef struct {
 
 extern void XMLCALL
 accumulate_and_suspend_comment_handler(void *userData, const XML_Char *data);
+
+extern void XMLCALL forbidden_calls_character_handler(void *userData,
+                                                      const XML_Char *s,
+                                                      int len);
+
+typedef struct {
+  XML_Parser parser;
+  int callCount;
+} ResumeFromHandlerData;
+
+extern void XMLCALL suspend_then_resume_character_handler(void *userData,
+                                                          const XML_Char *s,
+                                                          int len);
 
 #endif /* XML_HANDLERS_H */
 
