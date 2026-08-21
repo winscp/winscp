@@ -2913,6 +2913,9 @@ void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & V
 //---------------------------------------------------------------------------
 bool IsWin64()
 {
+  #ifdef _WIN64
+  return true;
+  #else
   static int Result = -1;
   if (Result < 0)
   {
@@ -2928,6 +2931,7 @@ bool IsWin64()
   }
 
   return (Result > 0);
+  #endif
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWin8()

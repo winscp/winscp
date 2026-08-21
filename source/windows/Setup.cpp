@@ -2546,15 +2546,18 @@ static UnicodeString PlatformStr(int PlatformSet)
 //---------------------------------------------------------------------------
 static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
 {
+  AppLog(L"Checking COM registration");
   UnicodeString TypeLib = L"{A0B93468-D98A-4845-A234-8076229AD93F}"; // Duplicated in AssemblyInfo.cs
   // CLSID is separate for 32-bit and 64-bit, so scan both.
   // The TypeLib is shared.
+  AppLog(L"Opening 32-bit registry view");
   std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT, KEY_WOW64_32KEY));
   Storage->MungeStringValues = false;
   Storage->AccessMode = smRead;
   std::unique_ptr<TRegistryStorage> Storage64;
   if (IsWin64())
   {
+    AppLog(L"Opening 64-bit registry view");
     Storage64.reset(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT, KEY_WOW64_64KEY));
     Storage64->MungeStringValues = false;
     Storage64->AccessMode = smRead;
