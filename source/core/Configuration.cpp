@@ -1282,6 +1282,11 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
     UnicodeString DateStr = FormatDateTime(L"yyyy-mm-dd", GetBuildDate());
     AddToList(BuildStr, DateStr, L" ");
 
+    // eventually show 32-bit once 64-bit is becomes reliable choice
+    #ifdef _WIN64
+    BuildStr += L" 64-bit";
+    #endif
+
     UnicodeString Result = FMTLOAD(VERSION2, (FullVersion, BuildStr));
 
     if (IsUnofficial)

@@ -106,7 +106,7 @@ void __fastcall LocalSystemSettings(TForm * /*Control*/)
 //---------------------------------------------------------------------------
 void __fastcall ShowExtendedException(Exception * E)
 {
-  ShowExtendedExceptionEx(NULL, E);
+  ShowExtendedExceptionEx(NULL, E, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TerminateApplication()
@@ -165,8 +165,7 @@ private:
   }
 };
 //---------------------------------------------------------------------------
-void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
-  Exception * E)
+void ShowExtendedExceptionEx(TTerminal * Terminal, Exception * E, bool WhileIdle)
 {
   bool Show = ShouldDisplayException(E);
   bool DoNotDisplay = false;
@@ -287,7 +286,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
         {
           bool InactiveTerminationMessage = (FatalException != NULL) && FatalException->InactiveTerminationMessage;
 
-          if (!InactiveTerminationMessage && GUIConfiguration->SessionSilentDisconnect)
+          if (!InactiveTerminationMessage && GUIConfiguration->SessionSilentDisconnect && WhileIdle)
           {
             Result = qaOK;
             DisconnectError = E->Message;
@@ -317,7 +316,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
                 Params.NeverAskAgainAnswer = qaRetry;
               }
               // For now - maybe it is worth doing even for non-permanent sessions
-              else if (PermanentTerminal)
+              else if (PermanentTerminal && WhileIdle)
               {
                 Params.Params |= mpNeverAskAgainCheck;
                 Params.NeverAskAgainTitle = LoadStr(NEVER_POPUP_DISCONNECT);

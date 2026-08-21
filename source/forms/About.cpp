@@ -176,12 +176,13 @@ void __fastcall TAboutDialog::LoadThirdParty()
   DoLoadThirdParty();
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::DoLoadThirdParty()
+static UnicodeString ExpatLicenseUrl = L"license:expat";
+static UnicodeString HtmlBr = "<br/>\n";
+UnicodeString TAboutDialog::GenerateThirdParty(bool Html)
 {
-  WaitBrowserToIdle(FThirdPartyWebBrowser);
-
   UnicodeString ThirdParty;
-  UnicodeString Br = "<br/>\n";
+
+  UnicodeString Br = Html ? HtmlBr : L"\n";
 
   if (!GUIConfiguration->UsingInternalTranslation())
   {
@@ -198,20 +199,22 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     // (=english) string
     UnicodeString TranslationHeader = ReplaceStr(LoadStr(ABOUT_TRANSLATIONS_HEADER), L"{language}", LocaleName);
 
-    AddPara(ThirdParty,
+    AddPara(
+      Html, ThirdParty,
       TranslationHeader + Br +
       FMTLOAD(ABOUT_TRANSLATIONS_COPYRIGHT, (GUIConfiguration->AppliedLocaleCopyright())) + Br +
-      (!TranslatorInfo.IsEmpty() ? TranslatorInfo + Br : UnicodeString()) +
-      (!TranslatorUrl.IsEmpty() ? CreateLink(TranslatorUrl) : UnicodeString()));
+      (!TranslatorInfo.IsEmpty() ? TranslatorInfo + Br : EmptyStr) +
+      (!TranslatorUrl.IsEmpty() ? CreateLink(Html, TranslatorUrl) : EmptyStr));
   }
 
-  AddPara(ThirdParty, LoadStr(ABOUT_THIRDPARTY_HEADER));
+  AddPara(Html, ThirdParty, LoadStr(ABOUT_THIRDPARTY_HEADER));
 
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     FMTLOAD(PUTTY_BASED_ON, (GetPuTTYVersion())) + Br +
     LoadStr(PUTTY_COPYRIGHT) + Br +
-    CreateLink(LoadStr(PUTTY_LICENSE_URL), LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
-    CreateLink(LoadStr(PUTTY_URL)));
+    CreateLicenseLinkLine(Html, LoadStr(PUTTY_LICENSE_URL)) +
+    CreateLink(Html, LoadStr(PUTTY_URL)));
 
   UnicodeString OpenSSLVersionText = GetOpenSSLVersionText();
   CutToChar(OpenSSLVersionText, L' ', true); // "OpenSSL"
@@ -220,74 +223,112 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
   CutToChar(OpenSSLVersionText, L' ', true); // month
   UnicodeString OpenSSLYear = CutToChar(OpenSSLVersionText, L' ', true);
 
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     FMTLOAD(OPENSSL_BASED_ON, (OpenSSLVersion)) + Br +
     FMTLOAD(OPENSSL_COPYRIGHT2, (OpenSSLYear)) + Br +
-    CreateLink(LoadStr(OPENSSL_URL)));
+    CreateLink(Html, LoadStr(OPENSSL_URL)));
 
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     LoadStr(FILEZILLA_BASED_ON2) + Br +
     LoadStr(FILEZILLA_COPYRIGHT2) + Br +
-    CreateLink(LoadStr(FILEZILLA_URL)));
+    CreateLink(Html, LoadStr(FILEZILLA_URL)));
 
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     FMTLOAD(NEON_BASED_ON2, (NeonVersion())) + Br +
     LoadStr(NEON_COPYRIGHT) + Br +
-    CreateLink(LoadStr(NEON_URL)));
+    CreateLink(Html, LoadStr(NEON_URL)));
 
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     FMTLOAD(S3_BASED_ON, (S3LibVersion())) + Br +
     LoadStr(S3_COPYRIGHT) + Br +
-    CreateLink(LoadStr(S3_LICENSE_URL), LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
-    CreateLink(LoadStr(S3_URL)));
+    CreateLicenseLinkLine(Html, LoadStr(S3_LICENSE_URL)) +
+    CreateLink(Html, LoadStr(S3_URL)));
 
-  #define EXPAT_LICENSE_URL L"license:expat"
-
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     FMTLOAD(EXPAT_BASED_ON, (ExpatVersion())) + Br +
-    CreateLink(EXPAT_LICENSE_URL, LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
-    CreateLink(LoadStr(EXPAT_URL)));
+    CreateLicenseLinkLine(Html, ExpatLicenseUrl) +
+    CreateLink(Html, LoadStr(EXPAT_URL)));
 
-  AddBrowserLinkHandler(FThirdPartyWebBrowser, EXPAT_LICENSE_URL, ExpatLicenceHandler);
-
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     FMTLOAD(ABOUT_TOOLBAR2000, (Toolbar2000Version)) + Br +
     LoadStr(ABOUT_TOOLBAR2000_COPYRIGHT) + Br +
-    CreateLink(LoadStr(ABOUT_TOOLBAR2000_URL)));
+    CreateLink(Html, LoadStr(ABOUT_TOOLBAR2000_URL)));
 
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     FMTLOAD(ABOUT_TBX, (TBXVersionString)) + Br +
     LoadStr(ABOUT_TBX_COPYRIGHT) + Br +
-    CreateLink(LoadStr(ABOUT_TBX_URL)));
+    CreateLink(Html, LoadStr(ABOUT_TBX_URL)));
 
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     LoadStr(ABOUT_FILEMANAGER) + Br +
     LoadStr(ABOUT_FILEMANAGER_COPYRIGHT));
 
   UnicodeString JclVersion =
     FormatVersion(JclVersionMajor, JclVersionMinor, JclVersionRelease) + L" " + JclCommit;
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     FMTLOAD(ABOUT_JCL, (JclVersion)) + Br +
-    CreateLink(LoadStr(ABOUT_JCL_URL)));
+    CreateLink(Html, LoadStr(ABOUT_JCL_URL)));
 
-  AddPara(ThirdParty,
+  AddPara(
+    Html, ThirdParty,
     LoadStr(ABOUT_PNG) + Br +
     LoadStr(ABOUT_PNG_COPYRIGHT) + Br +
-    CreateLink(LoadStr(ABOUT_PNG_URL)));
+    CreateLink(Html, LoadStr(ABOUT_PNG_URL)));
 
+  return ThirdParty;
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::DoLoadThirdParty()
+{
+  WaitBrowserToIdle(FThirdPartyWebBrowser);
+
+  AddBrowserLinkHandler(FThirdPartyWebBrowser, ExpatLicenseUrl, ExpatLicenceHandler);
+
+  UnicodeString ThirdParty = GenerateThirdParty(true);
   ThirdParty = GenerateAppHtmlPage(Font, ThirdPartyPanel, ThirdParty, false);
 
   LoadBrowserDocument(FThirdPartyWebBrowser, ThirdParty);
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::AddPara(UnicodeString & Text, const UnicodeString & S)
+void TAboutDialog::AddPara(bool Html, UnicodeString & Text, const UnicodeString & S)
 {
-  Text += L"<p>" + S + L"</p>\n";
+  UnicodeString Para = S;
+  if (Html)
+  {
+    Para = L"<p>" + Para + L"</p>\n";
+  }
+  else
+  {
+    Para += L"\n\n";
+  }
+  Text += Para;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TAboutDialog::CreateLink(const UnicodeString & URL, const UnicodeString & Title)
+UnicodeString TAboutDialog::CreateLicenseLinkLine(bool Html, const UnicodeString & URL)
 {
-  return FORMAT(L"<a href=\"%s\">%s</a>", (URL, Title.IsEmpty() ? URL : Title));
+  return Html ? (CreateLink(true, URL, LoadStr(ABOUT_THIRDPARTY_LICENSE)) + HtmlBr) : EmptyStr;
+}
+//---------------------------------------------------------------------------
+UnicodeString TAboutDialog::CreateLink(bool Html, const UnicodeString & URL, const UnicodeString & Title)
+{
+  if (Html)
+  {
+    return FORMAT(L"<a href=\"%s\">%s</a>", (URL, Title.IsEmpty() ? URL : Title));
+  }
+  else
+  {
+    DebugAssert(Title.IsEmpty());
+    return URL;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LicenseButtonClick(TObject * /*Sender*/)
@@ -405,7 +446,7 @@ void TAboutDialog::InternalExceptionTest()
   }
   catch (Exception & E)
   {
-    throw ExtException(&E, MainInstructions(L"Internal error test."));
+    RaiseInternalError(&E);
   }
 }
 //---------------------------------------------------------------------------
@@ -451,16 +492,11 @@ void __fastcall TAboutDialog::FormKeyDown(TObject *, WORD & Key, TShiftState Shi
         ProductSpecificMessageLabel->Caption + sLineBreak +
         ForumUrlLabel->Caption + sLineBreak;
 
-      UnicodeString ThirdPartyText;
-      if ((FThirdPartyWebBrowser != NULL) &&
-          CopyTextFromBrowser(FThirdPartyWebBrowser, ThirdPartyText))
-      {
-        Text +=
-          sLineBreak +
-          GetDividerLine() + sLineBreak +
-          Label3->Caption + sLineBreak +
-          ThirdPartyText + sLineBreak;
-      }
+      Text +=
+        sLineBreak +
+        GetDividerLine() + sLineBreak +
+        Label3->Caption + sLineBreak +
+        TrimRight(GenerateThirdParty(false)) + sLineBreak;
 
       TInstantOperationVisualizer Visualizer;
       CopyToClipboard(Text);

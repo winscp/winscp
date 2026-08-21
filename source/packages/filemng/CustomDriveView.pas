@@ -1096,7 +1096,7 @@ begin
   if DarkMode <> Value then
   begin
     FDarkMode := Value;
-    // See TCustomDirView.SetDarkMode
+    // See TCustomNortonLikeListView.SetDarkMode
     if HandleAllocated then AllowDarkModeForWindow(Self, DarkMode);
   end;
 end;

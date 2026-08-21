@@ -6101,7 +6101,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
     {
       if (!Terminal->Active)
       {
-        ShowExtendedExceptionEx(Terminal, &E);
+        ShowExtendedExceptionEx(Terminal, &E, false);
         // Do not abort the "keep up to date" when the session was succesfully reconnected.
         if (!Terminal->Active)
         {
@@ -6119,7 +6119,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
         {
           // We get mostly EAbort here, so this is noop.
           // Exception is an error when listing directories while looking for differences.
-          ShowExtendedExceptionEx(Terminal, &E);
+          ShowExtendedExceptionEx(Terminal, &E, false);
           throw;
         }
       }
@@ -6997,7 +6997,7 @@ bool __fastcall TCustomScpExplorerForm::SaveWorkspace(bool EnableAutoSave)
     {
       TOperationVisualizer Visualizer;
       UnicodeString AdditionalParams = TProgramParams::FormatSwitch(DESKTOP_SWITCH);
-      CreateDesktopSessionShortCut(Name, L"", AdditionalParams, -1, WORKSPACE_ICON);
+      CreateDesktopSessionShortCut(Name, L"", AdditionalParams, nullptr, WORKSPACE_ICON);
     }
 
     if (EnableAutoSave)
@@ -8082,12 +8082,13 @@ void __fastcall TCustomScpExplorerForm::ShowExtendedException(
     PopupTrayBalloon(Terminal, L"", qtError, E);
   }
 
+  bool WhileIdle = !NonVisualDataModule->Busy;
   // particularly prevent opening new session from jump list,
   // while exception is shown
   NonVisualDataModule->StartBusy();
   try
   {
-    ShowExtendedExceptionEx(Terminal, E);
+    ShowExtendedExceptionEx(Terminal, E, WhileIdle);
   }
   __finally
   {
@@ -9622,8 +9623,15 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
       UpdateDarkMode();
     }
 
-    SessionsPageControl->TabTheme = UseDarkTheme ? CurrentTheme : NULL;
     QueueView3->DarkMode = UseDarkTheme;
+
+    if (SessionsPageControl->DarkMode != UseDarkTheme)
+    {
+      // Having window proc hooked to drag drop component, while recreating the control when checking the theme, breaks it forver
+      FSessionsDragDropFilesEx->DragDropControl = nullptr;
+      SessionsPageControl->DarkMode = UseDarkTheme;
+      FSessionsDragDropFilesEx->DragDropControl = SessionsPageControl;
+    }
 
     UnicodeString CurrentHiContrastThemeName = (FHiContrastTheme != NULL) ? FHiContrastTheme->Name : EmptyStr;
     bool HiContrast = WinConfiguration->HiContrast;
@@ -11615,7 +11623,7 @@ bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, co
   {
     if (!Remote || Terminal->Active)
     {
-      ShowExtendedExceptionEx(Terminal, &E);
+      ShowExtendedExceptionEx(Terminal, &E, false);
       Result = false;
     }
     else

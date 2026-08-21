@@ -467,7 +467,7 @@ UnicodeString RemoveEmptyLines(const UnicodeString & S)
 bool IsNumber(const UnicodeString Str)
 {
   bool Result = (Str.Length() > 0);
-  for (int Index = 1; (Index < Str.Length()) && Result; Index++)
+  for (int Index = 1; (Index <= Str.Length()) && Result; Index++)
   {
     wchar_t C = Str[Index];
     if ((C < L'0') || (C > L'9'))
@@ -2913,6 +2913,9 @@ void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & V
 //---------------------------------------------------------------------------
 bool IsWin64()
 {
+  #ifdef _WIN64
+  return true;
+  #else
   static int Result = -1;
   if (Result < 0)
   {
@@ -2928,6 +2931,7 @@ bool IsWin64()
   }
 
   return (Result > 0);
+  #endif
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWin8()

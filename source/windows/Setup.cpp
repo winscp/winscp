@@ -21,6 +21,7 @@
 #include <Web.HTTPApp.hpp>
 #include <WinApi.h>
 #include <System.NetEncoding.hpp>
+#include <appmodel.h>
 //---------------------------------------------------------------------------
 #define KEY L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment"
 // when the PATH registry key is over aprox 2048 characters,
@@ -1885,7 +1886,7 @@ static void AddJumpListCategory(
     {
       TComPtr<IShellLink> Link(
         CreateDesktopSessionShortCut(
-          Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true));
+          Names->Strings[Index], L"", AdditionalParams, nullptr, IconIndex, true));
 
       wchar_t Desc[2048];
       if (SUCCEEDED(Link->GetDescription(Desc, std::size(Desc) - 1)))
@@ -2283,7 +2284,7 @@ UnicodeString GetNetCoreVersionStr()
     UnicodeString ProgramsFolder = DefaultStr(GetEnvironmentVariable(L"ProgramW6432"), GetEnvironmentVariable(L"ProgramFiles"));
     if (ProgramsFolder.IsEmpty())
     {
-      ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+      KnownFolderPath(FOLDERID_ProgramFiles, ProgramsFolder);
     }
     UnicodeString RuntimeFolder = L"shared\\Microsoft.NETCore.App";
     UnicodeString DotNetPath = CombinePaths(CombinePaths(ProgramsFolder, L"dotnet"), RuntimeFolder);
@@ -2369,28 +2370,90 @@ UnicodeString GetPowerShellCoreVersionStr()
 {
   if (PowerShellCoreVersionStr.IsEmpty())
   {
-    PowerShellCoreVersionStr = L"0"; // not to retry on failure
+    UnicodeString UnknownVersion = L"0";
+    PowerShellCoreVersionStr = UnknownVersion; // not to retry on failure
 
-    unsigned int Access = KEY_READ | KEY_WOW64_64KEY;
-    std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
-    Registry->RootKey = HKEY_LOCAL_MACHINE;
-    UnicodeString RootKey(L"SOFTWARE\\Microsoft\\PowerShellCore\\InstalledVersions");
-    if (Registry->OpenKeyReadOnly(RootKey))
+    UnicodeString FamilyNamePrefix = "Microsoft.PowerShell";
+    UnicodeString FamilyNameSuffix = "8wekyb3d8bbwe";
+    wchar_t Sep = L'_';
+    UnicodeString FamilyName = FamilyNamePrefix + Sep + FamilyNameSuffix;
+
+    UnicodeString Prefix = FamilyNamePrefix + Sep;
+    UnicodeString Suffix = UnicodeString(Sep) + FamilyNameSuffix;
+
+    UINT32 Count = 0;
+    UINT32 BufferLength = 0;
+    LONG Res = GetPackagesByPackageFamily(FamilyName.c_str(), &Count, nullptr, &BufferLength, nullptr);
+    if ((Res == ERROR_INSUFFICIENT_BUFFER) && (Count > 0))
     {
-      std::unique_ptr<TStringList> Keys(new TStringList());
-      Registry->GetKeyNames(Keys.get());
-      Registry->CloseKey();
-      for (int Index = 0; Index < Keys->Count; Index++)
+      std::vector<PWSTR> FullNames(Count);
+      std::vector<WCHAR> Buffer(BufferLength);
+      Res = GetPackagesByPackageFamily(FamilyName.c_str(), &Count, FullNames.data(), &BufferLength, Buffer.data());
+      if (Res == ERROR_SUCCESS)
       {
-        UnicodeString Key = RootKey + L"\\" + Keys->Strings[Index];
-        if (Registry->OpenKeyReadOnly(Key))
+        // While there can be multiple packages, they either be 32 and 64 versions of the same repeease,
+        // or temporarily two releases, the moment upgrade is taking place. Either is not worth dealing with.
+        PWSTR FullName = FullNames[0];
+        UINT32 PathLength = 0;
+        Res = GetPackagePathByFullName(FullName, &PathLength, nullptr);
+        if (Res == ERROR_INSUFFICIENT_BUFFER)
         {
-          UnicodeString VersionStr = Registry->ReadString(L"SemanticVersion");
-          if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, PowerShellCoreVersionStr) > 0))
+          std::vector<WCHAR> PathBuffer(PathLength);
+          Res = GetPackagePathByFullName(FullName, &PathLength, PathBuffer.data());
+          if (Res == ERROR_SUCCESS)
           {
-            PowerShellCoreVersionStr = VersionStr;
+            UnicodeString PackageName = ExtractFileName(UnicodeString(PathBuffer.data()));
+            if (StartsStr(Prefix, PackageName) &&
+                EndsStr(Suffix, PackageName))
+            {
+              UnicodeString Release = PackageName.SubString(Prefix.Length() + 1, PackageName.Length() - Prefix.Length() - Suffix.Length());
+              UnicodeString Version = CutToChar(Release, Sep, false);
+              if (!Version.IsEmpty())
+              {
+                bool IsVersion = true;
+                for (int Index = 1; Index <= Version.Length(); Index++)
+                {
+                  wchar_t C = Version[Index];
+                  if (!IsNumber(C) && (C != L'.'))
+                  {
+                    IsVersion = false;
+                  }
+                }
+
+                if (IsVersion)
+                {
+                  PowerShellCoreVersionStr = TrimVersion(Version);
+                }
+              }
+            }
           }
-          Registry->CloseKey();
+        }
+      }
+    }
+
+    if (PowerShellCoreVersionStr == UnknownVersion)
+    {
+      unsigned int Access = KEY_READ | KEY_WOW64_64KEY;
+      std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
+      Registry->RootKey = HKEY_LOCAL_MACHINE;
+      UnicodeString RootKey(L"SOFTWARE\\Microsoft\\PowerShellCore\\InstalledVersions");
+      if (Registry->OpenKeyReadOnly(RootKey))
+      {
+        std::unique_ptr<TStringList> Keys(new TStringList());
+        Registry->GetKeyNames(Keys.get());
+        Registry->CloseKey();
+        for (int Index = 0; Index < Keys->Count; Index++)
+        {
+          UnicodeString Key = RootKey + L"\\" + Keys->Strings[Index];
+          if (Registry->OpenKeyReadOnly(Key))
+          {
+            UnicodeString VersionStr = Registry->ReadString(L"SemanticVersion");
+            if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, PowerShellCoreVersionStr) > 0))
+            {
+              PowerShellCoreVersionStr = VersionStr;
+            }
+            Registry->CloseKey();
+          }
         }
       }
     }
@@ -2483,15 +2546,18 @@ static UnicodeString PlatformStr(int PlatformSet)
 //---------------------------------------------------------------------------
 static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
 {
+  AppLog(L"Checking COM registration");
   UnicodeString TypeLib = L"{A0B93468-D98A-4845-A234-8076229AD93F}"; // Duplicated in AssemblyInfo.cs
   // CLSID is separate for 32-bit and 64-bit, so scan both.
   // The TypeLib is shared.
+  AppLog(L"Opening 32-bit registry view");
   std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT, KEY_WOW64_32KEY));
   Storage->MungeStringValues = false;
   Storage->AccessMode = smRead;
   std::unique_ptr<TRegistryStorage> Storage64;
   if (IsWin64())
   {
+    AppLog(L"Opening 64-bit registry view");
     Storage64.reset(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT, KEY_WOW64_64KEY));
     Storage64->MungeStringValues = false;
     Storage64->AccessMode = smRead;

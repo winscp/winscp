@@ -28,6 +28,8 @@
 # DAMAGES OR  OTHER LIABILITY, WHETHER  IN AN  ACTION OF CONTRACT,  TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 # USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# SPDX-License-Identifier: MIT
 
 import argparse
 from textwrap import dedent
@@ -37,7 +39,7 @@ epilog = dedent(
     environment variables:
       EXPAT_ACCOUNTING_DEBUG=(0|1|2|3)
                      Control verbosity of accounting debugging (default: 0)
-      EXPAT_ENTITY_DEBUG=(0|1)
+      EXPAT_ENTITY_DEBUG=(0|1|2)
                      Control verbosity of entity debugging (default: 0)
       EXPAT_ENTROPY_DEBUG=(0|1)
                      Control verbosity of entropy debugging (default: 0)

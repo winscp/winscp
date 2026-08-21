@@ -83,3 +83,5 @@ EXPORTS
 ; added with version 2.7.2
 @_EXPAT_COMMENT_DTD_OR_GE@ XML_SetAllocTrackerMaximumAmplification @72
 @_EXPAT_COMMENT_DTD_OR_GE@ XML_SetAllocTrackerActivationThreshold @73
+; added with version 2.8.0
+  XML_SetHashSalt16Bytes @74

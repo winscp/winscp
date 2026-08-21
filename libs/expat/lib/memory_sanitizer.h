@@ -6,7 +6,7 @@
                         \___/_/\_\ .__/ \__,_|\__|
                                  |_| XML parser
 
-   Copyright (c) 2026 Sebastian Pipping <sebastian@pipping.org>
+   Copyright (c) 2026 Matthew Fernandez <matthew.fernandez@gmail.com>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -31,12 +31,23 @@
    SPDX-License-Identifier: MIT
 */
 
-#if ! defined(RANDOM_DEV_URANDOM_H)
-#  define RANDOM_DEV_URANDOM_H 1
+#if ! defined(MEMORY_SANITIZER_H)
+#  define MEMORY_SANITIZER_H 1
 
-#  include <stdbool.h>
-#  include <stddef.h> // for size_t
+#  if defined(__has_feature)
+#    if __has_feature(memory_sanitizer)
+#      include <sanitizer/msan_interface.h>
 
-bool writeRandomBytes_dev_urandom(void *target, size_t count);
+// inform Memory Sanitizer that [base, base + extent) is now initialized
+#      define MSAN_UNPOISON(base, extent) __msan_unpoison((base), (extent))
 
-#endif // ! defined(RANDOM_DEV_URANDOM_H)
+#    endif
+#  endif
+
+#  if ! defined(MSAN_UNPOISON)
+#    define MSAN_UNPOISON(base, extent)                                        \
+      do {                                                                     \
+      } while (0)
+#  endif
+
+#endif // ! defined(MEMORY_SANITIZER_H)

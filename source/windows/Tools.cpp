@@ -523,13 +523,13 @@ void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeStr
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
-  int SpecialFolder, int IconIndex, bool Return)
+  const KNOWNFOLDERID * FolderID, int IconIndex, bool Return)
 {
   TComPtr<IShellLink> Link;
 
-  if (SpecialFolder < 0)
+  if (FolderID == nullptr)
   {
-    SpecialFolder = CSIDL_DESKTOPDIRECTORY;
+    FolderID = &FOLDERID_Desktop;
   }
 
   try
@@ -549,7 +549,7 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
         SUCCEEDED(Link->QueryInterface(IID_PPV_ARGS(&PersistFile))))
     {
       UnicodeString FolderPath;
-      if (::SpecialFolderLocation(SpecialFolder, FolderPath))
+      if (KnownFolderPath(*FolderID, FolderPath))
       {
         // Name can contain even path (e.g. to create quick launch icon)
         WideString ShortCutPath = WideString(CombinePaths(FolderPath, Name + L".lnk"));
@@ -595,17 +595,17 @@ UnicodeString GetIniFileParam()
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateAppDesktopShortCut(
   const UnicodeString & Name, const UnicodeString & AParams, const UnicodeString & Description,
-  int SpecialFolder, int IconIndex, bool Return)
+  const KNOWNFOLDERID * FolderID, int IconIndex, bool Return)
 {
   UnicodeString Params = GetIniFileParam();
   AddToList(Params, AParams, L" ");
 
-  return CreateDesktopShortCut(Name, Application->ExeName, Params, Description, SpecialFolder, IconIndex, Return);
+  return CreateDesktopShortCut(Name, Application->ExeName, Params, Description, FolderID, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,
-  const UnicodeString & AdditionalParams, int SpecialFolder, int IconIndex,
+  const UnicodeString & AdditionalParams, const KNOWNFOLDERID * FolderID, int IconIndex,
   bool Return)
 {
   UnicodeString InfoTip;
@@ -644,7 +644,7 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   return
     CreateAppDesktopShortCut(ValidLocalFileName(Name),
       FORMAT(L"\"%s\"%s%s", (EncodeUrlString(SessionName), (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
-      InfoTip, SpecialFolder, IconIndex, Return);
+      InfoTip, FolderID, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
 void ValidateMask(const UnicodeString & Mask, int ForceDirectoryMasks)

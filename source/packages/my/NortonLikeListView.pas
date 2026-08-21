@@ -372,8 +372,7 @@ begin
 
       // This all is to make header text white in dark mode.
       NM_CUSTOMDRAW:
-        if DarkMode and SupportsDarkMode and
-           GetSysDarkTheme then // When system app theme is light, headers are not dark
+        if DarkMode and SupportsDarkMode then
         begin
           with PNMLVCustomDraw(Msg.NMHdr)^ do
           begin

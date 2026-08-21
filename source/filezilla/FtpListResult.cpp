@@ -992,7 +992,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const size_t linelen, t_direc
       // http://www.proftpd.org/docs/modules/mod_facts.html
       // They claim it's the correct one.
       // See also
-      // https://www.rfc-editor.org/errata_search.php?rfc=3659&eid=1500
+      // https://errata.rfc-editor.org/search/?errata_id=1500&rfc_number=3659
       else if (!value.Left(15).CompareNoCase(L"OS.unix=symlink"))
       {
         direntry.dir = TRUE;

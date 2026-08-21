@@ -883,19 +883,14 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)
+bool KnownFolderPath(REFKNOWNFOLDERID FolderID, UnicodeString & Path)
 {
-  LPITEMIDLIST Pidl;
-  bool Result = SUCCEEDED(SHGetSpecialFolderLocation(NULL, PathID, &Pidl));
+  PWSTR Buf = nullptr;
+  bool Result = SUCCEEDED(SHGetKnownFolderPath(FolderID, 0, nullptr, &Buf));
   if (Result)
   {
-    wchar_t Buf[MAX_PATH];
-    Result = SHGetPathFromIDList(Pidl, Buf);
-    CoTaskMemFree(Pidl);
-    if (Result)
-    {
-      Path = UnicodeString(Buf);
-    }
+    Path = Buf;
+    CoTaskMemFree(Buf);
   }
   return Result;
 }

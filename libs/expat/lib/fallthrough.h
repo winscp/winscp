@@ -6,7 +6,7 @@
                         \___/_/\_\ .__/ \__,_|\__|
                                  |_| XML parser
 
-   Copyright (c) 2026 Sebastian Pipping <sebastian@pipping.org>
+   Copyright (c) 2026 Nick Begg <nick@stunttruck.net>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -31,12 +31,21 @@
    SPDX-License-Identifier: MIT
 */
 
-#if ! defined(RANDOM_DEV_URANDOM_H)
-#  define RANDOM_DEV_URANDOM_H 1
+#ifndef FALLTHROUGH_H
+#  define FALLTHROUGH_H 1
 
-#  include <stdbool.h>
-#  include <stddef.h> // for size_t
+// Explicit fallthrough in switch case to avoid warnings
+// with compiler flag -Wimplicit-fallthrough.
 
-bool writeRandomBytes_dev_urandom(void *target, size_t count);
+#  define EXPAT_FALLTHROUGH                                                    \
+    do {                                                                       \
+    } while (0)
 
-#endif // ! defined(RANDOM_DEV_URANDOM_H)
+#  if defined(__has_attribute)
+#    if __has_attribute(fallthrough)
+#      undef EXPAT_FALLTHROUGH
+#      define EXPAT_FALLTHROUGH __attribute__((fallthrough))
+#    endif
+#  endif
+
+#endif // FALLTHROUGH_H

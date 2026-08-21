@@ -569,7 +569,7 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"SysColorWindowText", ColorToRGBStr(clWindowText));
 
   UnicodeString ProgramsFolder;
-  ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+  KnownFolderPath(FOLDERID_ProgramFiles, ProgramsFolder);
   ProgramsFolder = IncludeTrailingBackslash(ExpandFileName(ProgramsFolder));
   UnicodeString ExeName = ExpandFileName(Application->ExeName);
   bool InProgramFiles = AnsiSameText(ExeName.SubString(1, ProgramsFolder.Length()), ProgramsFolder);

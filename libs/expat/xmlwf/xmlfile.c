@@ -18,6 +18,7 @@
    Copyright (c) 2024      Hanno Böck <hanno@gentoo.org>
    Copyright (c) 2025      Alfonso Gregory <gfunni234@gmail.com>
    Copyright (c) 2026      Matthew Fernandez <matthew.fernandez@gmail.com>
+   Copyright (c) 2026      Kartik Kenchi <netliomax25@gmail.com>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -38,6 +39,8 @@
    DAMAGES OR  OTHER LIABILITY, WHETHER  IN AN  ACTION OF CONTRACT,  TORT OR
    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
    USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+   SPDX-License-Identifier: MIT
 */
 
 #include "expat_config.h"
@@ -139,7 +142,22 @@ resolveSystemId(const XML_Char *base, const XML_Char *systemId,
 #endif
   )
     return systemId;
-  *toFree = malloc((tcslen(base) + tcslen(systemId) + 2) * sizeof(XML_Char));
+
+  const size_t baseLen = tcslen(base);
+  const size_t systemIdLen = tcslen(systemId);
+
+  /* Detect and prevent integer overflow in the addition (without risking
+     underflow) */
+  if (baseLen > SIZE_MAX - systemIdLen || baseLen > SIZE_MAX - systemIdLen - 2)
+    return systemId;
+
+  const size_t charsRequired = baseLen + systemIdLen + 2;
+
+  /* Detect and prevent integer overflow in the multiplication */
+  if (charsRequired > SIZE_MAX / sizeof(XML_Char))
+    return systemId;
+
+  *toFree = malloc(charsRequired * sizeof(XML_Char));
   if (! *toFree)
     return systemId;
   tcscpy(*toFree, base);
