@@ -1429,25 +1429,35 @@ object EditorForm: TEditorForm
       end
       object TBXSeparatorItem4: TTBXSeparatorItem
       end
-      object Encoding: TTBXSubmenuItem
-        Caption = 'Encoding'
-        Hint = 'Change file encoding'
-        Options = [tboDropdownArrow]
-        object DefaultEncoding: TTBXItem
-          Action = DefaultEncodingAction
-          RadioItem = True
-        end
-        object UTF8Encoding: TTBXItem
-          Action = UTF8EncodingAction
-          RadioItem = True
-        end
-      end
       object ColorItem: TTBXColorItem
         Action = ColorAction
         Options = [tboDropdownArrow]
       end
-      object TBXItem13: TTBXItem
+      object TBXSubmenuItem1: TTBXSubmenuItem
         Action = PreferencesAction
+        DropdownCombo = True
+        object TBXItem13: TTBXItem
+          Action = PreferencesAction
+          Options = [tboDefault]
+        end
+        object TBXSeparatorItem7: TTBXSeparatorItem
+        end
+        object Encoding: TTBXSubmenuItem
+          Caption = 'Encoding'
+          Hint = 'Change file encoding'
+          Options = [tboDropdownArrow]
+          object DefaultEncoding: TTBXItem
+            Action = DefaultEncodingAction
+            RadioItem = True
+          end
+          object UTF8Encoding: TTBXItem
+            Action = UTF8EncodingAction
+            RadioItem = True
+          end
+        end
+        object TBXItem19: TTBXItem
+          Action = WordWrapAction
+        end
       end
       object TBXSeparatorItem5: TTBXSeparatorItem
       end
@@ -1616,6 +1626,10 @@ object EditorForm: TEditorForm
     object ColorAction: TAction
       Caption = 'C&olor'
       Hint = 'Change color of editor'
+    end
+    object WordWrapAction: TAction
+      Caption = '&Wrap Long Lines'
+      Hint = 'Toggle if long lines are wrapped or not'
     end
   end
   object EditorImages: TPngImageList

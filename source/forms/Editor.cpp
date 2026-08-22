@@ -888,6 +888,11 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
     UTF8EncodingAction->Enabled = true;
     UTF8EncodingAction->Checked = (FEncoding == TEncoding::UTF8);
   }
+  else if (Action == WordWrapAction)
+  {
+    WordWrapAction->Enabled = true;
+    WordWrapAction->Checked = WinConfiguration->Editor.WordWrap;
+  }
   else
   {
     Handled = false;
@@ -996,6 +1001,12 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
       CreateEditorBackgroundColorMenu(Action->ActionComponent, BackgroundColor,
         SetBackgroundColor);
     }
+  }
+  else if (Action == WordWrapAction)
+  {
+    TEditorConfiguration Editor = WinConfiguration->Editor;
+    Editor.WordWrap = !Editor.WordWrap;
+    WinConfiguration->Editor = Editor;
   }
   else
   {

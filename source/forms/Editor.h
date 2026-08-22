@@ -81,6 +81,11 @@ __published:
   TPngImageList *EditorImages120;
   TPngImageList *EditorImages144;
   TPngImageList *EditorImages192;
+  TTBXSubmenuItem *TBXSubmenuItem1;
+  TTBXItem *TBXItem13;
+  TTBXSeparatorItem *TBXSeparatorItem7;
+  TAction *WordWrapAction;
+  TTBXItem *TBXItem19;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
