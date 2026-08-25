@@ -923,12 +923,14 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
         sfree(b);
 
         /* Check the Argon2 parameters make sense */
+        { // WINSCP
         uint32_t taglen = ciphertype->keylen + ciphertype->ivlen + 32;
         if (!argon2_params_valid(
                 params.argon2_mem, params.argon2_passes,
                 params.argon2_parallelism, taglen,
                 passphrase_pl.len, passphrase_salt->len, 0, 0))
             goto error;
+        } // WINSCP
     }
 
     /* Read the Private-Lines header line and the Private blob. */
