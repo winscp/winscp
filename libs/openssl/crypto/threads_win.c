@@ -48,6 +48,13 @@ extern LONGLONG WINAPI InterlockedOr64(volatile LONGLONG *Destination, LONGLONG 
 extern LONGLONG WINAPI InterlockedXor64(volatile LONGLONG *Destination, LONGLONG Value);
 #endif
 
+// WINSCP
+#if defined(__CODEGEARC__) && defined(__clang__)
+// MemoryBarrier is defined in winnt.h, but the definition is guarded by !__CODEGEARC__.
+// This clang-specific directive should work for both 32-bit and 64-bit.
+#define MemoryBarrier __sync_synchronize
+#endif
+
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
 #ifdef USE_RWLOCK
