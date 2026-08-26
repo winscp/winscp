@@ -1134,6 +1134,9 @@ struct ssh2_userkey {
 
 /* Argon2 password hashing function */
 typedef enum { Argon2d = 0, Argon2i = 1, Argon2id = 2 } Argon2Flavour;
+bool argon2_params_valid(uint32_t mem, uint32_t passes,
+                         uint32_t parallel, uint32_t taglen,
+                         size_t Plen, size_t Slen, size_t Klen, size_t Xlen);
 void argon2(Argon2Flavour, uint32_t mem, uint32_t passes,
             uint32_t parallel, uint32_t taglen,
             ptrlen P, ptrlen S, ptrlen K, ptrlen X, strbuf *out);
