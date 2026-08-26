@@ -707,6 +707,7 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
     const ssh_keyalg *alg;
     ssh2_userkey *ukey;
     strbuf *public_blob, *private_blob, *cipher_mac_keys_blob;
+    ptrlen passphrase_pl = ptrlen_from_asciz(passphrase ? passphrase : "");
     strbuf *passphrase_salt = strbuf_new();
     ptrlen cipherkey, cipheriv, mackey;
     const struct ppk_cipher *ciphertype;
@@ -855,6 +856,20 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
             }
         }
         sfree(b);
+
+        /* Check the Argon2 parameters make sense */
+        uint32_t taglen = ciphertype->keylen + ciphertype->ivlen + 32;
+        char *msg = argon2_params_bad(
+                params.argon2_mem, params.argon2_passes,
+                params.argon2_parallelism, taglen,
+                passphrase_pl.len, passphrase_salt->len, 0, 0);
+        if (msg) {
+            /* FIXME: it would be useful to pass this message on, but
+             * it's dynamically allocated and currently our returned
+             * error string isn't. */
+            sfree(msg);
+            goto error;
+        }
     }
 
     /* Read the Private-Lines header line and the Private blob. */
@@ -885,8 +900,7 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
         goto error;
 
     cipher_mac_keys_blob = strbuf_new();
-    ssh2_ppk_derive_keys(fmt_version, ciphertype,
-                         ptrlen_from_asciz(passphrase ? passphrase : ""),
+    ssh2_ppk_derive_keys(fmt_version, ciphertype, passphrase_pl,
                          cipher_mac_keys_blob, &cipherkey, &cipheriv, &mackey,
                          ptrlen_from_strbuf(passphrase_salt), &params);
 
@@ -1582,6 +1596,30 @@ bool ppk_save_f(const Filename *filename, ssh2_userkey *key,
         toret = false;
     strbuf_free(buf);
     return toret;
+}
+
+char *ppk_params_bad(const ppk_save_parameters *params, bool encrypted,
+                     size_t passphrase_len)
+{
+    if (params->fmt_version < 2)
+        return dupprintf(
+            "PPK format version %u is lower than 2, the earliest "
+            "version supported by this code", params->fmt_version);
+    if (params->fmt_version > 3)
+        return dupprintf(
+            "PPK format version %u is higher than 3, the latest "
+            "version supported by this code", params->fmt_version);
+    if (params->fmt_version == 3 && encrypted) {
+        const struct ppk_cipher *ciphertype = &ppk_cipher_aes256_cbc;
+        uint32_t taglen = ciphertype->keylen + ciphertype->ivlen + 32;
+        char *msg = argon2_params_bad(
+                params->argon2_mem, params->argon2_passes,
+                params->argon2_parallelism, taglen,
+                passphrase_len, params->saltlen, 0, 0);
+        if (msg)
+            return msg;
+    }
+    return NULL;
 }
 
 /* ----------------------------------------------------------------------

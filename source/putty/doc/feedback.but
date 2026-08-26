@@ -82,12 +82,15 @@ incoming e-mail containing executables, as a defence against the
 vast numbers of e-mail viruses we receive every day. If you mail us
 an executable, it will just bounce.
 
-If you have made a tiny modification to the PuTTY code, please send
-us a \e{patch} to the source code if possible, rather than sending
-us a huge \cw{.ZIP} file containing the complete sources plus your
-modification. If you've only changed 10 lines, we'd prefer to
-receive a mail that's 30 lines long than one containing multiple
+If you have made a tiny modification to the PuTTY code, please send us
+a \cq{git bundle} file, or a patch file, or a URL to a clone of our
+git repository, in preference to modified versions of entire source
+files. (Even if the source files are in a \cw{.zip} or similar.) If
+you've only changed 10 lines, we'd prefer to receive a mail that's at
+most the size of the \e{changes}, instead of one containing multiple
 megabytes of data we already have.
+
+(For more thoughts about sending patches, see \k{feedback-patches}.)
 
 \# \S{feedback-other-fora} Other places to ask for help
 
@@ -239,14 +242,8 @@ should think about what happens if there's more than one PuTTY
 active; how would the user tell which was which?)
 
 \b If you can program, it may be worth offering to write the feature
-yourself and send us a patch. However, it is likely to be helpful
-if you confer with us first; there may be design issues you haven't
-thought of, or we may be about to make big changes to the code which
-your patch would clash with, or something. If you check with the
-maintainers first, there is a better chance of your code actually
-being usable. Also, read the design principles listed in \k{udp}: if
-you do not conform to them, we will probably not be able to accept
-your patch.
+yourself and send us a patch. See \k{feedback-patches} for more about
+this.
 
 \H{feedback-feature-priority} Requesting features that have already
 been requested
@@ -275,9 +272,141 @@ spare - whether you pay us or not. (Also, we don't accept bribes to
 add \e{bad} features to the Wishlist, because our desire to provide
 high-quality software to the users comes first.)
 
-\b Offer to help us write the code. This is probably the \e{only}
-way to get a feature implemented quickly, if it's a big one that we
-don't have time to do ourselves.
+\b Offer to help us write the code. This is probably the \e{only} way
+to get a feature implemented quickly, if it's a big one that we don't
+have time to do ourselves. See the next section for more about this.
+
+\H{feedback-patches} Contributing to the code
+
+Patches to PuTTY are welcome, if they're good quality. But we have
+high standards for a good patch. Here are some guidelines.
+
+\s{Talk to us if design changes are involved}. If you're changing
+something fundamental about how PuTTY works, we might well not agree
+with the direction of the change. If you put a lot of effort into it
+and then we reject it, that's a waste of your own effort (apart from
+still being practice at programming). If you'd rather not waste that
+much time, checking with us before doing a lot of work can avoid it.
+
+\s{Read the design principles}. \K{udp} in the manual explains some
+ground rules for the PuTTY code base in general, such as not adding
+Windows-specific code outside the \cw{windows} subdirectory.
+
+\s{Address the hard part of the problem}. A lot of possible changes to
+PuTTY have an easy bit and a hard bit. If the patch only does the easy
+bit, this is not really different from a pure feature request (one
+without a patch at all). Before accepting a patch of that kind, \e{we}
+would still have to do the part that takes real work; if we already
+haven't found time to do that by ourselves, we're not going to
+suddenly find time just because you've done the easy part.
+
+On the other hand, a patch that does the \e{hard} part and leaves the
+\e{easy} parts to us is another matter. (For example, if some change
+ought to be user-configurable, but you implement it unconditionally,
+leaving to us the mechanics of adding an option to turn it on and
+off.) In that situation \dash if the hard part is done well \dash we
+might be quite willing to say \q{Thank you! Don't worry about the
+boring bits, we can take it from here.}
+
+Sometimes the hard part is a design question: is it better to do a
+thing \e{this} way, or \e{that} way? In that situation, we'd like to
+see arguments for \e{why} you decided to do it the way you did,
+considering the pros and cons of both. If you just pick one without
+even mentioning the decision \dash or if you only mention a single
+advantage of your choice, and don't comment on any disadvantages \dash
+it will look as if you didn't consider it properly at all. If we were
+happy to make the decision that way, we'd have done it already!
+
+\s{Please don't write your code with a large language model}. In
+general, we are not fans of LLM coding, or LLMs in general, and \e{we}
+don't use them to develop PuTTY. They're environmentally disastrous;
+they're based on appropriating large numbers of people's work without
+credit, compensation or even consent, and then turning round and using
+the results to deprive those same people of livelihood; they're run by
+companies who have already demonstrated lack of ethics, so they can't
+be trusted to have your best interests at heart in future, or ours.
+Also, there is still a question of copyright in the generated code; as
+of 2026-08 there was an initial USA court decision on the subject, but
+that isn't the last word, especially since we are not solely
+interested in \e{USA} law. (We aren't even \e{in} the USA.)
+
+We can't completely avoid engaging with some users of LLMs. In
+particular, reports of security vulnerabilies found by LLM techniques
+will still be accepted as vulnerabilities (assuming they're correct),
+and we'll fix them. We have no choice about that: if we didn't, those
+vulnerabilities would be exploited, sooner or later. But we'd prefer
+not to have LLM-generated \e{code} in PuTTY at all.
+
+Here are some \e{particular} bad things people seem to like to do with
+LLMs. Some of them are possible without an LLM, as well; please don't
+do them in that situation either.
+
+\s{Don't send us 10\u00D7{x} more autogenerated code than you could
+sensibly write yourself}. If you weren't able to write that much code
+even once, how do you imagine we'll maintain it when changes are
+needed? Maybe \e{you'd} expect to maintain it in future by further use
+of LLMs \dash but we don't think that's a good answer, so we won't
+accept a patch of that kind in the first place.
+
+We're not fans of LLMs in general, but we especially don't want to
+become \e{dependent} on LLMs to maintain code. (Or any other
+proprietary tool, either.) That is not \e{just} against our own
+interests: it's against the entire principle of free software, because
+it limits \e{other} people modifying and adapting our code as well.
+
+If you have a plan that requires autogenerating huge piles of code via
+some other method like a conventional computer program, then that
+\e{might} be acceptable (depending on what it's doing). But in that
+case, the autogenerated code doesn't belong in the patch: the
+\e{source code} in a case like this is the smaller program that did
+the generation (that's what you'd modify in order to make future
+changes), and the build system should be set up to run it and compile
+the result.
+
+\s{Don't push lots of work on to other people, imagining you're saving
+work}. In particular, running an LLM code generator and mailing us the
+results without having checked it over carefully. \e{Someone} has to
+check the code and make sure it's right; if you haven't done that
+work, then we would have to do it (if we accepted the patch at all),
+so you haven't saved effort, you've just pushed it on to us.
+
+Another example is autogenerating hugely verbose writeups (e.g. in a
+bug report), including lots of irrelevant information as well as the
+important things. Again, \e{somebody} has to discard the unimportant
+parts. If the writer won't do it, the reader must do it when they read
+the text. So, again, letting an LLM generate way too much text is
+pushing effort on to somebody else, not saving it overall.
+
+\s{Don't rewrite the whole patch just because we requested a small
+change}. Reviewing the rewritten code costs us a lot of effort, even
+if writing it cost you very little. Also, a rewrite risks introducing
+a fresh set of bugs to replace the ones found by the code review so
+far. After we've reviewed a patch once we'd rather not review the
+\e{whole} thing again, so don't make us do it if it isn't really
+necessary. Aim to make smaller and smaller changes until we accept the
+patch.
+
+\s{Don't expect us to be patient and helpful if you're relying on an
+LLM}. Not everyone is a top-tier programmer. Less skilled people might
+still want to send us patches, and we don't want to be completely
+hostile to those people. If you write a patch with your own brain and
+fingers, and you need some help making it good enough because you lack
+skills or knowledge, then we're prepared to work with you, because it
+will improve your skills and knowledge as a side effect, and that's
+also a good thing. But if you're just pasting our advice into your
+LLM, then it's \e{not} having that side effect, and we lose the
+motivation to help you out.
+
+\s{Don't lie about using an LLM}. If you have some reason why you
+think you absolutely \e{need} to use an LLM, then tell us so, and
+we'll see if we agree. Of course you could try just not telling us.
+But we'll definitely lose all patience with you if we find that out!
+
+We're sorry to have to say all of this. We know it all looks very
+hostile and unwelcoming. We'd \e{like} to cheerily say \q{patches
+welcome!}, and leave it at that. But in the 2020s, unfortunately, that
+is not an attitude that works any more, because too many people take
+advantage of it.
 
 \H{feedback-workarounds} Workarounds for SSH server bugs
 

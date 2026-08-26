@@ -5050,7 +5050,7 @@ Chapter 4: Configuring PuTTY
            the server version is known.)
 
        (The PuTTY project has a defined policy about when we're prepared to
-       add auto-detection for a bug workaround. See section B.6.)
+       add auto-detection for a bug workaround. See section B.7.)
 
 4.27.1 `Chokes on SSH-2 ignore messages'
 
@@ -5700,7 +5700,7 @@ Chapter 5: Using PSCP to transfer files securely
 
          C:\>pscp -h
          PuTTY Secure Copy client
-         Release 0.84
+         Release 0.85
          Usage: pscp [options] [user@]host:source target
                 pscp [options] source [source...] [user@]host:target
                 pscp [options] -ls [user@]host:filespec
@@ -6624,7 +6624,7 @@ Chapter 7: Using the command-line connection tool Plink
 
          C:\>plink --help
          Plink: command-line connection utility
-         Release 0.84
+         Release 0.85
          Usage: plink [options] [user@]host [command]
                 ("host" can also be a PuTTY saved session name)
          Options:
@@ -9475,7 +9475,7 @@ A.9.12 Can I have permission to put PuTTY on a cover disk / distribute it
        Yes. For most things, you need not bother asking us explicitly for
        permission; our licence already grants you permission.
 
-       See section B.9 for more details.
+       See section B.10 for more details.
 
 A.9.13 Can you sign an agreement indemnifying us against security problems
        in PuTTY?
@@ -9817,7 +9817,7 @@ Appendix B: Feedback and bug reporting
        We get so much e-mail that we literally do not have time to answer
        it all. We regret this, but there's nothing we can do about it.
        So if you can _possibly_ avoid sending mail to the PuTTY team, we
-       recommend you do so. In particular, support requests (section B.7)
+       recommend you do so. In particular, support requests (section B.8)
        are probably better sent to some public forum, or passed to a local
        expert if possible.
 
@@ -9881,12 +9881,15 @@ Appendix B: Feedback and bug reporting
        vast numbers of e-mail viruses we receive every day. If you mail us
        an executable, it will just bounce.
 
-       If you have made a tiny modification to the PuTTY code, please
-       send us a _patch_ to the source code if possible, rather than
-       sending us a huge .ZIP file containing the complete sources plus
-       your modification. If you've only changed 10 lines, we'd prefer to
-       receive a mail that's 30 lines long than one containing multiple
-       megabytes of data we already have.
+       If you have made a tiny modification to the PuTTY code, please send
+       us a `git bundle' file, or a patch file, or a URL to a clone of
+       our git repository, in preference to modified versions of entire
+       source files. (Even if the source files are in a .zip or similar.)
+       If you've only changed 10 lines, we'd prefer to receive a mail
+       that's at most the size of the _changes_, instead of one containing
+       multiple megabytes of data we already have.
+
+       (For more thoughts about sending patches, see section B.6.)
 
    B.2 Reporting bugs
 
@@ -10031,14 +10034,8 @@ Appendix B: Feedback and bug reporting
            user tell which was which?)
 
         -  If you can program, it may be worth offering to write the
-           feature yourself and send us a patch. However, it is likely to
-           be helpful if you confer with us first; there may be design
-           issues you haven't thought of, or we may be about to make big
-           changes to the code which your patch would clash with, or
-           something. If you check with the maintainers first, there is a
-           better chance of your code actually being usable. Also, read the
-           design principles listed in appendix E: if you do not conform to
-           them, we will probably not be able to accept your patch.
+           feature yourself and send us a patch. See section B.6 for more
+           about this.
 
    B.5 Requesting features that have already been requested
 
@@ -10070,9 +10067,145 @@ Appendix B: Feedback and bug reporting
 
         -  Offer to help us write the code. This is probably the _only_ way
            to get a feature implemented quickly, if it's a big one that we
-           don't have time to do ourselves.
+           don't have time to do ourselves. See the next section for more
+           about this.
 
-   B.6 Workarounds for SSH server bugs
+   B.6 Contributing to the code
+
+       Patches to PuTTY are welcome, if they're good quality. But we have
+       high standards for a good patch. Here are some guidelines.
+
+       *Talk to us if design changes are involved*. If you're changing
+       something fundamental about how PuTTY works, we might well not agree
+       with the direction of the change. If you put a lot of effort into it
+       and then we reject it, that's a waste of your own effort (apart from
+       still being practice at programming). If you'd rather not waste that
+       much time, checking with us before doing a lot of work can avoid it.
+
+       *Read the design principles*. Appendix E in the manual explains some
+       ground rules for the PuTTY code base in general, such as not adding
+       Windows-specific code outside the windows subdirectory.
+
+       *Address the hard part of the problem*. A lot of possible changes to
+       PuTTY have an easy bit and a hard bit. If the patch only does the
+       easy bit, this is not really different from a pure feature request
+       (one without a patch at all). Before accepting a patch of that kind,
+       _we_ would still have to do the part that takes real work; if we
+       already haven't found time to do that by ourselves, we're not going
+       to suddenly find time just because you've done the easy part.
+
+       On the other hand, a patch that does the _hard_ part and leaves the
+       _easy_ parts to us is another matter. (For example, if some change
+       ought to be user-configurable, but you implement it unconditionally,
+       leaving to us the mechanics of adding an option to turn it on and
+       off.) In that situation - if the hard part is done well - we might
+       be quite willing to say `Thank you! Don't worry about the boring
+       bits, we can take it from here.'
+
+       Sometimes the hard part is a design question: is it better to do
+       a thing _this_ way, or _that_ way? In that situation, we'd like
+       to see arguments for _why_ you decided to do it the way you did,
+       considering the pros and cons of both. If you just pick one without
+       even mentioning the decision - or if you only mention a single
+       advantage of your choice, and don't comment on any disadvantages -
+       it will look as if you didn't consider it properly at all. If we
+       were happy to make the decision that way, we'd have done it already!
+
+       *Please don't write your code with a large language model*. In
+       general, we are not fans of LLM coding, or LLMs in general, and _we_
+       don't use them to develop PuTTY. They're environmentally disastrous;
+       they're based on appropriating large numbers of people's work
+       without credit, compensation or even consent, and then turning round
+       and using the results to deprive those same people of livelihood;
+       they're run by companies who have already demonstrated lack of
+       ethics, so they can't be trusted to have your best interests at
+       heart in future, or ours. Also, there is still a question of
+       copyright in the generated code; as of 2026-08 there was an initial
+       USA court decision on the subject, but that isn't the last word,
+       especially since we are not solely interested in _USA_ law. (We
+       aren't even _in_ the USA.)
+
+       We can't completely avoid engaging with some users of LLMs.
+       In particular, reports of security vulnerabilies found by LLM
+       techniques will still be accepted as vulnerabilities (assuming
+       they're correct), and we'll fix them. We have no choice about that:
+       if we didn't, those vulnerabilities would be exploited, sooner or
+       later. But we'd prefer not to have LLM-generated _code_ in PuTTY at
+       all.
+
+       Here are some _particular_ bad things people seem to like to do with
+       LLMs. Some of them are possible without an LLM, as well; please
+       don't do them in that situation either.
+
+       *Don't send us 10*x* more autogenerated code than you could sensibly
+       write yourself*. If you weren't able to write that much code even
+       once, how do you imagine we'll maintain it when changes are needed?
+       Maybe _you'd_ expect to maintain it in future by further use of LLMs
+       - but we don't think that's a good answer, so we won't accept a
+       patch of that kind in the first place.
+
+       We're not fans of LLMs in general, but we especially don't want
+       to become _dependent_ on LLMs to maintain code. (Or any other
+       proprietary tool, either.) That is not _just_ against our own
+       interests: it's against the entire principle of free software,
+       because it limits _other_ people modifying and adapting our code as
+       well.
+
+       If you have a plan that requires autogenerating huge piles of code
+       via some other method like a conventional computer program, then
+       that _might_ be acceptable (depending on what it's doing). But in
+       that case, the autogenerated code doesn't belong in the patch: the
+       _source code_ in a case like this is the smaller program that did
+       the generation (that's what you'd modify in order to make future
+       changes), and the build system should be set up to run it and
+       compile the result.
+
+       *Don't push lots of work on to other people, imagining you're saving
+       work*. In particular, running an LLM code generator and mailing us
+       the results without having checked it over carefully. _Someone_ has
+       to check the code and make sure it's right; if you haven't done that
+       work, then we would have to do it (if we accepted the patch at all),
+       so you haven't saved effort, you've just pushed it on to us.
+
+       Another example is autogenerating hugely verbose writeups (e.g. in a
+       bug report), including lots of irrelevant information as well as the
+       important things. Again, _somebody_ has to discard the unimportant
+       parts. If the writer won't do it, the reader must do it when they
+       read the text. So, again, letting an LLM generate way too much text
+       is pushing effort on to somebody else, not saving it overall.
+
+       *Don't rewrite the whole patch just because we requested a small
+       change*. Reviewing the rewritten code costs us a lot of effort,
+       even if writing it cost you very little. Also, a rewrite risks
+       introducing a fresh set of bugs to replace the ones found by the
+       code review so far. After we've reviewed a patch once we'd rather
+       not review the _whole_ thing again, so don't make us do it if it
+       isn't really necessary. Aim to make smaller and smaller changes
+       until we accept the patch.
+
+       *Don't expect us to be patient and helpful if you're relying on
+       an LLM*. Not everyone is a top-tier programmer. Less skilled
+       people might still want to send us patches, and we don't want to
+       be completely hostile to those people. If you write a patch with
+       your own brain and fingers, and you need some help making it good
+       enough because you lack skills or knowledge, then we're prepared to
+       work with you, because it will improve your skills and knowledge
+       as a side effect, and that's also a good thing. But if you're just
+       pasting our advice into your LLM, then it's _not_ having that side
+       effect, and we lose the motivation to help you out.
+
+       *Don't lie about using an LLM*. If you have some reason why you
+       think you absolutely _need_ to use an LLM, then tell us so, and
+       we'll see if we agree. Of course you could try just not telling us.
+       But we'll definitely lose all patience with you if we find that out!
+
+       We're sorry to have to say all of this. We know it all looks very
+       hostile and unwelcoming. We'd _like_ to cheerily say `patches
+       welcome!', and leave it at that. But in the 2020s, unfortunately,
+       that is not an attitude that works any more, because too many people
+       take advantage of it.
+
+   B.7 Workarounds for SSH server bugs
 
        It's normal for SSH implementations to automatically enable
        workarounds for each other's bugs, using the software version
@@ -10120,7 +10253,7 @@ Appendix B: Feedback and bug reporting
        _automatically_ enable the workaround unless the server maintainer
        has also done their part.
 
-   B.7 Support requests
+   B.8 Support requests
 
        If you're trying to make PuTTY do something for you and it isn't
        working, but you're not sure whether it's a bug or not, then
@@ -10160,7 +10293,7 @@ Appendix B: Feedback and bug reporting
        way, you can try mailing it to us, but we can't guarantee to have
        time to answer it.
 
-   B.8 Web server administration
+   B.9 Web server administration
 
        If the PuTTY web site is down (Connection Timed Out), please don't
        bother mailing us to tell us about it. Most of us read our e-mail on
@@ -10182,7 +10315,7 @@ Appendix B: Feedback and bug reporting
        contact us if that doesn't solve the problem (in case we need to
        remove the mirror from our list).
 
-   B.9 Asking permission for things
+  B.10 Asking permission for things
 
        PuTTY is distributed under the MIT Licence (see appendix D for
        details). This means you can do almost _anything_ you like with our
@@ -10212,7 +10345,7 @@ Appendix B: Feedback and bug reporting
        If you just want to link to our web site, just go ahead. (It's not
        clear that we _could_ stop you doing this, even if we wanted to!)
 
-  B.10 Mirroring the PuTTY web site
+  B.11 Mirroring the PuTTY web site
 
        If you want to set up a mirror of the PuTTY website, go ahead and
        set one up. Please don't bother asking us for permission before
@@ -10236,7 +10369,7 @@ Appendix B: Feedback and bug reporting
        guidelines on the Mirrors page); but if you just want to ask for
        permission, you don't need to. You already have permission.
 
-  B.11 Praise and compliments
+  B.12 Praise and compliments
 
        One of the most rewarding things about maintaining free software
        is getting e-mails that just say `thanks'. We are always happy to
@@ -10250,7 +10383,7 @@ Appendix B: Feedback and bug reporting
        To everyone who's ever sent us praise and compliments, in the past
        and the future: _you're welcome_!
 
-  B.12 E-mail address
+  B.13 E-mail address
 
        The actual address to mail is <putty@projects.tartarus.org>.
 
@@ -11482,25 +11615,25 @@ Appendix F: PuTTY download keys and signatures
        PuTTY website, and are also available on PGP keyservers using the
        key IDs listed below.
 
-       *Master Key* (2023)
+       *Master Key* (2026)
 
-           RSA, 4096-bit. Key ID: B15D9EFC216B06A1. Fingerprint:
-           28D4 7C46 55E7 65A6 D827 AC66 B15D 9EFC 216B 06A1
+           RSA, 4096-bit. Key ID: D732471F094D5FB5. Fingerprint:
+           371C 662B 855F 318F F63A D091 D732 471F 094D 5FB5
 
-       *Release Key* (2023)
+       *Release Key* (2026)
 
-           RSA, 3072-bit. Key ID: 1993D21BCAD1AA77. Fingerprint:
-           F412 BA3A A30F DC0E 77B4 E387 1993 D21B CAD1 AA77
+           RSA, 3072-bit. Key ID: 5C67D0F88BC3E5B5. Fingerprint:
+           1A07 DAC0 F220 CF12 248E A719 5C67 D0F8 8BC3 E5B5
 
-       *Snapshot Key* (2023)
+       *Snapshot Key* (2026)
 
-           RSA, 3072-bit. Key ID: 10625E553F53FAAD. Fingerprint:
-           74CC 6DD9 ABA7 31D4 C5A0 C2D0 1062 5E55 3F53 FAAD
+           RSA, 3072-bit. Key ID: 5ED187171D16C213. Fingerprint:
+           1C8A 48EB BD3E 4B93 568F CDCA 5ED1 8717 1D16 C213
 
-       *Secure Contact Key* (2023)
+       *Secure Contact Key* (2026)
 
-           RSA, 3072-bit. Key ID: 1559F6A8929F5EFC. Fingerprint:
-           01F5 A2B1 1388 D64B 707F 897F 1559 F6A8 929F 5EFC
+           RSA, 3072-bit. Key ID: 6DDCD4F58649AAED. Fingerprint:
+           7E79 8549 9503 2120 8BD0 7B7E 6DDC D4F5 8649 AAED
 
    F.2 Security details
 
@@ -11596,6 +11729,28 @@ Appendix F: PuTTY download keys and signatures
        newly generated keys.
 
        The details of all previous keys are given here.
+
+       *Keys generated in the 2023 rollover*
+
+       *Master Key* (2023)
+
+           RSA, 4096-bit. Key ID: B15D9EFC216B06A1. Fingerprint:
+           28D4 7C46 55E7 65A6 D827 AC66 B15D 9EFC 216B 06A1
+
+       *Release Key* (2023)
+
+           RSA, 3072-bit. Key ID: 1993D21BCAD1AA77. Fingerprint:
+           F412 BA3A A30F DC0E 77B4 E387 1993 D21B CAD1 AA77
+
+       *Snapshot Key* (2023)
+
+           RSA, 3072-bit. Key ID: 10625E553F53FAAD. Fingerprint:
+           74CC 6DD9 ABA7 31D4 C5A0 C2D0 1062 5E55 3F53 FAAD
+
+       *Secure Contact Key* (2023)
+
+           RSA, 3072-bit. Key ID: 1559F6A8929F5EFC. Fingerprint:
+           01F5 A2B1 1388 D64B 707F 897F 1559 F6A8 929F 5EFC
 
        *Keys generated in the 2021 rollover*
 
@@ -12589,4 +12744,4 @@ Appendix I: PuTTY privacy considerations
        cannot make any promises about the behaviour of modified versions
        distributed by other people.
 
-[PuTTY release 0.84]
+[PuTTY release 0.85]

@@ -390,8 +390,16 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
             winsize = get_uint32(pktin);
             pktsize = get_uint32(pktin);
 
-            chanopen_result = ssh2_connection_parse_channel_open(
-                s, type, pktin, &c->sc);
+            if (pktsize == 0) {
+                chanopen_result.outcome = CHANOPEN_RESULT_FAILURE;
+                chanopen_result.u.failure.reason_code =
+                    SSH2_OPEN_ADMINISTRATIVELY_PROHIBITED;
+                chanopen_result.u.failure.wire_message = dupstr(
+                    "maximum packet size of 0 not permitted");
+            } else {
+                chanopen_result = ssh2_connection_parse_channel_open(
+                    s, type, pktin, &c->sc);
+            }
 
             if (chanopen_result.outcome == CHANOPEN_RESULT_DOWNSTREAM) {
                 /*
@@ -497,6 +505,13 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                 c->remmaxpkt = get_uint32(pktin);
                 if (c->remmaxpkt > s->ppl.bpp->vt->packet_size_limit)
                     c->remmaxpkt = s->ppl.bpp->vt->packet_size_limit;
+                if (c->remmaxpkt == 0) {
+                    ssh_proto_error(
+                        s->ppl.ssh,
+                        "Received SSH2_MSG_CHANNEL_OPEN_CONFIRMATION for "
+                        "channel %u with zero maximum packet size", localid);
+                    return true;
+                }
 
                 chan_open_confirmation(c->chan);
 

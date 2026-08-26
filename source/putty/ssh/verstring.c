@@ -299,6 +299,12 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
         }
 
         put_datapl(s->vstring, data);
+        if (s->vstring->len > 1024) {
+            bpp_logevent("Remote version begins: \"%.256s...\"",
+                         s->vstring->s);
+            ssh_sw_abort(s->bpp.ssh, "Remote SSH greeting was overlong");
+            crStopV;
+        }
         bufchain_consume(s->bpp.in_raw, data.len);
         ssh_check_frozen(s->bpp.ssh);
 
