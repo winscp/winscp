@@ -26,10 +26,10 @@
 #endif
 
 #ifndef PuttySourceDir
-  #if DirExists("c:\Program Files (x86)\PuTTY")
-    #define PuttySourceDir "c:\Program Files (x86)\PuTTY"
-  #else
+  #if DirExists("c:\Program Files\PuTTY")
     #define PuttySourceDir "c:\Program Files\PuTTY"
+  #else
+    #define PuttySourceDir "c:\Program Files (x86)\PuTTY"
   #endif
 #endif
 #ifndef Status
