@@ -4705,7 +4705,7 @@ void __fastcall TSFTPFileSystem::Source(
 
       if (ResumeAllowed)
       {
-        FTerminal->LogEvent(L"Checking existence of partially transferred file.");
+        FTerminal->LogEvent(L"Checking for the existence of a partially transferred file.");
         if (RemoteFileExists(DestPartialFullName, &File))
         {
           ResumeOffset = File->Resolve()->Size; // Though partial file should not be symlink

@@ -1390,7 +1390,6 @@ void DoVerifyKey(UnicodeString & FileName, bool Convert, UnicodeString & Message
   }
   MoreMessages = AMoreMessages.release();
 }
-
 //---------------------------------------------------------------------------
 static void __fastcall DoVerifyKey(UnicodeString & FileName, bool Convert, bool CanIgnore)
 {

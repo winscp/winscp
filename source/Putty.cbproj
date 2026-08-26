@@ -277,6 +277,9 @@
         <CppCompile Include="putty\ssh\mainchan.c">
             <BuildOrder>64</BuildOrder>
         </CppCompile>
+        <CppCompile Include="putty\ssh\nocompress.c">
+            <BuildOrder>179</BuildOrder>
+        </CppCompile>
         <CppCompile Include="putty\ssh\nosharing.c">
             <BuildOrder>65</BuildOrder>
         </CppCompile>
