@@ -36,14 +36,14 @@ typedef enum {
  * Fingerprints of the current and previous PGP master keys, to
  * establish a trust path between an executable and other files.
  */
-#define PGP_MASTER_KEY_YEAR "2023"
+#define PGP_MASTER_KEY_YEAR "2026"
 #define PGP_MASTER_KEY_DETAILS "RSA, 4096-bit"
 #define PGP_MASTER_KEY_FP                                  \
-    "28D4 7C46 55E7 65A6 D827  AC66 B15D 9EFC 216B 06A1"
-#define PGP_PREV_MASTER_KEY_YEAR "2021"
-#define PGP_PREV_MASTER_KEY_DETAILS "RSA, 3072-bit"
+    "371C 662B 855F 318F F63A  D091 D732 471F 094D 5FB5"
+#define PGP_PREV_MASTER_KEY_YEAR "2023"
+#define PGP_PREV_MASTER_KEY_DETAILS "RSA, 4096-bit"
 #define PGP_PREV_MASTER_KEY_FP                                  \
-    "A872 D42F 1660 890F 0E05  223E DD43 55EA AC11 19DE"
+    "28D4 7C46 55E7 65A6 D827  AC66 B15D 9EFC 216B 06A1"
 
 /*
  * Definitions of three separate indexing schemes for colour palette

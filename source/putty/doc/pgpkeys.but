@@ -59,25 +59,25 @@ The current issue of those keys are available for download from the
 PuTTY website, and are also available on PGP keyservers using the key
 IDs listed below.
 
-\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2023.asc}{\s{Master Key} (2023)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2026.asc}{\s{Master Key} (2026)}
 
-\dd RSA, 4096-bit. Key ID: \cw{B15D9EFC216B06A1}. Fingerprint:
-\cw{28D4\_7C46\_55E7\_65A6\_D827\_AC66\_B15D\_9EFC\_216B\_06A1}
+\dd RSA, 4096-bit. Key ID: \cw{D732471F094D5FB5}. Fingerprint:
+\cw{371C\_662B\_855F\_318F\_F63A\_D091\_D732\_471F\_094D\_5FB5}
 
-\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2023.asc}{\s{Release Key} (2023)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2026.asc}{\s{Release Key} (2026)}
 
-\dd RSA, 3072-bit. Key ID: \cw{1993D21BCAD1AA77}. Fingerprint:
-\cw{F412\_BA3A\_A30F\_DC0E\_77B4\_E387\_1993\_D21B\_CAD1\_AA77}
+\dd RSA, 3072-bit. Key ID: \cw{5C67D0F88BC3E5B5}. Fingerprint:
+\cw{1A07\_DAC0\_F220\_CF12\_248E\_A719\_5C67\_D0F8\_8BC3\_E5B5}
 
-\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2023.asc}{\s{Snapshot Key} (2023)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2026.asc}{\s{Snapshot Key} (2026)}
 
-\dd RSA, 3072-bit. Key ID: \cw{10625E553F53FAAD}. Fingerprint:
-\cw{74CC\_6DD9\_ABA7\_31D4\_C5A0\_C2D0\_1062\_5E55\_3F53\_FAAD}
+\dd RSA, 3072-bit. Key ID: \cw{5ED187171D16C213}. Fingerprint:
+\cw{1C8A\_48EB\_BD3E\_4B93\_568F\_CDCA\_5ED1\_8717\_1D16\_C213}
 
-\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2023.asc}{\s{Secure Contact Key} (2023)}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2026.asc}{\s{Secure Contact Key} (2026)}
 
-\dd RSA, 3072-bit. Key ID: \cw{1559F6A8929F5EFC}. Fingerprint:
-\cw{01F5\_A2B1\_1388\_D64B\_707F\_897F\_1559\_F6A8\_929F\_5EFC}
+\dd RSA, 3072-bit. Key ID: \cw{6DDCD4F58649AAED}. Fingerprint:
+\cw{7E79\_8549\_9503\_2120\_8BD0\_7B7E\_6DDC\_D4F5\_8649\_AAED}
 
 \H{pgpkeys-security} Security details
 
@@ -171,6 +171,28 @@ time of release. We don't go back and re-sign old releases with newly
 generated keys.
 
 The details of all previous keys are given here.
+
+\s{Keys generated in the 2023 rollover}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2023.asc}{\s{Master Key} (2023)}
+
+\dd RSA, 4096-bit. Key ID: \cw{B15D9EFC216B06A1}. Fingerprint:
+\cw{28D4\_7C46\_55E7\_65A6\_D827\_AC66\_B15D\_9EFC\_216B\_06A1}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2023.asc}{\s{Release Key} (2023)}
+
+\dd RSA, 3072-bit. Key ID: \cw{1993D21BCAD1AA77}. Fingerprint:
+\cw{F412\_BA3A\_A30F\_DC0E\_77B4\_E387\_1993\_D21B\_CAD1\_AA77}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2023.asc}{\s{Snapshot Key} (2023)}
+
+\dd RSA, 3072-bit. Key ID: \cw{10625E553F53FAAD}. Fingerprint:
+\cw{74CC\_6DD9\_ABA7\_31D4\_C5A0\_C2D0\_1062\_5E55\_3F53\_FAAD}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2023.asc}{\s{Secure Contact Key} (2023)}
+
+\dd RSA, 3072-bit. Key ID: \cw{1559F6A8929F5EFC}. Fingerprint:
+\cw{01F5\_A2B1\_1388\_D64B\_707F\_897F\_1559\_F6A8\_929F\_5EFC}
 
 \s{Keys generated in the 2021 rollover}
 

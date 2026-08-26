@@ -967,6 +967,7 @@ static void ssh2_bpp_handle_output(BinaryPacketProtocol *bpp)
             pkt = ssh_bpp_new_pktout(&s->bpp, SSH2_MSG_IGNORE);
             put_stringz(pkt, "");
             ssh2_bpp_format_packet(s, pkt);
+            ssh_free_pktout(pkt);
         }
     }
 

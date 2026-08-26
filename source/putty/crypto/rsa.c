@@ -510,7 +510,7 @@ static ssh_key *rsa2_new_pub(const ssh_keyalg *self, ptrlen data)
     rsa->p = rsa->q = rsa->iqmp = NULL;
     rsa->comment = NULL;
 
-    if (get_err(src)) {
+    if (get_err(src) || !mp_hs_integer(rsa->exponent, 3)) {
         rsa2_freekey(&rsa->sshk);
         return NULL;
     }

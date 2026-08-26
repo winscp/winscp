@@ -318,8 +318,7 @@ static SocketEndpointInfo *sk_handle_endpoint_info(Socket *s, bool peer)
 #if !HAVE_GETNAMEDPIPECLIENTPROCESSID
         /* For older Visual Studio, and MinGW too (at least as of
          * Ubuntu 16.04), this function isn't available in the header
-         * files to type-check. Ditto the toolchain I use for
-         * Coveritying the Windows code. */
+         * files to type-check. */
         GET_WINDOWS_FUNCTION_NO_TYPECHECK(
             kernel32_module, GetNamedPipeClientProcessId);
 #else
