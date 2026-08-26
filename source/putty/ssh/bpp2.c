@@ -418,7 +418,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
             /*
              * Allocate the packet to return, now we know its length.
              */
-            s->pktin = snew_plus(PktIn, OUR_V2_PACKETLIMIT + s->maclen);
+            s->pktin = snew_plus(PktIn, OUR_V2_PACKETLIMIT + 4 + s->maclen);
             s->pktin->qnode.prev = s->pktin->qnode.next = NULL;
             s->pktin->type = 0;
             s->pktin->qnode.on_free_queue = false;

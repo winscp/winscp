@@ -7,6 +7,10 @@
  *
  *   https://github.com/P-H-C/phc-winner-argon2
  *   https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-argon2-13
+ *
+ * The latter was later published as RFC 9106:
+ *
+ *   https://datatracker.ietf.org/doc/rfc9106
  */
 
 #include <assert.h>
@@ -506,12 +510,41 @@ static void argon2_internal(uint32_t p, uint32_t T, uint32_t m, uint32_t t,
 }
 
 /*
+ * Validate the Argon2 parameters, via the requirements in RFC 9106
+ * section 3.1.
+ */
+bool argon2_params_valid(uint32_t mem, uint32_t passes,
+                         uint32_t parallel, uint32_t taglen,
+                         size_t Plen, size_t Slen, size_t Klen, size_t Xlen)
+{
+    if (Plen > 0xFFFFFFFF)
+        return false;
+    if (Slen > 0xFFFFFFFF)
+        return false;
+    if (parallel < 1 || parallel > 0xFFFFFF)
+        return false;
+    if (taglen < 4)       /* upper bound 2^32-1 enforced by data type */
+        return false;
+    if (mem < 8*parallel) /* upper bound 2^32-1 enforced by data type */
+        return false;
+    if (passes < 1)       /* upper bound 2^32-1 enforced by data type */
+        return false;
+    if (Klen > 0xFFFFFFFF)
+        return false;
+    if (Xlen > 0xFFFFFFFF)
+        return false;
+    return true;
+}
+
+/*
  * Wrapper function that appends to a strbuf (which sshpubk.c will want).
  */
 void argon2(Argon2Flavour flavour, uint32_t mem, uint32_t passes,
             uint32_t parallel, uint32_t taglen,
             ptrlen P, ptrlen S, ptrlen K, ptrlen X, strbuf *out)
 {
+    assert(argon2_params_valid(mem, passes, parallel, taglen,
+                               P.len, S.len, K.len, X.len));
     argon2_internal(parallel, taglen, mem, passes, flavour,
                     P, S, K, X, strbuf_append(out, taglen));
 }
