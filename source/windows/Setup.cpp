@@ -2465,7 +2465,7 @@ UnicodeString GetPowerShellCoreVersionStr()
 //---------------------------------------------------------------------------
 static void CollectCLSIDKey(
   TConsole * Console, TStrings * Keys, int PlatformSet, TRegistryStorage * Storage, const UnicodeString & CLSID,
-  UnicodeString & CommonCodeBase, const UnicodeString & Platform, UnicodeString & Platforms)
+  UnicodeString & CommonCodeBase, bool IsWin64, UnicodeString & Platforms)
 {
   UnicodeString CLSIDKey = FORMAT(L"CLSID\\%s", (CLSID));
   if (Storage->OpenSubKeyPath(CLSIDKey, false))
@@ -2517,7 +2517,7 @@ static void CollectCLSIDKey(
     }
     Storage->CloseSubKeyPath();
 
-    UnicodeString Buf = Platform;
+    UnicodeString Buf = GetPlatformName(IsWin64);
     AddToList(Buf, CodeBase, L" - ");
     AddToList(Platforms, Buf, ", ");
   }
@@ -2534,11 +2534,11 @@ static UnicodeString PlatformStr(int PlatformSet)
   {
     if (FLAGSET(PlatformSet, 32))
     {
-      Result = L"32-bit";
+      Result = GetPlatformName(false);
     }
     if (FLAGSET(PlatformSet, 64))
     {
-      AddToList(Result, L"64-bit", L", ");
+      AddToList(Result, GetPlatformName(true), L", ");
     }
   }
   return Result;
@@ -2650,10 +2650,10 @@ static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
           {
             Keys->Add(KeyName);
             UnicodeString Platforms;
-            CollectCLSIDKey(Console, Keys, 32, Storage.get(), CLSID, CommonCodeBase, L"32-bit", Platforms);
+            CollectCLSIDKey(Console, Keys, 32, Storage.get(), CLSID, CommonCodeBase, false, Platforms);
             if (Storage64.get() != NULL)
             {
-              CollectCLSIDKey(Console, Keys, 64, Storage64.get(), CLSID, CommonCodeBase, L"64-bit", Platforms);
+              CollectCLSIDKey(Console, Keys, 64, Storage64.get(), CLSID, CommonCodeBase, true, Platforms);
             }
 
             UnicodeString Line = FORMAT(L"%s - %s", (Class, CLSID));

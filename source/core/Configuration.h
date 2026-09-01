@@ -255,12 +255,12 @@ protected:
 
   virtual UnicodeString __fastcall ModuleFileName();
 
-  UnicodeString __fastcall GetFileFileInfoString(const UnicodeString Key,
-    const UnicodeString FileName, bool AllowEmpty = false);
-  void * __fastcall GetFileApplicationInfo(const UnicodeString FileName);
-  UnicodeString __fastcall GetFileProductVersion(const UnicodeString FileName);
-  UnicodeString __fastcall GetFileProductName(const UnicodeString FileName);
-  UnicodeString __fastcall GetFileCompanyName(const UnicodeString FileName);
+  UnicodeString GetFileFileInfoString(
+    const UnicodeString & Key, const UnicodeString & FileName, bool AllowEmpty = false);
+  void * GetFileApplicationInfo(const UnicodeString & FileName);
+  UnicodeString GetFileProductVersion(const UnicodeString & FileName, bool AllowEmpty = false);
+  UnicodeString GetFileProductName(const UnicodeString & FileName, bool AllowEmpty = false);
+  UnicodeString GetFileCompanyName(const UnicodeString & FileName);
 
   __property bool PermanentLogging  = { read=GetLogging, write=SetLogging };
   __property UnicodeString PermanentLogFileName  = { read=GetLogFileName, write=SetLogFileName };

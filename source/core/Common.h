@@ -185,6 +185,8 @@ UnicodeString __fastcall WindowsProductName();
 DWORD GetWindowsProductType();
 UnicodeString __fastcall WindowsVersion();
 UnicodeString __fastcall WindowsVersionLong();
+UnicodeString GetPlatformName(bool IsWin64);
+UnicodeString GetPlatformName();
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);
 UnicodeString __fastcall FormatNumber(__int64 Size);
 UnicodeString __fastcall FormatSize(__int64 Size);

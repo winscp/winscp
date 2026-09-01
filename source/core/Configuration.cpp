@@ -1107,7 +1107,7 @@ UnicodeString __fastcall TConfiguration::ModuleFileName()
   return ParamStr(0);
 }
 //---------------------------------------------------------------------------
-void * __fastcall TConfiguration::GetFileApplicationInfo(const UnicodeString FileName)
+void * TConfiguration::GetFileApplicationInfo(const UnicodeString & FileName)
 {
   void * Result;
   if (FileName.IsEmpty())
@@ -1130,12 +1130,12 @@ void * __fastcall TConfiguration::GetApplicationInfo()
   return GetFileApplicationInfo("");
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetFileProductName(const UnicodeString FileName)
+UnicodeString TConfiguration::GetFileProductName(const UnicodeString & FileName, bool AllowEmpty)
 {
-  return GetFileFileInfoString(L"ProductName", FileName);
+  return GetFileFileInfoString(L"ProductName", FileName, AllowEmpty);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetFileCompanyName(const UnicodeString FileName)
+UnicodeString TConfiguration::GetFileCompanyName(const UnicodeString & FileName)
 {
   // particularly in IDE build, company name is empty
   return GetFileFileInfoString(L"CompanyName", FileName, true);
@@ -1151,9 +1151,9 @@ UnicodeString __fastcall TConfiguration::GetCompanyName()
   return GetFileCompanyName(L"");
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetFileProductVersion(const UnicodeString FileName)
+UnicodeString TConfiguration::GetFileProductVersion(const UnicodeString & FileName, bool AllowEmpty)
 {
-  return TrimVersion(GetFileFileInfoString(L"ProductVersion", FileName));
+  return TrimVersion(GetFileFileInfoString(L"ProductVersion", FileName, AllowEmpty));
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetFileDescription(const UnicodeString & FileName)
@@ -1284,7 +1284,7 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
 
     // eventually show 32-bit once 64-bit is becomes reliable choice
     #ifdef _WIN64
-    BuildStr += L" 64-bit";
+    BuildStr += L" " + GetPlatformName();
     #endif
 
     UnicodeString Result = FMTLOAD(VERSION2, (FullVersion, BuildStr));
@@ -1340,8 +1340,7 @@ UnicodeString __fastcall TConfiguration::GetVersion()
   return GetFileVersion(FixedApplicationInfo);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetFileFileInfoString(const UnicodeString Key,
-  const UnicodeString FileName, bool AllowEmpty)
+UnicodeString TConfiguration::GetFileFileInfoString(const UnicodeString & Key, const UnicodeString & FileName, bool AllowEmpty)
 {
   TGuard Guard(FCriticalSection);
 
