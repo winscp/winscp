@@ -14,7 +14,7 @@
 const wchar_t * AutoSwitchNames = L"On;Off;Auto";
 const wchar_t * NotAutoSwitchNames = L"Off;On;Auto";
 //---------------------------------------------------------------------------
-// See https://www.iana.org/assignments/hash-function-text-names/hash-function-text-names.xhtml
+// See https://www.iana.org/assignments/hash-function-text-names
 const UnicodeString Sha1ChecksumAlg(L"sha-1");
 const UnicodeString Sha224ChecksumAlg(L"sha-224");
 const UnicodeString Sha256ChecksumAlg(L"sha-256");
