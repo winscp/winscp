@@ -2381,48 +2381,58 @@ UnicodeString GetPowerShellCoreVersionStr()
     UnicodeString Prefix = FamilyNamePrefix + Sep;
     UnicodeString Suffix = UnicodeString(Sep) + FamilyNameSuffix;
 
-    UINT32 Count = 0;
-    UINT32 BufferLength = 0;
-    LONG Res = GetPackagesByPackageFamily(FamilyName.c_str(), &Count, nullptr, &BufferLength, nullptr);
-    if ((Res == ERROR_INSUFFICIENT_BUFFER) && (Count > 0))
+    HMODULE Kernel32 = GetModuleHandle(kernel32);
+    typedef LONG (WINAPI *TGetPackagesByPackageFamily)(PCWSTR PackageFamilyName, UINT32 * Count, PWSTR * PackageFullNames, UINT32 * BufferLength, WCHAR * Buffer);
+    typedef LONG (WINAPI *TGetPackagePathByFullName)(PCWSTR PackageFullName, UINT32 * PathLength, PWSTR Path);
+    TGetPackagesByPackageFamily AGetPackagesByPackageFamily =
+      reinterpret_cast<TGetPackagesByPackageFamily>(GetProcAddress(Kernel32, "GetPackagesByPackageFamily"));
+    TGetPackagePathByFullName AGetPackagePathByFullName =
+      reinterpret_cast<TGetPackagePathByFullName>(GetProcAddress(Kernel32, "GetPackagePathByFullName"));
+    if ((AGetPackagesByPackageFamily != nullptr) && (AGetPackagePathByFullName != nullptr))
     {
-      std::vector<PWSTR> FullNames(Count);
-      std::vector<WCHAR> Buffer(BufferLength);
-      Res = GetPackagesByPackageFamily(FamilyName.c_str(), &Count, FullNames.data(), &BufferLength, Buffer.data());
-      if (Res == ERROR_SUCCESS)
+      UINT32 Count = 0;
+      UINT32 BufferLength = 0;
+      LONG Res = AGetPackagesByPackageFamily(FamilyName.c_str(), &Count, nullptr, &BufferLength, nullptr);
+      if ((Res == ERROR_INSUFFICIENT_BUFFER) && (Count > 0))
       {
-        // While there can be multiple packages, they either be 32 and 64 versions of the same repeease,
-        // or temporarily two releases, the moment upgrade is taking place. Either is not worth dealing with.
-        PWSTR FullName = FullNames[0];
-        UINT32 PathLength = 0;
-        Res = GetPackagePathByFullName(FullName, &PathLength, nullptr);
-        if (Res == ERROR_INSUFFICIENT_BUFFER)
+        std::vector<PWSTR> FullNames(Count);
+        std::vector<WCHAR> Buffer(BufferLength);
+        Res = AGetPackagesByPackageFamily(FamilyName.c_str(), &Count, FullNames.data(), &BufferLength, Buffer.data());
+        if (Res == ERROR_SUCCESS)
         {
-          std::vector<WCHAR> PathBuffer(PathLength);
-          Res = GetPackagePathByFullName(FullName, &PathLength, PathBuffer.data());
-          if (Res == ERROR_SUCCESS)
+          // While there can be multiple packages, they either be 32 and 64 versions of the same release,
+          // or temporarily two releases, the moment upgrade is taking place. Either is not worth dealing with.
+          PWSTR FullName = FullNames[0];
+          UINT32 PathLength = 0;
+          Res = AGetPackagePathByFullName(FullName, &PathLength, nullptr);
+          if (Res == ERROR_INSUFFICIENT_BUFFER)
           {
-            UnicodeString PackageName = ExtractFileName(UnicodeString(PathBuffer.data()));
-            if (StartsStr(Prefix, PackageName) &&
-                EndsStr(Suffix, PackageName))
+            std::vector<WCHAR> PathBuffer(PathLength);
+            Res = AGetPackagePathByFullName(FullName, &PathLength, PathBuffer.data());
+            if (Res == ERROR_SUCCESS)
             {
-              UnicodeString Release = PackageName.SubString(Prefix.Length() + 1, PackageName.Length() - Prefix.Length() - Suffix.Length());
-              UnicodeString Version = CutToChar(Release, Sep, false);
-              if (!Version.IsEmpty())
+              UnicodeString PackageName = ExtractFileName(UnicodeString(PathBuffer.data()));
+              if (StartsStr(Prefix, PackageName) &&
+                  EndsStr(Suffix, PackageName))
               {
-                bool IsVersion = true;
-                for (int Index = 1; Index <= Version.Length(); Index++)
-                {
-                  wchar_t C = Version[Index];
-                  if (!IsNumber(C) && (C != L'.'))
+                UnicodeString Release = PackageName.SubString(Prefix.Length() + 1, PackageName.Length() - Prefix.Length() - Suffix.Length());
+                UnicodeString Version = CutToChar(Release, Sep, false);
+                if (!Version.IsEmpty())
+              {
+                  bool IsVersion = true;
+                  for (int Index = 1; Index <= Version.Length(); Index++)
                   {
-                    IsVersion = false;
+                    wchar_t C = Version[Index];
+                    if (!IsNumber(C) && (C != L'.'))
+                    {
+                      IsVersion = false;
+                    }
                   }
-                }
 
-                if (IsVersion)
-                {
-                  PowerShellCoreVersionStr = TrimVersion(Version);
+                  if (IsVersion)
+                  {
+                    PowerShellCoreVersionStr = TrimVersion(Version);
+                  }
                 }
               }
             }
