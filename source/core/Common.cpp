@@ -3109,6 +3109,21 @@ UnicodeString __fastcall WindowsVersionLong()
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString GetPlatformName(bool IsWin64)
+{
+  return IsWin64 ? L"64-bit" : L"32-bit";
+}
+//---------------------------------------------------------------------------
+UnicodeString GetPlatformName()
+{
+  #ifdef _WIN64
+  const bool IsWin64 = true;
+  #else
+  const bool IsWin64 = false;
+  #endif
+  return GetPlatformName(IsWin64);
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path)
 {
   UnicodeString FileName =

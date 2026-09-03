@@ -2711,24 +2711,35 @@ HINSTANCE TWinConfiguration::LoadNewResourceModule(LCID ALocale, UnicodeString &
 void __fastcall TWinConfiguration::CheckTranslationVersion(const UnicodeString FileName,
   bool InternalLocaleOnError)
 {
-  UnicodeString TranslationProductVersion = GetFileProductVersion(FileName);
-  UnicodeString TranslationProductName = GetFileProductName(FileName);
-  if ((ProductName != TranslationProductName) ||
-      (ProductVersion != TranslationProductVersion))
+  if (!FileName.IsEmpty())
   {
-    if (InternalLocaleOnError)
+    UnicodeString TranslationProductVersion = GetFileProductVersion(FileName, true);
+    UnicodeString TranslationProductName = GetFileProductName(FileName, true);
+    UnicodeString TranslationPlatform = GetFileFileInfoString(L"Platform", FileName, true);
+    UnicodeString ProductPlatform = GetPlatformName();
+    if ((ProductName != TranslationProductName) ||
+        (ProductVersion != TranslationProductVersion) ||
+        (ProductPlatform != TranslationPlatform))
     {
-      LocaleSafe = InternalLocale();
-    }
+      if (InternalLocaleOnError)
+      {
+        LocaleSafe = InternalLocale();
+      }
 
-    if (TranslationProductName.IsEmpty() || TranslationProductVersion.IsEmpty())
-    {
-      throw Exception(FMTLOAD(UNKNOWN_TRANSLATION, (FileName)));
-    }
-    else
-    {
-      throw Exception(FMTLOAD(INCOMPATIBLE_TRANSLATION,
-        (FileName, TranslationProductName, TranslationProductVersion)));
+      if (TranslationProductName.IsEmpty() || TranslationProductVersion.IsEmpty())
+      {
+        throw Exception(FMTLOAD(UNKNOWN_TRANSLATION, (FileName)));
+      }
+      else
+      {
+        if (ProductPlatform != TranslationPlatform)
+        {
+          TranslationProductName += L" " + TranslationPlatform;
+        }
+
+        throw Exception(FMTLOAD(INCOMPATIBLE_TRANSLATION,
+          (FileName, TranslationProductName, TranslationProductVersion)));
+      }
     }
   }
 }

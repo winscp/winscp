@@ -927,7 +927,7 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const size_t, t_directory::t_
 
 BOOL CFtpListResult::parseAsMlsd(const char *line, const size_t linelen, t_directory::t_direntry &direntry)
 {
-  // MLSD format as described here: https://datatracker.ietf.org/doc/html/rfc3659
+  // MLSD format as described here: https://www.rfc-editor.org/info/rfc3659/
   // Parsing is done strict, abort on slightest error.
 
   // If we ever add some detection that entry is symlink,
@@ -1004,7 +1004,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const size_t linelen, t_direc
       }
       // This is syntax shown in RFC 3659 section 7.7.4 "A More Complex Example"
       // Type=OS.unix=slink:/foobar;Perm=;Unique=keVO1+4G4; foobar
-      // https://datatracker.ietf.org/doc/html/rfc3659
+      // https://www.rfc-editor.org/info/rfc3659/
       else if (!value.Left(13).CompareNoCase(L"OS.unix=slink"))
       {
         direntry.dir = TRUE;

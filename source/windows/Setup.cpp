@@ -2381,48 +2381,58 @@ UnicodeString GetPowerShellCoreVersionStr()
     UnicodeString Prefix = FamilyNamePrefix + Sep;
     UnicodeString Suffix = UnicodeString(Sep) + FamilyNameSuffix;
 
-    UINT32 Count = 0;
-    UINT32 BufferLength = 0;
-    LONG Res = GetPackagesByPackageFamily(FamilyName.c_str(), &Count, nullptr, &BufferLength, nullptr);
-    if ((Res == ERROR_INSUFFICIENT_BUFFER) && (Count > 0))
+    HMODULE Kernel32 = GetModuleHandle(kernel32);
+    typedef LONG (WINAPI *TGetPackagesByPackageFamily)(PCWSTR PackageFamilyName, UINT32 * Count, PWSTR * PackageFullNames, UINT32 * BufferLength, WCHAR * Buffer);
+    typedef LONG (WINAPI *TGetPackagePathByFullName)(PCWSTR PackageFullName, UINT32 * PathLength, PWSTR Path);
+    TGetPackagesByPackageFamily AGetPackagesByPackageFamily =
+      reinterpret_cast<TGetPackagesByPackageFamily>(GetProcAddress(Kernel32, "GetPackagesByPackageFamily"));
+    TGetPackagePathByFullName AGetPackagePathByFullName =
+      reinterpret_cast<TGetPackagePathByFullName>(GetProcAddress(Kernel32, "GetPackagePathByFullName"));
+    if ((AGetPackagesByPackageFamily != nullptr) && (AGetPackagePathByFullName != nullptr))
     {
-      std::vector<PWSTR> FullNames(Count);
-      std::vector<WCHAR> Buffer(BufferLength);
-      Res = GetPackagesByPackageFamily(FamilyName.c_str(), &Count, FullNames.data(), &BufferLength, Buffer.data());
-      if (Res == ERROR_SUCCESS)
+      UINT32 Count = 0;
+      UINT32 BufferLength = 0;
+      LONG Res = AGetPackagesByPackageFamily(FamilyName.c_str(), &Count, nullptr, &BufferLength, nullptr);
+      if ((Res == ERROR_INSUFFICIENT_BUFFER) && (Count > 0))
       {
-        // While there can be multiple packages, they either be 32 and 64 versions of the same repeease,
-        // or temporarily two releases, the moment upgrade is taking place. Either is not worth dealing with.
-        PWSTR FullName = FullNames[0];
-        UINT32 PathLength = 0;
-        Res = GetPackagePathByFullName(FullName, &PathLength, nullptr);
-        if (Res == ERROR_INSUFFICIENT_BUFFER)
+        std::vector<PWSTR> FullNames(Count);
+        std::vector<WCHAR> Buffer(BufferLength);
+        Res = AGetPackagesByPackageFamily(FamilyName.c_str(), &Count, FullNames.data(), &BufferLength, Buffer.data());
+        if (Res == ERROR_SUCCESS)
         {
-          std::vector<WCHAR> PathBuffer(PathLength);
-          Res = GetPackagePathByFullName(FullName, &PathLength, PathBuffer.data());
-          if (Res == ERROR_SUCCESS)
+          // While there can be multiple packages, they either be 32 and 64 versions of the same release,
+          // or temporarily two releases, the moment upgrade is taking place. Either is not worth dealing with.
+          PWSTR FullName = FullNames[0];
+          UINT32 PathLength = 0;
+          Res = AGetPackagePathByFullName(FullName, &PathLength, nullptr);
+          if (Res == ERROR_INSUFFICIENT_BUFFER)
           {
-            UnicodeString PackageName = ExtractFileName(UnicodeString(PathBuffer.data()));
-            if (StartsStr(Prefix, PackageName) &&
-                EndsStr(Suffix, PackageName))
+            std::vector<WCHAR> PathBuffer(PathLength);
+            Res = AGetPackagePathByFullName(FullName, &PathLength, PathBuffer.data());
+            if (Res == ERROR_SUCCESS)
             {
-              UnicodeString Release = PackageName.SubString(Prefix.Length() + 1, PackageName.Length() - Prefix.Length() - Suffix.Length());
-              UnicodeString Version = CutToChar(Release, Sep, false);
-              if (!Version.IsEmpty())
+              UnicodeString PackageName = ExtractFileName(UnicodeString(PathBuffer.data()));
+              if (StartsStr(Prefix, PackageName) &&
+                  EndsStr(Suffix, PackageName))
               {
-                bool IsVersion = true;
-                for (int Index = 1; Index <= Version.Length(); Index++)
-                {
-                  wchar_t C = Version[Index];
-                  if (!IsNumber(C) && (C != L'.'))
+                UnicodeString Release = PackageName.SubString(Prefix.Length() + 1, PackageName.Length() - Prefix.Length() - Suffix.Length());
+                UnicodeString Version = CutToChar(Release, Sep, false);
+                if (!Version.IsEmpty())
+              {
+                  bool IsVersion = true;
+                  for (int Index = 1; Index <= Version.Length(); Index++)
                   {
-                    IsVersion = false;
+                    wchar_t C = Version[Index];
+                    if (!IsNumber(C) && (C != L'.'))
+                    {
+                      IsVersion = false;
+                    }
                   }
-                }
 
-                if (IsVersion)
-                {
-                  PowerShellCoreVersionStr = TrimVersion(Version);
+                  if (IsVersion)
+                  {
+                    PowerShellCoreVersionStr = TrimVersion(Version);
+                  }
                 }
               }
             }
@@ -2465,7 +2475,7 @@ UnicodeString GetPowerShellCoreVersionStr()
 //---------------------------------------------------------------------------
 static void CollectCLSIDKey(
   TConsole * Console, TStrings * Keys, int PlatformSet, TRegistryStorage * Storage, const UnicodeString & CLSID,
-  UnicodeString & CommonCodeBase, const UnicodeString & Platform, UnicodeString & Platforms)
+  UnicodeString & CommonCodeBase, bool IsWin64, UnicodeString & Platforms)
 {
   UnicodeString CLSIDKey = FORMAT(L"CLSID\\%s", (CLSID));
   if (Storage->OpenSubKeyPath(CLSIDKey, false))
@@ -2517,7 +2527,7 @@ static void CollectCLSIDKey(
     }
     Storage->CloseSubKeyPath();
 
-    UnicodeString Buf = Platform;
+    UnicodeString Buf = GetPlatformName(IsWin64);
     AddToList(Buf, CodeBase, L" - ");
     AddToList(Platforms, Buf, ", ");
   }
@@ -2534,11 +2544,11 @@ static UnicodeString PlatformStr(int PlatformSet)
   {
     if (FLAGSET(PlatformSet, 32))
     {
-      Result = L"32-bit";
+      Result = GetPlatformName(false);
     }
     if (FLAGSET(PlatformSet, 64))
     {
-      AddToList(Result, L"64-bit", L", ");
+      AddToList(Result, GetPlatformName(true), L", ");
     }
   }
   return Result;
@@ -2650,10 +2660,10 @@ static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
           {
             Keys->Add(KeyName);
             UnicodeString Platforms;
-            CollectCLSIDKey(Console, Keys, 32, Storage.get(), CLSID, CommonCodeBase, L"32-bit", Platforms);
+            CollectCLSIDKey(Console, Keys, 32, Storage.get(), CLSID, CommonCodeBase, false, Platforms);
             if (Storage64.get() != NULL)
             {
-              CollectCLSIDKey(Console, Keys, 64, Storage64.get(), CLSID, CommonCodeBase, L"64-bit", Platforms);
+              CollectCLSIDKey(Console, Keys, 64, Storage64.get(), CLSID, CommonCodeBase, true, Platforms);
             }
 
             UnicodeString Line = FORMAT(L"%s - %s", (Class, CLSID));
