@@ -1362,7 +1362,7 @@ void TWebDAVFileSystem::NeonQuotaResult(
 void __fastcall TWebDAVFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & ASpaceAvailable)
 {
-  // RFC4331: https://datatracker.ietf.org/doc/html/rfc4331
+  // RFC4331: https://www.rfc-editor.org/info/rfc4331/
 
   // This is known to be supported by:
 
