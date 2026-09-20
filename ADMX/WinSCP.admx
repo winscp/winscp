@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitions revision="1.0" schemaVersion="1.0">
+  <policyNamespaces>
+    <target prefix="winscp" namespace="MarshSecurity.Policies.WinSCP.v1" />
+  </policyNamespaces>
+  <resources minRequiredRevision="1.0" />
+
+  <supportedOn>
+    <definitions>
+      <definition name="WinSCP_Supported_Windows10Plus" displayName="$(string.WinSCP_Supported_Windows10Plus)" />
+    </definitions>
+  </supportedOn>
+
+  <categories>
+    <category name="WinSCP" displayName="$(string.WinSCP_Category)" />
+    <category name="WinSCP_Security" displayName="$(string.WinSCP_Security_Category)">
+      <parentCategory ref="WinSCP" />
+    </category>
+    <category name="WinSCP_Defaults" displayName="$(string.WinSCP_Defaults_Category)">
+      <parentCategory ref="WinSCP" />
+    </category>
+  </categories>
+
+  <policies>
+    <policy name="WinSCP_DisablePasswordStoring"
+            class="Machine"
+            displayName="$(string.WinSCP_DisablePasswordStoring)"
+            explainText="$(string.WinSCP_DisablePasswordStoring_Help)"
+            key="SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2"
+            valueName="DisablePasswordStoring">
+      <parentCategory ref="WinSCP_Security" />
+      <supportedOn ref="WinSCP_Supported_Windows10Plus" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+    <policy name="WinSCP_DisableOpenEdit"
+            class="Machine"
+            displayName="$(string.WinSCP_DisableOpenEdit)"
+            explainText="$(string.WinSCP_DisableOpenEdit_Help)"
+            key="SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2"
+            valueName="DisableOpenEdit">
+      <parentCategory ref="WinSCP_Security" />
+      <supportedOn ref="WinSCP_Supported_Windows10Plus" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+    <policy name="WinSCP_DisableAcceptingHostKeys"
+            class="Machine"
+            displayName="$(string.WinSCP_DisableAcceptingHostKeys)"
+            explainText="$(string.WinSCP_DisableAcceptingHostKeys_Help)"
+            key="SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2"
+            valueName="DisableAcceptingHostKeys">
+      <parentCategory ref="WinSCP_Security" />
+      <supportedOn ref="WinSCP_Supported_Windows10Plus" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+    <policy name="WinSCP_ForceBanners"
+            class="Machine"
+            displayName="$(string.WinSCP_ForceBanners)"
+            explainText="$(string.WinSCP_ForceBanners_Help)"
+            key="SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2"
+            valueName="ForceBanners">
+      <parentCategory ref="WinSCP_Security" />
+      <supportedOn ref="WinSCP_Supported_Windows10Plus" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+    <policy name="WinSCP_DefaultUpdatesPeriod"
+            class="Machine"
+            displayName="$(string.WinSCP_DefaultUpdatesPeriod)"
+            explainText="$(string.WinSCP_DefaultUpdatesPeriod_Help)"
+            presentation="$(presentation.WinSCP_DefaultUpdatesPeriod_Presentation)"
+            key="SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2">
+      <parentCategory ref="WinSCP_Defaults" />
+      <supportedOn ref="WinSCP_Supported_Windows10Plus" />
+      <elements>
+        <decimal id="UpdatePeriodDays"
+                 valueName="DefaultUpdatesPeriod"
+                 required="true"
+                 minValue="0"
+                 maxValue="365" />
+      </elements>
+    </policy>
+
+    <policy name="WinSCP_DefaultCollectUsage"
+            class="Machine"
+            displayName="$(string.WinSCP_DefaultCollectUsage)"
+            explainText="$(string.WinSCP_DefaultCollectUsage_Help)"
+            key="SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2"
+            valueName="DefaultCollectUsage">
+      <parentCategory ref="WinSCP_Defaults" />
+      <supportedOn ref="WinSCP_Supported_Windows10Plus" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+  </policies>
+</policyDefinitions>
