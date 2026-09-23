@@ -1091,7 +1091,6 @@ int __fastcall Execute()
       enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize, pcEdit, pcRefresh } ParamCommand;
       ParamCommand = pcNone;
       UnicodeString AutoStartSession;
-      UnicodeString DownloadFile;
       int UseDefaults = -1;
 
       // do not check for temp dirs for service tasks (like RegisterAsUrlHandler)
@@ -1151,22 +1150,12 @@ int __fastcall Execute()
       }
 
       bool NewInstance = Params->FindSwitch(NEWINSTANCE_SWICH);
+      bool IsDownloadFile = false;
       if (Params->ParamCount > 0)
       {
         AutoStartSession = Params->ConsumeParam();
 
-        bool TrySendToAnotherInstance =
-          (ParamCommand == pcNone) &&
-          (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
-          !NewInstance &&
-          // With /rawconfig before session url, parsing commandline does not work correctly,
-          // when opening session in the other instance.
-          // And as it is not clear what it should do anyway, let's ban it and
-          // never send to the existing instance, whenever /rawconfig is used.
-          !Params->FindSwitch(RAW_CONFIG_SWITCH);
-
-        if (TrySendToAnotherInstance &&
-            !AutoStartSession.IsEmpty() &&
+        if (!AutoStartSession.IsEmpty() &&
             (AutoStartSession.Pos(L"/") > 0) && // optimization
             GetFolderOrWorkspaceName(AutoStartSession).IsEmpty())
         {
@@ -1179,9 +1168,20 @@ int __fastcall Execute()
             StoredSessions->ParseUrl(AutoStartSession, &Options, DummyParsedInfo, &DownloadFile2, NULL, Flags));
           if (!DownloadFile2.IsEmpty())
           {
-            TrySendToAnotherInstance = false;
+            IsDownloadFile = true;
           }
         }
+
+        bool TrySendToAnotherInstance =
+          (ParamCommand == pcNone) &&
+          !IsDownloadFile &&
+          (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
+          !NewInstance &&
+          // With /rawconfig before session url, parsing commandline does not work correctly,
+          // when opening session in the other instance.
+          // And as it is not clear what it should do anyway, let's ban it and
+          // never send to the existing instance, whenever /rawconfig is used.
+          !Params->FindSwitch(RAW_CONFIG_SWITCH);
 
         if (TrySendToAnotherInstance &&
             SendToAnotherInstance())
@@ -1231,7 +1231,8 @@ int __fastcall Execute()
       SetOnForeground(false);
 
       TLoginNeed LoginNeed;
-      if (ParamCommand != pcNone)
+      bool CommandLineOperation = (ParamCommand != pcNone) || IsDownloadFile;
+      if (CommandLineOperation)
       {
         LoginNeed = lnTerminal;
       }
@@ -1253,10 +1254,12 @@ int __fastcall Execute()
         {
           int Flags = GetCommandLineParseUrlFlags(Params);
           AddStartupSequence(L"B");
+          UnicodeString DownloadFile;
           GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, LoginNeed, NULL, Flags);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue((LoginNeed == lnNone) || (DataList->Count > 0)))
           {
+            DebugAssert(IsDownloadFile == !DownloadFile.IsEmpty());
             if (CheckSafe(Params))
             {
               UnicodeString LogFile;
@@ -1331,7 +1334,7 @@ int __fastcall Execute()
                   // moved inside try .. __finally, because it can fail as well
                   TerminalManager->ScpExplorer = ScpExplorer.get();
 
-                  if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
+                  if (CommandLineOperation)
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
                     ScpExplorer->StandaloneOperation = true;
