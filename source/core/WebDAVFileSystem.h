@@ -180,8 +180,6 @@ private:
   UnicodeString FAuthorizationProtocol;
   UnicodeString FLastAuthorizationProtocol;
   bool FAuthenticationRetry;
-  bool FOneDrive;
-  enum { odiUnknown, odiUpperCase, odiLowerCase } FOneDriveInterface;
 
   void __fastcall CustomReadFile(UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);

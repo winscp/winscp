@@ -111,10 +111,6 @@ void ne_set_proxy_auth(ne_session *sess, ne_auth_creds creds, void *userdata);
 
 /* 0x0080: legacy definition of NE_AUTH_DIGEST in 0.31 and earlier */
 
-#ifdef WINSCP
-#define NE_AUTH_PASSPORT (0x0080)
-#endif
-
 /* The default set of supported protocols, as deemed appropriate for
  * the given session scheme.  The interpretation of this flag may
  * change across versions, for example with older, less secure
@@ -157,12 +153,6 @@ void ne_add_proxy_auth(ne_session *sess, unsigned protocol,
 
 #ifdef WINSCP
 void ne_remove_server_auth(ne_session *sess);
-
-typedef void (*ne_aux_request_init)(ne_session * sess, ne_request * req, void * userdata);
-
-void ne_set_aux_request_init(ne_session * sess, ne_aux_request_init aux_request_init, void * userdata);
-
-int is_passport_challenge(ne_request *req, const ne_status *status);
 #endif
 
 /* Alternative credentials provider callback, invoked when credentials

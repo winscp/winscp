@@ -35,9 +35,6 @@
 #include "ne_redirect.h"
 #include "ne_internal.h"
 #include "ne_string.h"
-#ifdef WINSCP
-#include "ne_auth.h"
-#endif
 
 #define REDIRECT_ID "http://www.webdav.org/neon/hooks/http-redirect"
 
@@ -63,11 +60,7 @@ static int post_send(ne_request *req, void *userdata, const ne_status *status)
     uri_free_clear(red);
 
     if (status->klass == 3
-#ifdef WINSCP
-        && !is_passport_challenge(req, status)
-#endif
-        && (loc = ne_get_response_location(req, NULL)) != NULL
-        ) {
+        && (loc = ne_get_response_location(req, NULL)) != NULL) {
         red->uri = loc;
         return NE_REDIRECT;
     }
