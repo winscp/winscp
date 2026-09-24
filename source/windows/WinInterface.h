@@ -15,10 +15,6 @@
 #include <LocalInterface.h>
 #endif
 
-#define SITE_ICON 1
-#define SITE_FOLDER_ICON 2
-#define WORKSPACE_ICON 3
-
 class TStoredSessionList;
 class TConfiguration;
 class TTerminal;
@@ -59,6 +55,7 @@ const int mpAllowContinueOnError = 0x02;
 #define STDINOUT_CHUNKED_VALUE L"chunked"
 #define COPYID_SWITCH L"CopyId"
 #define IDENTITY_SWITCH L"Identity"
+#define WORKSPACE_SWITCH L"Workspace"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 

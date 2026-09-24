@@ -605,30 +605,39 @@ IShellLink * __fastcall CreateAppDesktopShortCut(
   return CreateDesktopShortCut(Name, Application->ExeName, Params, Description, FolderID, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
-IShellLink * __fastcall CreateDesktopSessionShortCut(
+#define SITE_ICON 1
+#define SITE_FOLDER_ICON 2
+#define WORKSPACE_ICON 3
+//---------------------------------------------------------------------------
+IShellLink * CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,
-  const UnicodeString & AdditionalParams, const KNOWNFOLDERID * FolderID, int IconIndex,
+  const UnicodeString & AdditionalParams, const KNOWNFOLDERID * FolderID, TSessionShortCut SessionShortCut,
   bool Return)
 {
   UnicodeString InfoTip;
+  UnicodeString ShortcutParams;
+  int IconIndex;
 
-  bool IsFolder = StoredSessions->IsFolder(SessionName);
-  bool IsWorkspace = StoredSessions->IsWorkspace(SessionName);
-
-  if (IsFolder || IsWorkspace)
+  if ((SessionShortCut == sscFolder) || (SessionShortCut == sscWorkspace))
   {
+    bool IsFolder = (SessionShortCut == sscFolder);
     InfoTip = FMTLOAD(
       (IsFolder ? SHORTCUT_INFO_TIP_FOLDER : SHORTCUT_INFO_TIP_WORKSPACE),
       (SessionName));
+    IconIndex = IsFolder ? SITE_FOLDER_ICON : WORKSPACE_ICON;
 
     if (Name.IsEmpty())
     {
-      // no slashes in filename
+      // no slashes in filename (though there cannot be any in workspace/folder name anyway)
       Name = UnixExtractFileName(SessionName);
     }
+
+    ShortcutParams = TProgramParams::FormatSwitch(WORKSPACE_SWITCH);
   }
   else
   {
+    DebugAssert(SessionShortCut == sscSite);
+    IconIndex = SITE_ICON;
     // this should not be done for workspaces and folders
     int ParsedInfo;
     TSessionData * SessionData =
@@ -643,10 +652,10 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
     delete SessionData;
   }
 
-  return
-    CreateAppDesktopShortCut(ValidLocalFileName(Name),
-      FORMAT(L"\"%s\"%s%s", (EncodeUrlString(SessionName), (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
-      InfoTip, FolderID, IconIndex, Return);
+  UnicodeString Params = FORMAT(L"\"%s\"", (EncodeUrlString(SessionName)));
+  AddToList(Params, ShortcutParams, L" ");
+  AddToList(Params, AdditionalParams, L" ");
+  return CreateAppDesktopShortCut(ValidLocalFileName(Name), Params, InfoTip, FolderID, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
 void ValidateMask(const UnicodeString & Mask, int ForceDirectoryMasks)

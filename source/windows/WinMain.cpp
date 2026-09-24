@@ -11,11 +11,16 @@
 #include "WinApi.h"
 #include <Xml.Win.msxmldom.hpp>
 //---------------------------------------------------------------------------
-UnicodeString GetFolderOrWorkspaceName(const UnicodeString & SessionName)
+UnicodeString GetFolderOrWorkspaceName(const UnicodeString & SessionName, TOptions * Options, bool PreferSite)
 {
   UnicodeString FolderOrWorkspaceName = DecodeUrlChars(SessionName);
   UnicodeString Result;
-  if (StoredSessions->IsFolderOrWorkspace(FolderOrWorkspaceName))
+  if ((Options == nullptr) || !Options->FindSwitch(WORKSPACE_SWITCH))
+  {
+    PreferSite = true;
+  }
+  if ((!PreferSite || (StoredSessions->FindByName(FolderOrWorkspaceName) == nullptr)) &&
+      StoredSessions->IsFolderOrWorkspace(FolderOrWorkspaceName))
   {
     Result = FolderOrWorkspaceName;
   }
@@ -28,7 +33,8 @@ void GetLoginData(
 {
   bool DefaultsOnly = false;
 
-  UnicodeString FolderOrWorkspaceName = GetFolderOrWorkspaceName(SessionName);
+  bool PreferSession = (LoginNeed == lnTerminal);
+  UnicodeString FolderOrWorkspaceName = GetFolderOrWorkspaceName(SessionName, Options, PreferSession);
   if (!FolderOrWorkspaceName.IsEmpty())
   {
     StoredSessions->GetFolderOrWorkspace(FolderOrWorkspaceName, DataList);
@@ -1157,7 +1163,7 @@ int __fastcall Execute()
 
         if (!AutoStartSession.IsEmpty() &&
             (AutoStartSession.Pos(L"/") > 0) && // optimization
-            GetFolderOrWorkspaceName(AutoStartSession).IsEmpty())
+            GetFolderOrWorkspaceName(AutoStartSession, Params, true).IsEmpty())
         {
           int DummyParsedInfo;
           UnicodeString DownloadFile2;

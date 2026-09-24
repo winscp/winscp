@@ -1797,36 +1797,37 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
   UnicodeString Message;
   UnicodeString Name;
   UnicodeString AdditionalParams = TProgramParams::FormatSwitch(DESKTOP_SWITCH);
-  int IconIndex = 0;
+  TSessionShortCut SessionShortCut;
   if (IsSiteNode(Node))
   {
     Name = GetNodeSession(Node)->Name;
     Message = FMTLOAD(CONFIRM_CREATE_SHORTCUT, (Name));
     AddToList(AdditionalParams, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), L" ");
-    IconIndex = SITE_ICON;
+    SessionShortCut = sscSite;
   }
   else if (IsFolderNode(Node))
   {
     Name = SessionNodePath(SessionTree->Selected);
     Message = FMTLOAD(CONFIRM_CREATE_SHORTCUT_FOLDER, (Name));
-    IconIndex = SITE_FOLDER_ICON;
+    SessionShortCut = sscFolder;
   }
   else if (IsWorkspaceNode(Node))
   {
     Name = SessionNodePath(SessionTree->Selected);
     Message = FMTLOAD(CONFIRM_CREATE_SHORTCUT_WORKSPACE, (Name));
-    IconIndex = WORKSPACE_ICON;
+    SessionShortCut = sscWorkspace;
   }
   else
   {
     DebugFail();
+    SessionShortCut = TSessionShortCut();
   }
 
   Message = MainInstructions(Message);
   if (MessageDialog(Message, qtConfirmation, qaYes | qaNo, HELP_CREATE_SHORTCUT) == qaYes)
   {
     TInstantOperationVisualizer Visualizer;
-    CreateDesktopSessionShortCut(Name, L"", AdditionalParams, nullptr, IconIndex);
+    CreateDesktopSessionShortCut(Name, L"", AdditionalParams, nullptr, SessionShortCut);
   }
 }
 //---------------------------------------------------------------------------
@@ -1846,7 +1847,7 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
     CreateDesktopSessionShortCut(
       SelectedSession->Name,
       FMTLOAD(SESSION_SENDTO_HOOK_NAME2, (SelectedSession->LocalName, AppName)),
-      AdditionalParams, &FolderID, SITE_ICON);
+      AdditionalParams, &FolderID, sscSite);
   }
 }
 //---------------------------------------------------------------------------

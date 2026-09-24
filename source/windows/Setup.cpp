@@ -1874,7 +1874,7 @@ void __fastcall SetupInitialize()
 static void AddJumpListCategory(
   TStrings * Names, UnicodeString AdditionalParams, TStringList * Removed,
   ICustomDestinationList * DestinationList, UnicodeString CategoryName,
-  int IconIndex)
+  TSessionShortCut SessionShortCut)
 {
   TComPtr<IObjectCollection> Collection;
   if (Collection.TryCreate(CLSID_EnumerableObjectCollection, CLSCTX_INPROC_SERVER))
@@ -1886,7 +1886,7 @@ static void AddJumpListCategory(
     {
       TComPtr<IShellLink> Link(
         CreateDesktopSessionShortCut(
-          Names->Strings[Index], L"", AdditionalParams, nullptr, IconIndex, true));
+          Names->Strings[Index], L"", AdditionalParams, nullptr, SessionShortCut, true));
 
       wchar_t Desc[2048];
       if (SUCCEEDED(Link->GetDescription(Desc, std::size(Desc) - 1)))
@@ -1947,11 +1947,11 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
 
       AddJumpListCategory(
         WorkspaceNames, L"", Removed.get(), DestinationList.Get(),
-        LoadStr(JUMPLIST_WORKSPACES), WORKSPACE_ICON);
+        LoadStr(JUMPLIST_WORKSPACES), sscWorkspace);
 
       AddJumpListCategory(
         SessionNames, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), Removed.get(), DestinationList.Get(),
-        LoadStr(JUMPLIST_RECENT), SITE_ICON);
+        LoadStr(JUMPLIST_RECENT), sscSite);
 
       DestinationList->CommitList();
     }
