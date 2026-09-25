@@ -661,7 +661,7 @@ uses
   StrUtils,
   {$ENDIF ~HAS_UNITSCOPE}
   {$ENDIF SUPPORTS_UNICODE}
-  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math,{$ENDIF ~WINSCP} JclResources, JclStreams, JclSynch{$IFNDEF WINSCP}, JclSysUtils{$ENDIF ~WINSCP};
+  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math,{$ENDIF ~WINSCP} JclResources, {$IFNDEF WINSCP}JclStreams,{$ENDIF} JclSynch{$IFNDEF WINSCP}, JclSysUtils{$ENDIF ~WINSCP};
 
 //=== Internal ===============================================================
 

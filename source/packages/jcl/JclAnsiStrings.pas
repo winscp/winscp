@@ -608,7 +608,7 @@ uses
   {$ENDIF}
   {$ENDIF HAS_UNIT_RTLCONSTS}
   {$ENDIF SUPPORTS_UNICODE}
-  {$IFNDEF WINSCP}JclLogic,{$ENDIF WINSCP} JclResources, JclStreams, JclSynch, JclSysUtils;
+  {$IFNDEF WINSCP}JclLogic,{$ENDIF WINSCP} JclResources, {$IFNDEF WINSCP}JclStreams,{$ENDIF} JclSynch, JclSysUtils;
 
 //=== Internal ===============================================================
 

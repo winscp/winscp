@@ -96,9 +96,6 @@
         <DelphiCompile Include="packages\jcl\JclResources.pas">
             <BuildOrder>7</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="packages\jcl\JclStreams.pas">
-            <BuildOrder>8</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="packages\jcl\JclStrings.pas">
             <BuildOrder>9</BuildOrder>
         </DelphiCompile>
