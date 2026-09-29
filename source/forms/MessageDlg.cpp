@@ -112,6 +112,7 @@ void __fastcall TMessageForm::UpdateForShiftState()
   if (FShiftState != ShiftState)
   {
     FShiftState = ShiftState;
+    bool DoUpdateUIState = false;
 
     for (int ComponentIndex = 0; ComponentIndex < ComponentCount - 1; ComponentIndex++)
     {
@@ -131,10 +132,17 @@ void __fastcall TMessageForm::UpdateForShiftState()
             Button->ModalResult = Item->Tag & 0xFFFF;
             DebugAssert(Button->OnClick == NULL);
             DebugAssert(Item->OnClick == MenuItemClick);
+            DoUpdateUIState = true;
             break;
           }
         }
       }
+    }
+
+    if (DoUpdateUIState)
+    {
+      // show the accel chars
+      Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEACCEL), NativeInt(0));
     }
   }
 }
