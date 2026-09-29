@@ -466,7 +466,7 @@ void __fastcall TMessageForm::UpdateForShiftStateTimer(TObject * /*Sender*/)
   UpdateForShiftState();
 }
 //---------------------------------------------------------------------------
-void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
+void __fastcall TMessageForm::ButtonDropDownClick(TObject * Sender)
 {
   // as optimization, do not waste time running timer, unless
   // user pops up drop down menu. we do not have a way to stop timer, once
@@ -477,6 +477,9 @@ void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
     FUpdateForShiftStateTimer->Interval = 50;
     FUpdateForShiftStateTimer->OnTimer = UpdateForShiftStateTimer;
   }
+
+  auto Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
+  MenuPopup(Button->DropDownMenu, Button);
 }
 //---------------------------------------------------------------------------
 static const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
