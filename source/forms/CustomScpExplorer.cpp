@@ -10015,22 +10015,19 @@ void __fastcall TCustomScpExplorerForm::QueueFileListSplitterDblClick(TObject *)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ThemeChanged()
 {
-  // We hoped this will refresh scrollbar colors, but it does not have any effect here.
-  // Scrollbars colors are refreshed by WM_THEMECHANGED.
-  RefreshColorMode();
   ResetSysDarkTheme();
-  ConfigurationChanged();
   ConfigureInterface();
+  ConfigurationChanged();
   // To update references to recreated/destroyed themes in SessionsPageControl
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMSettingChange(TMessage & Message)
 {
+  UnicodeString Name = (Message.LParam != 0) ? reinterpret_cast<LPCWCH>(Message.LParam) : L"(unknown)";
+  AppLogFmt(L"System settings change (%d, %s)", (Message.WParam, Name));
   // Do not handle, when shutting down anyway (maybe also when not setup completely yet?)
-  if (!FInvalid &&
-      (Message.LParam != 0) &&
-      (wcscmp(reinterpret_cast<LPCWCH>(Message.LParam), L"ImmersiveColorSet") == 0))
+  if (!FInvalid && (Name == L"ImmersiveColorSet"))
   {
     ThemeChanged();
   }

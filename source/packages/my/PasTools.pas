@@ -81,7 +81,7 @@ function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
 procedure AllowDarkModeForWindow(Handle: THandle; Allow: Boolean); overload;
 procedure SetDarkModeTheme(Control: TWinControl; SubAppName: string);
-procedure RefreshColorMode;
+procedure RefreshColorMode(Dark: Boolean);
 procedure ResetSysDarkTheme;
 function GetSysDarkTheme: Boolean;
 
@@ -1093,6 +1093,7 @@ var
   AAllowDarkModeForWindow: function(hWnd: HWND; Allow: BOOL): BOOL; stdcall;
   ARefreshImmersiveColorPolicyState: procedure; stdcall;
   ASetPreferredAppMode: function(AppMode: TPreferredAppMode): TPreferredAppMode; stdcall;
+  AFlushMenuThemes: procedure; stdcall;
 
 function SupportsDarkMode: Boolean;
 begin
@@ -1125,11 +1126,22 @@ begin
   SendMessage(Control.Handle, WM_THEMECHANGED, 0, 0);
 end;
 
-procedure RefreshColorMode;
+procedure RefreshColorMode(Dark: Boolean);
 begin
   if SupportsDarkMode then
   begin
     ARefreshImmersiveColorPolicyState;
+    if Assigned(ASetPreferredAppMode) then
+    begin
+      var AppMode: TPreferredAppMode;
+      if Dark then AppMode := pamForceDark
+        else AppMode := pamForceLight;
+      ASetPreferredAppMode(AppMode);
+      if Assigned(AFlushMenuThemes) then
+      begin
+        AFlushMenuThemes;
+      end;
+    end;
   end;
 end;
 
@@ -1215,6 +1227,7 @@ initialization
   AAllowDarkModeForWindow := nil;
   ARefreshImmersiveColorPolicyState := nil;
   ASetPreferredAppMode := nil;
+  ResetSysDarkTheme;
 
   OSVersionInfo.dwOSVersionInfoSize := SizeOf(OSVersionInfo);
   if GetVersionEx(OSVersionInfo) and (OSVersionInfo.dwBuildNumber >= 17763) then
@@ -1227,25 +1240,13 @@ initialization
       if OSVersionInfo.dwBuildNumber >= 18334 then
       begin
         ASetPreferredAppMode := GetProcAddress(Lib, MakeIntResource(135));
+        AFlushMenuThemes := GetProcAddress(Lib, MakeIntResource(136));
       end;
 
-      if SupportsDarkMode then
-      begin
-        // Both SetPreferredAppMode and RefreshImmersiveColorPolicyState is needed for
-        // dark list view headers and dark list view and tree view scrollbars
-        if Assigned(ASetPreferredAppMode) then
-        begin
-          // With pamForceDark, everything follows the AllowDarkModeForWindow setting.
-          // With pamAllowDark, some controls (list view headers, buttons, etc) counterintuitively
-          // do not, and always render in system-wide theme instead.
-          ASetPreferredAppMode(pamForceDark);
-        end;
-        ARefreshImmersiveColorPolicyState;
-      end;
+      RefreshColorMode(GetSysDarkTheme);
     end;
   end;
 
-  ResetSysDarkTheme;
 
 finalization
   // No need to release individual image lists as they are owned by Application object.
