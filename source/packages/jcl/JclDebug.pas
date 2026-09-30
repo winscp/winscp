@@ -4110,23 +4110,25 @@ begin
   if not Assigned(InfoSourceClassList) then
   begin
     InfoSourceClassList := TList.Create;
+    {$IFNDEF WINSCP}
     {$IFNDEF DEBUG_NO_BINARY}
     InfoSourceClassList.Add(Pointer(TJclDebugInfoBinary));
     {$ENDIF !DEBUG_NO_BINARY}
     {$IFNDEF DEBUG_NO_TD32}
-    {$IFNDEF WINSCP}
     InfoSourceClassList.Add(Pointer(TJclDebugInfoTD32));
-    {$ENDIF ~WINSCP}
     {$ENDIF !DEBUG_NO_TD32}
+    {$ENDIF ~WINSCP}
     {$IFNDEF DEBUG_NO_MAP}
     InfoSourceClassList.Add(Pointer(TJclDebugInfoMap));
     {$ENDIF !DEBUG_NO_MAP}
+    {$IFNDEF WINSCP}
     {$IFNDEF DEBUG_NO_SYMBOLS}
     InfoSourceClassList.Add(Pointer(TJclDebugInfoSymbols));
     {$ENDIF !DEBUG_NO_SYMBOLS}
     {$IFNDEF DEBUG_NO_EXPORTS}
     InfoSourceClassList.Add(Pointer(TJclDebugInfoExports));
     {$ENDIF !DEBUG_NO_EXPORTS}
+    {$ENDIF ~WINSCP}
   end;
 end;
 
@@ -5103,7 +5105,14 @@ begin
         if IncludeVAddress then
           ModulePosition := 2 * (ModulePosition - 1) + 1;
         if ModulePosition < Length(Result) then
-          ModuleName := ModuleName + '.';
+        begin
+          ModuleName := ModuleName + '.'
+        end
+          else
+        begin
+          while Length(Result) < ModulePosition - 1 do
+            Result := Result + ' ';
+        end;
         Insert(ModuleName, Result, ModulePosition);
       end;
     end;
