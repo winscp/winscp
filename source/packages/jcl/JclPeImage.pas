@@ -71,6 +71,7 @@ type
   // Base list
   EJclPeImageError = class(EJclError);
 
+  {$IFNDEF WINSCP}
   TJclPeImage = class;
 
   TJclPeImageClass = class of TJclPeImage;
@@ -312,6 +313,8 @@ type
     property TotalResolveCheck: TJclPeResolveCheck read FTotalResolveCheck;
   end;
 
+  {$ENDIF WINSCP}
+
   // Resource section related classes
   TJclPeResourceKind = (
     rtUnknown0,
@@ -340,6 +343,8 @@ type
     rtHmtl,
     rtManifest,
     rtUserDefined);
+
+  {$IFNDEF WINSCP}
 
   TJclPeResourceList = class;
   TJclPeResourceItem = class;
@@ -511,6 +516,8 @@ type
     property Image: TJclPeImage read FImage;
   end;
 
+  {$ENDIF WINSCP}
+
   // PE Image
   TJclPeHeader = (
     JclPeHeader_Signature,
@@ -578,6 +585,8 @@ type
 
   TJclPeImageStatus = (stNotLoaded, stOk, stNotPE, stNotSupported, stNotFound, stError);
   TJclPeTarget = (taUnknown, taWin32, taWin64);
+
+  {$IFNDEF WINSCP}
 
   TJclPeImage = class(TObject)
   private
@@ -853,6 +862,8 @@ type
     property OnProcessFile: TJclPeNameSearchNotifyEvent read FOnProcessFile write FOnProcessFile;
   end;
 
+  {$ENDIF}
+
 // PE Image miscellaneous functions
 type
   TJclRebaseImageInfo32 = record
@@ -882,7 +893,9 @@ function PeGetNtHeaders64(const FileName: TFileName; out NtHeaders: TImageNtHead
 
 { Image modifications }
 
+{$IFNDEF WINSCP}
 function PeCreateNameHintTable(const FileName: TFileName): Boolean;
+{$ENDIF WINSCP}
 
 // use PeRebaseImage32
 //function PeRebaseImage(const ImageName: TFileName; NewBase: DWORD = 0; TimeStamp: DWORD = 0;
@@ -892,20 +905,25 @@ function PeRebaseImage32(const ImageName: TFileName; NewBase: TJclAddr32 = 0; Ti
 function PeRebaseImage64(const ImageName: TFileName; NewBase: TJclAddr64 = 0; TimeStamp: DWORD = 0;
   MaxNewSize: DWORD = 0): TJclRebaseImageInfo64;
 
+{$IFNDEF WINSCP}
 function PeUpdateLinkerTimeStamp(const FileName: TFileName; const Time: TDateTime): Boolean;
 function PeReadLinkerTimeStamp(const FileName: TFileName): TDateTime;
+{$ENDIF WINSCP}
 
 function PeInsertSection(const FileName: TFileName; SectionStream: TStream; SectionName: string): Boolean;
 
 { Image Checksum }
 
+{$IFNDEF WINSCP}
 function PeVerifyCheckSum(const FileName: TFileName): Boolean;
+{$ENDIF WINSCP}
 function PeClearCheckSum(const FileName: TFileName): Boolean;
 function PeUpdateCheckSum(const FileName: TFileName): Boolean;
 
 // Various simple PE Image searching and listing routines
 { Exports searching }
 
+{$IFNDEF WINSCP}
 function PeDoesExportFunction(const FileName: TFileName; const FunctionName: string;
   Options: TJclSmartCompOptions = []): Boolean;
 
@@ -955,6 +973,7 @@ function PeFindMissingImports(const FileName: TFileName; MissingImportsList: TSt
 function PeFindMissingImports(RequiredImportsList, MissingImportsList: TStrings): Boolean; overload;
 
 function PeCreateRequiredImportList(const FileName: TFileName; RequiredImportsList: TStrings): Boolean;
+{$ENDIF WINSCP}
 
 // Mapped or loaded image related routines
 // use PeMapImgNtHeaders32
@@ -1003,12 +1022,16 @@ function PeMapImgFindSection(const ImageSectionHeaders: TImageSectionHeaderArray
 function PeMapImgFindSectionFromModule(const BaseAddress: Pointer;
   const SectionName: string): PImageSectionHeader;
 
+{$IFNDEF WINSCP}
 function PeMapImgExportedVariables(const Module: HMODULE; const VariablesList: TStrings): Boolean;
+{$ENDIF WINSCP}
 
 function PeMapImgResolvePackageThunk(Address: Pointer): Pointer;
 
+{$IFNDEF WINSCP}
 function PeMapFindResource(const Module: HMODULE; const ResourceType: PChar;
   const ResourceName: string): Pointer;
+{$ENDIF WINSCP}
 
 type
   TJclPeSectionStream = class(TCustomMemoryStream)
@@ -1129,7 +1152,7 @@ uses
   Character,
   {$ENDIF HAS_UNIT_CHARACTER}
   {$ENDIF ~HAS_UNITSCOPE}
-  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, JclAnsiStrings, JclStrings{$IFNDEF WINSCP}, JclStringConversions{$ENDIF ~WINSCP}, JclTD32;
+  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, JclAnsiStrings, JclStrings{$IFNDEF WINSCP}, JclStringConversions, JclTD32{$ENDIF ~WINSCP};
 
 const
   MANIFESTExtension = '.manifest';
@@ -1199,6 +1222,8 @@ begin
     Result := (StrIComp(T1, T2) = 0);
 end;
 
+{$IFNDEF WINSCP}
+
 function CreatePeImage(const FileName: TFileName): TJclPeImage;
 begin
   Result := TJclPeImage.Create(True);
@@ -1254,6 +1279,8 @@ begin
   end;
 end;
 
+{$ENDIF}
+
 // Smart name compare function
 function PeStripFunctionAW(const FunctionName: string): string;
 var
@@ -1292,6 +1319,8 @@ begin
       Result := False;
   end;
 end;
+
+{$IFNDEF WINSCP}
 
 //=== { TJclPeImagesCache } ==================================================
 
@@ -5003,6 +5032,8 @@ begin
   {$ENDIF ~RTL210_UP}
 end;
 
+{$ENDIF WINSCP}
+
 //=== PE Image miscellaneous functions =======================================
 
 function IsValidPeFile(const FileName: TFileName): Boolean;
@@ -5082,6 +5113,8 @@ begin
     FileClose(FileHandle);
   end;
 end;
+
+{$IFNDEF WINSCP}
 
 function PeCreateNameHintTable(const FileName: TFileName): Boolean;
 var
@@ -5179,6 +5212,8 @@ begin
   end;
 end;
 
+{$ENDIF WINSCP}
+
 function PeRebaseImage32(const ImageName: TFileName; NewBase: TJclAddr32;
   TimeStamp, MaxNewSize: DWORD): TJclRebaseImageInfo32;
 
@@ -5260,6 +5295,8 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
+
 function PeUpdateLinkerTimeStamp(const FileName: TFileName; const Time: TDateTime): Boolean;
 var
   Mapping: TJclFileMapping;
@@ -5296,6 +5333,8 @@ begin
     Mapping.Free;
   end;
 end;
+
+{$ENDIF WINSCP}
 
 { TODO -cHelp : Author: Uwe Schuster(just a generic version of JclDebug.InsertDebugDataIntoExecutableFile) }
 function PeInsertSection(const FileName: TFileName; SectionStream: TStream; SectionName: string): Boolean;
@@ -5579,6 +5618,8 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
+
 function PeVerifyCheckSum(const FileName: TFileName): Boolean;
 begin
   with CreatePeImage(FileName) do
@@ -5588,6 +5629,8 @@ begin
     Free;
   end;
 end;
+
+{$ENDIF WINSCP}
 
 function PeClearCheckSum(const FileName: TFileName): Boolean;
   function PeClearCheckSum32(ModuleAddress: Pointer): Boolean;
@@ -5641,6 +5684,8 @@ begin
 end;
 
 // Various simple PE Image searching and listing routines
+
+{$IFNDEF WINSCP}
 
 function PeDoesExportFunction(const FileName: TFileName; const FunctionName: string;
   Options: TJclSmartCompOptions): Boolean;
@@ -5999,6 +6044,8 @@ function PeCreateRequiredImportList(const FileName: TFileName; RequiredImportsLi
 begin
   Result := PeImportedFunctions(FileName, RequiredImportsList, '', True);
 end;
+
+{$ENDIF WINSCP}
 
 // Mapped or loaded image related functions
 
@@ -6400,6 +6447,8 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
+
 function PeMapImgExportedVariables(const Module: HMODULE; const VariablesList: TStrings): Boolean;
 var
   I: Integer;
@@ -6425,6 +6474,8 @@ begin
     Free;
   end;
 end;
+
+{$ENDIF WINSCP}
 
 function PeMapImgResolvePackageThunk(Address: Pointer): Pointer;
 {$IFDEF BORLAND}
@@ -6464,6 +6515,8 @@ begin
 end;
 {$ENDIF FPC}
 
+{$IFNDEF WINSCP}
+
 function PeMapFindResource(const Module: HMODULE; const ResourceType: PChar;
   const ResourceName: string): Pointer;
 var
@@ -6483,6 +6536,8 @@ begin
     Free;
   end;
 end;
+
+{$ENDIF WINSCP}
 
 //=== { TJclPeSectionStream } ================================================
 

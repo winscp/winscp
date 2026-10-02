@@ -357,6 +357,7 @@ function ConvertMapFileToJdbgFile(const MapFileName: TFileName; out LinkerBugUni
 function ConvertMapFileToJdbgFile(const MapFileName: TFileName; out LinkerBugUnit: string;
   out LineNumberErrors, MapFileSize, JdbgFileSize: Integer): Boolean; overload;
 
+{$IFNDEF WINSCP}
 function InsertDebugDataIntoExecutableFile(const ExecutableFileName,
   MapFileName: TFileName; out LinkerBugUnit: string;
   out MapFileSize, JclDebugDataSize: Integer): Boolean; overload;
@@ -370,6 +371,7 @@ function InsertDebugDataIntoExecutableFile(const ExecutableFileName: TFileName;
 function InsertDebugDataIntoExecutableFile(const ExecutableFileName: TFileName;
   BinDebug: TJclBinDebugGenerator; out LinkerBugUnit: string;
   out MapFileSize, JclDebugDataSize, LineNumberErrors: Integer): Boolean; overload;
+{$ENDIF}
 
 // Source Locations
 type
@@ -528,6 +530,8 @@ type
     function GetAddress(const UnitName, ProcName: string): Pointer; override;
   end;
 
+  {$IFNDEF WINSCP}
+
   TJclDebugInfoBinary = class(TJclDebugInfoSource)
   private
     FScanner: TJclBinDebugScanner;
@@ -556,7 +560,6 @@ type
   end;
 
   {$IFDEF BORLAND}
-  {$IFNDEF WINSCP}
   TJclDebugInfoTD32 = class(TJclDebugInfoSource)
   private
     FImage: TJclPeBorTD32Image;
@@ -567,7 +570,6 @@ type
     function GetLocationInfo(const Addr: Pointer; out Info: TJclLocationInfo): Boolean; override;
     function GetAddress(const UnitName, ProcName: string): Pointer; override;
   end;
-  {$ENDIF ~WINSCP}
   {$ENDIF BORLAND}
 
   TJclDebugInfoSymbols = class(TJclDebugInfoSource)
@@ -580,6 +582,7 @@ type
     function GetLocationInfo(const Addr: Pointer; out Info: TJclLocationInfo): Boolean; override;
     function GetAddress(const UnitName, ProcName: string): Pointer; override;
   end;
+  {$ENDIF ~WINSCP}
 
 // Source location functions
 function Caller(Level: Integer = 0; FastStackWalk: Boolean = False): Pointer;
@@ -840,8 +843,10 @@ function JclCreateExceptFrameList(AIgnoreLevels: Integer): TJclExceptFrameList;
 function JclLastExceptFrameList: TJclExceptFrameList;
 function JclGetExceptFrameList(ThreadID: DWORD): TJclExceptFrameList;
 
+{$IFNDEF WINSCP}
 function JclStartExceptionTracking: Boolean;
 function JclStopExceptionTracking: Boolean;
+{$ENDIF}
 function JclExceptionTrackingActive: Boolean;
 
 function JclTrackExceptionsFromLibraries: Boolean;
@@ -1009,8 +1014,10 @@ type
 
 function JclDebugThreadList: TJclDebugThreadList;
 
+{$IFNDEF WINSCP}
 function JclHookThreads: Boolean;
 function JclUnhookThreads: Boolean;
+{$ENDIF WINSCP}
 function JclThreadsHooked: Boolean;
 
 // Miscellanuous
@@ -2665,6 +2672,7 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
 function InsertDebugDataIntoExecutableFile(const ExecutableFileName, MapFileName: TFileName;
   out LinkerBugUnit: string; out MapFileSize, JclDebugDataSize: Integer): Boolean;
 var
@@ -2973,6 +2981,7 @@ begin
   if Result then
     PeUpdateCheckSum(ExecutableFileName);
 end;
+{$ENDIF}
 
 //=== { TJclBinDebugGenerator } ==============================================
 
@@ -4204,6 +4213,8 @@ begin
     FScanner := TJclMapScanner.Create(MapFileName, Module);
 end;
 
+{$IFNDEF WINSCP}
+
 //=== { TJclDebugInfoBinary } ================================================
 
 destructor TJclDebugInfoBinary.Destroy;
@@ -4457,8 +4468,6 @@ end;
 
 {$IFDEF BORLAND}
 
-{$IFNDEF WINSCP}
-
 //=== { TJclDebugInfoTD32 } ==================================================
 
 destructor TJclDebugInfoTD32.Destroy;
@@ -4511,8 +4520,6 @@ procedure TJclDebugInfoTD32.GenerateUnmangledNames;
 begin
   FImage.TD32Scanner.GenerateUnmangledNames;
 end;
-
-{$ENDIF ~WINSCP}
 
 {$ENDIF BORLAND}
 
@@ -4928,6 +4935,8 @@ begin
   SymGetLineFromAddrAFunc := nil;
   SymGetLineFromAddrWFunc := nil;
 end;
+
+{$ENDIF ~WINSCP}
 
 //=== Source location functions ==============================================
 
@@ -7212,6 +7221,7 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
 function JclStartExceptionTracking: Boolean;
 begin
   {Increment the tracking count only if exceptions are already being tracked or tracking can be started
@@ -7250,6 +7260,7 @@ begin
     Result := False;
   end;
 end;
+{$ENDIF WINSCP}
 
 function JclExceptionTrackingActive: Boolean;
 begin
@@ -7309,6 +7320,7 @@ begin
   Kernel32_ExitThread(ExitCode);
 end;
 
+{$IFNDEF WINSCP}
 function JclHookThreads: Boolean;
 var
   ProcAddrCache: Pointer;
@@ -7352,6 +7364,7 @@ begin
   else
     Result := True;
 end;
+{$ENDIF WINSCP}
 
 function JclThreadsHooked: Boolean;
 begin
@@ -8292,7 +8305,9 @@ begin
   FreeAndNil(IgnoredExceptionClassNames);
   FreeAndNil(IgnoredExceptionClassNamesCritSect);
 
+  {$IFNDEF WINSCP}
   TJclDebugInfoSymbols.CleanupDebugSymbols;
+  {$ENDIF ~WINSCP}
 end;
 
 initialization
@@ -8313,10 +8328,12 @@ finalization
   UnregisterUnitVersion(HInstance);
   {$ENDIF UNITVERSIONING}
 
+  {$IFNDEF WINSCP}
   { TODO -oPV -cInvestigate : Calling JclStopExceptionTracking causes linking of various classes to
     the code without a real need. Although there doesn't seem to be a way to unhook exceptions
     safely because we need to be covered by JclHookExcept.Notifiers critical section }
   JclStopExceptionTracking;
+  {$ENDIF}
 
   GlobalStackList.Clear;
   JclDebugFinalized := True;

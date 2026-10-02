@@ -108,9 +108,6 @@
         <DelphiCompile Include="packages\jcl\JclSysUtils.pas">
             <BuildOrder>12</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="packages\jcl\JclTD32.pas">
-            <BuildOrder>15</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="packages\jcl\JclWin32.pas">
             <BuildOrder>13</BuildOrder>
         </DelphiCompile>
