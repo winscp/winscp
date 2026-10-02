@@ -472,11 +472,9 @@ protected:
   void __fastcall CacheCertificate(const UnicodeString & CertificateStorageKey,
     const UnicodeString & SiteKey, const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
     int Failures);
-  bool __fastcall ConfirmCertificate(
-    TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey, bool CanRemember);
+  bool ConfirmCertificate(TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey);
   bool VerifyOrConfirmHttpCertificate(
-    const UnicodeString & AHostName, int APortNumber, const TNeonCertificateData & Data, bool CanRemember,
-    TSessionInfo & SessionInfo);
+    const UnicodeString & AHostName, int APortNumber, const TNeonCertificateData & Data, TSessionInfo & SessionInfo);
   void __fastcall CollectTlsUsage(const UnicodeString & TlsVersionStr);
   bool __fastcall LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& PrivateKey);
   bool __fastcall TryStartOperationWithFile(

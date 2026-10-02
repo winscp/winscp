@@ -8776,8 +8776,7 @@ bool  __fastcall TTerminal::VerifyCertificate(
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::ConfirmCertificate(
-  TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey, bool CanRemember)
+bool TTerminal::ConfirmCertificate(TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey)
 {
   TClipboardHandler ClipboardHandler;
   ClipboardHandler.Text =
@@ -8825,7 +8824,7 @@ bool __fastcall TTerminal::ConfirmCertificate(
   }
 
   // Cache only if the certificate was accepted manually
-  if (Result && CanRemember)
+  if (Result)
   {
     Configuration->RememberLastFingerprint(
       SessionData->SiteKey, TlsFingerprintType, SessionInfo.CertificateFingerprintSHA256);
@@ -8850,7 +8849,7 @@ void __fastcall TTerminal::CacheCertificate(
 //---------------------------------------------------------------------------
 // Shared implementation for WebDAV and S3
 bool TTerminal::VerifyOrConfirmHttpCertificate(
-  const UnicodeString & AHostName, int APortNumber, const TNeonCertificateData & AData, bool CanRemember,
+  const UnicodeString & AHostName, int APortNumber, const TNeonCertificateData & AData,
   TSessionInfo & SessionInfo)
 {
   TNeonCertificateData Data = AData;
@@ -8902,7 +8901,7 @@ bool TTerminal::VerifyOrConfirmHttpCertificate(
 
       if (!Result)
       {
-        if (ConfirmCertificate(SessionInfo, Data.Failures, HttpsCertificateStorageKey, CanRemember))
+        if (ConfirmCertificate(SessionInfo, Data.Failures, HttpsCertificateStorageKey))
         {
           Result = true;
           SessionInfo.CertificateVerifiedManually = true;

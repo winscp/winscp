@@ -680,7 +680,7 @@ bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
 {
   bool Result =
     FTerminal->VerifyOrConfirmHttpCertificate(
-      FTerminal->SessionData->HostNameExpanded, FTerminal->SessionData->PortNumber, Data, true, FSessionInfo);
+      FTerminal->SessionData->HostNameExpanded, FTerminal->SessionData->PortNumber, Data, FSessionInfo);
 
   if (Result)
   {

@@ -283,12 +283,6 @@ void TWebDAVFileSystem::NeonClientOpenSessionInternal(UnicodeString & CorrectedU
   CorrectedUrl = Url;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::SetSessionTls(TSessionContext * SessionContext, ne_session_s * Session, bool Aux)
-{
-  ne_ssl_verify_fn Callback = Aux ? NeonServerSSLCallbackAux : NeonServerSSLCallbackMain;
-  InitNeonTls(Session, InitSslSession, Callback, SessionContext, FTerminal);
-}
-//---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext, ne_session_s * Session)
 {
   TSessionData * Data = FTerminal->SessionData;
@@ -331,7 +325,7 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
 
   if (Ssl)
   {
-    SetSessionTls(Result.get(), Result->NeonSession, false);
+    InitNeonTls(Result->NeonSession, InitSslSession, NeonServerSSLCallback, Result.get(), FTerminal);
 
     ne_ssl_provide_clicert(Result->NeonSession, NeonProvideClientCert, Result.get());
   }
@@ -1831,13 +1825,13 @@ void __fastcall TWebDAVFileSystem::Sink(
   FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 }
 //---------------------------------------------------------------------------
-bool TWebDAVFileSystem::VerifyCertificate(TSessionContext * SessionContext, TNeonCertificateData Data, bool Aux)
+bool TWebDAVFileSystem::VerifyCertificate(TSessionContext * SessionContext, TNeonCertificateData Data)
 {
   bool Result =
     FTerminal->VerifyOrConfirmHttpCertificate(
-      SessionContext->HostName, SessionContext->PortNumber, Data, !Aux, FSessionInfo);
+      SessionContext->HostName, SessionContext->PortNumber, Data, FSessionInfo);
 
-  if (Result && !Aux && (SessionContext == FSessionContext))
+  if (Result && (SessionContext == FSessionContext))
   {
     CollectTLSSessionInfo();
   }
@@ -1857,23 +1851,13 @@ void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
 // A neon-session callback to validate the SSL certificate when the CA
 // is unknown (e.g. a self-signed cert), or there are other SSL
 // certificate problems.
-int TWebDAVFileSystem::DoNeonServerSSLCallback(void * UserData, int Failures, const ne_ssl_certificate * Certificate, bool Aux)
+int TWebDAVFileSystem::NeonServerSSLCallback(void * UserData, int Failures, const ne_ssl_certificate * Certificate)
 {
   TNeonCertificateData Data;
   RetrieveNeonCertificateData(Failures, Certificate, Data);
   TSessionContext * SessionContext = static_cast<TSessionContext *>(UserData);
   TWebDAVFileSystem * FileSystem = SessionContext->FileSystem;
-  return FileSystem->VerifyCertificate(SessionContext, Data, Aux) ? NE_OK : NE_ERROR;
-}
-//------------------------------------------------------------------------------
-int TWebDAVFileSystem::NeonServerSSLCallbackMain(void * UserData, int Failures, const ne_ssl_certificate * Certificate)
-{
-  return DoNeonServerSSLCallback(UserData, Failures, Certificate, false);
-}
-//------------------------------------------------------------------------------
-int TWebDAVFileSystem::NeonServerSSLCallbackAux(void * UserData, int Failures, const ne_ssl_certificate * Certificate)
-{
-  return DoNeonServerSSLCallback(UserData, Failures, Certificate, true);
+  return FileSystem->VerifyCertificate(SessionContext, Data) ? NE_OK : NE_ERROR;
 }
 //------------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonProvideClientCert(void * UserData, ne_session * Sess,
