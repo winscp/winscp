@@ -4311,7 +4311,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (RequestResult == 0)
       {
-        if (FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, FtpsCertificateStorageKey, true))
+        if (FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, FtpsCertificateStorageKey))
         {
           // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
           // however FZAPI takes all non-zero values equally.

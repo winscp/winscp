@@ -1807,11 +1807,11 @@ void __fastcall TTerminalManager::NewSession(
     {
       DataList.reset(new TObjectList());
       UnicodeString DownloadFile; // unused
-      GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, true, LinkedForm);
+      GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, lnSession, LinkedForm);
     }
     else
     {
-      if (!DoLoginDialog(DataList.get(), LinkedForm))
+      if (!DoLoginDialog(DataList.get(), LinkedForm, false))
       {
         Abort(); // As GetLoginData would do
       }

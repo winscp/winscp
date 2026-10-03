@@ -195,13 +195,6 @@ void __fastcall TWebDAVFileSystem::Open()
 
   UnicodeString HostName = Data->HostNameExpanded;
 
-  FOneDrive = SameText(HostName, L"d.docs.live.net");
-  if (FOneDrive)
-  {
-    FTerminal->LogEvent(L"OneDrive host detected.");
-    FOneDriveInterface = odiUnknown;
-  }
-
   size_t Port = Data->PortNumber;
   UnicodeString ProtocolName = (Data->Ftps == ftpsNone) ? HttpProtocol : HttpsProtocol;
   UnicodeString Path = Data->RemoteDirectory;
@@ -290,12 +283,6 @@ void TWebDAVFileSystem::NeonClientOpenSessionInternal(UnicodeString & CorrectedU
   CorrectedUrl = Url;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::SetSessionTls(TSessionContext * SessionContext, ne_session_s * Session, bool Aux)
-{
-  ne_ssl_verify_fn Callback = Aux ? NeonServerSSLCallbackAux : NeonServerSSLCallbackMain;
-  InitNeonTls(Session, InitSslSession, Callback, SessionContext, FTerminal);
-}
-//---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext, ne_session_s * Session)
 {
   TSessionData * Data = FTerminal->SessionData;
@@ -312,8 +299,7 @@ void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext,
 
   ne_set_session_private(Session, SESSION_CONTEXT_KEY, SessionContext);
 
-  // Allow ^-escaping in OneDrive
-  ne_set_session_flag(Session, NE_SESSFLAG_LIBERAL_ESCAPING, Data->WebDavLiberalEscaping || FOneDrive);
+  ne_set_session_flag(Session, NE_SESSFLAG_LIBERAL_ESCAPING, Data->WebDavLiberalEscaping);
 }
 //---------------------------------------------------------------------------
 TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeString & Url, UTF8String & Path, UTF8String & Query)
@@ -332,7 +318,6 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
   Path = Uri.path;
   Query = Uri.query;
   bool Ssl = Uri.IsTls();
-  ne_set_aux_request_init(Result->NeonSession, NeonAuxRequestInit, Result.get());
 
   UpdateNeonDebugMask();
 
@@ -340,7 +325,7 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
 
   if (Ssl)
   {
-    SetSessionTls(Result.get(), Result->NeonSession, false);
+    InitNeonTls(Result->NeonSession, InitSslSession, NeonServerSSLCallback, Result.get(), FTerminal);
 
     ne_ssl_provide_clicert(Result->NeonSession, NeonProvideClientCert, Result.get());
   }
@@ -360,21 +345,9 @@ bool TWebDAVFileSystem::IsTlsSession(ne_session * Session)
   return Uri.IsTls();
 }
 //---------------------------------------------------------------------------
-void TWebDAVFileSystem::NeonAuxRequestInit(ne_session * Session, ne_request * /*Request*/, void * UserData)
-{
-  TSessionContext * SessionContext = static_cast<TSessionContext *>(UserData);
-  TWebDAVFileSystem * FileSystem = SessionContext->FileSystem;
-  FileSystem->InitSession(SessionContext, Session);
-
-  if (FileSystem->IsTlsSession(Session))
-  {
-    FileSystem->SetSessionTls(SessionContext, Session, true);
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::NeonAddAuthentication(TSessionContext * SessionContext, bool UseNegotiate)
 {
-  unsigned int NeonAuthTypes = NE_AUTH_BASIC | NE_AUTH_DIGEST | NE_AUTH_PASSPORT;
+  unsigned int NeonAuthTypes = NE_AUTH_BASIC | NE_AUTH_DIGEST;
   if (UseNegotiate)
   {
     NeonAuthTypes |= NE_AUTH_NEGOTIATE;
@@ -530,18 +503,6 @@ void __fastcall TWebDAVFileSystem::CollectUsage()
   }
 
   UnicodeString RemoteSystem = FFileSystemInfo.RemoteSystem;
-  if (FOneDrive)
-  {
-    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVOneDrive");
-    if (FOneDriveInterface == odiUpperCase)
-    {
-      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVOneDriveUpperCase");
-    }
-    else if (FOneDriveInterface == odiLowerCase)
-    {
-      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVOneDriveLowerCase");
-    }
-  }
   if (ContainsText(RemoteSystem, L"Microsoft-IIS"))
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVIIS");
@@ -905,43 +866,6 @@ void TWebDAVFileSystem::NeonPropsResult(
     FileSystem->ParsePropResultSet(File.get(), Path, Results);
 
     UnicodeString FileListPath = UnixIncludeTrailingBackslash(FileSystem->AbsolutePath(Data.FileList->Directory, false));
-    if (FileSystem->FOneDrive)
-    {
-      UnicodeString FullFileName = UnixIncludeTrailingBackslash(File->FullFileName);
-      if (Configuration->Usage->Collect && (FileSystem->FOneDriveInterface == odiUnknown) && !IsUnixRootPath(FullFileName))
-      {
-        UnicodeString Cid = FullFileName;
-        if (DebugAlwaysTrue(StartsStr(L"/", Cid)))
-        {
-          Cid.Delete(1, 1);
-          int P = Cid.Pos(L"/");
-          if (P > 0)
-          {
-            Cid.SetLength(P - 1);
-          }
-          UnicodeString CidUpper = UpperCase(Cid);
-          UnicodeString CidLower = LowerCase(Cid);
-          if (CidUpper != CidLower)
-          {
-            if (Cid == CidUpper)
-            {
-              FileSystem->FOneDriveInterface = odiUpperCase;
-              Terminal->LogEvent(L"Detected upper-case OneDrive interface");
-            }
-            else if (Cid == CidLower)
-            {
-              FileSystem->FOneDriveInterface = odiLowerCase;
-              Terminal->LogEvent(L"Detected lower-case OneDrive interface");
-            }
-          }
-        }
-      }
-      // OneDrive is case insensitive and when we enter the directory using a different case, it returns results with the actual case
-      if (StartsText(FileListPath, FullFileName))
-      {
-        File->FullFileName = FileListPath + MidStr(FullFileName, FileListPath.Length() + 1);
-      }
-    }
     if (UnixSamePath(File->FullFileName, FileListPath))
     {
       File->FileName = PARENTDIRECTORY;
@@ -949,24 +873,18 @@ void TWebDAVFileSystem::NeonPropsResult(
     }
     else
     {
-      // Quick and dirty hack. The following tests do not work on OneDrive, as the directory path may be escaped,
-      // and we do not correctly unescape full `Path`, only its filename (so path in FullFileName may not be not correct).
-      // Until it's real problem somewhere else, we skip this test, as we otherwise trust OneDrive not to return nonsense contents.
-      if (!FileSystem->FOneDrive)
+      if (!StartsStr(FileListPath, File->FullFileName))
       {
-        if (!StartsStr(FileListPath, File->FullFileName))
+        Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not descendant of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
+        File.reset(NULL);
+      }
+      else
+      {
+        UnicodeString FileName = MidStr(File->FullFileName, FileListPath.Length() + 1);
+        if (!UnixExtractFileDir(FileName).IsEmpty())
         {
-          Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not descendant of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
+          Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not direct child of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
           File.reset(NULL);
-        }
-        else
-        {
-          UnicodeString FileName = MidStr(File->FullFileName, FileListPath.Length() + 1);
-          if (!UnixExtractFileDir(FileName).IsEmpty())
-          {
-            Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not direct child of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
-            File.reset(NULL);
-          }
         }
       }
     }
@@ -996,7 +914,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
 {
   File->FullFileName = UnixExcludeTrailingBackslash(Path);
   // Some servers do not use DAV:collection tag, but indicate the folder by trailing slash only.
-  // But not all, for example OneDrive does not (it did in the past).
+  // It seems that all servers actually use the trailing slash, including IIS, mod_Dav, IT Hit, etc.
   bool Collection = (File->FullFileName != Path);
   File->FileName = UnixExtractFileName(File->FullFileName);
   const char * ContentLength = GetProp(Results, PROP_CONTENT_LENGTH);
@@ -1072,21 +990,6 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
   if (DisplayName != NULL)
   {
     File->DisplayName = StrFromNeon(DisplayName);
-    // OneDrive caret escaping (we could do this for all files, but let's limit the scope for now).
-    // In *file* PROPFIND response, the # (and other symbols like comma or plus) is not escaped at all
-    // (while in directory listing, they are caret-escaped),
-    // so if we see one in the display name, take the name from there.
-    // * and % won't help, as OneDrive seem to have bug with % at the end of the filename,
-    // and the * (and others) is removed from file names.
-
-    // Filenames with commas (,) get as many additional characters at the end of the filename as there are commas
-    // (not true anymore in the new interface).
-    if (FOneDrive &&
-        (ContainsText(File->FileName, L"^") || ContainsText(File->FileName, L",") || (wcspbrk(File->DisplayName.c_str(), L"&,+#[]%*") != NULL)))
-    {
-      File->FileName = File->DisplayName;
-      File->FullFileName = UnixCombinePaths(UnixExtractFileDir(File->FullFileName), File->FileName);
-    }
   }
 
   const UnicodeString RightsDelimiter(L", ");
@@ -1380,9 +1283,6 @@ void __fastcall TWebDAVFileSystem::SpaceAvailable(const UnicodeString Path,
   // Yandex disk:
   // WWW-Authenticate: Basic realm="Yandex.Disk"
   // Server: MochiWeb/1.0
-
-  // OneDrive:
-  // it sends the properties unconditionally, even when not explicitly requested
 
   UnicodeString APath = DirectoryPath(Path);
 
@@ -1925,13 +1825,13 @@ void __fastcall TWebDAVFileSystem::Sink(
   FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 }
 //---------------------------------------------------------------------------
-bool TWebDAVFileSystem::VerifyCertificate(TSessionContext * SessionContext, TNeonCertificateData Data, bool Aux)
+bool TWebDAVFileSystem::VerifyCertificate(TSessionContext * SessionContext, TNeonCertificateData Data)
 {
   bool Result =
     FTerminal->VerifyOrConfirmHttpCertificate(
-      SessionContext->HostName, SessionContext->PortNumber, Data, !Aux, FSessionInfo);
+      SessionContext->HostName, SessionContext->PortNumber, Data, FSessionInfo);
 
-  if (Result && !Aux && (SessionContext == FSessionContext))
+  if (Result && (SessionContext == FSessionContext))
   {
     CollectTLSSessionInfo();
   }
@@ -1951,23 +1851,13 @@ void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
 // A neon-session callback to validate the SSL certificate when the CA
 // is unknown (e.g. a self-signed cert), or there are other SSL
 // certificate problems.
-int TWebDAVFileSystem::DoNeonServerSSLCallback(void * UserData, int Failures, const ne_ssl_certificate * Certificate, bool Aux)
+int TWebDAVFileSystem::NeonServerSSLCallback(void * UserData, int Failures, const ne_ssl_certificate * Certificate)
 {
   TNeonCertificateData Data;
   RetrieveNeonCertificateData(Failures, Certificate, Data);
   TSessionContext * SessionContext = static_cast<TSessionContext *>(UserData);
   TWebDAVFileSystem * FileSystem = SessionContext->FileSystem;
-  return FileSystem->VerifyCertificate(SessionContext, Data, Aux) ? NE_OK : NE_ERROR;
-}
-//------------------------------------------------------------------------------
-int TWebDAVFileSystem::NeonServerSSLCallbackMain(void * UserData, int Failures, const ne_ssl_certificate * Certificate)
-{
-  return DoNeonServerSSLCallback(UserData, Failures, Certificate, false);
-}
-//------------------------------------------------------------------------------
-int TWebDAVFileSystem::NeonServerSSLCallbackAux(void * UserData, int Failures, const ne_ssl_certificate * Certificate)
-{
-  return DoNeonServerSSLCallback(UserData, Failures, Certificate, true);
+  return FileSystem->VerifyCertificate(SessionContext, Data) ? NE_OK : NE_ERROR;
 }
 //------------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonProvideClientCert(void * UserData, ne_session * Sess,

@@ -755,9 +755,35 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
         Form->Caption = FormatFormCaption(Form, Form->Caption);
       }
       SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(Application->Icon->Handle));
+
+      if ((LastMonitor != NULL) && (LastMonitor != Form->Monitor))
+      {
+        // would actually always be poScreenCenter, see _SafeFormCreate
+        if ((Form->Position == poMainFormCenter) ||
+            (Form->Position == poOwnerFormCenter) ||
+            (Form->Position == poScreenCenter) ||
+            // Specifically for TSynchronizeChecklistDialog.
+            // This causes it to lose specific monitor position, but that's probably ok.
+            (Form->Position == poDesigned))
+        {
+          // this would typically be a standalone message box (e.g. /UninstallCleanup or /Update)
+
+          UpdateFormPosition(Form, Form->Position, LastMonitor);
+          Form->Position = poDesigned;
+        }
+        else if (Form->Position != poDefaultPosOnly)
+        {
+          // we do not expect any other positioning
+          DebugFail();
+        }
+      }
     }
     else
     {
+      // when closing main form, remember its monitor,
+      // so that the next form is shown on the same one
+      LastMonitor = Form->Monitor;
+
       if (MainLikeForm == Form)
       {
         // Do not bother with hiding the WS_EX_APPWINDOW flag
@@ -767,8 +793,8 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
     }
   }
 
-  // Part of following code (but actually not all, TODO), has to happen
-  // for all windows when VCL main window is hidden (particularly the last branch).
+  DebugAssert(GetMainForm() != nullptr);
+  // This has to happen for all windows when VCL main window is hidden.
   // This is different from above brach, that should happen only for top-level visible window.
   if ((Application->MainForm == Form) ||
       // this particularly happens if error occurs while main
@@ -776,48 +802,11 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
       // explorer)
       ((Application->MainForm != NULL) && !Application->MainForm->Visible))
   {
-    if (!Form->Showing)
-    {
-      // when closing main form, remember its monitor,
-      // so that the next form is shown on the same one
-      LastMonitor = Form->Monitor;
-    }
-    else if ((LastMonitor != NULL) && (LastMonitor != Form->Monitor) &&
-              Form->Showing)
-    {
-      // would actually always be poScreenCenter, see _SafeFormCreate
-      if ((Form->Position == poMainFormCenter) ||
-          (Form->Position == poOwnerFormCenter) ||
-          (Form->Position == poScreenCenter))
-      {
-        // this would typically be a standalone message box (e.g. /UninstallCleanup or /Update)
-
-        // If DPI changes (as the form moves to a monitor with a non-system DPI),
-        // we have to re-center as the form size changed too.
-        int PixelsPerInch;
-        do
-        {
-          PixelsPerInch = Form->PixelsPerInch;
-          // taken from TCustomForm::SetWindowToMonitor
-          Form->SetBounds(LastMonitor->Left + ((LastMonitor->Width - Form->Width) / 2),
-            LastMonitor->Top + ((LastMonitor->Height - Form->Height) / 2),
-             Form->Width, Form->Height);
-          Form->Position = poDesigned;
-        }
-        while (PixelsPerInch != Form->PixelsPerInch);
-      }
-      else if ((Form->Position != poDesigned) &&
-               (Form->Position != poDefaultPosOnly))
-      {
-        // we do not expect any other positioning
-        DebugFail();
-      }
-    }
     // otherwise it would not get centered
-    else if ((Form->Position == poMainFormCenter) ||
-             (Form->Position == poOwnerFormCenter))
+    if ((Form->Position == poMainFormCenter) ||
+        (Form->Position == poOwnerFormCenter))
     {
-      Form->Position = poScreenCenter;
+      UpdateFormPosition(Form, Form->Position);
     }
   }
 
@@ -1983,6 +1972,7 @@ TRect GetCenterRect(TControl * CenterControl, Forms::TMonitor * CenterMonitor)
 void CenterFormOn(TRect & Bounds, const TRect & CenterRect)
 {
   TRect DesktopRect = Screen->DesktopRect;
+  // the max is lame version of what UpdateFormPosition does with Intersect
   int X = std::max(DesktopRect.Left, ((CenterRect.Width() - Bounds.Width()) / 2) + CenterRect.Left);
   int Y = std::max(DesktopRect.Top, ((CenterRect.Height() - Bounds.Height()) / 2) + CenterRect.Top);
   Bounds.SetLocation(X, Y);
@@ -1993,27 +1983,42 @@ void CenterFormOn(TRect & Bounds, TControl * CenterControl, Forms::TMonitor * Ce
   CenterFormOn(Bounds, GetCenterRect(CenterControl, CenterMonitor));
 }
 //---------------------------------------------------------------------------
-void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
+void UpdateFormPosition(TCustomForm * Form, TPosition Position, Forms::TMonitor * Monitor)
 {
-  if ((Position == poScreenCenter) ||
-      (Position == poOwnerFormCenter) ||
+  TCustomForm * CenterForm = NULL;
+  if ((Position == poOwnerFormCenter) ||
       (Position == poMainFormCenter))
   {
-    TCustomForm * CenterForm = NULL;
-    if ((Position == poOwnerFormCenter) ||
-        (Position == poMainFormCenter))
+    CenterForm = GetMainForm();
+    if ((Position == poOwnerFormCenter) &&
+        (dynamic_cast<TCustomForm*>(Form->Owner) != NULL))
     {
-      CenterForm = Application->MainForm;
-      if ((Position == poOwnerFormCenter) &&
-          (dynamic_cast<TCustomForm*>(Form->Owner) != NULL))
-      {
-        CenterForm = dynamic_cast<TCustomForm*>(Form->Owner);
-      }
+      CenterForm = dynamic_cast<TCustomForm*>(Form->Owner);
     }
+  }
 
+  if (Monitor == nullptr)
+  {
+    Monitor = Form->Monitor;
+  }
+
+  // If DPI changes (as the form moves to a monitor with a non-system DPI),
+  // we have to re-center as the form size changed too.
+  int PixelsPerInch;
+  do
+  {
+    PixelsPerInch = Form->PixelsPerInch;
     TRect Bounds = Form->BoundsRect;
-    CenterFormOn(Bounds, CenterForm, Form->Monitor);
+    CenterFormOn(Bounds, CenterForm, Monitor);
     Form->SetBounds(Bounds.Left, Bounds.Top, Bounds.Width(), Bounds.Height());
+  }
+  while (PixelsPerInch != Form->PixelsPerInch);
+
+  if (Form->BorderStyle == bsSizeable)
+  {
+    TRect Bounds = Form->BoundsRect;
+    Bounds.Intersect(Monitor->WorkareaRect);
+    Form->BoundsRect = Bounds; // noop if unchanged
   }
 }
 //---------------------------------------------------------------------------
@@ -2644,9 +2649,10 @@ bool __fastcall HasLabelHintPopup(TControl * Control, const UnicodeString & Hint
 Forms::TMonitor *  __fastcall FormMonitor(TCustomForm * Form)
 {
   Forms::TMonitor * Result;
-  if ((Application->MainForm != NULL) && (Application->MainForm != Form))
+  TForm * MainForm = GetMainForm();
+  if ((MainForm != nullptr) && (MainForm != Form) && !IsMainFormHidden())
   {
-    Result = Application->MainForm->Monitor;
+    Result = MainForm->Monitor;
   }
   else if (LastMonitor != NULL)
   {

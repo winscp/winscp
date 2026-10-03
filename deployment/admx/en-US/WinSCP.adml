@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitionResources revision="1.0" schemaVersion="1.0">
+  <displayName>WinSCP Administrative Policies (English - United States)</displayName>
+  <description>Administrative policy definitions for WinSCP, localized for English (United States), based on the vendor's documented administration registry settings.</description>
+
+  <resources>
+    <stringTable>
+      <string id="WinSCP_Supported_Windows10Plus">Windows 10, Windows 11, and supported Windows Server versions</string>
+
+      <string id="WinSCP_Category">WinSCP</string>
+      <string id="WinSCP_Security_Category">Security restrictions</string>
+      <string id="WinSCP_Defaults_Category">Application defaults</string>
+
+      <string id="WinSCP_DisablePasswordStoring">Prevent users from storing passwords</string>
+      <string id="WinSCP_DisablePasswordStoring_Help">Controls the WinSCP machine-level DisablePasswordStoring restriction.
+
+Enabled: WinSCP prevents users from storing passwords in saved sites.
+
+Disabled: WinSCP permits password storing subject to the user's normal configuration.
+
+Not Configured: The policy value is not managed.
+
+Registry: HKLM\SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2\DisablePasswordStoring (DWORD).
+
+Vendor documentation: https://winscp.net/eng/docs/administration</string>
+
+      <string id="WinSCP_DisableOpenEdit">Prevent opening or editing files from WinSCP</string>
+      <string id="WinSCP_DisableOpenEdit_Help">Controls the WinSCP machine-level DisableOpenEdit restriction.
+
+Enabled: WinSCP restricts opening or editing files using its editor or associated local applications.
+
+Disabled: WinSCP permits file opening or editing subject to normal application behavior.
+
+Not Configured: The policy value is not managed.
+
+Registry: HKLM\SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2\DisableOpenEdit (DWORD).
+
+Vendor documentation: https://winscp.net/eng/docs/administration</string>
+
+      <string id="WinSCP_DisableAcceptingHostKeys">Require SSH host keys to be accepted in advance</string>
+      <string id="WinSCP_DisableAcceptingHostKeys_Help">Controls the WinSCP machine-level DisableAcceptingHostKeys restriction.
+
+Enabled: Users cannot connect to an SSH server whose host key has not already been accepted and cached. This can reduce the risk of users accepting an unexpected or spoofed host key at first connection. Ensure required host keys are provisioned before enabling this restriction.
+
+Disabled: Users may interactively accept a previously unknown SSH host key.
+
+Not Configured: The policy value is not managed.
+
+Registry: HKLM\SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2\DisableAcceptingHostKeys (DWORD).
+
+Vendor documentation: https://winscp.net/eng/docs/administration</string>
+
+      <string id="WinSCP_ForceBanners">Force authentication banners to be shown</string>
+      <string id="WinSCP_ForceBanners_Help">Controls the WinSCP machine-level ForceBanners restriction.
+
+Enabled: Authentication banners presented by a server are forced to be shown and users cannot suppress them through the normal WinSCP preference.
+
+Disabled: Authentication banners follow normal WinSCP behavior and user preferences.
+
+Not Configured: The policy value is not managed.
+
+Registry: HKLM\SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2\ForceBanners (DWORD).
+
+Vendor documentation: https://winscp.net/eng/docs/administration</string>
+
+      <string id="WinSCP_DefaultUpdatesPeriod">Configure default automatic update-check period for new users</string>
+      <string id="WinSCP_DefaultUpdatesPeriod_Help">Configures WinSCP's machine-level DefaultUpdatesPeriod value. The value is a default for users who do not already have their own update-period setting; it is not a hard enforcement setting for existing user profiles.
+
+Enabled: Enter the default check period in days. Use 0 for Never. The current WinSCP installer uses 7 days when update checking is enabled.
+
+Disabled: The policy does not configure the default update-check period. To set Never, enable this policy and enter 0.
+
+Not Configured: The policy value is not managed.
+
+Registry: HKLM\SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2\DefaultUpdatesPeriod (DWORD).
+
+Vendor documentation: https://winscp.net/eng/docs/administration</string>
+
+      <string id="WinSCP_DefaultCollectUsage">Default anonymous usage-statistics collection for new users</string>
+      <string id="WinSCP_DefaultCollectUsage_Help">Configures WinSCP's machine-level DefaultCollectUsage value. This is a default for users who do not already have their own CollectUsage setting; it is not a hard enforcement setting for existing user profiles.
+
+Enabled: New user profiles default to allowing anonymous usage statistics.
+
+Disabled: New user profiles default to not allowing anonymous usage statistics.
+
+Not Configured: The policy value is not managed.
+
+Registry: HKLM\SOFTWARE\Wow6432Node\Martin Prikryl\WinSCP 2\DefaultCollectUsage (DWORD).
+
+Vendor documentation: https://winscp.net/eng/docs/administration</string>
+    </stringTable>
+
+    <presentationTable>
+      <presentation id="WinSCP_DefaultUpdatesPeriod_Presentation">
+        <decimalTextBox refId="UpdatePeriodDays" defaultValue="7">Default update-check period (days; 0 = Never):</decimalTextBox>
+      </presentation>
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>

@@ -11,23 +11,30 @@
 #include "WinApi.h"
 #include <Xml.Win.msxmldom.hpp>
 //---------------------------------------------------------------------------
-UnicodeString GetFolderOrWorkspaceName(const UnicodeString & SessionName)
+UnicodeString GetFolderOrWorkspaceName(const UnicodeString & SessionName, TOptions * Options, bool PreferSite)
 {
   UnicodeString FolderOrWorkspaceName = DecodeUrlChars(SessionName);
   UnicodeString Result;
-  if (StoredSessions->IsFolderOrWorkspace(FolderOrWorkspaceName))
+  if ((Options == nullptr) || !Options->FindSwitch(WORKSPACE_SWITCH))
+  {
+    PreferSite = true;
+  }
+  if ((!PreferSite || (StoredSessions->FindByName(FolderOrWorkspaceName) == nullptr)) &&
+      StoredSessions->IsFolderOrWorkspace(FolderOrWorkspaceName))
   {
     Result = FolderOrWorkspaceName;
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
-  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm, int Flags)
+void GetLoginData(
+  const UnicodeString & SessionName, TOptions * Options,
+  TObjectList * DataList, UnicodeString & DownloadFile, TLoginNeed LoginNeed, TForm * LinkedForm, int Flags)
 {
   bool DefaultsOnly = false;
 
-  UnicodeString FolderOrWorkspaceName = GetFolderOrWorkspaceName(SessionName);
+  bool PreferSession = (LoginNeed == lnTerminal);
+  UnicodeString FolderOrWorkspaceName = GetFolderOrWorkspaceName(SessionName, Options, PreferSession);
   if (!FolderOrWorkspaceName.IsEmpty())
   {
     StoredSessions->GetFolderOrWorkspace(FolderOrWorkspaceName, DataList);
@@ -63,7 +70,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
     }
   }
 
-  if (DefaultsOnly && !NeedSession)
+  if (DefaultsOnly && (LoginNeed == lnNone))
   {
     // No URL specified on command-line and no explicit command-line parameter
     // that requires session was specified => noop
@@ -83,7 +90,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
     // - the specified session does not contain enough information to open [= not even hostname nor local browser]
 
     DebugAssert(DataList->Count <= 1);
-    if (!DoLoginDialog(DataList, LinkedForm))
+    if (!DoLoginDialog(DataList, LinkedForm, (LoginNeed == lnTerminal)))
     {
       Abort();
     }
@@ -1090,7 +1097,6 @@ int __fastcall Execute()
       enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize, pcEdit, pcRefresh } ParamCommand;
       ParamCommand = pcNone;
       UnicodeString AutoStartSession;
-      UnicodeString DownloadFile;
       int UseDefaults = -1;
 
       // do not check for temp dirs for service tasks (like RegisterAsUrlHandler)
@@ -1150,24 +1156,14 @@ int __fastcall Execute()
       }
 
       bool NewInstance = Params->FindSwitch(NEWINSTANCE_SWICH);
+      bool IsDownloadFile = false;
       if (Params->ParamCount > 0)
       {
         AutoStartSession = Params->ConsumeParam();
 
-        bool TrySendToAnotherInstance =
-          (ParamCommand == pcNone) &&
-          (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
-          !NewInstance &&
-          // With /rawconfig before session url, parsing commandline does not work correctly,
-          // when opening session in the other instance.
-          // And as it is not clear what it should do anyway, let's ban it and
-          // never send to the existing instance, whenever /rawconfig is used.
-          !Params->FindSwitch(RAW_CONFIG_SWITCH);
-
-        if (TrySendToAnotherInstance &&
-            !AutoStartSession.IsEmpty() &&
+        if (!AutoStartSession.IsEmpty() &&
             (AutoStartSession.Pos(L"/") > 0) && // optimization
-            GetFolderOrWorkspaceName(AutoStartSession).IsEmpty())
+            GetFolderOrWorkspaceName(AutoStartSession, Params, true).IsEmpty())
         {
           int DummyParsedInfo;
           UnicodeString DownloadFile2;
@@ -1178,9 +1174,20 @@ int __fastcall Execute()
             StoredSessions->ParseUrl(AutoStartSession, &Options, DummyParsedInfo, &DownloadFile2, NULL, Flags));
           if (!DownloadFile2.IsEmpty())
           {
-            TrySendToAnotherInstance = false;
+            IsDownloadFile = true;
           }
         }
+
+        bool TrySendToAnotherInstance =
+          (ParamCommand == pcNone) &&
+          !IsDownloadFile &&
+          (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
+          !NewInstance &&
+          // With /rawconfig before session url, parsing commandline does not work correctly,
+          // when opening session in the other instance.
+          // And as it is not clear what it should do anyway, let's ban it and
+          // never send to the existing instance, whenever /rawconfig is used.
+          !Params->FindSwitch(RAW_CONFIG_SWITCH);
 
         if (TrySendToAnotherInstance &&
             SendToAnotherInstance())
@@ -1229,7 +1236,20 @@ int __fastcall Execute()
       // from now flash message boxes in background
       SetOnForeground(false);
 
-      bool NeedSession = NewInstance || (ParamCommand != pcNone);
+      TLoginNeed LoginNeed;
+      bool CommandLineOperation = (ParamCommand != pcNone) || IsDownloadFile;
+      if (CommandLineOperation)
+      {
+        LoginNeed = lnTerminal;
+      }
+      else if (NewInstance)
+      {
+        LoginNeed = lnSession;
+      }
+      else
+      {
+        LoginNeed = lnNone;
+      }
 
       bool Retry;
       do
@@ -1240,10 +1260,12 @@ int __fastcall Execute()
         {
           int Flags = GetCommandLineParseUrlFlags(Params);
           AddStartupSequence(L"B");
-          GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, NeedSession, NULL, Flags);
+          UnicodeString DownloadFile;
+          GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, LoginNeed, NULL, Flags);
           // GetLoginData now Aborts when session is needed and none is selected
-          if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
+          if (DebugAlwaysTrue((LoginNeed == lnNone) || (DataList->Count > 0)))
           {
+            DebugAssert(IsDownloadFile == !DownloadFile.IsEmpty());
             if (CheckSafe(Params))
             {
               UnicodeString LogFile;
@@ -1289,7 +1311,7 @@ int __fastcall Execute()
               }
               else
               {
-                DebugAssert(!NeedSession);
+                DebugAssert(LoginNeed == lnNone);
                 CanStart = true;
               }
 
@@ -1318,7 +1340,7 @@ int __fastcall Execute()
                   // moved inside try .. __finally, because it can fail as well
                   TerminalManager->ScpExplorer = ScpExplorer.get();
 
-                  if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
+                  if (CommandLineOperation)
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
                     ScpExplorer->StandaloneOperation = true;

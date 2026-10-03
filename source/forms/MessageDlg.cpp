@@ -112,6 +112,7 @@ void __fastcall TMessageForm::UpdateForShiftState()
   if (FShiftState != ShiftState)
   {
     FShiftState = ShiftState;
+    bool DoUpdateUIState = false;
 
     for (int ComponentIndex = 0; ComponentIndex < ComponentCount - 1; ComponentIndex++)
     {
@@ -131,10 +132,17 @@ void __fastcall TMessageForm::UpdateForShiftState()
             Button->ModalResult = Item->Tag & 0xFFFF;
             DebugAssert(Button->OnClick == NULL);
             DebugAssert(Item->OnClick == MenuItemClick);
+            DoUpdateUIState = true;
             break;
           }
         }
       }
+    }
+
+    if (DoUpdateUIState)
+    {
+      // show the accel chars
+      Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEACCEL), NativeInt(0));
     }
   }
 }
@@ -458,7 +466,7 @@ void __fastcall TMessageForm::UpdateForShiftStateTimer(TObject * /*Sender*/)
   UpdateForShiftState();
 }
 //---------------------------------------------------------------------------
-void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
+void __fastcall TMessageForm::ButtonDropDownClick(TObject * Sender)
 {
   // as optimization, do not waste time running timer, unless
   // user pops up drop down menu. we do not have a way to stop timer, once
@@ -469,6 +477,9 @@ void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
     FUpdateForShiftStateTimer->Interval = 50;
     FUpdateForShiftStateTimer->OnTimer = UpdateForShiftStateTimer;
   }
+
+  auto Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
+  MenuPopup(Button->DropDownMenu, Button);
 }
 //---------------------------------------------------------------------------
 static const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,

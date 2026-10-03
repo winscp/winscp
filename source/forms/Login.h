@@ -339,6 +339,7 @@ private:
   UnicodeString FPasswordLabel;
   int FFixedSessionImages;
   bool FRestoring;
+  bool FNeedTerminal;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -452,7 +453,7 @@ protected:
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
-  void __fastcall Init(TForm * LinkedForm);
+  void Init(TForm * LinkedForm, bool NeedTerminal);
   bool __fastcall Execute(TList * DataList);
 };
 //----------------------------------------------------------------------------

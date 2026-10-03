@@ -252,11 +252,17 @@ class TPuttyCleanupThread : public TSingletonThread<TPuttyCleanupThread, 10, 100
 {
 protected:
   virtual void DoExecute(bool HasExpired);
+
+private:
+  std::unique_ptr<TStrings> FSessions;
 };
 //---------------------------------------------------------------------------
 void TPuttyCleanupThread::DoExecute(bool HasExpired)
 {
-  std::unique_ptr<TStrings> Sessions(new TStringList());
+  if (!FSessions)
+  {
+    FSessions.reset(new TStringList());
+  }
 
   TGuard Guard(FSection.get());
   std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
@@ -278,21 +284,22 @@ void TPuttyCleanupThread::DoExecute(bool HasExpired)
     }
 
     Sessions2->Sort();
-    if (!Sessions->Equals(Sessions2.get()))
+    if (!FSessions->Equals(Sessions2.get()))
     {
       // Just in case new sessions from another WinSCP instance are added, delay the cleanup
       // (to avoid having to implement some inter-process communication).
       // Both instances will attempt to do the cleanup, but that not a problem
-      Sessions->Assign(Sessions2.get());
+      FSessions->Assign(Sessions2.get());
       DoSchedule();
+      HasExpired = false;
     }
   }
 
   if (HasExpired)
   {
-    for (int Index = 0; Index < Sessions->Count; Index++)
+    for (int Index = 0; Index < Sessions2->Count; Index++)
     {
-      UnicodeString SessionName = Sessions->Strings[Index];
+      UnicodeString SessionName = Sessions2->Strings[Index];
       Storage->RecursiveDeleteSubKey(SessionName);
     }
 

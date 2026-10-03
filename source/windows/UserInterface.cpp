@@ -417,6 +417,7 @@ UnicodeString GetThemeName(bool Dark)
 void __fastcall ConfigureInterface()
 {
   DebugAssert(WinConfiguration != NULL);
+  RefreshColorMode(WinConfiguration->UseDarkTheme());
   int BidiModeFlag =
     AdjustLocaleFlag(LoadStr(BIDI_MODE), WinConfiguration->BidiModeOverride, false, bdRightToLeft, bdLeftToRight);
   Application->BiDiMode = static_cast<TBiDiMode>(BidiModeFlag);

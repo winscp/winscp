@@ -606,6 +606,7 @@ void __fastcall TWinConfiguration::Default()
   FGenerateUrlAssemblyLanguage = alCSharp;
   FExternalSessionInExistingInstance = true;
   FShowLoginWhenNoSession = true;
+  FKeepLoginAfterOpenInPutty = false;
   FKeepOpenWhenNoSession = true;
   FDefaultToNewRemoteTab = true;
   FLocalIconsByExt = false;
@@ -1096,6 +1097,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Enum,     GenerateUrlAssemblyLanguage); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
     KEY(Bool,     ShowLoginWhenNoSession); \
+    KEY(Bool,     KeepLoginAfterOpenInPutty); \
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     DefaultToNewRemoteTab); \
     KEY(Bool,     LocalIconsByExt); \
@@ -2392,6 +2394,11 @@ void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool val
 void __fastcall TWinConfiguration::SetShowLoginWhenNoSession(bool value)
 {
   SET_CONFIG_PROPERTY(ShowLoginWhenNoSession);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetKeepLoginAfterOpenInPutty(bool value)
+{
+  SET_CONFIG_PROPERTY(KeepLoginAfterOpenInPutty);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)

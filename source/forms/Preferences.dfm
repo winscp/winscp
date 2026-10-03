@@ -2315,7 +2315,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 294
             Height = 23
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
+            MaxLength = 255
             TabOrder = 3
             Text = 'UpdatesProxyHostEdit'
           end

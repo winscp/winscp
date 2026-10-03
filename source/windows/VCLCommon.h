@@ -62,7 +62,7 @@ void __fastcall CutFormToDesktop(TForm * Form);
 TRect GetCenterRect(TControl * CenterControl, Forms::TMonitor * CenterMonitor);
 void CenterFormOn(TRect & Bounds, const TRect & CenterRect);
 void CenterFormOn(TRect & Bounds, TControl * CenterControl, Forms::TMonitor * CenterMonitor);
-void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position);
+void UpdateFormPosition(TCustomForm * Form, TPosition Position, Forms::TMonitor * Monitor = nullptr);
 void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height);
 TComponent * __fastcall GetFormOwner();
 TForm * __fastcall GetMainForm();

@@ -117,7 +117,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       Width = 246
       Height = 23
       Anchors = [akLeft, akTop, akRight]
-      MaxLength = 250
+      MaxLength = 255
       TabOrder = 0
       OnChange = ControlChange
       OnExit = MaskEditExit

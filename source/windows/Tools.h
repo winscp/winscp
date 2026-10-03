@@ -23,10 +23,11 @@ UnicodeString GetIniFileParam();
 IShellLink * __fastcall CreateAppDesktopShortCut(
   const UnicodeString & Name, const UnicodeString & Params, const UnicodeString & Description,
   const KNOWNFOLDERID * FolderID, int IconIndex = 0, bool Return = false);
-IShellLink * __fastcall CreateDesktopSessionShortCut(
+enum TSessionShortCut { sscSite, sscFolder, sscWorkspace };
+IShellLink * CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,
   const UnicodeString & AdditionalParams,
-  const KNOWNFOLDERID * FolderID, int IconIndex, bool Return = false);
+  const KNOWNFOLDERID * FolderID, TSessionShortCut SessionShortCut, bool Return = false);
 UnicodeString __fastcall GetListViewStr(TCustomListView * ListView);
 void __fastcall LoadListViewStr(TCustomListView * ListView, UnicodeString LayoutStr);
 void RestoreForm(const UnicodeString & Data, TForm * Form, bool PositionOnly = false, const UnicodeString & DefaultData = EmptyStr);

@@ -471,6 +471,7 @@ private:
   TAssemblyLanguage FGenerateUrlAssemblyLanguage;
   bool FExternalSessionInExistingInstance;
   bool FShowLoginWhenNoSession;
+  bool FKeepLoginAfterOpenInPutty;
   bool FKeepOpenWhenNoSession;
   bool FDefaultToNewRemoteTab;
   bool FLocalIconsByExt;
@@ -590,6 +591,7 @@ private:
   void __fastcall SetGenerateUrlAssemblyLanguage(TAssemblyLanguage value);
   void __fastcall SetExternalSessionInExistingInstance(bool value);
   void __fastcall SetShowLoginWhenNoSession(bool value);
+  void SetKeepLoginAfterOpenInPutty(bool value);
   void __fastcall SetKeepOpenWhenNoSession(bool value);
   void __fastcall SetDefaultToNewRemoteTab(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
@@ -801,6 +803,7 @@ public:
   __property TAssemblyLanguage GenerateUrlAssemblyLanguage = { read = FGenerateUrlAssemblyLanguage, write = SetGenerateUrlAssemblyLanguage };
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
   __property bool ShowLoginWhenNoSession = { read = FShowLoginWhenNoSession, write = SetShowLoginWhenNoSession };
+  __property bool KeepLoginAfterOpenInPutty = { read = FKeepLoginAfterOpenInPutty, write = SetKeepLoginAfterOpenInPutty };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool DefaultToNewRemoteTab = { read = FDefaultToNewRemoteTab, write = SetDefaultToNewRemoteTab };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };

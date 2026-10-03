@@ -43,7 +43,7 @@ cmake_minimum_required(VERSION 3.17.0)
 
 project(expat
     VERSION
-        2.8.4
+        2.8.5
     LANGUAGES
         C
 )
@@ -229,15 +229,6 @@ if(MSVC)
             message(WARNING "MSVC_VERSION ${MSVC_VERSION} is NOT OFFICIALLY SUPPORTED by Expat.")
             message(WARNING "Please use ${_EXPAT_MSVC_SUPPORTED_DISPLAY} or later.  Thank you!")
         endif()
-    endif()
-
-    # Avoid clashing of /source-charset:utf-8 with incompatible /utf-8
-    if(NOT CMAKE_CXX_FLAGS MATCHES /utf-8)
-        # Stop MSVC from trying to decode the source files using
-        # the Windows system code page encoding that could e.g. be Windows-936
-        # on a Chinese Windows system rather than UTF-8.
-        # https://devblogs.microsoft.com/cppblog/new-options-for-managing-character-sets-in-the-microsoft-cc-compiler/
-        add_compile_options(/source-charset:utf-8)
     endif()
 endif()
 
@@ -557,7 +548,7 @@ foreach(build_type_upper
 endforeach()
 
 set(LIBCURRENT 13)  # sync
-set(LIBREVISION 4)  # with
+set(LIBREVISION 5)  # with
 set(LIBAGE 12)      # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
@@ -735,6 +726,7 @@ if(EXPAT_BUILD_TESTS)
         tests/common.c
         tests/dummy.c
         tests/handlers.c
+        tests/hash_tests.c
         tests/memcheck.c
         tests/minicheck.c
         tests/misc_tests.c

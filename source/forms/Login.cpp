@@ -24,14 +24,14 @@ const int LoginImageIndex = 0;
 const int OpenWorkspaceImageIndex = 5;
 const int OpenFolderImageIndex = 6;
 //---------------------------------------------------------------------------
-bool __fastcall DoLoginDialog(TList * DataList, TForm * LinkedForm)
+bool DoLoginDialog(TList * DataList, TForm * LinkedForm, bool NeedTerminal)
 {
   DebugAssert(DataList != NULL);
   TLoginDialog * LoginDialog = SafeFormCreate<TLoginDialog>();
   bool Result;
   try
   {
-    LoginDialog->Init(LinkedForm);
+    LoginDialog->Init(LinkedForm, NeedTerminal);
     Result = LoginDialog->Execute(DataList);
   }
   __finally
@@ -63,6 +63,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FLinkedForm = NULL;
   FRestoring = false;
   FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
+  FNeedTerminal = false;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -93,9 +94,10 @@ void __fastcall TLoginDialog::InvalidateSessionData()
   FSessionData = NULL;
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::Init(TForm * LinkedForm)
+void TLoginDialog::Init(TForm * LinkedForm, bool NeedTerminal)
 {
   FLinkedForm = LinkedForm;
+  FNeedTerminal = NeedTerminal;
   LoadSessions();
   UnicodeString Dummy;
   RunPageantAction->Visible = FindTool(PageantTool, Dummy);
@@ -1247,7 +1249,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == LoginAction)
   {
-    LoginAction->Enabled = CanOpen();
+    LoginAction->Enabled = FNeedTerminal ? IsSiteAndCanOpen() : CanOpen();
     LoginAction->Caption = FolderOrWorkspaceSelected ? LoadStr(LOGIN_OPEN) : LoadStr(LOGIN_LOGIN);
     LoginAction->ImageIndex = FolderOrWorkspaceSelected ? (WorkspaceSelected ? OpenWorkspaceImageIndex : OpenFolderImageIndex) : LoginImageIndex;
     UpdateLoginButton();
@@ -1256,6 +1258,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   {
     TSessionData * Data = GetSessionData();
     Action->Enabled =
+      // IsLocalBrowser is an excess test as a stored site cannot be a local browser and such test is not done in other similar situations
       (IsSiteAndCanOpen() && !Data->IsLocalBrowser && !Data->Tunnel) ||
       (IsFolderOrWorkspaceAndCanOpen() && IsFolderNode(SessionTree->Selected));
   }
@@ -1794,36 +1797,37 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
   UnicodeString Message;
   UnicodeString Name;
   UnicodeString AdditionalParams = TProgramParams::FormatSwitch(DESKTOP_SWITCH);
-  int IconIndex = 0;
+  TSessionShortCut SessionShortCut;
   if (IsSiteNode(Node))
   {
     Name = GetNodeSession(Node)->Name;
     Message = FMTLOAD(CONFIRM_CREATE_SHORTCUT, (Name));
     AddToList(AdditionalParams, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), L" ");
-    IconIndex = SITE_ICON;
+    SessionShortCut = sscSite;
   }
   else if (IsFolderNode(Node))
   {
     Name = SessionNodePath(SessionTree->Selected);
     Message = FMTLOAD(CONFIRM_CREATE_SHORTCUT_FOLDER, (Name));
-    IconIndex = SITE_FOLDER_ICON;
+    SessionShortCut = sscFolder;
   }
   else if (IsWorkspaceNode(Node))
   {
     Name = SessionNodePath(SessionTree->Selected);
     Message = FMTLOAD(CONFIRM_CREATE_SHORTCUT_WORKSPACE, (Name));
-    IconIndex = WORKSPACE_ICON;
+    SessionShortCut = sscWorkspace;
   }
   else
   {
     DebugFail();
+    SessionShortCut = TSessionShortCut();
   }
 
   Message = MainInstructions(Message);
   if (MessageDialog(Message, qtConfirmation, qaYes | qaNo, HELP_CREATE_SHORTCUT) == qaYes)
   {
     TInstantOperationVisualizer Visualizer;
-    CreateDesktopSessionShortCut(Name, L"", AdditionalParams, nullptr, IconIndex);
+    CreateDesktopSessionShortCut(Name, L"", AdditionalParams, nullptr, SessionShortCut);
   }
 }
 //---------------------------------------------------------------------------
@@ -1843,7 +1847,7 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
     CreateDesktopSessionShortCut(
       SelectedSession->Name,
       FMTLOAD(SESSION_SENDTO_HOOK_NAME2, (SelectedSession->LocalName, AppName)),
-      AdditionalParams, &FolderID, SITE_ICON);
+      AdditionalParams, &FolderID, sscSite);
   }
 }
 //---------------------------------------------------------------------------
@@ -3159,7 +3163,8 @@ void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
   }
   // following may take some time, so cache the shift key state,
   // in case user manages to release it before following finishes
-  bool Close = !OpenInNewWindow();
+  bool AOpenInNewWindow = (OpenInNewWindow() != WinConfiguration->KeepLoginAfterOpenInPutty);
+  bool Close = !AOpenInNewWindow && !FNeedTerminal;
 
   std::unique_ptr<TList> DataList(new TList());
   SaveDataList(DataList.get());

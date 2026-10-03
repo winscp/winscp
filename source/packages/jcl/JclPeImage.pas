@@ -71,6 +71,7 @@ type
   // Base list
   EJclPeImageError = class(EJclError);
 
+  {$IFNDEF WINSCP}
   TJclPeImage = class;
 
   TJclPeImageClass = class of TJclPeImage;
@@ -312,6 +313,8 @@ type
     property TotalResolveCheck: TJclPeResolveCheck read FTotalResolveCheck;
   end;
 
+  {$ENDIF WINSCP}
+
   // Resource section related classes
   TJclPeResourceKind = (
     rtUnknown0,
@@ -340,6 +343,8 @@ type
     rtHmtl,
     rtManifest,
     rtUserDefined);
+
+  {$IFNDEF WINSCP}
 
   TJclPeResourceList = class;
   TJclPeResourceItem = class;
@@ -511,6 +516,8 @@ type
     property Image: TJclPeImage read FImage;
   end;
 
+  {$ENDIF WINSCP}
+
   // PE Image
   TJclPeHeader = (
     JclPeHeader_Signature,
@@ -578,6 +585,8 @@ type
 
   TJclPeImageStatus = (stNotLoaded, stOk, stNotPE, stNotSupported, stNotFound, stError);
   TJclPeTarget = (taUnknown, taWin32, taWin64);
+
+  {$IFNDEF WINSCP}
 
   TJclPeImage = class(TObject)
   private
@@ -853,6 +862,8 @@ type
     property OnProcessFile: TJclPeNameSearchNotifyEvent read FOnProcessFile write FOnProcessFile;
   end;
 
+  {$ENDIF}
+
 // PE Image miscellaneous functions
 type
   TJclRebaseImageInfo32 = record
@@ -882,7 +893,9 @@ function PeGetNtHeaders64(const FileName: TFileName; out NtHeaders: TImageNtHead
 
 { Image modifications }
 
+{$IFNDEF WINSCP}
 function PeCreateNameHintTable(const FileName: TFileName): Boolean;
+{$ENDIF WINSCP}
 
 // use PeRebaseImage32
 //function PeRebaseImage(const ImageName: TFileName; NewBase: DWORD = 0; TimeStamp: DWORD = 0;
@@ -892,20 +905,25 @@ function PeRebaseImage32(const ImageName: TFileName; NewBase: TJclAddr32 = 0; Ti
 function PeRebaseImage64(const ImageName: TFileName; NewBase: TJclAddr64 = 0; TimeStamp: DWORD = 0;
   MaxNewSize: DWORD = 0): TJclRebaseImageInfo64;
 
+{$IFNDEF WINSCP}
 function PeUpdateLinkerTimeStamp(const FileName: TFileName; const Time: TDateTime): Boolean;
 function PeReadLinkerTimeStamp(const FileName: TFileName): TDateTime;
+{$ENDIF WINSCP}
 
 function PeInsertSection(const FileName: TFileName; SectionStream: TStream; SectionName: string): Boolean;
 
 { Image Checksum }
 
+{$IFNDEF WINSCP}
 function PeVerifyCheckSum(const FileName: TFileName): Boolean;
+{$ENDIF WINSCP}
 function PeClearCheckSum(const FileName: TFileName): Boolean;
 function PeUpdateCheckSum(const FileName: TFileName): Boolean;
 
 // Various simple PE Image searching and listing routines
 { Exports searching }
 
+{$IFNDEF WINSCP}
 function PeDoesExportFunction(const FileName: TFileName; const FunctionName: string;
   Options: TJclSmartCompOptions = []): Boolean;
 
@@ -955,6 +973,7 @@ function PeFindMissingImports(const FileName: TFileName; MissingImportsList: TSt
 function PeFindMissingImports(RequiredImportsList, MissingImportsList: TStrings): Boolean; overload;
 
 function PeCreateRequiredImportList(const FileName: TFileName; RequiredImportsList: TStrings): Boolean;
+{$ENDIF WINSCP}
 
 // Mapped or loaded image related routines
 // use PeMapImgNtHeaders32
@@ -1003,12 +1022,16 @@ function PeMapImgFindSection(const ImageSectionHeaders: TImageSectionHeaderArray
 function PeMapImgFindSectionFromModule(const BaseAddress: Pointer;
   const SectionName: string): PImageSectionHeader;
 
+{$IFNDEF WINSCP}
 function PeMapImgExportedVariables(const Module: HMODULE; const VariablesList: TStrings): Boolean;
+{$ENDIF WINSCP}
 
 function PeMapImgResolvePackageThunk(Address: Pointer): Pointer;
 
+{$IFNDEF WINSCP}
 function PeMapFindResource(const Module: HMODULE; const ResourceType: PChar;
   const ResourceName: string): Pointer;
+{$ENDIF WINSCP}
 
 type
   TJclPeSectionStream = class(TCustomMemoryStream)
@@ -1129,7 +1152,7 @@ uses
   Character,
   {$ENDIF HAS_UNIT_CHARACTER}
   {$ENDIF ~HAS_UNITSCOPE}
-  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, JclAnsiStrings, JclStrings{$IFNDEF WINSCP}, JclStringConversions{$ENDIF ~WINSCP}, JclTD32;
+  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, JclAnsiStrings, JclStrings{$IFNDEF WINSCP}, JclStringConversions, JclTD32{$ENDIF ~WINSCP};
 
 const
   MANIFESTExtension = '.manifest';
@@ -1199,6 +1222,8 @@ begin
     Result := (StrIComp(T1, T2) = 0);
 end;
 
+{$IFNDEF WINSCP}
+
 function CreatePeImage(const FileName: TFileName): TJclPeImage;
 begin
   Result := TJclPeImage.Create(True);
@@ -1254,6 +1279,8 @@ begin
   end;
 end;
 
+{$ENDIF}
+
 // Smart name compare function
 function PeStripFunctionAW(const FunctionName: string): string;
 var
@@ -1292,6 +1319,8 @@ begin
       Result := False;
   end;
 end;
+
+{$IFNDEF WINSCP}
 
 //=== { TJclPeImagesCache } ==================================================
 
@@ -5003,6 +5032,8 @@ begin
   {$ENDIF ~RTL210_UP}
 end;
 
+{$ENDIF WINSCP}
+
 //=== PE Image miscellaneous functions =======================================
 
 function IsValidPeFile(const FileName: TFileName): Boolean;
@@ -5082,6 +5113,8 @@ begin
     FileClose(FileHandle);
   end;
 end;
+
+{$IFNDEF WINSCP}
 
 function PeCreateNameHintTable(const FileName: TFileName): Boolean;
 var
@@ -5179,6 +5212,8 @@ begin
   end;
 end;
 
+{$ENDIF WINSCP}
+
 function PeRebaseImage32(const ImageName: TFileName; NewBase: TJclAddr32;
   TimeStamp, MaxNewSize: DWORD): TJclRebaseImageInfo32;
 
@@ -5260,6 +5295,8 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
+
 function PeUpdateLinkerTimeStamp(const FileName: TFileName; const Time: TDateTime): Boolean;
 var
   Mapping: TJclFileMapping;
@@ -5297,6 +5334,8 @@ begin
   end;
 end;
 
+{$ENDIF WINSCP}
+
 { TODO -cHelp : Author: Uwe Schuster(just a generic version of JclDebug.InsertDebugDataIntoExecutableFile) }
 function PeInsertSection(const FileName: TFileName; SectionStream: TStream; SectionName: string): Boolean;
   procedure RoundUpToAlignment(var Value: DWORD; Alignment: DWORD);
@@ -5304,11 +5343,87 @@ function PeInsertSection(const FileName: TFileName; SectionStream: TStream; Sect
     if (Value mod Alignment) <> 0 then
       Value := ((Value div Alignment) + 1) * Alignment;
   end;
+
+  // Insert ACount zero bytes at file offset AOffset in the in-memory image, shifting
+  // everything from AOffset onward forward by ACount. Used to enlarge the header area
+  // so that another section header fits before the first section's raw data.
+  // NOTE: ImageStream.Memory may be reallocated, so callers must re-fetch any pointers
+  // into it afterwards.
+  procedure InsertHeaderSpace(ImageStream: TMemoryStream; AOffset, ACount: DWORD);
+  var
+    OldSize: Int64;
+    CurPos: Int64;
+    ChunkSize: Integer;
+    Buffer: array of Byte;
+  begin
+    OldSize := ImageStream.Size;
+    ImageStream.Size := OldSize + ACount;
+    SetLength(Buffer, 1024 * 1024);
+    CurPos := OldSize;
+    while CurPos > AOffset do
+    begin
+      ChunkSize := Length(Buffer);
+      if CurPos - ChunkSize < AOffset then
+        ChunkSize := Integer(CurPos - AOffset);
+      Dec(CurPos, ChunkSize);
+      ImageStream.Position := CurPos;
+      ImageStream.ReadBuffer(Buffer[0], ChunkSize);
+      ImageStream.Position := CurPos + ACount;
+      ImageStream.WriteBuffer(Buffer[0], ChunkSize);
+    end;
+    // zero the inserted gap (ACount = FileAlignment <= 64K, fits in Buffer)
+    FillChar(Buffer[0], ACount, 0);
+    ImageStream.Position := AOffset;
+    ImageStream.WriteBuffer(Buffer[0], ACount);
+  end;
+
+  // Ensure the section header table has room for one more entry before the first
+  // section's raw data. When it does not, a single FileAlignment block of zero bytes
+  // is inserted into the header area and every populated section's PointerToRawData is
+  // shifted forward to match; the function then returns True so the caller can grow
+  // SizeOfHeaders in step. Without that the section table runs past SizeOfHeaders and,
+  // while Windows still loads the image, strict PE validators such as signtool reject
+  // it with ERROR_BAD_EXE_FORMAT (0x800700C1).
+  // The section table sits at the same file offset for 32- and 64-bit images, so the
+  // 32-bit mapping helpers locate it correctly for both targets; only the per-target
+  // OptionalHeader.SizeOfHeaders (updated by the caller) lives at a different offset.
+  // NOTE: ImageStream.Memory may be reallocated, so the caller must re-fetch any
+  // pointers into it whenever this returns True.
+  function EnsureSectionHeaderSpace(ImageStream: TMemoryStream;
+    NumberOfSections: Integer; FileAlignment: DWORD): Boolean;
+  var
+    Sections, SecPtr: PImageSectionHeader;
+    FirstRawData: DWORD;
+    NewSectionTableEnd: TJclAddr;
+    I: Integer;
+  begin
+    Sections := PeMapImgSections32(PeMapImgNtHeaders32(ImageStream.Memory));
+    FirstRawData := Sections^.PointerToRawData;
+    NewSectionTableEnd := (TJclAddr(Sections) - TJclAddr(ImageStream.Memory)) +
+      TJclAddr(SizeOf(TImageSectionHeader)) * TJclAddr(NumberOfSections + 1);
+    Result := NewSectionTableEnd > FirstRawData;
+    if not Result then
+      Exit;
+
+    InsertHeaderSpace(ImageStream, FirstRawData, FileAlignment);
+
+    // ImageStream.Memory may have been reallocated -> re-fetch before shifting.
+    Sections := PeMapImgSections32(PeMapImgNtHeaders32(ImageStream.Memory));
+    SecPtr := Sections;
+    for I := 0 to NumberOfSections - 1 do
+    begin
+      // Sections with no raw data on disk (e.g. .bss, .tls) keep PointerToRawData = 0.
+      if SecPtr^.PointerToRawData <> 0 then
+        Inc(SecPtr^.PointerToRawData, FileAlignment);
+      Inc(SecPtr);
+    end;
+  end;
+
   function PeInsertSection32(ImageStream: TMemoryStream): Boolean;
   var
     NtHeaders: PImageNtHeaders32;
     Sections, LastSection, NewSection: PImageSectionHeader;
-    VirtualAlignedSize: DWORD;
+    VirtualAlignedSize, FileAlignment: DWORD;
     I, X, NeedFill: Integer;
     SectionDataSize: Integer;
     UTF8Name: TUTF8String;
@@ -5325,6 +5440,19 @@ function PeInsertSection(const FileName: TFileName; SectionStream: TStream; Sect
       begin
         Result := True;
         Exit;
+      end;
+
+      FileAlignment := NtHeaders^.OptionalHeader.FileAlignment;
+
+      // Make room for the new section header when it would not fit before the first
+      // section's raw data, growing SizeOfHeaders in step so the image stays valid for
+      // strict PE validators (e.g. signtool, ERROR_BAD_EXE_FORMAT otherwise).
+      if EnsureSectionHeaderSpace(ImageStream, NtHeaders^.FileHeader.NumberOfSections, FileAlignment) then
+      begin
+        // ImageStream.Memory was reallocated -> re-fetch the typed pointers.
+        NtHeaders := PeMapImgNtHeaders32(ImageStream.Memory);
+        Sections := PeMapImgSections32(NtHeaders);
+        Inc(NtHeaders^.OptionalHeader.SizeOfHeaders, FileAlignment);
       end;
 
       LastSection := Sections;
@@ -5379,7 +5507,7 @@ function PeInsertSection(const FileName: TFileName; SectionStream: TStream; Sect
   var
     NtHeaders: PImageNtHeaders64;
     Sections, LastSection, NewSection: PImageSectionHeader;
-    VirtualAlignedSize: DWORD;
+    VirtualAlignedSize, FileAlignment: DWORD;
     I, X, NeedFill: Integer;
     SectionDataSize: Integer;
     UTF8Name: TUTF8String;
@@ -5396,6 +5524,19 @@ function PeInsertSection(const FileName: TFileName; SectionStream: TStream; Sect
       begin
         Result := True;
         Exit;
+      end;
+
+      FileAlignment := NtHeaders^.OptionalHeader.FileAlignment;
+
+      // Make room for the new section header when it would not fit before the first
+      // section's raw data, growing SizeOfHeaders in step so the image stays valid for
+      // strict PE validators (e.g. signtool, ERROR_BAD_EXE_FORMAT otherwise).
+      if EnsureSectionHeaderSpace(ImageStream, NtHeaders^.FileHeader.NumberOfSections, FileAlignment) then
+      begin
+        // ImageStream.Memory was reallocated -> re-fetch the typed pointers.
+        NtHeaders := PeMapImgNtHeaders64(ImageStream.Memory);
+        Sections := PeMapImgSections64(NtHeaders);
+        Inc(NtHeaders^.OptionalHeader.SizeOfHeaders, FileAlignment);
       end;
 
       LastSection := Sections;
@@ -5467,11 +5608,17 @@ begin
     end;
 
     if Result then
+    begin
       ImageStream.SaveToFile(FileName);
+      // The inserted section invalidated the original PE checksum; recompute it.
+      PeUpdateCheckSum(FileName);
+    end;
   finally
     ImageStream.Free;
   end;
 end;
+
+{$IFNDEF WINSCP}
 
 function PeVerifyCheckSum(const FileName: TFileName): Boolean;
 begin
@@ -5482,6 +5629,8 @@ begin
     Free;
   end;
 end;
+
+{$ENDIF WINSCP}
 
 function PeClearCheckSum(const FileName: TFileName): Boolean;
   function PeClearCheckSum32(ModuleAddress: Pointer): Boolean;
@@ -5535,6 +5684,8 @@ begin
 end;
 
 // Various simple PE Image searching and listing routines
+
+{$IFNDEF WINSCP}
 
 function PeDoesExportFunction(const FileName: TFileName; const FunctionName: string;
   Options: TJclSmartCompOptions): Boolean;
@@ -5893,6 +6044,8 @@ function PeCreateRequiredImportList(const FileName: TFileName; RequiredImportsLi
 begin
   Result := PeImportedFunctions(FileName, RequiredImportsList, '', True);
 end;
+
+{$ENDIF WINSCP}
 
 // Mapped or loaded image related functions
 
@@ -6294,6 +6447,8 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
+
 function PeMapImgExportedVariables(const Module: HMODULE; const VariablesList: TStrings): Boolean;
 var
   I: Integer;
@@ -6319,6 +6474,8 @@ begin
     Free;
   end;
 end;
+
+{$ENDIF WINSCP}
 
 function PeMapImgResolvePackageThunk(Address: Pointer): Pointer;
 {$IFDEF BORLAND}
@@ -6358,6 +6515,8 @@ begin
 end;
 {$ENDIF FPC}
 
+{$IFNDEF WINSCP}
+
 function PeMapFindResource(const Module: HMODULE; const ResourceType: PChar;
   const ResourceName: string): Pointer;
 var
@@ -6377,6 +6536,8 @@ begin
     Free;
   end;
 end;
+
+{$ENDIF WINSCP}
 
 //=== { TJclPeSectionStream } ================================================
 

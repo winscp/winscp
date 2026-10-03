@@ -77,12 +77,14 @@ function JclRemoveExceptNotifier(const NotifyMethod: TJclExceptNotifyMethod): Bo
 procedure JclReplaceExceptObj(NewExceptObj: Exception);
 
 // Exception hooking routines
+{$IFNDEF WINSCP}
 function JclHookExceptions: Boolean;
 function JclUnhookExceptions: Boolean;
 function JclExceptionsHooked: Boolean;
 
 function JclHookExceptionsInModule(Module: HMODULE): Boolean;
 function JclUnhookExceptionsInModule(Module: HMODULE): Boolean;
+{$ENDIF}
 
 // Exceptions hooking in libraries
 type
@@ -110,7 +112,9 @@ implementation
 
 uses
   JclBase,
+  {$IFNDEF WINSCP}
   JclPeImage,
+  {$ENDIF}
   JclSysInfo, JclSysUtils;
 
 type
@@ -147,7 +151,9 @@ type
   end;
 
 var
+  {$IFNDEF WINSCP}
   ExceptionsHooked: Boolean;
+  {$ENDIF}
   Kernel32_RaiseException: procedure (dwExceptionCode, dwExceptionFlags,
     nNumberOfArguments: DWORD; lpArguments: PDWORD); stdcall;
   {$IFDEF BORLAND}
@@ -606,12 +612,15 @@ begin
     hooked separately, so we're covered. }
 end;
 
+{$IFNDEF WINSCP}
 function HasCppRtl: Boolean;
 begin
   Result := GetCppRtlBase <> TJclPeMapImgHooks.SystemBase;
 end;
+{$ENDIF}
 {$ENDIF BORLAND}
 
+{$IFNDEF WINSCP}
 function JclHookExceptions: Boolean;
 var
   RaiseExceptionAddressCache: Pointer;
@@ -689,6 +698,7 @@ begin
   Result := ExceptionsHooked and
     TJclPeMapImgHooks.ReplaceImport(Pointer(Module), kernel32, @HookedRaiseException, @Kernel32_RaiseException);
 end;
+{$ENDIF}
 
 {$IFDEF HOOK_DLL_EXCEPTIONS}
 // Exceptions hooking in libraries
