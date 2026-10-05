@@ -69,3 +69,66 @@ void __fastcall TDriveView::CreateWnd()
   AddStartupSequence(L"V" + StartupSequenceTag);
   #endif
 }
+//---------------------------------------------------------------------------
+void __fastcall TDriveView::ReadSubDirs(TTreeNode * Node)
+{
+  auto NodeData = static_cast<TNodeData *>(Node->Data);
+  UnicodeString Path = NodePath(Node);
+  TSearchRec SRec;
+  if (!FindFirstSubDir(IncludeTrailingBackslash(Path) + L"*.*", SRec))
+  {
+    Node->HasChildren = false;
+  }
+  else
+  {
+    int CheckInterval = 100;
+    int Limit = DriveViewLoadingTooLongLimit * 1000;
+    if (!Showing)
+    {
+      Limit /= 10;
+      CheckInterval /= 10;
+    }
+    if (!ReadSubDirsBatch(Node, SRec, CheckInterval, Limit))
+    {
+      NodeData->DelayedSrec = SRec;
+      NodeData->DelayedExclude = new TStringList();
+      NodeData->DelayedExclude->CaseSensitive = false;
+      NodeData->DelayedExclude->Sorted = true;
+      FDelayedNodes->AddObject(Path, Node);
+      DebugAssert(FDelayedNodes->Count < 20); // if more, something went likely wrong
+      UpdateDelayedNodeTimer();
+    }
+    SortChildren(Node, false);
+  }
+
+  NodeData->Scanned = true;
+
+  Application->ProcessMessages();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TDriveView::DoScanDir(TTreeNode * FromNode)
+{
+  return !static_cast<TNodeData *>(FromNode->Data)->IsRecycleBin;
+}
+//---------------------------------------------------------------------------
+void __fastcall TDriveView::AddChildNode(TTreeNode * ParentNode, UnicodeString ParentPath, const TSearchRec & SRec)
+{
+  auto NodeData = new TNodeData();
+  NodeData->Attr = SRec.Attr;
+  NodeData->DirName = SRec.Name;
+  NodeData->IsRecycleBin =
+    FLAGSET(SRec.Attr, faSysFile) &&
+    (ParentNode->Parent == nullptr) &&
+    (SameText(SRec.Name, L"RECYCLED") ||
+     SameText(SRec.Name, L"RECYCLER") ||
+     SameText(SRec.Name, L"$RECYCLE.BIN"));
+  NodeData->Scanned = false;
+
+  TTreeNode * NewNode = Items->AddChildObject(ParentNode, EmptyStr, NodeData);
+  NewNode->Text = GetDisplayName(NewNode);
+  NewNode->HasChildren = true;
+  if (GetDriveTypetoNode(ParentNode) != DRIVE_REMOTE)
+  {
+    FSubDirReaderThread->Add(NewNode, IncludeTrailingBackslash(ParentPath) + SRec.Name);
+  }
+}

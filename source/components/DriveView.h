@@ -18,6 +18,9 @@ protected:
 
   virtual bool __fastcall GetNextDriveStatus(int & Iterator, UnicodeString * Drive, TDriveStatus *& Status);
   virtual void __fastcall CreateWnd();
+  virtual void __fastcall ReadSubDirs(TTreeNode * Node);
+  virtual bool __fastcall DoScanDir(TTreeNode * FromNode);
+  virtual void __fastcall AddChildNode(TTreeNode * ParentNode, UnicodeString ParentPath, const TSearchRec & SRec);
 
 private:
   TDriveStatus * GetDriveStatus(int Index);
