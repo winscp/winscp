@@ -80,6 +80,7 @@ type
     FScanned: Boolean;
     FData: Pointer;
     FIsRecycleBin: Boolean;
+    FIsRemote: Boolean;
     FIconEmpty: Boolean;
     FSchedule: TSubDirReaderSchedule;
 
@@ -95,6 +96,7 @@ type
     property Scanned: Boolean read FScanned write FScanned;
     property Data: Pointer read FData write FData;
     property IsRecycleBin: Boolean read FIsRecycleBin write FIsRecycleBin;
+    property IsRemote: Boolean read FIsRemote write FIsRemote;
     property IconEmpty: Boolean read FIconEmpty write FIconEmpty;
     property Schedule: TSubDirReaderSchedule read FSchedule write FSchedule;
   end;
@@ -183,7 +185,7 @@ type
     procedure ReadSubDirs(Node: TTreeNode); virtual; abstract;
     procedure CancelDelayedNode(Node: TTreeNode);
     procedure DelayedNodeTimer(Sender: TObject);
-    function ReadSubDirsBatch(Node: TTreeNode; var SRec: TSearchRec; CheckInterval, Limit: Integer): Boolean;
+    function ReadSubDirsBatch(Node: TTreeNode; var SRec: TSearchRec; CheckInterval, Limit: Integer; Start: TDateTime): Boolean;
     procedure UpdateDelayedNodeTimer;
     function DoSearchSubDirs(
       ParentNode: TTreeNode; Path: string; Level: Integer; ExistingOnly: Boolean;
@@ -436,6 +438,7 @@ begin
   FScanned := False;
   FDirName := '';
   FIsRecycleBin := False;
+  FIsRemote := False;
   FIconEmpty := True;
   FSchedule := nil;
   DelayedExclude := nil;
@@ -785,6 +788,7 @@ begin
     NewData.Scanned := SourceData.Scanned;
     NewData.Data := SourceData.Data;
     NewData.FIsRecycleBin := SourceData.FIsRecycleBin;
+    NewData.FIsRemote := SourceData.FIsRemote;
     NewData.IconEmpty := SourceData.IconEmpty;
     TTreeNode(Source).Data := NewData;
   end;
@@ -1853,15 +1857,13 @@ begin
   Result := (FindNext(SRec) = 0) and GetSubDir(SRec);
 end;
 
-function TDriveViewInt.ReadSubDirsBatch(Node: TTreeNode; var SRec: TSearchRec; CheckInterval, Limit: Integer): Boolean;
+function TDriveViewInt.ReadSubDirsBatch(Node: TTreeNode; var SRec: TSearchRec; CheckInterval, Limit: Integer; Start: TDateTime): Boolean;
 var
-  Start: TDateTime;
   Cont: Boolean;
   Path: string;
   Count: Integer;
   DelayedExclude: TStringList;
 begin
-  Start := Now;
   Path := NodePath(Node);
   Result := True;
   Count := 0;
@@ -1916,7 +1918,7 @@ begin
       else
     begin
       NodeData := TNodeData(Node.Data);
-      if ReadSubDirsBatch(Node, NodeData.DelayedSrec, 10, 50) then
+      if ReadSubDirsBatch(Node, NodeData.DelayedSrec, 10, 50, Now) then
       begin
         FreeAndNil(NodeData.DelayedExclude);
         FDelayedNodes.Delete(0);

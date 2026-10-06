@@ -269,6 +269,7 @@ int __fastcall FindNextChecked(TSearchRecChecked & F);
 int __fastcall FindNextUnchecked(TSearchRecChecked & F);
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
+bool FileGetSymLinkTargetSafe(const UnicodeString & FileName, UnicodeString & Target);
 int __fastcall FileGetAttrFix(const UnicodeString & FileName);
 //---------------------------------------------------------------------------
 extern const wchar_t * DSTModeNames;

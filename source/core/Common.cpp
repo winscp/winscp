@@ -8,6 +8,7 @@
 #include <shlwapi.h>
 #include <tlhelp32.h>
 #include <psapi.h>
+#include <winioctl.h>
 #include <SessionInfo.h>
 #include <Soap.EncdDecd.hpp>
 #pragma clang diagnostic push
@@ -1057,6 +1058,7 @@ bool __fastcall IsReservedName(UnicodeString FileName)
 // Inspired by
 // https://stackoverflow.com/q/18580945/850848
 // This can be reimplemented using PathCchCanonicalizeEx on Windows 8 and later
+// There's also TPath.GetPosAfterExtendedPrefix.
 enum PATH_PREFIX_TYPE
 {
   PPT_UNKNOWN,
@@ -1589,6 +1591,73 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   }
 }
 //---------------------------------------------------------------------------
+// Similar structure might be a part of WINAPI eventually (VCLCOPY - sic)
+struct REPARSE_DATA_BUFFER
+{
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union
+  {
+    struct
+    {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG  Flags;
+      WCHAR  PathBuffer[1];
+    } SymbolicLink;
+    struct
+    {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR  PathBuffer[1];
+    } MountPoint;
+  } ReparseBuffer;
+};
+//---------------------------------------------------------------------------
+// Contrary to VCL's FileGetSymLinkTarget, this does not try to open the target folder and does not throw an exception.
+// Also it would call CreateFile without FILE_FLAG_OPEN_REPARSE_POINT, what also tries to access the remote directory,
+// potentially stalling. And with FILE_FLAG_OPEN_REPARSE_POINT, the GetFinalPathNameByHandle does not work.
+bool FileGetSymLinkTargetSafe(const String & FileName, String & Target)
+{
+  bool Result = false;
+  HANDLE Handle =
+    CreateFile(
+      FileName.c_str(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
+      FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+  if (Handle != INVALID_HANDLE_VALUE)
+  {
+    DWORD bytesReturned = 0;
+    char Buffer[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+    auto Reparse = reinterpret_cast<REPARSE_DATA_BUFFER *>(Buffer);
+    if (DeviceIoControl(Handle, FSCTL_GET_REPARSE_POINT, NULL, 0, Reparse, sizeof(Buffer), &bytesReturned, NULL))
+    {
+      BYTE * NamePtr = nullptr;
+      USHORT NameSize = 0;
+      if (Reparse->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+      {
+        NamePtr = reinterpret_cast<BYTE*>(Reparse->ReparseBuffer.SymbolicLink.PathBuffer) + Reparse->ReparseBuffer.SymbolicLink.PrintNameOffset;
+        NameSize = Reparse->ReparseBuffer.SymbolicLink.PrintNameLength;
+      }
+      else if (Reparse->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+      {
+        NamePtr = reinterpret_cast<BYTE*>(Reparse->ReparseBuffer.MountPoint.PathBuffer) + Reparse->ReparseBuffer.MountPoint.PrintNameOffset;
+        NameSize = Reparse->ReparseBuffer.MountPoint.PrintNameLength;
+      }
+      if (NamePtr != nullptr)
+      {
+        Target = String(reinterpret_cast<wchar_t *>(NamePtr), NameSize / sizeof(wchar_t));
+        Result = true;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall FileGetAttrFix(const UnicodeString & FileName)
 {
   // Already called with ApiPath
@@ -1610,6 +1679,11 @@ int __fastcall FileGetAttrFix(const UnicodeString & FileName)
         // On Samba, InternalGetFileNameFromSymLink fails and returns true but empty target.
         // That confuses FileGetAttr, which returns attributes of the parent folder instead.
         // Using FileGetSymLinkTarget solves the problem, as it returns false.
+
+        // Might want to use FileGetSymLinkTargetSafe here for consistency,
+        // but flaws/limitations of VCL FileGetSymLinkTarget probably does not matter here.
+        // The FileGetSymLinkTarget does not return the target when it cannot open it.
+        // But then GetFileAttributes would fail anyway too, so we return -1 is either case.
         if (!FileGetSymLinkTarget(FileName, TargetName))
         {
           // FileGetAttr would return faInvalid (-1), but we want to allow an upload from Samba,
