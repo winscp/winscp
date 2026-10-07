@@ -85,7 +85,7 @@
 #define PACKAGE_NAME "expat"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "expat 2.8.5"
+#define PACKAGE_STRING "expat 2.9.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "expat"
@@ -94,7 +94,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "2.8.5"
+#define PACKAGE_VERSION "2.9.0"
 
 /* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
@@ -102,7 +102,7 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "2.8.5"
+#define VERSION "2.9.0"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -115,10 +115,6 @@
 /* #  undef WORDS_BIGENDIAN */
 # endif
 #endif
-
-/* Define to allow retrieving the byte offsets for attribute names and values.
-   */
-/* #undef XML_ATTR_INFO */
 
 /* Define to specify how much context to retain around the current parse
    point, 0 to disable. */
