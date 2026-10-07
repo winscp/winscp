@@ -7,6 +7,7 @@
 #include <wincrypt.h>
 
 #define NE_LFS
+#define XML_GE 0 // probably temporary glitch in Expat's API
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #include <ne_basic.h>
