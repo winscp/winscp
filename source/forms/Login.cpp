@@ -1276,7 +1276,6 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == SaveAsSessionAction)
   {
-    // Save as is needed for new site only when !SupportsSplitButton()
     SaveAsSessionAction->Enabled = Editable;
   }
   else if (Action == NewSessionFolderAction)

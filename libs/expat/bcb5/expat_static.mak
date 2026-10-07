@@ -4,6 +4,7 @@ PROJECT = $(LIB_PATH)\libexpats_mtd.lib
 OBJD = Release\obj\libexpat_static
 # ---------------------------------------------------------------------------
 OBJFILES = \
+    $(OBJD)\xcs.$(O) \
     $(OBJD)\xmlparse.$(O) \
     $(OBJD)\xmlrole.$(O) \
     $(OBJD)\xmltok.$(O) \

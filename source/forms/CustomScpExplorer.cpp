@@ -3769,8 +3769,13 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
       std::unique_ptr<TStrings> FileList1(new TStringList());
       FileList1->AddObject(FullFileName, Object);
       bool ForceText = RemoteExecuteForceText(ExecuteFileBy, ExternalEditor);
+      TCopyParamType CopyParam = TemporaryFileCopyParam(ForceText);
+      if (LocalDirectory.IsEmpty())
+      {
+        TemporaryDirectoryForRemoteFiles(RemoteDirectory, CopyParam, false, LocalDirectory, LocalRootDirectory);
+      }
       TemporarilyDownloadFiles(FileList1.get(), ForceText, LocalRootDirectory, LocalDirectory, true, false);
-      LocalFileName = LocalDirectory + GetTempLocalName(FullFileName, TemporaryFileCopyParam(ForceText));
+      LocalFileName = LocalDirectory + GetTempLocalName(FullFileName, CopyParam);
 
       switch (ExecuteFileBy)
       {

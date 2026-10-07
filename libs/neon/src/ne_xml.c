@@ -218,7 +218,7 @@ static void decl_handler(void *userdata,
 int ne_xml_currentline(ne_xml_parser *p) 
 {
 #ifdef HAVE_EXPAT
-    return XML_GetCurrentLineNumber(p->parser);
+    return (int)XML_GetCurrentLineNumber64(p->parser); // WINSCP/Expat 2.9.0
 #else
     return p->parser->input->line;
 #endif
@@ -636,7 +636,7 @@ int ne_xml_parse(ne_xml_parser *p, const char *block, size_t len)
     if (ret == 0 && p->failure == 0) {
 	ne_snprintf(p->error, ERR_SIZE,
 		    "XML parse error at line %" NE_FMT_XML_SIZE ": %s", 
-		    XML_GetCurrentLineNumber(p->parser),
+		    (int)XML_GetCurrentLineNumber64(p->parser), // WINSCP/Expat 2.9.0
 		    XML_ErrorString(XML_GetErrorCode(p->parser)));
 	p->failure = 1;
         NE_DEBUG(NE_DBG_XMLPARSE, "XML: Parse error: %s\n", p->error);
