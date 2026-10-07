@@ -108,4 +108,6 @@ BEGIN
   NEW_6_6_DARK_THEME, "Added dark theme support to even more windows."
   NEW_6_6_INACTIVE_RECONNECT, "Inactive sessions can be automatically reconnected."
   NEW_6_6_CONNECT_ALL, "Optionally connecting all workspace/folder sessions immediately."
+
+  NEW_6_8_TBD, "TBD"
 END
