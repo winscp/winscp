@@ -634,6 +634,21 @@ static TStrings * GetExceptionStackTraceStrings(Exception * E)
   return StackTrace.release();
 }
 //---------------------------------------------------------------------------
+UnicodeString GetFrameSymbol(const UnicodeString & Frame)
+{
+  UnicodeString Result;
+  // The last line might be empty
+  if (!Frame.IsEmpty())
+  {
+    int P = Frame.Pos(L")");
+    if (DebugAlwaysTrue(P > 0))
+    {
+      Result = Frame.SubString(P + 1, Frame.Length() - P).Trim();
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString GetExceptionDebugInfo(Exception * E)
 {
   UnicodeString Result;
@@ -643,29 +658,31 @@ UnicodeString GetExceptionDebugInfo(Exception * E)
     for (int Index = 0; Index < StackTrace->Count; Index++)
     {
       UnicodeString Frame = StackTrace->Strings[Index];
-      // The last line might be empty
-      if (!Frame.IsEmpty())
+      UnicodeString Symbol = GetFrameSymbol(Frame);
+      if (!Symbol.IsEmpty() &&
+          (Symbol != L"KERNELBASE.dll.RaiseException") &&
+          (Symbol != L"Jclhookexcept::JclAddExceptNotifier") &&
+          (Symbol != L"_ReThrowException") &&
+          (Symbol != L"____ExceptionHandler") &&
+          (Symbol != L"__ExceptionHandler") &&
+          (Symbol != L"___doGlobalUnwind") &&
+          (Symbol != L"_ThrowExceptionLDTC"))
       {
-        int P = Frame.Pos(L")");
-        if (DebugAlwaysTrue(P > 0))
-        {
-          UnicodeString Symbol = Frame.SubString(P + 1, Frame.Length() - P).Trim();
-
-          if ((Symbol != L"KERNELBASE.dll.RaiseException") &&
-              (Symbol != L"Jclhookexcept::JclAddExceptNotifier") &&
-              (Symbol != L"_ReThrowException") &&
-              (Symbol != L"____ExceptionHandler") &&
-              (Symbol != L"__ExceptionHandler") &&
-              (Symbol != L"___doGlobalUnwind") &&
-              (Symbol != L"_ThrowExceptionLDTC"))
-          {
-            AddToList(Result, Symbol, L";");
-          }
-        }
+        AddToList(Result, Symbol, L";");
       }
-  }
+    }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void AppendStackTrace(TStrings * MoreMessages, TStrings * StackTrace)
+{
+  if (!MoreMessages->Text.IsEmpty())
+  {
+    MoreMessages->Text = MoreMessages->Text + "\n";
+  }
+  MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
+  MoreMessages->AddStrings(StackTrace);
 }
 //---------------------------------------------------------------------------
 bool AppendExceptionStackTrace(Exception * E, TStrings *& MoreMessages)
@@ -683,12 +700,7 @@ bool AppendExceptionStackTrace(Exception * E, TStrings *& MoreMessages)
       MoreMessages = OwnedMoreMessages.get();
       Result = true;
     }
-    if (!MoreMessages->Text.IsEmpty())
-    {
-      MoreMessages->Text = MoreMessages->Text + "\n";
-    }
-    MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
-    MoreMessages->AddStrings(StackTrace.get());
+    AppendStackTrace(MoreMessages, StackTrace.get());
 
     OwnedMoreMessages.release();
   }
@@ -748,6 +760,28 @@ unsigned int __fastcall FatalExceptionMessageDialog(
   AParams.AliasesCount = std::size(Aliases);
 
   return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpKeyword, &AParams);
+}
+//---------------------------------------------------------------------------
+TStrings * GetCurrentStackTrace()
+{
+  std::unique_ptr<TJclStackInfoList> StackInfoList(JclCreateStackList(false, 0, Caller(0, false)));
+  std::unique_ptr<TStrings> Result(StackInfoListToStrings(StackInfoList.get()));
+  for (int Index = 0; Index < Result->Count; Index++)
+  {
+    UnicodeString Frame = Result->Strings[Index];
+    UnicodeString Symbol = GetFrameSymbol(Frame);
+    if ((Symbol == L"GetCurrentStackTrace") ||
+        (Symbol == L"Jcldebug::JclCreateStackList") ||
+        (Symbol == L"AbortSignalHandler") ||
+        (Symbol == L"_raise") ||
+        (Symbol == L"std::terminate") ||
+        (Symbol == L"___cpp_terminate"))
+    {
+      Result->Delete(Index);
+      Index--;
+    }
+  }
+  return Result.release();
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

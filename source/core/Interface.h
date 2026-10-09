@@ -39,7 +39,9 @@ class TOptions;
 TOptions * __fastcall GetGlobalOptions();
 
 void __fastcall ShowExtendedException(Exception * E);
+void AppendStackTrace(TStrings * MoreMessages, TStrings * StackTrace);
 bool AppendExceptionStackTrace(Exception * E, TStrings *& MoreMessages);
+TStrings * GetCurrentStackTrace();
 void __fastcall IgnoreException(const std::type_info & ExceptionType);
 UnicodeString GetExceptionDebugInfo(Exception * E);
 

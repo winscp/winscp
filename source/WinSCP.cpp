@@ -9,10 +9,29 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 //---------------------------------------------------------------------------
 #include <ProgParams.h>
 #include <PuttyTools.h>
+#include <signal.h>
 //---------------------------------------------------------------------------
 void __fastcall AppLogImpl(UnicodeString S)
 {
   AppLog(S);
+}
+//---------------------------------------------------------------------------
+NORETURN void TerminateHandler()
+{
+  AppLog(L"Terminate handler");
+  abort();
+}
+//---------------------------------------------------------------------------
+void AbortSignalHandler(int Signal)
+{
+  AppLogFmt(L"Abort signal handler [%d]", (Signal));
+  UnicodeString Message = MainInstructions(L"Abnormal program termination");
+  std::unique_ptr<TStrings> MoreMessages(new TStringList());
+  UnicodeString ReportErrorText = Trim(FMTLOAD(REPORT_ERROR, (EmptyStr)));
+  MoreMessages->Add(ReportErrorText);
+  std::unique_ptr<TStrings> StackTrace(GetCurrentStackTrace());
+  AppendStackTrace(MoreMessages.get(), StackTrace.get());
+  MoreMessageDialog(Message, MoreMessages.get(), qtError, qaOK | qaReport, EmptyStr);
 }
 //---------------------------------------------------------------------------
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
@@ -59,6 +78,9 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
     InitializeSystemSettings();
     AddStartupSequence(L"S");
 
+    std::set_terminate(TerminateHandler);
+    signal(SIGABRT, AbortSignalHandler);
+
     try
     {
       try
@@ -96,6 +118,17 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
   catch (Exception &E)
   {
     ShowExtendedException(&E);
+  }
+  catch (std::exception &E)
+  {
+    UnicodeString Message = E.what();
+    Message = FORMAT(L"%s (std::exception)", (Message));
+    Application->MessageBox(Message.c_str(), L"Fatal Error", MB_OK | MB_ICONERROR);
+  }
+  catch (...)
+  {
+    UnicodeString Message = L"Unknown exception";
+    MoreMessageDialog(Message, nullptr, qtError, qaOK, EmptyStr);
   }
   return Result;
 }

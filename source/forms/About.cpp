@@ -355,7 +355,11 @@ void __fastcall TAboutDialog::OKButtonMouseDown(TObject * /*Sender*/,
 {
   if (Button == mbRight)
   {
-    if (Shift.Contains(ssAlt))
+    if (Shift.Contains(ssAlt) && Shift.Contains(ssShift))
+    {
+      AbnormalTerminationTest();
+    }
+    else if (Shift.Contains(ssAlt))
     {
       AccessViolationTest();
     }
@@ -448,6 +452,14 @@ void TAboutDialog::InternalExceptionTest()
   {
     RaiseInternalError(&E);
   }
+}
+//---------------------------------------------------------------------------
+void TAboutDialog::AbnormalTerminationTest()
+{
+  std::unique_ptr<TStringList> Releaser(new TStringList());
+  delete Releaser.get();
+  // for some reason two delete's won't do (that crashes somehow), although reset does delete internally too anyway
+  Releaser.reset(nullptr);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::ExpatLicenceHandler(TObject * /*Sender*/)
