@@ -403,7 +403,7 @@ void platform_get_x11_auth(struct X11Display * /*display*/, Conf * /*conf*/)
 // Based on PuTTY's settings.c
 char * get_remote_username(Conf * conf)
 {
-  char * username = conf_get_str(conf, CONF_username);
+  char * username = conf_get_str_ambi(conf, CONF_username, NULL);
   char * result;
   if (*username)
   {
