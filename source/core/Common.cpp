@@ -4374,7 +4374,7 @@ DWORD __fastcall GetParentProcessId(HANDLE Snapshot, DWORD ProcessId)
   DWORD Result = 0;
 
   PROCESSENTRY32 ProcessEntry;
-  memset(&ProcessEntry, sizeof(ProcessEntry), 0);
+  memset(&ProcessEntry, 0, sizeof(ProcessEntry));
   ProcessEntry.dwSize = sizeof(PROCESSENTRY32);
 
   if (Process32First(Snapshot, &ProcessEntry))
