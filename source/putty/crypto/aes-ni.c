@@ -367,7 +367,7 @@ NI_ENC_DEC(256)
 AES_EXTRA(_ni);
 AES_ALL_VTABLES(_ni, "AES-NI accelerated");
 
-#ifdef _WIN64
+#ifdef __clang__
 #pragma clang attribute pop
 #endif
 
