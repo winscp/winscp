@@ -587,6 +587,8 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
         {
           TRemoteFile * File = new TRemoteFile();
           File->FileName = FileName;
+          // There is no listing to resolve the path from
+          File->FullFileName = FTerminal->AbsolutePath(FileName, true);
           File->Type = FILETYPE_DIRECTORY;
           Result->AddObject(FileName, File);
         }
