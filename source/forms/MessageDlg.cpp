@@ -455,7 +455,8 @@ void __fastcall TMessageForm::ButtonSubmit(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::MenuItemClick(TObject * Sender)
 {
-  TMenuItem * Item = DebugNotNull(dynamic_cast<TMenuItem *>(Sender));
+  // Sender can be TTBCustomItem, when mouse-clicked in drop down menu, or TMenuItem, when keyboard shortcut is used
+  auto Item = DebugNotNull(dynamic_cast<TComponent *>(Sender));
   ModalResult = (Item->Tag & 0xFFFF);
 }
 //---------------------------------------------------------------------------
@@ -480,6 +481,7 @@ void __fastcall TMessageForm::ButtonDropDownClick(TObject * Sender)
 
   auto Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
   MenuPopup(Button->DropDownMenu, Button);
+  Abort();
 }
 //---------------------------------------------------------------------------
 static const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
