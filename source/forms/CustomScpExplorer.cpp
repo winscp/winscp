@@ -6204,7 +6204,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
       Options);
 
     SetTaskbarListProgressState(TBPF_NOPROGRESS);
-    SAFE_DESTROY(FSynchronizeProgressForm);
+    SynchronizeProgressFormReleaser.Reset();
 
     AnyOperation = (AChecklist->CheckedCount > 0);
     if (AnyOperation)
