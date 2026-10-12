@@ -29,7 +29,7 @@ void AbortSignalHandler(int Signal)
   std::unique_ptr<TStrings> MoreMessages(new TStringList());
   UnicodeString ReportErrorText = Trim(FMTLOAD(REPORT_ERROR, (EmptyStr)));
   MoreMessages->Add(ReportErrorText);
-  std::unique_ptr<TStrings> StackTrace(GetCurrentStackTrace());
+  std::unique_ptr<TStrings> StackTrace(GetAbortStackTrace());
   AppendStackTrace(MoreMessages.get(), StackTrace.get());
   MoreMessageDialog(Message, MoreMessages.get(), qtError, qaOK | qaReport, EmptyStr);
 }
