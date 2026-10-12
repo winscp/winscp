@@ -1654,6 +1654,7 @@ bool FileGetSymLinkTargetSafe(const String & FileName, String & Target)
         Result = true;
       }
     }
+    CloseHandle(Handle);
   }
   return Result;
 }
