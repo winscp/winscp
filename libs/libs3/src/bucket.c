@@ -245,7 +245,8 @@ static S3Status createBucketFromS3Callback(int bufferSize, const char *buffer,
     return S3StatusOK;
 }
 
-void S3_create_bucket(S3Protocol protocol, const char *accessKeyId,
+void S3_create_bucket(S3Protocol protocol, S3UriStyle uriStyle,
+                      const char *accessKeyId,
                       const char *secretAccessKey, const char *securityToken,
                       const char *hostName, const char *bucketName,
                       const char *authRegion, S3CannedAcl cannedAcl,
@@ -300,7 +301,7 @@ void S3_create_bucket(S3Protocol protocol, const char *accessKeyId,
         { hostName,                                   // hostName
           bucketName,                                 // bucketName
           protocol,                                   // protocol
-          S3UriStylePath,                             // uriStyle
+          uriStyle,                                   // uriStyle
           accessKeyId,                                // accessKeyId
           secretAccessKey,                            // secretAccessKey
           securityToken,                              // securityToken
