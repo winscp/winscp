@@ -30,6 +30,8 @@ const char *get_system_dir(void)
     if (free_sysdir)
     {
         sfree(sysdir);
+        sysdir = NULL;
+        sysdirsize = 0;
         return NULL;
     }
     #endif
