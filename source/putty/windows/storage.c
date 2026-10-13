@@ -343,6 +343,12 @@ int check_stored_host_key(const char *hostname, int port,
                 }
             }
 
+#ifdef MPEXT
+            // WINSCP: There is no key to compare with here: key is the output.
+            // Return the translation, for the caller to compare with the
+            // server's key, without storing it.
+            otherstr = strbuf_to_str(new);
+#else
             /*
              * Now _if_ this key matches, we'll enter it in the new
              * format. If not, we'll assume something odd went
@@ -354,6 +360,7 @@ int check_stored_host_key(const char *hostname, int port,
             } else {
                 strbuf_free(new);
             }
+#endif
         }
 
         sfree(oldstyle);
