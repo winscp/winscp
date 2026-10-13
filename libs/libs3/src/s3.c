@@ -1081,7 +1081,7 @@ static void create_bucket(int argc, char **argv, int optindex)
     };
 
     do {
-        S3_create_bucket(protocolG, accessKeyIdG, secretAccessKeyG, 0, 0,
+        S3_create_bucket(protocolG, uriStyleG, accessKeyIdG, secretAccessKeyG, 0, 0,
                          bucketName, awsRegionG, cannedAcl, locationConstraint,
                          0, 0, &responseHandler, 0);
     } while (S3_status_is_retryable(statusG) && should_retry());
