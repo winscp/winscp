@@ -327,6 +327,8 @@ static struct ec_curve *ec_ed448(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
+    WINSCP_CURVE_CLEANUP(e);
+
     if (!initialised) {
         mp_int *p = MP_LITERAL(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
         mp_int *d = MP_LITERAL(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6756); /* = p - 39081 */
@@ -1866,6 +1868,7 @@ void ec_cleanup(void)
   ec_p521();
   ec_curve25519();
   ec_ed25519();
+  ec_ed448();
   ec_curve448();
   // in case we want to restart (unlikely)
   ec_curve_cleanup = 0;
