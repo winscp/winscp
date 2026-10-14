@@ -1456,6 +1456,7 @@ class function TJclAbstractMapParser.MapStringToStr(MapString: PJclMapString;
   IgnoreSpaces: Boolean): string;
 var
   P: PJclMapString;
+  TemplateDepth: Integer; // WINSCP
 begin
   if MapString = nil then
   begin
@@ -1472,12 +1473,23 @@ begin
   else
   begin
     P := MapString;
-    if IgnoreSpaces then
-      while (P^ <> #0) and not (P^ in ['(', #10, #13]) do
-        Inc(P)
-    else
-      while (P^ <> #0) and (P^ <> '(') and (P^ > ' ') do
-        Inc(P);
+    // WINSCP
+    TemplateDepth := 0;
+    while P^ <> #0 do
+    begin
+      if (P^ in [#10, #13]) or ((not IgnoreSpaces) and (P^ <= ' ')) then
+        Break;
+
+      if P^ = '<' then
+        Inc(TemplateDepth)
+      else if P^ = '>' then
+        Dec(TemplateDepth);
+
+      if (P^ = '(') and (TemplateDepth <= 0) then
+        Break;
+
+      Inc(P);
+    end;
   end;
   SetString(Result, MapString, P - MapString);
 end;

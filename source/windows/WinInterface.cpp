@@ -617,11 +617,11 @@ static void FormatStackTrace(TStrings * StackTrace)
   }
 }
 //---------------------------------------------------------------------------
-static TStrings * __fastcall StackInfoListToStrings(
-  TJclStackInfoList * StackInfoList)
+static TStrings * __fastcall StackInfoListToStrings(TJclStackInfoList * StackInfoList)
 {
   std::unique_ptr<TStrings> StackTrace(new TStringList());
-  // Corresponds to our JclExceptionStacktraceOptions
+  // Corresponds to our JclExceptionStacktraceOptions.
+  // Also match GetLocationInfoStr call in GetAbortStackTrace.
   StackInfoList->AddToStrings(StackTrace.get(), true, false, true, true);
   FormatStackTrace(StackTrace.get());
   return StackTrace.release();
@@ -634,6 +634,21 @@ static TStrings * GetExceptionStackTraceStrings(Exception * E)
   return StackTrace.release();
 }
 //---------------------------------------------------------------------------
+UnicodeString GetFrameSymbol(const UnicodeString & Frame)
+{
+  UnicodeString Result;
+  // The last line might be empty
+  if (!Frame.IsEmpty())
+  {
+    int P = Frame.Pos(L")");
+    if (DebugAlwaysTrue(P > 0))
+    {
+      Result = Frame.SubString(P + 1, Frame.Length() - P).Trim();
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString GetExceptionDebugInfo(Exception * E)
 {
   UnicodeString Result;
@@ -643,29 +658,31 @@ UnicodeString GetExceptionDebugInfo(Exception * E)
     for (int Index = 0; Index < StackTrace->Count; Index++)
     {
       UnicodeString Frame = StackTrace->Strings[Index];
-      // The last line might be empty
-      if (!Frame.IsEmpty())
+      UnicodeString Symbol = GetFrameSymbol(Frame);
+      if (!Symbol.IsEmpty() &&
+          (Symbol != L"KERNELBASE.dll.RaiseException") &&
+          (Symbol != L"Jclhookexcept::JclAddExceptNotifier") &&
+          (Symbol != L"_ReThrowException") &&
+          (Symbol != L"____ExceptionHandler") &&
+          (Symbol != L"__ExceptionHandler") &&
+          (Symbol != L"___doGlobalUnwind") &&
+          (Symbol != L"_ThrowExceptionLDTC"))
       {
-        int P = Frame.Pos(L")");
-        if (DebugAlwaysTrue(P > 0))
-        {
-          UnicodeString Symbol = Frame.SubString(P + 1, Frame.Length() - P).Trim();
-
-          if ((Symbol != L"KERNELBASE.dll.RaiseException") &&
-              (Symbol != L"Jclhookexcept::JclAddExceptNotifier") &&
-              (Symbol != L"_ReThrowException") &&
-              (Symbol != L"____ExceptionHandler") &&
-              (Symbol != L"__ExceptionHandler") &&
-              (Symbol != L"___doGlobalUnwind") &&
-              (Symbol != L"_ThrowExceptionLDTC"))
-          {
-            AddToList(Result, Symbol, L";");
-          }
-        }
+        AddToList(Result, Symbol, L";");
       }
-  }
+    }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void AppendStackTrace(TStrings * MoreMessages, TStrings * StackTrace)
+{
+  if (!MoreMessages->Text.IsEmpty())
+  {
+    MoreMessages->Text = MoreMessages->Text + "\n";
+  }
+  MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
+  MoreMessages->AddStrings(StackTrace);
 }
 //---------------------------------------------------------------------------
 bool AppendExceptionStackTrace(Exception * E, TStrings *& MoreMessages)
@@ -683,12 +700,7 @@ bool AppendExceptionStackTrace(Exception * E, TStrings *& MoreMessages)
       MoreMessages = OwnedMoreMessages.get();
       Result = true;
     }
-    if (!MoreMessages->Text.IsEmpty())
-    {
-      MoreMessages->Text = MoreMessages->Text + "\n";
-    }
-    MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
-    MoreMessages->AddStrings(StackTrace.get());
+    AppendStackTrace(MoreMessages, StackTrace.get());
 
     OwnedMoreMessages.release();
   }
@@ -748,6 +760,124 @@ unsigned int __fastcall FatalExceptionMessageDialog(
   AParams.AliasesCount = std::size(Aliases);
 
   return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpKeyword, &AParams);
+}
+//---------------------------------------------------------------------------
+static void FilterStackTrace(TStrings * StackTrace)
+{
+  for (int Index = 0; Index < StackTrace->Count; Index++)
+  {
+    UnicodeString Frame = StackTrace->Strings[Index];
+    UnicodeString Symbol = GetFrameSymbol(Frame);
+    if ((Symbol == L"GetCurrentStackTrace") ||
+        (Symbol == L"GetAbortStackTrace") ||
+        (Symbol == L"Jcldebug::JclCreateStackList") ||
+        (Symbol == L"AbortSignalHandler") ||
+        (Symbol == L"TerminateHandler") ||
+        (Symbol == L"_raise") ||
+        (Symbol == L"raise") ||
+        (Symbol == L"abort") ||
+        (Symbol == L"std::terminate") ||
+        (Symbol == L"___cpp_terminate"))
+    {
+      StackTrace->Delete(Index);
+      Index--;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TStrings * GetCurrentStackTrace()
+{
+  std::unique_ptr<TJclStackInfoList> StackInfoList(JclCreateStackList(false, 0, Caller(0, false)));
+  std::unique_ptr<TStrings> Result(StackInfoListToStrings(StackInfoList.get()));
+  FilterStackTrace(Result.get());
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+#ifdef _WIN64
+// This is what TJclStackInfoList.ValidCallSite should do, had it been implemented for 64-bit. Maybe one day it will.
+bool IsValidCallSite64(ULONG_PTR CodeAddr)
+{
+  if (CodeAddr <= 8) return false;
+
+  uint8_t* P = reinterpret_cast<uint8_t*>(CodeAddr);
+
+  if (IsBadReadPtr(P - 8, 8)) return false;
+
+  // 1. CALL rel32 (E8 xx xx xx xx) -> 5 bytes
+  if (P[-5] == 0xE8) return true;
+
+  // 2. Indirect CALLs (FF /2) with or without REX prefixes (40-4F)
+
+  // CALL reg (FF D0-D7) -> 2 bytes
+  if (P[-2] == 0xFF && (P[-1] >= 0xD0 && P[-1] <= 0xD7)) return true;
+  // CALL reg with REX prefix (e.g. CALL R11) -> 3 bytes
+  if (P[-3] >= 0x40 && P[-3] <= 0x4F && P[-2] == 0xFF && (P[-1] >= 0xD0 && P[-1] <= 0xD7)) return true;
+
+  // CALL [RIP+disp32] (FF 15 xx xx xx xx) -> 6 bytes
+  if (P[-6] == 0xFF && P[-5] == 0x15) return true;
+
+  // CALL [reg+disp8] (FF 50-57) -> 3 bytes
+  if (P[-3] == 0xFF && (P[-2] >= 0x50 && P[-2] <= 0x57)) return true;
+  // CALL [reg+disp8] with REX -> 4 bytes
+  if (P[-4] >= 0x40 && P[-4] <= 0x4F && P[-3] == 0xFF && (P[-2] >= 0x50 && P[-2] <= 0x57)) return true;
+
+  // CALL [reg] (FF 10-17) -> 2 bytes
+  if (P[-2] == 0xFF && (P[-1] >= 0x10 && P[-1] <= 0x17)) return true;
+  // CALL [reg] with REX -> 3 bytes
+  if (P[-3] >= 0x40 && P[-3] <= 0x4F && P[-2] == 0xFF && (P[-1] >= 0x10 && P[-1] <= 0x17)) return true;
+
+  return false;
+}
+#endif
+//---------------------------------------------------------------------------
+TStrings * GetAbortStackTrace()
+{
+  // In 64-bit when abort handlers is called, the stack is already unwind, so we canot use JclCreateStackList,
+  // instread we walk stale raw stack data.
+  #ifdef _WIN64
+  std::unique_ptr<TStrings> Result(new TStringList());
+  CONTEXT Context;
+  ZeroMemory(&Context, sizeof(Context));
+  Context.ContextFlags = CONTEXT_FULL;
+  RtlCaptureContext(&Context);
+
+  // Define the stack boundaries
+  // RSP is the current pointer; the Thread Environment Block (TEB) holds the absolute base.
+  ULONG_PTR * CurrentStack = reinterpret_cast<ULONG_PTR*>(Context.Rsp);
+  PNT_TIB Tib = reinterpret_cast<PNT_TIB>(NtCurrentTeb());
+  ULONG_PTR * StackBase = reinterpret_cast<ULONG_PTR*>(Tib->StackBase);
+
+  // Scan the raw stack memory upward
+  while (CurrentStack < StackBase)
+  {
+    ULONG_PTR PotentialAddr = *CurrentStack;
+    void * Addr = reinterpret_cast<void*>(PotentialAddr);
+
+    // Use JCL to verify if this pointer belongs to a loaded executable module
+    if (JclValidateModuleAddress(Addr) &&
+        IsValidCallSite64(PotentialAddr))
+    {
+      // If JCL can map this address to a function, log it!
+      TJclLocationInfo Info;
+      if (GetLocationInfo(Addr, Info))
+      {
+        // Parameters match AddToStrings call in StackInfoListToStrings
+        String TraceLine = GetLocationInfoStr(Addr, true, false, true, true);
+        // Deduplicate identical sequential lines
+        if ((Result->Count == 0) || (Result->Strings[Result->Count - 1] != TraceLine))
+        {
+          Result->Add(TraceLine);
+        }
+      }
+    }
+    CurrentStack++;
+  }
+  FormatStackTrace(Result.get());
+  FilterStackTrace(Result.get());
+  return Result.release();
+  #else
+  return GetCurrentStackTrace();
+  #endif
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

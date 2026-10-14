@@ -198,7 +198,6 @@ private:
   struct ne_lock * __fastcall FindLock(const RawByteString & Path);
   void __fastcall DiscardLock(const RawByteString & Path);
   bool __fastcall IsNtlmAuthentication(TSessionContext * SessionContext);
-  static void NeonAuxRequestInit(ne_session_s * Session, ne_request * Request, void * UserData);
   void __fastcall InitSession(TSessionContext * SessionContext, ne_session_s * Session);
   bool IsTlsSession(ne_session * Session);
 };

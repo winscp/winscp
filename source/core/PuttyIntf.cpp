@@ -395,27 +395,6 @@ void pinger_free(Pinger * /*pinger*/)
   // nothing
 }
 //---------------------------------------------------------------------------
-void platform_get_x11_auth(struct X11Display * /*display*/, Conf * /*conf*/)
-{
-  // nothing, therefore no auth.
-}
-//---------------------------------------------------------------------------
-// Based on PuTTY's settings.c
-char * get_remote_username(Conf * conf)
-{
-  char * username = conf_get_str(conf, CONF_username);
-  char * result;
-  if (*username)
-  {
-    result = dupstr(username);
-  }
-  else
-  {
-    result = NULL;
-  }
-  return result;
-}
-//---------------------------------------------------------------------------
 static const SeatVtable ScpSeatVtable =
   {
     output,
@@ -691,13 +670,6 @@ bool put_reg_sz_winscp(HKEY Key, const char * Name, const char * Str)
 void close_regkey_winscp(HKEY)
 {
   DebugAssert((PuttyRegistryMode == prmCollect) || (PuttyRegistryMode == prmRedirect));
-}
-//---------------------------------------------------------------------------
-strbuf * get_reg_multi_sz_winscp(HKEY, const char * DebugUsedArg(name))
-{
-  // Needed for CA
-  DebugFail();
-  return NULL;
 }
 //---------------------------------------------------------------------------
 TKeyType KeyType(UnicodeString FileName)

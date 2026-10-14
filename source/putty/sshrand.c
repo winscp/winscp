@@ -39,7 +39,10 @@ void random_add_noise(NoiseSourceId source, const void *noise, int length)
 {
     WINSCP_PUTTY_SECTION_ENTER;
     if (!random_active)
+    {
+        WINSCP_PUTTY_SECTION_LEAVE;
         return;
+    }
 
     prng_add_entropy(global_prng, source, make_ptrlen(noise, length));
     WINSCP_PUTTY_SECTION_LEAVE;
