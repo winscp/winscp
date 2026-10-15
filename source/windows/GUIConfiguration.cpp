@@ -1243,7 +1243,7 @@ TObjectList * __fastcall TGUIConfiguration::GetLocales()
         UnicodeString LangName = GetFileFileInfoString(L"LangName", ModulePath);
         if (!LangName.IsEmpty())
         {
-          AddLocale(AdditionalLanguageMask + Exts->Strings[Index][3], LangName);
+          AddLocale(AdditionalLanguageMask + UnicodeString(Exts->Strings[Index])[3], LangName);
         }
       }
     }
