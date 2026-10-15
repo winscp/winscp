@@ -135,7 +135,7 @@ int CString::Find(wchar_t ch, int nStart) const
 		return -1;
 
 	// find first single character
-	wchar_t * lpsz = wcschr(m_Data.c_str() + nStart, ch);
+	const wchar_t * lpsz = wcschr(m_Data.c_str() + nStart, ch);
 
 	// return -1 if not found and index otherwise
 	return (lpsz == NULL) ? -1 : (int)(lpsz - m_Data.c_str());
@@ -143,7 +143,7 @@ int CString::Find(wchar_t ch, int nStart) const
 
 int CString::FindOneOf(const wchar_t * lpszCharSet) const
 {
-	wchar_t * lpsz = wcspbrk(m_Data.c_str(), lpszCharSet);
+	const wchar_t * lpsz = wcspbrk(m_Data.c_str(), lpszCharSet);
 	return (lpsz == NULL) ? -1 : (int)(lpsz - m_Data.c_str());
 }
 
