@@ -1678,7 +1678,7 @@ UnicodeString ConvertPathFromOpenssh(const UnicodeString & Path)
 {
   // It's likely there would be forward slashes in OpenSSH config file and our load/save dialogs
   // (e.g. when converting keys) work suboptimally when working with forward slashes.
-  UnicodeString Result = GetNormalizedPath(Path);
+  UnicodeString Result = (PathDelim == L'\\') ? GetNormalizedPath(Path) : ExcludeTrailingBackslash(Path);
   const UnicodeString HomePathPrefix = L"~";
   if (StartsStr(HomePathPrefix, Result))
   {
