@@ -1730,8 +1730,8 @@ void CAsyncSslSocketLayer::PrintLastErrorMsg()
     LogSocketMessageRaw(FZ_LOG_PROGRESS, UnicodeString(buffer).c_str());
     delete [] buffer;
 
-    std::wstring CustomReason = m_Tools->CustomReason(aerr);
-    if (!CustomReason.empty())
+    UnicodeString CustomReason = m_Tools->CustomReason(aerr);
+    if (!CustomReason.IsEmpty())
     {
       LogSocketMessageRaw(FZ_LOG_WARNING, CustomReason.c_str());
     }

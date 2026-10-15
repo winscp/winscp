@@ -56,9 +56,9 @@ protected:
   virtual void PreserveDownloadFileTime(HANDLE Handle, void * UserData);
   virtual bool GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
   virtual wchar_t * LastSysErrorMessage();
-  virtual std::wstring GetClientString();
+  virtual UnicodeString GetClientString();
   virtual void SetupSsl(ssl_st * Ssl);
-  virtual std::wstring CustomReason(int Err);
+  virtual UnicodeString CustomReason(int Err);
 
 private:
   TFTPFileSystem * FFileSystem;
@@ -155,9 +155,9 @@ wchar_t * TFileZillaImpl::LastSysErrorMessage()
   return _wcsdup(::LastSysErrorMessage().c_str());
 }
 //---------------------------------------------------------------------------
-std::wstring TFileZillaImpl::GetClientString()
+UnicodeString TFileZillaImpl::GetClientString()
 {
-  return std::wstring(SshVersionString().c_str());
+  return SshVersionString();
 }
 //---------------------------------------------------------------------------
 void TFileZillaImpl::SetupSsl(ssl_st * Ssl)
@@ -166,9 +166,9 @@ void TFileZillaImpl::SetupSsl(ssl_st * Ssl)
   ::SetupSsl(Ssl, SessionData->MinTlsVersion, SessionData->MaxTlsVersion);
 }
 //---------------------------------------------------------------------------
-std::wstring TFileZillaImpl::CustomReason(int Err)
+UnicodeString TFileZillaImpl::CustomReason(int Err)
 {
-  std::wstring Result;
+  UnicodeString Result;
   int Lib = ERR_GET_LIB(Err);
   int Reason = ERR_GET_REASON(Err);
   if ((Lib == ERR_LIB_SSL) &&
