@@ -3470,7 +3470,7 @@ void __fastcall TTerminal::EnsureNonExistence(const UnicodeString FileName)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall inline TTerminal::LogEvent(const UnicodeString & Str)
+void __fastcall TTerminal::LogEvent(const UnicodeString & Str)
 {
   if (Log->Logging)
   {
