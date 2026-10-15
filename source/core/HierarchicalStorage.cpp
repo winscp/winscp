@@ -896,7 +896,8 @@ UnicodeString __fastcall THierarchicalStorage::IncludeTrailingBackslash(const Un
   }
   else
   {
-    return ::IncludeTrailingBackslash(S);
+    // Keys are separated by backslashes on all platforms, unlike file paths
+    return (S[S.Length()] == L'\\') ? S : (S + L'\\');
   }
 }
 //---------------------------------------------------------------------------
@@ -909,7 +910,7 @@ UnicodeString __fastcall THierarchicalStorage::ExcludeTrailingBackslash(const Un
   }
   else
   {
-    return ::ExcludeTrailingBackslash(S);
+    return (S[S.Length()] == L'\\') ? S.SubString(1, S.Length() - 1) : S;
   }
 }
 //---------------------------------------------------------------------------
