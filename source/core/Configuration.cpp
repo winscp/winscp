@@ -261,7 +261,7 @@ void __fastcall TConfiguration::Default()
   FLogActions = false;
   FPermanentLogActions = false;
   FLogActionsRequired = false;
-  FActionsLogFileName = L"%TEMP%\\!S.xml";
+  FActionsLogFileName = IncludeTrailingBackslash(L"%TEMP%") + L"!S.xml";
   FPermanentActionsLogFileName = FActionsLogFileName;
   FProgramIniPathWritable = -1;
   FCustomIniFileStorageName = LoadCustomIniFileStorageName();
@@ -2249,7 +2249,7 @@ int __fastcall TConfiguration::GetLogMaxCount()
 //---------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetDefaultLogFileName()
 {
-  return L"%TEMP%\\!S.log";
+  return IncludeTrailingBackslash(L"%TEMP%") + L"!S.log";
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetConfirmOverwriting(bool value)
