@@ -18,7 +18,6 @@ extern "C"
 //---------------------------------------------------------------------------
 #define SESSION_PROXY_AUTH_KEY "proxyauth"
 #define SESSION_TLS_INIT_KEY "tlsinit"
-#define SESSION_TLS_INIT_DATA_KEY "tlsinitdata"
 #define SESSION_TERMINAL_KEY "terminal"
 //---------------------------------------------------------------------------
 TNeonUri::TNeonUri() : ne_uri{}
@@ -255,9 +254,8 @@ extern "C"
 void ne_init_ssl_session(SSL * Ssl, void * UserData)
 {
   ne_session * Session = static_cast<ne_session *>(UserData);
-  void * Code = ne_get_session_private(Session, SESSION_TLS_INIT_KEY);
-  void * Data = ne_get_session_private(Session, SESSION_TLS_INIT_DATA_KEY);
-  TNeonTlsInit OnNeonTlsInit = MakeMethod<TNeonTlsInit>(Data, Code);
+  TNeonTlsInit * StoredTlsInit = static_cast<TNeonTlsInit *>(ne_get_session_private(Session, SESSION_TLS_INIT_KEY));
+  TNeonTlsInit OnNeonTlsInit = (StoredTlsInit != NULL) ? *StoredTlsInit : NULL;
   if (DebugAlwaysTrue(OnNeonTlsInit != NULL))
   {
     OnNeonTlsInit(Ssl, Session);
@@ -265,6 +263,11 @@ void ne_init_ssl_session(SSL * Ssl, void * UserData)
 }
 
 } // extern "C"
+//---------------------------------------------------------------------------
+static void DeleteNeonTlsInit(void * Data)
+{
+  delete static_cast<TNeonTlsInit *>(Data);
+}
 //---------------------------------------------------------------------------
 void SetNeonTlsInit(ne_session * Session, TNeonTlsInit OnNeonTlsInit, TTerminal * Terminal)
 {
@@ -278,10 +281,11 @@ void SetNeonTlsInit(ne_session * Session, TNeonTlsInit OnNeonTlsInit, TTerminal 
     }
   }
 
-  // As the OnNeonTlsInit always only calls SetupSsl, we can simplify this with one shared implementation
-  TMethod & Method = *reinterpret_cast<TMethod*>(&OnNeonTlsInit);
-  ne_set_session_private(Session, SESSION_TLS_INIT_KEY, Method.Code);
-  ne_set_session_private(Session, SESSION_TLS_INIT_DATA_KEY, Method.Data);
+  // A copy of the closure itself, freed with the session (relying on the closure being
+  // just its code and data pointers holds only for C++Builder's __closure)
+  TNeonTlsInit * StoredTlsInit = new TNeonTlsInit(OnNeonTlsInit);
+  ne_set_session_private(Session, SESSION_TLS_INIT_KEY, StoredTlsInit);
+  ne_hook_destroy_session(Session, DeleteNeonTlsInit, StoredTlsInit);
 }
 //---------------------------------------------------------------------------
 void InitNeonTls(
