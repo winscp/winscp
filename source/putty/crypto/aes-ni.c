@@ -126,7 +126,7 @@ static void aes_ni_key_expand(
 // And consequently the code crashes.
 // This macro is based on:
 // https://stackoverflow.com/q/35268036/850848
-#ifdef _WIN64
+#if defined(_WIN64) || defined(__GNUC__)
 #define MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
     _mm_setr_epi8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af)
 #else
