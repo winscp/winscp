@@ -1866,7 +1866,15 @@ bool TS3FileSystem::DoLoadFileProperties(
       &Properties.AclGrantCount, Properties.AclGrants,
       FRequestContext, FTimeout, &ResponseHandler, &AclData);
 
-    CheckLibS3Error(AclData);
+    // A server that keeps no object ACLs (NotImplemented): none, the rest still loaded
+    if (AclData.Status == S3StatusErrorNotImplemented)
+    {
+      Properties.AclGrantCount = 0;
+    }
+    else
+    {
+      CheckLibS3Error(AclData);
+    }
 
     if (LoadTags)
     {
