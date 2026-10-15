@@ -3238,6 +3238,7 @@ bool __fastcall TSynchronizeChecklist::IsItemSizeIrrelevant(TAction Action)
   }
 }
 //---------------------------------------------------------------------------
+#ifdef _WIN32
 //---------------------------------------------------------------------------
 class TFileOperationProgressSink : public TCppInterfacedObject<IFileOperationProgressSink>
 {
@@ -3401,6 +3402,7 @@ void TSynchronizeChecklistFileOperation::ProcessedItem(IShellItem * ShellItem)
     }
   }
 }
+#endif
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TSynchronizeProgress::TSynchronizeProgress(const TSynchronizeChecklist * Checklist)

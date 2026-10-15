@@ -544,7 +544,7 @@ bool __fastcall TSecureShell::TryFtp()
           Address.sin_family = AF_INET;
           int Port = FtpPortNumber;
           Address.sin_port = htons(static_cast<short>(Port));
-          Address.sin_addr.s_addr = *(reinterpret_cast<unsigned long *>(*HostEntry->h_addr_list));
+          Address.sin_addr.s_addr = *(reinterpret_cast<ULONG *>(*HostEntry->h_addr_list));
 
           HANDLE Event = CreateEvent(NULL, false, false, NULL);
           Result = (WSAEventSelect(Socket, static_cast<WSAEVENT>(Event), FD_CONNECT | FD_CLOSE) != SOCKET_ERROR);
