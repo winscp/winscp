@@ -1779,7 +1779,7 @@ void select_result(WPARAM wParam, LPARAM lParam)
          * (data prior to urgent).
          */
         if (s->oobinline) {
-            u_long atmark_from_ioctl = 1;
+            ULONG atmark_from_ioctl = 1;
             p_ioctlsocket(s->s, SIOCATMARK, &atmark_from_ioctl);
             /*
              * Avoid checking the return value from ioctlsocket(),
