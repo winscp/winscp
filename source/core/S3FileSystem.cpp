@@ -1876,7 +1876,7 @@ bool TS3FileSystem::DoLoadFileProperties(
       CheckLibS3Error(AclData);
     }
 
-    if (LoadTags)
+    if (LoadTags && !File->IsDirectory)
     {
       TLibS3XmlCallbackData TagsData;
       RequestInit(TagsData);
