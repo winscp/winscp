@@ -786,7 +786,7 @@ static void FilterStackTrace(TStrings * StackTrace)
   }
 }
 //---------------------------------------------------------------------------
-static TStrings * GetCurrentStackTrace()
+TStrings * GetCurrentStackTrace()
 {
   std::unique_ptr<TJclStackInfoList> StackInfoList(JclCreateStackList(false, 0, Caller(0, false)));
   std::unique_ptr<TStrings> Result(StackInfoListToStrings(StackInfoList.get()));
