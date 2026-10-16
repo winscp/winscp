@@ -2047,7 +2047,11 @@ void __fastcall TConfiguration::SetPuttyRegistryStorageKey(UnicodeString value)
 //---------------------------------------------------------------------------
 TEOLType __fastcall TConfiguration::GetLocalEOLType()
 {
-  return (PathDelim == L'\\') ? eolCRLF : eolLF;
+#ifdef _WIN32
+  return eolCRLF;
+#else
+  return eolLF;
+#endif
 }
 //---------------------------------------------------------------------
 bool __fastcall TConfiguration::GetCollectUsage()
