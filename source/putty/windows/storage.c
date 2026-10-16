@@ -348,12 +348,19 @@ int check_stored_host_key(const char *hostname, int port,
              * format. If not, we'll assume something odd went
              * wrong, and hyper-cautiously do nothing.
              */
+            // WINSCP: There is no key to compare with here: key is the output.
+            // The translation is returned, for the caller to compare with the
+            // server's key, and not stored.
+#ifndef WINSCP
             if (!strcmp(new->s, key)) {
                 put_reg_sz(rkey, regname->s, new->s);
+#endif
                 otherstr = strbuf_to_str(new);
+#ifndef WINSCP
             } else {
                 strbuf_free(new);
             }
+#endif
         }
 
         sfree(oldstyle);
