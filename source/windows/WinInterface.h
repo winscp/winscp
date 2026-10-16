@@ -147,6 +147,8 @@ unsigned int __fastcall FatalExceptionMessageDialog(
   Exception * E, TQueryType Type, const UnicodeString & MessageFormat, unsigned int Answers,
   const UnicodeString & HelpKeyword, const TMessageParams * Params);
 
+void RegisterTerminateHandlers();
+
 // forms\Custom.cpp
 TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
   TSessionData * OriginalSession, bool ForceDialog,

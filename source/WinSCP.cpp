@@ -9,29 +9,10 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 //---------------------------------------------------------------------------
 #include <ProgParams.h>
 #include <PuttyTools.h>
-#include <signal.h>
 //---------------------------------------------------------------------------
 void __fastcall AppLogImpl(UnicodeString S)
 {
   AppLog(S);
-}
-//---------------------------------------------------------------------------
-NORETURN void TerminateHandler()
-{
-  AppLog(L"Terminate handler");
-  abort();
-}
-//---------------------------------------------------------------------------
-void AbortSignalHandler(int Signal)
-{
-  AppLogFmt(L"Abort signal handler [%d]", (Signal));
-  UnicodeString Message = MainInstructions(L"Abnormal program termination");
-  std::unique_ptr<TStrings> MoreMessages(new TStringList());
-  UnicodeString ReportErrorText = Trim(FMTLOAD(REPORT_ERROR, (EmptyStr)));
-  MoreMessages->Add(ReportErrorText);
-  std::unique_ptr<TStrings> StackTrace(GetAbortStackTrace());
-  AppendStackTrace(MoreMessages.get(), StackTrace.get());
-  MoreMessageDialog(Message, MoreMessages.get(), qtError, qaOK | qaReport, EmptyStr);
 }
 //---------------------------------------------------------------------------
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
@@ -78,8 +59,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
     InitializeSystemSettings();
     AddStartupSequence(L"S");
 
-    std::set_terminate(TerminateHandler);
-    signal(SIGABRT, AbortSignalHandler);
+    RegisterTerminateHandlers();
 
     try
     {
