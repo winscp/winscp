@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include <shlwapi.h>
+#include <signal.h>
 
 #include <Queue.h>
 #include <Glyphs.h>
@@ -675,7 +676,7 @@ UnicodeString GetExceptionDebugInfo(Exception * E)
   return Result;
 }
 //---------------------------------------------------------------------------
-void AppendStackTrace(TStrings * MoreMessages, TStrings * StackTrace)
+static void AppendStackTrace(TStrings * MoreMessages, TStrings * StackTrace)
 {
   if (!MoreMessages->Text.IsEmpty())
   {
@@ -785,7 +786,7 @@ static void FilterStackTrace(TStrings * StackTrace)
   }
 }
 //---------------------------------------------------------------------------
-TStrings * GetCurrentStackTrace()
+static TStrings * GetCurrentStackTrace()
 {
   std::unique_ptr<TJclStackInfoList> StackInfoList(JclCreateStackList(false, 0, Caller(0, false)));
   std::unique_ptr<TStrings> Result(StackInfoListToStrings(StackInfoList.get()));
@@ -830,7 +831,7 @@ bool IsValidCallSite64(ULONG_PTR CodeAddr)
 }
 #endif
 //---------------------------------------------------------------------------
-TStrings * GetAbortStackTrace()
+static TStrings * GetAbortStackTrace()
 {
   // In 64-bit when abort handlers is called, the stack is already unwind, so we canot use JclCreateStackList,
   // instread we walk stale raw stack data.
@@ -878,6 +879,30 @@ TStrings * GetAbortStackTrace()
   #else
   return GetCurrentStackTrace();
   #endif
+}
+//---------------------------------------------------------------------------
+NORETURN static void TerminateHandler()
+{
+  AppLog(L"Terminate handler");
+  abort();
+}
+//---------------------------------------------------------------------------
+static void AbortSignalHandler(int Signal)
+{
+  AppLogFmt(L"Abort signal handler [%d]", (Signal));
+  UnicodeString Message = MainInstructions(L"Abnormal program termination");
+  std::unique_ptr<TStrings> MoreMessages(new TStringList());
+  UnicodeString ReportErrorText = Trim(FMTLOAD(REPORT_ERROR, (EmptyStr)));
+  MoreMessages->Add(ReportErrorText);
+  std::unique_ptr<TStrings> StackTrace(GetAbortStackTrace());
+  AppendStackTrace(MoreMessages.get(), StackTrace.get());
+  MoreMessageDialog(Message, MoreMessages.get(), qtError, qaOK | qaReport, EmptyStr);
+}
+//---------------------------------------------------------------------------
+void RegisterTerminateHandlers()
+{
+  std::set_terminate(TerminateHandler);
+  signal(SIGABRT, AbortSignalHandler);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
