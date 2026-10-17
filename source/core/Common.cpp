@@ -954,7 +954,11 @@ bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeStrin
   UnicodeString CanonicalPath1 = GetCanonicalPath(Path1);
   UnicodeString CanonicalPath2 = GetCanonicalPath(Path2);
 
+#ifdef _WIN32
   bool Result = SameText(CanonicalPath1, CanonicalPath2);
+#else
+  bool Result = SameStr(CanonicalPath1, CanonicalPath2);
+#endif
   return Result;
 }
 //---------------------------------------------------------------------------
