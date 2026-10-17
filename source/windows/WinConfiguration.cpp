@@ -1458,7 +1458,11 @@ UnicodeString __fastcall TWinConfiguration::GetProvisionaryExtensionId(const Uni
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::GetUserExtensionsPath()
 {
+#ifdef _WIN32
   return IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) + L"WinSCP\\" + ExtensionsSubFolder;
+#else
+  return IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) + L"WinSCP/" + ExtensionsSubFolder;
+#endif
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TWinConfiguration::GetExtensionsPaths()
@@ -3525,7 +3529,11 @@ bool __fastcall TCustomCommandType::ParseOption(const UnicodeString & Value, TOp
         Option.FileCaption = LoadStr(EXTENSION_SESSIONLOG_CAPTION);
         Option.FileFilter = LoadStr(EXTENSION_SESSIONLOG_FILTER);
         // Similar to TConfiguration::GetDefaultLogFileName
+#ifdef _WIN32
         Option.FileInitial = L"%TEMP%\\" + ExtensionBaseName + L".log";
+#else
+        Option.FileInitial = L"%TEMP%/" + ExtensionBaseName + L".log";
+#endif
         Option.FileExt = L"log";
       }
       else if (KindName == L"dropdownlist")

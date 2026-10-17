@@ -72,7 +72,11 @@ static void NeedS3Config(
     if (FileName.IsEmpty())
     {
       UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+#ifdef _WIN32
       UnicodeString DefaultFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\" + DefaultName;
+#else
+      UnicodeString DefaultFileName = IncludeTrailingBackslash(ProfilePath) + L".aws/" + DefaultName;
+#endif
       if (FileExists(DefaultFileName))
       {
         FileName = DefaultFileName;
