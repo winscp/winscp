@@ -558,8 +558,13 @@ void __fastcall TGUIConfiguration::Default()
   FSessionRememberPassword = true;
   UnicodeString ProgramsFolder;
   KnownFolderPath(FOLDERID_ProgramFiles, ProgramsFolder);
+#ifdef _WIN32
   FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\" + OriginalPuttyExecutable;
   FDefaultPuttyPath = L"%ProgramFiles%\\PuTTY\\" + OriginalPuttyExecutable;
+#else
+  FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY/" + OriginalPuttyExecutable;
+  FDefaultPuttyPath = L"%ProgramFiles%/PuTTY/" + OriginalPuttyExecutable;
+#endif
   FPuttyPath = FormatCommand(FDefaultPuttyPath, L"");
   FUsePuttyPwFile = asAuto;
   FPuttyPassword = false;
