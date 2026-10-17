@@ -1458,7 +1458,11 @@ UnicodeString __fastcall TWinConfiguration::GetProvisionaryExtensionId(const Uni
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TWinConfiguration::GetUserExtensionsPath()
 {
+#ifdef _WIN32
   return IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) + L"WinSCP\\" + ExtensionsSubFolder;
+#else
+  return IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) + L"WinSCP/" + ExtensionsSubFolder;
+#endif
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TWinConfiguration::GetExtensionsPaths()
