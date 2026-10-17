@@ -2503,7 +2503,11 @@ static bool __fastcall DoRecursiveDeleteFile(
       else
       {
         TSearchRecOwned SearchRec;
+#ifdef _WIN32
         Result = (FindFirstUnchecked(FileName + L"\\*", faAnyFile, SearchRec) == 0);
+#else
+        Result = (FindFirstUnchecked(FileName + L"/*", faAnyFile, SearchRec) == 0);
+#endif
 
         if (Result)
         {
