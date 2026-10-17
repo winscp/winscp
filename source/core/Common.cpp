@@ -2503,7 +2503,7 @@ static bool __fastcall DoRecursiveDeleteFile(
       else
       {
         TSearchRecOwned SearchRec;
-        Result = (FindFirstUnchecked(FileName + L"\\*", faAnyFile, SearchRec) == 0);
+        Result = (FindFirstUnchecked(CombinePaths(FileName, L"*"), faAnyFile, SearchRec) == 0);
 
         if (Result)
         {
