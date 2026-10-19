@@ -975,6 +975,11 @@ UnicodeString CombinePaths(const UnicodeString & Path1, const UnicodeString & Pa
   return TPath::Combine(Path1Terminated, Path2);
 }
 //---------------------------------------------------------------------------
+UnicodeString CombinePaths(const UnicodeString & Path1, const UnicodeString & Path2, const UnicodeString & Path3)
+{
+  return CombinePaths(CombinePaths(Path1, Path2), Path3);
+}
+//---------------------------------------------------------------------------
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting)
 {

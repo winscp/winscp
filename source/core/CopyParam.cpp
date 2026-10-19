@@ -664,7 +664,7 @@ UnicodeString __fastcall TCopyParamType::ValidLocalPath(UnicodeString Path) cons
   {
     if (!Result.IsEmpty())
     {
-      Result += L"\\";
+      Result += PathDelim;
     }
     Result += ValidLocalFileName(CutToChar(Path, L'\\', false));
   }

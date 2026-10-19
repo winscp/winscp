@@ -1696,8 +1696,8 @@ TStoredSessionList * __fastcall TConfiguration::SelectFilezillaSessionsForImport
   std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
 
   UnicodeString AppDataPath = GetShellFolderPath(CSIDL_APPDATA);
-  UnicodeString FilezillaSiteManagerFile = CombinePaths(AppDataPath, L"FileZilla\\sitemanager.xml");
-  UnicodeString FilezillaConfigurationFile = CombinePaths(AppDataPath, L"FileZilla\\filezilla.xml");
+  UnicodeString FilezillaSiteManagerFile = CombinePaths(AppDataPath, L"FileZilla", L"sitemanager.xml");
+  UnicodeString FilezillaConfigurationFile = CombinePaths(AppDataPath, L"FileZilla", L"filezilla.xml");
 
   if (FileExists(ApiPath(FilezillaSiteManagerFile)))
   {
