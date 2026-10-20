@@ -832,8 +832,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       else if (reply.Length() >= 11 && reply.SubString(4, 8) == " BS-2000")
         m_mayBeBS2000Filesystem = true;
 
-      // This is probably wrong
-      if (reply.SubString(1, 4) == "VMS ")
+      if (reply.SubString(4, 5) == " VMS ")
       {
         m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
       }
