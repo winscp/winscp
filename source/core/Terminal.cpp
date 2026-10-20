@@ -2176,6 +2176,7 @@ void __fastcall TTerminal::DisplayBanner(const UnicodeString & Banner)
         FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
       unsigned int OrigParams = Params;
 
+      TAutoNestingCounter NestingCounter(FNesting);
       TCallbackGuard Guard(this);
       try
       {
