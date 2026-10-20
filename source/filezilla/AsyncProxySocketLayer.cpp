@@ -510,7 +510,7 @@ BOOL CAsyncProxySocketLayer::Connect( const SOCKADDR* lpSockAddr, int nSockAddrL
   const SOCKADDR_IN * sockAddr=reinterpret_cast<const SOCKADDR_IN*>(lpSockAddr);
 
   //Save server details
-  m_nProxyPeerIp=sockAddr->sin_addr.S_un.S_addr;
+  m_nProxyPeerIp=sockAddr->sin_addr.s_addr;
   m_nProxyPeerPort=sockAddr->sin_port;
   delete [] m_pProxyPeerHost;
   m_pProxyPeerHost = NULL;
@@ -753,7 +753,7 @@ BOOL CAsyncProxySocketLayer::GetPeerName( SOCKADDR* lpSockAddr, int* lpSockAddrL
   {
     LPSOCKADDR_IN addr=reinterpret_cast<LPSOCKADDR_IN>(lpSockAddr);
     addr->sin_port=m_nProxyPeerPort;
-    addr->sin_addr.S_un.S_addr=m_nProxyPeerIp;
+    addr->sin_addr.s_addr=m_nProxyPeerIp;
   }
   return res;
 }

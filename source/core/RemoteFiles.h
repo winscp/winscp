@@ -558,6 +558,7 @@ struct IFileOperation;
 struct IShellItem;
 class TFileOperationProgressSink;
 //---------------------------------------------------------------------------
+#ifdef _WIN32
 class TSynchronizeChecklistFileOperation
 {
 friend class TSynchronizeChecklist;
@@ -582,6 +583,7 @@ private:
   void * FToken;
   bool FAny;
 };
+#endif
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;
 //---------------------------------------------------------------------------

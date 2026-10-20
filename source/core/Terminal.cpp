@@ -4178,7 +4178,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
               else
               {
                 // not used anymore
-                TProcessFileEventEx ProcessFileEx = reinterpret_cast<TProcessFileEventEx>(ProcessFile);
+                TProcessFileEventEx ProcessFileEx = TProcessFileEventEx(ProcessFile);
                 ProcessFileEx(FileName, File, Param, Index);
               }
               Success = true;

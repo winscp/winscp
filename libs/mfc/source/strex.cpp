@@ -151,7 +151,7 @@ CString CString::Left(int nCount) const
 int CString::ReverseFind(wchar_t ch) const
 {
 	// find last single character
-	wchar_t * lpsz = wcsrchr(m_Data.c_str(), ch);
+	const wchar_t * lpsz = wcsrchr(m_Data.c_str(), ch);
 
 	// return -1 if not found, distance from beginning otherwise
 	return (lpsz == NULL) ? -1 : (int)(lpsz - m_Data.c_str());
@@ -170,7 +170,7 @@ int CString::Find(const wchar_t * lpszSub, int nStart) const
 		return -1;
 
 	// find first matching substring
-	wchar_t * lpsz = wcsstr(m_Data.c_str() + nStart, lpszSub);
+	const wchar_t * lpsz = wcsstr(m_Data.c_str() + nStart, lpszSub);
 
 	// return -1 for not found, distance from beginning otherwise
 	return (lpsz == NULL) ? -1 : (int)(lpsz - m_Data.c_str());

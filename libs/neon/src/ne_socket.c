@@ -1374,7 +1374,7 @@ static int timed_connect(ne_socket *sock, int fd,
     if (sock->cotimeout) {
         int errnum, flags;
 
-        #ifdef WINSCP
+        #if defined(WINSCP) && defined(_WIN32)
         flags = 1;
         ioctlsocket(fd, FIONBIO, &flags);
         #else
@@ -1428,7 +1428,7 @@ static int timed_connect(ne_socket *sock, int fd,
         }
         
         /* Reset to old flags; fail on error if no previous error. */
-        #ifdef WINSCP
+        #if defined(WINSCP) && defined(_WIN32)
         flags = 0;
         ioctlsocket(fd, FIONBIO, &flags);
         #else
@@ -2379,5 +2379,9 @@ void ne_sock_set_buffers(ne_socket *sock, unsigned int sndbuf)
 
 int ne_sock_sspi_init(void)
 {
+#ifdef HAVE_SSPI
     return ne_sspi_init();
+#else
+    return -1;
+#endif
 }

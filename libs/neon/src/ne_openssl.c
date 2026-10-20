@@ -59,7 +59,9 @@
 #include "ne_private.h"
 #endif
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 /* OpenSSL 0.9.6 compatibility */
 #if OPENSSL_VERSION_NUMBER < 0x0090700fL
