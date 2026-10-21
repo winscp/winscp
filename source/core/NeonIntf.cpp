@@ -255,7 +255,7 @@ void ne_init_ssl_session(SSL * Ssl, void * UserData)
 {
   ne_session * Session = static_cast<ne_session *>(UserData);
   TNeonTlsInit * StoredTlsInit = static_cast<TNeonTlsInit *>(ne_get_session_private(Session, SESSION_TLS_INIT_KEY));
-  TNeonTlsInit OnNeonTlsInit = (StoredTlsInit != NULL) ? *StoredTlsInit : NULL;
+  TNeonTlsInit OnNeonTlsInit = (StoredTlsInit != NULL) ? *StoredTlsInit : TNeonTlsInit();
   if (DebugAlwaysTrue(OnNeonTlsInit != NULL))
   {
     OnNeonTlsInit(Ssl, Session);
