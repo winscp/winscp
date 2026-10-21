@@ -61,8 +61,6 @@ CAsyncSslSocketLayer::CAsyncSslSocketLayer()
   m_sessionreuse = true;
   m_sessionreuse_failed = false;
 
-  FCertificate = NULL;
-  FPrivateKey = NULL;
   m_CriticalSection.reset(new  TCriticalSection());
 }
 
@@ -1670,7 +1668,8 @@ int CAsyncSslSocketLayer::ProvideClientCert(
 
   int Level;
   int Result;
-  if ((Layer->FCertificate == NULL) || (Layer->FPrivateKey == NULL))
+  const TCertificate & ACertificate = Layer->m_Certificate;
+  if ((ACertificate.Certificate == nullptr) || (ACertificate.PrivateKey == nullptr))
   {
     Level = FZ_LOG_WARNING;
     Result = 0;
@@ -1678,9 +1677,20 @@ int CAsyncSslSocketLayer::ProvideClientCert(
   else
   {
     Level = FZ_LOG_PROGRESS;
-    *Certificate = X509_dup(Layer->FCertificate);
-    EVP_PKEY_up_ref(Layer->FPrivateKey);
-    *PrivateKey = Layer->FPrivateKey;
+    X509_up_ref(ACertificate.Certificate);
+    *Certificate = ACertificate.Certificate;
+    EVP_PKEY_up_ref(ACertificate.PrivateKey);
+    *PrivateKey = ACertificate.PrivateKey;
+
+    if (ACertificate.AdditionalCertificates != nullptr)
+    {
+      SSL_use_certificate(Ssl, ACertificate.Certificate);
+      #pragma clang diagnostic push
+      #pragma clang diagnostic ignored "-Wold-style-cast"
+      SSL_set1_chain(Ssl, ACertificate.AdditionalCertificates);
+      #pragma clang diagnostic pop
+    }
+
     Result = 1;
   }
 
@@ -1689,10 +1699,9 @@ int CAsyncSslSocketLayer::ProvideClientCert(
   return Result;
 }
 
-void CAsyncSslSocketLayer::SetClientCertificate(X509 * Certificate, EVP_PKEY * PrivateKey)
+void CAsyncSslSocketLayer::SetClientCertificate(const TCertificate & Certificate)
 {
-  FCertificate = Certificate;
-  FPrivateKey = PrivateKey;
+  m_Certificate = Certificate;
 }
 
 BOOL CAsyncSslSocketLayer::SetCertStorage(CString file)

@@ -85,11 +85,12 @@ bool __fastcall TFileZillaIntf::Cancel()
   return Check(FFileZillaApi->Cancel(), L"cancel", FZ_REPLY_WOULDBLOCK | FZ_REPLY_IDLE);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileZillaIntf::Connect(const wchar_t * Host, int Port, const wchar_t * User,
+bool TFileZillaIntf::Connect(
+  const wchar_t * Host, int Port, const wchar_t * User,
   const wchar_t * Pass, const wchar_t * Account,
   const wchar_t * Path, int ServerType, int Pasv, int TimeZoneOffset, int UTF8,
   int iForcePasvIp, int iUseMlsd,
-  X509 * Certificate, EVP_PKEY * PrivateKey)
+  const TCertificate & Certificate)
 {
   DebugAssert(FFileZillaApi != NULL);
   DebugAssert((ServerType & FZ_SERVERTYPE_HIGHMASK) == FZ_SERVERTYPE_FTP);
@@ -109,7 +110,6 @@ bool __fastcall TFileZillaIntf::Connect(const wchar_t * Host, int Port, const wc
   Server.iForcePasvIp = iForcePasvIp;
   Server.iUseMlsd = iUseMlsd;
   Server.Certificate = Certificate;
-  Server.PrivateKey = PrivateKey;
 
   *FServer = Server;
 

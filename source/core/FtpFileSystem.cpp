@@ -284,8 +284,6 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FHashAlgs.reset(new TStringList());
   FSupportedCommands.reset(CreateSortedStringList());
   FSupportedSiteCommands.reset(CreateSortedStringList());
-  FCertificate = NULL;
-  FPrivateKey = NULL;
   FBytesAvailable = -1;
   FBytesAvailableSupported = false;
   FLoggedIn = false;
@@ -519,9 +517,9 @@ void __fastcall TFTPFileSystem::Open()
       }
     }
 
-    if ((Data->Ftps != ftpsNone) && (FCertificate == NULL))
+    if ((Data->Ftps != ftpsNone) && (FCertificate.Certificate == nullptr))
     {
-      FTerminal->LoadTlsCertificate(FCertificate, FPrivateKey);
+      FTerminal->LoadTlsCertificate(FCertificate);
     }
 
     FPasswordFailed = false;
@@ -530,7 +528,7 @@ void __fastcall TFTPFileSystem::Open()
       HostName.c_str(), Data->PortNumber, UserName.c_str(),
       Password.c_str(), Account.c_str(), Path.c_str(),
       ServerType, Pasv, TimeZoneOffset, UTF8, Data->FtpForcePasvIp,
-      Data->FtpUseMlsd, FCertificate, FPrivateKey);
+      Data->FtpUseMlsd, FCertificate);
 
     DebugAssert(FActive);
 
@@ -869,17 +867,7 @@ void __fastcall TFTPFileSystem::Discard()
   DebugAssert(FActive);
   FActive = false;
 
-  // See neon's ne_ssl_clicert_free
-  if (FPrivateKey != NULL)
-  {
-    EVP_PKEY_free(FPrivateKey);
-    FPrivateKey = NULL;
-  }
-  if (FCertificate != NULL)
-  {
-    X509_free(FCertificate);
-    FCertificate = NULL;
-  }
+  FCertificate.Free();
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TFTPFileSystem::AbsolutePath(UnicodeString Path, bool /*Local*/)
@@ -4335,7 +4323,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestNeedPass(
   else
   {
     UnicodeString Password;
-    if (FCertificate != NULL)
+    if (FCertificate.Certificate != nullptr)
     {
       FTerminal->LogEvent(L"Server asked for password, but we are using certificate, and no password was specified upfront, using fake password");
       Password = L"USINGCERT";

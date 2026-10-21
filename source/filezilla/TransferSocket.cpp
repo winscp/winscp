@@ -654,7 +654,7 @@ BOOL CTransferSocket::Create(BOOL bUseSsl)
   {
     m_pSslLayer = new CAsyncSslSocketLayer;
 
-    m_pSslLayer->SetClientCertificate(m_pOwner->m_CurrentServer.Certificate, m_pOwner->m_CurrentServer.PrivateKey);
+    m_pSslLayer->SetClientCertificate(m_pOwner->m_CurrentServer.Certificate);
   }
 
   int nProxyType = GetOptionVal(OPTION_PROXYTYPE);

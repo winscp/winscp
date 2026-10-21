@@ -3535,12 +3535,11 @@ static void __fastcall ThrowTlsCertificateErrorIgnorePassphraseErrors(const Unic
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ParseCertificate(const UnicodeString & Path,
-  const UnicodeString & Passphrase, X509 *& Certificate, EVP_PKEY *& PrivateKey,
-  bool & WrongPassphrase)
+void ParseCertificate(
+  const UnicodeString & Path, const UnicodeString & Passphrase,
+  TCertificate & Certificate, bool & WrongPassphrase)
 {
-  Certificate = NULL;
-  PrivateKey = NULL;
+  Certificate.Free();
   WrongPassphrase = false;
   bool Discard = false;
   try
@@ -3562,8 +3561,11 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
       {
         UTF8String PassphraseUtf(Passphrase);
 
-        bool Result =
-          (PKCS12_parse(Pkcs12, PassphraseUtf.c_str(), &PrivateKey, &Certificate, NULL) == 1);
+        int ParseResult =
+          PKCS12_parse(
+            Pkcs12, PassphraseUtf.c_str(),
+            &Certificate.PrivateKey, &Certificate.Certificate, &Certificate.AdditionalCertificates);
+        bool Result = (ParseResult == 1);
         PKCS12_free(Pkcs12);
 
         if (!Result)
@@ -3571,7 +3573,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
           ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
           WrongPassphrase = true;
         }
-        if (!WrongPassphrase && (PrivateKey == NULL))
+        if (!WrongPassphrase && (Certificate.PrivateKey == NULL))
         {
           throw Exception(FMTLOAD(NO_PRIVATE_KEY, (Path)));
         }
@@ -3599,10 +3601,10 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
         // -----BEGIN RSA PRIVATE KEY-----
         // ...
         // -----END RSA PRIVATE KEY-----
-        PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
+        Certificate.PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
         fclose(File);
 
-        if (PrivateKey == NULL)
+        if (Certificate.PrivateKey == NULL)
         {
           ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
           WrongPassphrase = true;
@@ -3617,10 +3619,10 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
         // -----BEGIN CERTIFICATE-----
         // ...
         // -----END CERTIFICATE-----
-        Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+        Certificate.Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
         fclose(File);
 
-        if (Certificate == NULL)
+        if (Certificate.Certificate == NULL)
         {
           unsigned long Error = ERR_get_error();
           // unlikely
@@ -3646,10 +3648,10 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
               // -----BEGIN CERTIFICATE-----
               // ...
               // -----END CERTIFICATE-----
-              Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+              Certificate.Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
               fclose(File);
 
-              if (Certificate == NULL)
+              if (Certificate.Certificate == NULL)
               {
                 unsigned long Base64Error = ERR_get_error();
 
@@ -3657,10 +3659,10 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
                 // Binary DER-encoded certificate
                 // (as above, with BEGIN/END removed, and decoded from Base64 to binary)
                 // openssl x509 -in cert.crt -out client.der.crt -outform DER
-                Certificate = d2i_X509_fp(File, NULL);
+                Certificate.Certificate = d2i_X509_fp(File, NULL);
                 fclose(File);
 
-                if (Certificate == NULL)
+                if (Certificate.Certificate == NULL)
                 {
                   unsigned long DERError = ERR_get_error();
 
@@ -3685,36 +3687,46 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
   {
     if (Discard || WrongPassphrase)
     {
-      if (PrivateKey != NULL)
-      {
-        EVP_PKEY_free(PrivateKey);
-        PrivateKey = NULL;
-      }
-      if (Certificate != NULL)
-      {
-        X509_free(Certificate);
-        Certificate = NULL;
-      }
+      Certificate.Free();
     }
+  }
+}
+//---------------------------------------------------------------------------
+TCertificate::TCertificate()
+{
+  PrivateKey = nullptr;
+  Certificate = nullptr;
+  AdditionalCertificates = nullptr;
+}
+//---------------------------------------------------------------------------
+void TCertificate::Free()
+{
+  // See neon's ne_ssl_clicert_free
+  if (PrivateKey != nullptr)
+  {
+    EVP_PKEY_free(PrivateKey);
+    PrivateKey = nullptr;
+  }
+  if (Certificate != nullptr)
+  {
+    X509_free(Certificate);
+    Certificate = nullptr;
+  }
+  if (AdditionalCertificates != nullptr)
+  {
+    OSSL_STACK_OF_X509_free(AdditionalCertificates);
+    AdditionalCertificates = nullptr;
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall CheckCertificate(const UnicodeString & Path)
 {
-  X509 * Certificate;
-  EVP_PKEY * PrivateKey;
+  TCertificate Certificate;
   bool WrongPassphrase;
 
-  ParseCertificate(Path, L"", Certificate, PrivateKey, WrongPassphrase);
+  ParseCertificate(Path, L"", Certificate, WrongPassphrase);
 
-  if (PrivateKey != NULL)
-  {
-    EVP_PKEY_free(PrivateKey);
-  }
-  if (Certificate != NULL)
-  {
-    X509_free(Certificate);
-  }
+  Certificate.Free();
 }
 //---------------------------------------------------------------------------
 const UnicodeString HttpProtocol(L"http");

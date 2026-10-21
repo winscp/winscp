@@ -362,7 +362,7 @@ bool CFtpControlSocket::InitConnect()
     m_pSslLayer = new CAsyncSslSocketLayer;
     AddLayer(m_pSslLayer);
 
-    m_pSslLayer->SetClientCertificate(m_CurrentServer.Certificate, m_CurrentServer.PrivateKey);
+    m_pSslLayer->SetClientCertificate(m_CurrentServer.Certificate);
 
     CString filename = GetOption(OPTION_MPEXT_CERT_STORAGE);
     m_pSslLayer->SetCertStorage(filename);

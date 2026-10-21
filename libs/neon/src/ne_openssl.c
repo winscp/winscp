@@ -126,6 +126,7 @@ struct ne_ssl_client_cert_s {
     char *uri;
     EVP_PKEY *pkey;
     char *friendly_name;
+    STACK_OF_X509 * chain; // WINSCP
 };
 
 static void free_cert(ne_ssl_certificate *cert);
@@ -230,6 +231,7 @@ void ne_ssl_clicert_free(ne_ssl_client_cert *cc)
     if (cc->pkey) EVP_PKEY_free(cc->pkey);
     if (cc->friendly_name) ne_free(cc->friendly_name);
     free_cert(&cc->cert);
+    if (cc->chain) OSSL_STACK_OF_X509_free(cc->chain); // WINSCP
     ne_free(cc);
 }
 
@@ -533,6 +535,11 @@ ne_ssl_client_cert *ne_ssl_clicert_copy(const ne_ssl_client_cert *cc)
 
     X509_up_ref(cc->cert.subject);
     EVP_PKEY_up_ref(cc->pkey);
+
+    // WINSCP
+    if (cc->chain)
+         newcc->chain = X509_chain_up_ref(cc->chain);
+
     return newcc;
 }
 
@@ -576,6 +583,9 @@ static int provide_client_cert(SSL *ssl, X509 **cert, EVP_PKEY **pkey)
         X509_up_ref(cc->cert.subject);
         *cert = cc->cert.subject;
         *pkey = cc->pkey;
+        // WINSCP
+        if (cc->chain)
+            SSL_set1_chain(ssl, cc->chain);
         return 1;
     }
     else {
@@ -885,11 +895,10 @@ static ne_ssl_client_cert *parse_client_cert(PKCS12 *p12)
 }
 
 #ifdef WINSCP
-ne_ssl_client_cert * ne_ssl_clicert_create(X509 * cert, EVP_PKEY * pkey)
+ne_ssl_client_cert * ne_ssl_clicert_create(X509 * cert, EVP_PKEY * pkey, STACK_OF_X509 * chain)
 {
     /* Copy from parse_client_cert */
     
-    /* Success - no password needed for decryption. */
     int len = 0;
     unsigned char *name;
     ne_ssl_client_cert *cc;
@@ -901,6 +910,7 @@ ne_ssl_client_cert * ne_ssl_clicert_create(X509 * cert, EVP_PKEY * pkey)
     if (name && len > 0)
         cc->friendly_name = ne_strndup((char *)name, len);
     populate_cert(&cc->cert, cert);
+    cc->chain = chain;
 
     return cc;
 }

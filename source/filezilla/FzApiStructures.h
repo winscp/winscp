@@ -6,6 +6,7 @@
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/pkcs12.h>
 #pragma clang diagnostic pop
+#include <Common.h>
 #include <FileBuffer.h>
 //---------------------------------------------------------------------------
 class t_server
@@ -23,8 +24,7 @@ public:
   int nUTF8;
   int iForcePasvIp;
   int iUseMlsd;
-  X509 * Certificate;
-  EVP_PKEY * PrivateKey;
+  TCertificate Certificate;
 };
 //---------------------------------------------------------------------------
 #include "ServerPath.h"

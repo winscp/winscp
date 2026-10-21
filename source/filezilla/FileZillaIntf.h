@@ -175,11 +175,12 @@ public:
 
   bool __fastcall Cancel();
 
-  bool __fastcall Connect(const wchar_t * Host, int Port, const wchar_t * User,
+  bool Connect(
+    const wchar_t * Host, int Port, const wchar_t * User,
     const wchar_t * Pass, const wchar_t * Account,
     const wchar_t * Path, int ServerType, int Pasv, int TimeZoneOffset, int UTF8,
     int iForcePasvIp, int iUseMlsd,
-    X509 * Certificate, EVP_PKEY * PrivateKey);
+    const TCertificate & Certificate);
   bool __fastcall Close(bool AllowBusy);
 
   bool __fastcall List(const wchar_t * Path);

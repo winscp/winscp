@@ -130,7 +130,8 @@ typedef struct ne_ssl_client_cert_s ne_ssl_client_cert;
 #ifdef WINSCP
 typedef struct x509_st X509;
 typedef struct evp_pkey_st EVP_PKEY;
-ne_ssl_client_cert * ne_ssl_clicert_create(X509 * cert, EVP_PKEY * pkey);
+typedef struct stack_st_X509 STACK_OF_X509;
+ne_ssl_client_cert * ne_ssl_clicert_create(X509 * cert, EVP_PKEY * pkey, STACK_OF_X509 * chain);
 #endif
 
 /* Read a client certificate (and private key) in PKCS#12 format from

@@ -8947,7 +8947,7 @@ void __fastcall TTerminal::CollectTlsUsage(const UnicodeString & TlsVersionStr)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& PrivateKey)
+bool TTerminal::LoadTlsCertificate(TCertificate & Certificate)
 {
   bool Result = !SessionData->TlsCertificateFile.IsEmpty();
   if (Result)
@@ -8960,9 +8960,8 @@ bool __fastcall TTerminal::LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& P
     do
     {
       Retry = false;
-
       bool WrongPassphrase;
-      ParseCertificate(SessionData->TlsCertificateFile, Passphrase, Certificate, PrivateKey, WrongPassphrase);
+      ParseCertificate(SessionData->TlsCertificateFile, Passphrase, Certificate, WrongPassphrase);
       if (WrongPassphrase)
       {
         if (Passphrase.IsEmpty())

@@ -1868,11 +1868,11 @@ void TWebDAVFileSystem::NeonProvideClientCert(void * UserData, ne_session * Sess
 
   FileSystem->FTerminal->LogEvent(LoadStr(NEED_CLIENT_CERTIFICATE));
 
-  X509 * Certificate;
-  EVP_PKEY * PrivateKey;
-  if (FileSystem->FTerminal->LoadTlsCertificate(Certificate, PrivateKey))
+  TCertificate Certificate;
+  if (FileSystem->FTerminal->LoadTlsCertificate(Certificate))
   {
-    ne_ssl_client_cert * NeonCertificate = ne_ssl_clicert_create(Certificate, PrivateKey);
+    ne_ssl_client_cert * NeonCertificate =
+      ne_ssl_clicert_create(Certificate.Certificate, Certificate.PrivateKey, Certificate.AdditionalCertificates);
     ne_ssl_set_clicert(Sess, NeonCertificate);
     ne_ssl_clicert_free(NeonCertificate);
   }

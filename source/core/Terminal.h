@@ -476,7 +476,7 @@ protected:
   bool VerifyOrConfirmHttpCertificate(
     const UnicodeString & AHostName, int APortNumber, const TNeonCertificateData & Data, TSessionInfo & SessionInfo);
   void __fastcall CollectTlsUsage(const UnicodeString & TlsVersionStr);
-  bool __fastcall LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& PrivateKey);
+  bool LoadTlsCertificate(TCertificate & Certificate);
   bool __fastcall TryStartOperationWithFile(
     const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
   void __fastcall StartOperationWithFile(

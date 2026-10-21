@@ -5,6 +5,7 @@
 #include <vector>
 #include <limits>
 #include "Global.h"
+#include <Classes.hpp>
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, L"")
 #define THROWOSIFFALSE(C) { if (!(C)) RaiseLastOSError(); }
@@ -208,9 +209,18 @@ UnicodeString GetTlsErrorStrs();
 void __fastcall CheckCertificate(const UnicodeString & Path);
 typedef struct x509_st X509;
 typedef struct evp_pkey_st EVP_PKEY;
-void __fastcall ParseCertificate(const UnicodeString & Path,
-  const UnicodeString & Passphrase, X509 *& Certificate, EVP_PKEY *& PrivateKey,
-  bool & WrongPassphrase);
+typedef struct stack_st_X509 STACK_OF_X509;
+struct TCertificate
+{
+  TCertificate();
+  X509 * Certificate;
+  EVP_PKEY * PrivateKey;
+  STACK_OF_X509 * AdditionalCertificates;
+  void Free();
+};
+void ParseCertificate(
+  const UnicodeString & Path, const UnicodeString & Passphrase,
+  TCertificate & Certificate, bool & WrongPassphrase);
 bool __fastcall IsHttpUrl(const UnicodeString & S);
 bool __fastcall IsHttpOrHttpsUrl(const UnicodeString & S);
 UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const UnicodeString & Protocol);

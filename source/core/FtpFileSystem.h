@@ -286,8 +286,7 @@ private:
   TUploadedTimes FUploadedTimes;
   bool FSupportsAnyChecksumFeature;
   UnicodeString FLastCommandSent;
-  X509 * FCertificate;
-  EVP_PKEY * FPrivateKey;
+  TCertificate FCertificate;
   bool FTransferActiveImmediately;
   bool FWindowsServer;
   __int64 FBytesAvailable;

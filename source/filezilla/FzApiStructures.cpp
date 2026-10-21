@@ -11,6 +11,4 @@ t_server::t_server()
   nUTF8 = 0;
   iForcePasvIp = -1;
   iUseMlsd = -1;
-  Certificate = NULL;
-  PrivateKey = NULL;
 }

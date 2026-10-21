@@ -131,7 +131,7 @@ public:
   BOOL GetPeerCertificateData(t_SslCertData & SslCertData, const wchar_t * & Error);
   std::string GetTlsVersionStr();
   std::string GetCipherName();
-  void SetClientCertificate(X509 * Certificate, EVP_PKEY * PrivateKey);
+  void SetClientCertificate(const TCertificate & Certificate);
 
   bool IsUsingSSL();
   int InitSSLConnection(bool clientMode,
@@ -233,8 +233,7 @@ private:
   std::string m_TlsVersionStr;
   std::string m_CipherName;
 
-  X509 * FCertificate;
-  EVP_PKEY * FPrivateKey;
+  TCertificate m_Certificate;
   CFileZillaTools * m_Tools;
 };
 //---------------------------------------------------------------------------
