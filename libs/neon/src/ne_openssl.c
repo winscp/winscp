@@ -606,7 +606,7 @@ static int new_ssl_session(SSL *ssl, SSL_SESSION *sslsess)
     NE_DEBUG(NE_DBG_SSL, "sslsess: New session callback: %s.\n",
              SSL_SESSION_is_resumable(sslsess) ? "resumable" : "not resumable");
 
-    sctx->sess = SSL_SESSION_dup(sslsess);
+    sctx->sess = sslsess; // WINSCP
     return 1;
 }
 
