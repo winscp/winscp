@@ -2572,7 +2572,8 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
           {
             FTerminal->LogEvent(FORMAT(L"Warning: Remote host set a compound pathname '%s'", (Line)));
           }
-          if ((Level == 0) && (OnlyFileName != UnixExtractFileName(FileName)))
+          if (((Level == 0) && (OnlyFileName != UnixExtractFileName(FileName))) ||
+              !IsRealFile(OnlyFileName))
           {
             SCPError(LoadStr(UNREQUESTED_FILE), False);
           }
