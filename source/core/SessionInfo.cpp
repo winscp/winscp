@@ -1865,7 +1865,7 @@ void __fastcall TApplicationLog::Log(const UnicodeString & S)
         const size_t Threshold = 10 * 1024 * 1024;
         NewMemoryPeek =
           ((ReservedMemory > FPeekReservedMemory) &&
-           ((ReservedMemory - FPeekReservedMemory) > Threshold)) |
+           ((ReservedMemory - FPeekReservedMemory) > Threshold)) ||
           ((CommittedMemory > FPeekCommittedMemory) &&
            ((CommittedMemory - FPeekCommittedMemory) > Threshold));
         if (NewMemoryPeek)
