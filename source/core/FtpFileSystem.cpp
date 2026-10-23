@@ -17,7 +17,7 @@
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #include <openssl/x509_vfy.h>
 #include <openssl/err.h>
-#pragma clang diagnostic push
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
@@ -1073,8 +1073,8 @@ void __fastcall TFTPFileSystem::ChangeFileProperties(const UnicodeString AFileNa
       {
         try
         {
-          FTerminal->ProcessDirectory(AFileName, FTerminal->ChangeFileProperties,
-            (void*)Properties);
+          FTerminal->ProcessDirectory(
+            AFileName, FTerminal->ChangeFileProperties, const_cast<void *>(static_cast<const void *>(Properties)));
         }
         catch(...)
         {
@@ -1089,7 +1089,7 @@ void __fastcall TFTPFileSystem::ChangeFileProperties(const UnicodeString AFileNa
         Rights = *File->Rights;
       }
       Rights |= Properties->Rights.NumberSet;
-      Rights &= (unsigned short)~Properties->Rights.NumberUnset;
+      Rights &= static_cast<unsigned short>(~Properties->Rights.NumberUnset);
       if ((File != NULL) && File->IsDirectory && Properties->AddXToDirectories)
       {
         Rights.AddExecute();
@@ -1248,7 +1248,7 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(
   TOnceDoneOperation OnceDoneOperation; // not used
   while ((Index < FileList->Count) && !OperationProgress->Cancel)
   {
-    TRemoteFile * File = (TRemoteFile *)FileList->Objects[Index];
+    TRemoteFile * File = static_cast<TRemoteFile *>(FileList->Objects[Index]);
     DebugAssert(File != NULL);
 
     if (!File->IsDirectory)
@@ -3714,7 +3714,7 @@ void __fastcall TFTPFileSystem::HandleFeatReply()
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
 {
-  TLogLineType LogType = (TLogLineType)-1;
+  TLogLineType LogType = static_cast<TLogLineType>(-1);
   UnicodeString Status(AStatus);
 
   switch (Type)
@@ -3803,7 +3803,7 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
       break;
   }
 
-  if (FTerminal->Log->Logging && (LogType != (TLogLineType)-1))
+  if (FTerminal->Log->Logging && (LogType != static_cast<TLogLineType>(-1)))
   {
     FTerminal->Log->Add(LogType, Status);
   }
@@ -3856,7 +3856,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
   }
   else
   {
-    TFileTransferData & UserData = *((TFileTransferData *)AUserData);
+    TFileTransferData & UserData = *(static_cast<TFileTransferData *>(AUserData));
     if (UserData.OverwriteResult >= 0)
     {
       // on retry, use the same answer as on the first attempt
@@ -4007,11 +4007,11 @@ UnicodeString __fastcall FormatValidityTime(const TFtpsCertificateData::TValidit
 {
   return FormatDateTime(L"ddddd tt",
     EncodeDateVerbose(
-      (unsigned short)ValidityTime.Year, (unsigned short)ValidityTime.Month,
-      (unsigned short)ValidityTime.Day) +
+      static_cast<unsigned short>(ValidityTime.Year), static_cast<unsigned short>(ValidityTime.Month),
+      static_cast<unsigned short>(ValidityTime.Day)) +
     EncodeTimeVerbose(
-      (unsigned short)ValidityTime.Hour, (unsigned short)ValidityTime.Min,
-      (unsigned short)ValidityTime.Sec, 0));
+      static_cast<unsigned short>(ValidityTime.Hour), static_cast<unsigned short>(ValidityTime.Min),
+      static_cast<unsigned short>(ValidityTime.Sec), 0));
 }
 //---------------------------------------------------------------------------
 bool __fastcall VerifyNameMask(UnicodeString Name, UnicodeString Mask)
@@ -4128,9 +4128,9 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
   else
   {
     FSessionInfo.CertificateFingerprintSHA1 =
-      BytesToHex(RawByteString((const char*)Data.HashSha1, Data.HashSha1Len), false, L':');
+      BytesToHex(RawByteString(reinterpret_cast<const char*>(Data.HashSha1), Data.HashSha1Len), false, L':');
     FSessionInfo.CertificateFingerprintSHA256 =
-      BytesToHex(RawByteString((const char*)Data.HashSha256, Data.HashSha256Len), false, L':');
+      BytesToHex(RawByteString(reinterpret_cast<const char*>(Data.HashSha256), Data.HashSha256Len), false, L':');
 
     if (FTerminal->SessionData->FingerprintScan)
     {
@@ -4363,13 +4363,13 @@ void __fastcall TFTPFileSystem::RemoteFileTimeToDateTimeAndPrecision(const TRemo
   if (Source.HasDate)
   {
     DateTime =
-      EncodeDateVerbose((unsigned short)Source.Year, (unsigned short)Source.Month,
-        (unsigned short)Source.Day);
+      EncodeDateVerbose(static_cast<unsigned short>(Source.Year), static_cast<unsigned short>(Source.Month),
+        static_cast<unsigned short>(Source.Day));
     if (Source.HasTime)
     {
       DateTime = DateTime +
-        EncodeTimeVerbose((unsigned short)Source.Hour, (unsigned short)Source.Minute,
-          (unsigned short)Source.Second, 0);
+        EncodeTimeVerbose(static_cast<unsigned short>(Source.Hour), static_cast<unsigned short>(Source.Minute),
+          static_cast<unsigned short>(Source.Second), 0);
       ModificationFmt = Source.HasSeconds ? mfFull : (Source.HasYear ? mfYMDHM : mfMDHM);
 
       // With IIS, the Utc should be false only for MDTM
