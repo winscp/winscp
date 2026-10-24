@@ -492,13 +492,7 @@ void __fastcall TWebDAVFileSystem::CollectUsage()
     Configuration->Usage->Inc(L"OpenedSessionsWebDAVSCertificate");
   }
 
-  // The Authorization header for passport method is included only in the first request,
-  // so we have to use FLastAuthorizationProtocol
-  if (SameText(FLastAuthorizationProtocol, L"Passport1.4"))
-  {
-    Configuration->Usage->Inc(L"OpenedSessionsWebDAVSPassport");
-  }
-  else if (SameText(FLastAuthorizationProtocol, L"Basic"))
+  if (SameText(FLastAuthorizationProtocol, L"Basic"))
   {
     Configuration->Usage->Inc(L"OpenedSessionsWebDAVAuthBasic");
   }
