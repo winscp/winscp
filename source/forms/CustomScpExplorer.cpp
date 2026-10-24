@@ -8273,8 +8273,8 @@ void __fastcall TCustomScpExplorerForm::DDFakeFileInitDrag(TFileList * FileList,
     FDragFakeMonitors = StartCreationDirectoryMonitorsOnEachDrive(FILE_NOTIFY_CHANGE_DIR_NAME, DDFakeCreated);
   }
 
-  FDDExtMapFile = CreateFileMappingA(reinterpret_cast<HANDLE>(0xFFFFFFFF), NULL, PAGE_READWRITE,
-    0, sizeof(TDragExtCommStruct), AnsiString(DRAG_EXT_MAPPING).c_str());
+  FDDExtMapFile =
+    CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(TDragExtCommStruct), DRAG_EXT_MAPPING);
 
   {
     TMutexGuard Guard(FDDExtMutex, DRAGEXT_MUTEX_RELEASE_TIMEOUT);
