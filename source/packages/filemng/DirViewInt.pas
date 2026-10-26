@@ -741,11 +741,8 @@ begin
 end;
 
 procedure TDirViewInt.SetPath(Value: string);
-const
-  LongPathPrefix = '\\?\';
 var
-  LongPath: string;
-  P, Len: Integer;
+  P: Integer;
 begin
   // do checks before passing directory to drive view, because
   // it would truncate non-existing directory to first superior existing
@@ -763,23 +760,14 @@ begin
     end;
   end;
 
-  // GetLongPathName would resolve to it the current working directory
+  // GetLongPath would resolve to it the current working directory
   if (Length(Value) = 2) and CharInSet(UpperCase(Value)[1], ['A'..'Z']) and (Value[2] = ':') then
   begin
     Value := Value + '\';
   end
     else
-  // Convert to long path
   begin
-    Len := GetLongPathName(PChar(ApiPath(Value)), nil, 0);
-    SetLength(LongPath, Len);
-    Len := GetLongPathName(PChar(ApiPath(Value)), PChar(LongPath), Len);
-    if Len > 0 then
-    begin
-      Value := Copy(LongPath, 1, Len);
-      if StartsStr(LongPathPrefix, Value) then
-        System.Delete(Value, 1, Length(LongPathPrefix));
-    end;
+    Value := GetLongPath(Value);
   end;
 
   CheckCanOpenDirectory(Value);

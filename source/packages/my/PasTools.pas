@@ -68,6 +68,7 @@ procedure SetAppTerminated(Value: Boolean);
 procedure ForceColorChange(Control: TWinControl);
 
 function IsUncPath(Path: string): Boolean;
+function GetLongPath(Path: string): string;
 function FileExistsFix(Path: string): Boolean;
 function DirectoryExistsFix(Path: string; FollowLink: Boolean = True): Boolean;
 
@@ -151,7 +152,7 @@ type
 implementation
 
 uses
-  StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry, UxTheme;
+  StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry, UxTheme, StrUtils;
 
 const
   DDExpandDelay = 15000000;
@@ -1010,6 +1011,22 @@ end;
 function IsUncPath(Path: string): Boolean;
 begin
   Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
+end;
+
+function GetLongPath(Path: string): string;
+var
+  Len: Integer;
+begin
+  Len := GetLongPathName(PChar(ApiPath(Path)), nil, 0);
+  SetLength(Result, Len);
+  Len := GetLongPathName(PChar(ApiPath(Path)), PChar(Result), Len);
+  if Len > 0 then
+  begin
+    Result := Copy(Result, 1, Len);
+    const LongPathPrefix = '\\?\';
+    if StartsStr(LongPathPrefix, Result) then
+      Delete(Result, 1, Length(LongPathPrefix));
+  end;
 end;
 
 const ERROR_CANT_ACCESS_FILE = 1920;

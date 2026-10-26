@@ -176,7 +176,7 @@ procedure Register;
 implementation
 
 uses
-  Types;
+  Types, PasTools;
 
 const
   {$EXTERNALSYM IID_IDropTarget}
@@ -192,30 +192,28 @@ procedure CopyHDropToFilelist(var List: TFileList; HDropPtr: PAnsiChar; HDropSiz
 var
   s: string;
   DropFiles: PDropFiles;
-  ws: WideString;
+  ChSize: Integer;
 // List must be empty, before calling ...
 begin
   if (HDropPtr <> nil) and (HDropSize > 0) then
   begin
     PAnsiChar(DropFiles) := HDropPtr;
     Inc(HDropPtr,DropFiles^.pFiles);
-    if DropFiles^.FWide then
+    while HDropPtr^ <> #0 do
     begin
-      while HDropPtr^ <> #0 do
+      if DropFiles^.FWide then
       begin
-        ws := PWideChar(HDropPtr);
-        Inc(HDropPtr, (Length(ws) + 1) * 2);
-        List.AddItem(nil, ws);
-      end;
-    end
-      else
-    begin
-      while HDropPtr^ <> #0 do
+        s := PWideChar(HDropPtr);
+        ChSize := 2;
+      end
+        else
       begin
         s := string(HDropPtr);
-        Inc(HDropPtr, Length(s) + 1);
-        List.AddItem(nil, s);
+        ChSize := 1;
       end;
+      Inc(HDropPtr, (Length(s) + 1) * ChSize);
+      s := GetLongPath(s);
+      List.AddItem(nil, s);
     end;
   end;
 end;
