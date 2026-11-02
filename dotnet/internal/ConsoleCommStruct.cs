@@ -115,6 +115,15 @@ namespace WinSCP
     {
         public const int CurrentVersion = 0x000A;
 
+        // Over a buffer of Size bytes the caller owns, the frame of the console pipes
+        public ConsoleCommStruct(Session session, IntPtr buffer)
+        {
+            _session = session;
+            _ptr = buffer;
+            _payloadPtr = new IntPtr(_ptr.ToInt64() + 12);
+            _header = (ConsoleCommHeader)Marshal.PtrToStructure(_ptr, typeof(ConsoleCommHeader));
+        }
+
         public ConsoleCommStruct(Session session, SafeFileHandle fileMapping)
         {
             _session = session;
@@ -148,12 +157,15 @@ namespace WinSCP
                     }
                 }
 
-                _session.Logger.WriteLineLevel(1, "Releasing communication structure");
-                if (!UnsafeNativeMethods.UnmapViewOfFile(_ptr))
+                if (_fileMapping != null)
                 {
-                    throw _session.Logger.WriteException(new SessionLocalException(_session, "Cannot release file mapping"));
+                    _session.Logger.WriteLineLevel(1, "Releasing communication structure");
+                    if (!UnsafeNativeMethods.UnmapViewOfFile(_ptr))
+                    {
+                        throw _session.Logger.WriteException(new SessionLocalException(_session, "Cannot release file mapping"));
+                    }
+                    _session.Logger.WriteLineLevel(1, "Released communication structure");
                 }
-                _session.Logger.WriteLineLevel(1, "Released communication structure");
 
                 _ptr = IntPtr.Zero;
             }
