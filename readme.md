@@ -2,11 +2,15 @@
 
 To build WinSCP you need:
 - [Embarcadero C++Builder 11 Professional](https://www.embarcadero.com/products/cbuilder).
-- [Build Tools and Agents for Visual Studio 2022](https://visualstudio.microsoft.com/downloads/) (for C# 9.0)
+  The Community Edition should be able to build WinSCP too, but it lacks some required include files
+  (for example `include\windows\crtl` and `include\windows\sdk`)
+- [Build Tools for Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
+  (install "Desktop development with C++" and ".NET desktop build tools")
 - [nasm](https://www.nasm.us/) (store it to `buildtools/tools/nasm.exe`)
 - [Object file converter](https://www.agner.org/optimize/#objconv) (store it to `buildtools/tools/objconv.exe`)
 
-To build WinSCP from source by yourself, modify and use [`build.bat`](build.bat) in root folder.
+To build WinSCP from source by yourself, extract the source package to a path without any spaces and dashes,
+and modify and use [`build.bat`](build.bat) in root folder.
 
 Directory structure:
 
