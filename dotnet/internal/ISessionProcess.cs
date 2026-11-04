@@ -1,16 +1,15 @@
 ﻿using System;
 
-namespace WinSCP
+namespace WinSCP;
+
+internal interface ISessionProcess : IDisposable
 {
-    internal interface ISessionProcess : IDisposable
-    {
-        event OutputDataReceivedEventHandler OutputDataReceived;
-        bool HasExited { get; }
-        int ExitCode { get; }
+    event OutputDataReceivedEventHandler OutputDataReceived;
+    bool HasExited { get; }
+    int ExitCode { get; }
 
-        void Start();
-        void ExecuteCommand(string command);
+    void Start();
+    void ExecuteCommand(string command);
 
-        void Close();
-    }
+    void Close();
 }

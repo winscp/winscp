@@ -2,205 +2,204 @@
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace WinSCP
+namespace WinSCP;
+
+[Guid("B1DAE3A0-5E56-4001-88D8-786F68557E28")]
+[ComVisible(true)]
+public enum SynchronizationAction
 {
-    [Guid("B1DAE3A0-5E56-4001-88D8-786F68557E28")]
-    [ComVisible(true)]
-    public enum SynchronizationAction
+    UploadNew = 1,
+    DownloadNew = 2,
+    UploadUpdate = 3,
+    DownloadUpdate = 4,
+    DeleteRemote = 5,
+    DeleteLocal = 6,
+};
+
+[Guid("2D6EFFB5-69BA-47AA-90E8-A92953E8B58A")]
+[ComVisible(true)]
+public sealed class ComparisonFileInfo
+{
+    public string FileName { get; internal set; }
+    public DateTime LastWriteTime { get; internal set; }
+    public long Length { get; internal set; }
+    public int Length32 { get { return GetLength32(); } }
+
+    internal ComparisonFileInfo()
     {
-        UploadNew = 1,
-        DownloadNew = 2,
-        UploadUpdate = 3,
-        DownloadUpdate = 4,
-        DeleteRemote = 5,
-        DeleteLocal = 6,
-    };
+    }
 
-    [Guid("2D6EFFB5-69BA-47AA-90E8-A92953E8B58A")]
-    [ComVisible(true)]
-    public sealed class ComparisonFileInfo
+    private int GetLength32()
     {
-        public string FileName { get; internal set; }
-        public DateTime LastWriteTime { get; internal set; }
-        public long Length { get; internal set; }
-        public int Length32 { get { return GetLength32(); } }
+        return Tools.LengthTo32Bit(Length);
+    }
+}
 
-        internal ComparisonFileInfo()
-        {
-        }
+[Guid("97F5222E-9379-4C24-9E50-E93C7334BBD5")]
+[ClassInterface(Constants.ClassInterface)]
+[ComVisible(true)]
+public sealed class ComparisonDifference
+{
+    public SynchronizationAction Action { get; internal set; }
+    public bool IsDirectory { get; internal set; }
+    public ComparisonFileInfo Local { get; internal set; }
+    public ComparisonFileInfo Remote { get; internal set; }
 
-        private int GetLength32()
+    internal ComparisonDifference(string localPath, string remotePath)
+    {
+        _localPath = localPath;
+        _remotePath = remotePath;
+    }
+
+    public override string ToString()
+    {
+        string buf;
+        switch (Action)
         {
-            return Tools.LengthTo32Bit(Length);
+            case SynchronizationAction.UploadNew:
+                buf = RemotePath.Combine(TranslateLocalPathToRemote(), "*");
+                return $"{GetLocalPathString()} ==> {buf}";
+
+            case SynchronizationAction.DownloadNew:
+                buf = Path.Combine(TranslateRemotePathToLocal(), "*");
+                return $"{buf} <== {GetRemotePathString()}";
+
+            case SynchronizationAction.UploadUpdate:
+                return $"{GetLocalPathString()} ==> {GetRemotePathString()}";
+
+            case SynchronizationAction.DownloadUpdate:
+                return $"{GetLocalPathString()} <== {GetRemotePathString()}";
+
+            case SynchronizationAction.DeleteRemote:
+                return $"× {GetRemotePathString()}";
+
+            case SynchronizationAction.DeleteLocal:
+                return $"× {GetLocalPathString()}";
+
+            default:
+                throw new InvalidOperationException();
         }
     }
 
-    [Guid("97F5222E-9379-4C24-9E50-E93C7334BBD5")]
-    [ClassInterface(Constants.ClassInterface)]
-    [ComVisible(true)]
-    public sealed class ComparisonDifference
+    private string TranslateRemotePathToLocal()
     {
-        public SynchronizationAction Action { get; internal set; }
-        public bool IsDirectory { get; internal set; }
-        public ComparisonFileInfo Local { get; internal set; }
-        public ComparisonFileInfo Remote { get; internal set; }
+        return RemotePath.TranslateRemotePathToLocal(RemotePath.GetDirectoryName(Remote.FileName), _remotePath, _localPath);
+    }
 
-        internal ComparisonDifference(string localPath, string remotePath)
+    private string TranslateLocalPathToRemote()
+    {
+        return RemotePath.TranslateLocalPathToRemote(Path.GetDirectoryName(Local.FileName), _localPath, _remotePath);
+    }
+
+    private string GetRemotePathString()
+    {
+        return Remote.FileName + (IsDirectory ? "/" : string.Empty);
+    }
+
+    private string GetLocalPathString()
+    {
+        return Local.FileName + (IsDirectory ? "\\" : string.Empty);
+    }
+
+    public FileOperationEventArgs Resolve(Session session, TransferOptions options = null)
+    {
+        if (session == null)
         {
-            _localPath = localPath;
-            _remotePath = remotePath;
+            throw new ArgumentNullException(nameof(session));
         }
 
-        public override string ToString()
+        switch (Action)
         {
-            string buf;
-            switch (Action)
-            {
-                case SynchronizationAction.UploadNew:
-                    buf = RemotePath.Combine(TranslateLocalPathToRemote(), "*");
-                    return $"{GetLocalPathString()} ==> {buf}";
-
-                case SynchronizationAction.DownloadNew:
-                    buf = Path.Combine(TranslateRemotePathToLocal(), "*");
-                    return $"{buf} <== {GetRemotePathString()}";
-
-                case SynchronizationAction.UploadUpdate:
-                    return $"{GetLocalPathString()} ==> {GetRemotePathString()}";
-
-                case SynchronizationAction.DownloadUpdate:
-                    return $"{GetLocalPathString()} <== {GetRemotePathString()}";
-
-                case SynchronizationAction.DeleteRemote:
-                    return $"× {GetRemotePathString()}";
-
-                case SynchronizationAction.DeleteLocal:
-                    return $"× {GetLocalPathString()}";
-
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
-
-        private string TranslateRemotePathToLocal()
-        {
-            return RemotePath.TranslateRemotePathToLocal(RemotePath.GetDirectoryName(Remote.FileName), _remotePath, _localPath);
-        }
-
-        private string TranslateLocalPathToRemote()
-        {
-            return RemotePath.TranslateLocalPathToRemote(Path.GetDirectoryName(Local.FileName), _localPath, _remotePath);
-        }
-
-        private string GetRemotePathString()
-        {
-            return Remote.FileName + (IsDirectory ? "/" : string.Empty);
-        }
-
-        private string GetLocalPathString()
-        {
-            return Local.FileName + (IsDirectory ? "\\" : string.Empty);
-        }
-
-        public FileOperationEventArgs Resolve(Session session, TransferOptions options = null)
-        {
-            if (session == null)
-            {
-                throw new ArgumentNullException(nameof(session));
-            }
-
-            switch (Action)
-            {
-                case SynchronizationAction.UploadNew:
-                case SynchronizationAction.UploadUpdate:
-                    {
-                        string remoteDirectory = TranslateLocalPathToRemote();
-                        if (!IsDirectory)
-                        {
-                            return session.PutFileToDirectory(Local.FileName, remoteDirectory, options: options);
-                        }
-                        else
-                        {
-                            session.PutEntryToDirectory(Local.FileName, remoteDirectory, options: options);
-                            return null;
-                        }
-                    }
-
-                case SynchronizationAction.DownloadNew:
-                case SynchronizationAction.DownloadUpdate:
-                    {
-                        string localDirectory = TranslateRemotePathToLocal();
-                        if (!IsDirectory)
-                        {
-                            return session.GetFileToDirectory(Remote.FileName, localDirectory, options: options);
-                        }
-                        else
-                        {
-                            session.GetEntryToDirectory(Remote.FileName, localDirectory, options: options);
-                            return null;
-                        }
-                    }
-
-                case SynchronizationAction.DeleteRemote:
+            case SynchronizationAction.UploadNew:
+            case SynchronizationAction.UploadUpdate:
+                {
+                    string remoteDirectory = TranslateLocalPathToRemote();
                     if (!IsDirectory)
                     {
-                        return session.RemoveFile(Remote.FileName);
+                        return session.PutFileToDirectory(Local.FileName, remoteDirectory, options: options);
                     }
                     else
                     {
-                        session.RemoveEntry(Remote.FileName);
+                        session.PutEntryToDirectory(Local.FileName, remoteDirectory, options: options);
                         return null;
                     }
+                }
 
-                case SynchronizationAction.DeleteLocal:
+            case SynchronizationAction.DownloadNew:
+            case SynchronizationAction.DownloadUpdate:
+                {
+                    string localDirectory = TranslateRemotePathToLocal();
                     if (!IsDirectory)
                     {
-                        File.Delete(Local.FileName);
+                        return session.GetFileToDirectory(Remote.FileName, localDirectory, options: options);
                     }
                     else
                     {
-                        Directory.Delete(Local.FileName, true);
+                        session.GetEntryToDirectory(Remote.FileName, localDirectory, options: options);
+                        return null;
                     }
+                }
+
+            case SynchronizationAction.DeleteRemote:
+                if (!IsDirectory)
+                {
+                    return session.RemoveFile(Remote.FileName);
+                }
+                else
+                {
+                    session.RemoveEntry(Remote.FileName);
                     return null;
+                }
 
-                default:
-                    throw session.Logger.WriteException(new InvalidOperationException());
-            }
+            case SynchronizationAction.DeleteLocal:
+                if (!IsDirectory)
+                {
+                    File.Delete(Local.FileName);
+                }
+                else
+                {
+                    Directory.Delete(Local.FileName, true);
+                }
+                return null;
+
+            default:
+                throw session.Logger.WriteException(new InvalidOperationException());
         }
-
-        public void Reverse()
-        {
-            switch (Action)
-            {
-                case SynchronizationAction.UploadNew:
-                    Action = SynchronizationAction.DeleteLocal;
-                    break;
-
-                case SynchronizationAction.DownloadNew:
-                    Action = SynchronizationAction.DeleteRemote;
-                    break;
-
-                case SynchronizationAction.UploadUpdate:
-                    Action = SynchronizationAction.DownloadUpdate;
-                    break;
-
-                case SynchronizationAction.DownloadUpdate:
-                    Action = SynchronizationAction.UploadUpdate;
-                    break;
-
-                case SynchronizationAction.DeleteRemote:
-                    Action = SynchronizationAction.DownloadNew;
-                    break;
-
-                case SynchronizationAction.DeleteLocal:
-                    Action = SynchronizationAction.UploadNew;
-                    break;
-
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
-
-        private readonly string _localPath;
-        private readonly string _remotePath;
     }
+
+    public void Reverse()
+    {
+        switch (Action)
+        {
+            case SynchronizationAction.UploadNew:
+                Action = SynchronizationAction.DeleteLocal;
+                break;
+
+            case SynchronizationAction.DownloadNew:
+                Action = SynchronizationAction.DeleteRemote;
+                break;
+
+            case SynchronizationAction.UploadUpdate:
+                Action = SynchronizationAction.DownloadUpdate;
+                break;
+
+            case SynchronizationAction.DownloadUpdate:
+                Action = SynchronizationAction.UploadUpdate;
+                break;
+
+            case SynchronizationAction.DeleteRemote:
+                Action = SynchronizationAction.DownloadNew;
+                break;
+
+            case SynchronizationAction.DeleteLocal:
+                Action = SynchronizationAction.UploadNew;
+                break;
+
+            default:
+                throw new InvalidOperationException();
+        }
+    }
+
+    private readonly string _localPath;
+    private readonly string _remotePath;
 }

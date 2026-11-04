@@ -1,21 +1,20 @@
 ﻿using System;
 
-namespace WinSCP
+namespace WinSCP;
+
+internal class OperationResultGuard : IDisposable
 {
-    internal class OperationResultGuard : IDisposable
+    public OperationResultGuard(Session session, OperationResultBase operationResult)
     {
-        public OperationResultGuard(Session session, OperationResultBase operationResult)
-        {
-            _session = session;
-            _operationResult = operationResult;
-        }
-
-        public void Dispose()
-        {
-            _session.UnregisterOperationResult(_operationResult);
-        }
-
-        private readonly Session _session;
-        private readonly OperationResultBase _operationResult;
+        _session = session;
+        _operationResult = operationResult;
     }
+
+    public void Dispose()
+    {
+        _session.UnregisterOperationResult(_operationResult);
+    }
+
+    private readonly Session _session;
+    private readonly OperationResultBase _operationResult;
 }

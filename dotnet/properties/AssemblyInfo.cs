@@ -29,13 +29,12 @@ using System.Runtime.InteropServices;
 
 [assembly: InternalsVisibleTo("Tests")]
 
-namespace WinSCP
-{
-    internal static class AssemblyConstants
-    {
-        public const string UndefinedProductVersion = "9.9.9.9";
+namespace WinSCP;
 
-        public const string Version = "1.17.2.0";
-        public const string ProductVersion = "6.8.0.0";
-    }
+internal static class AssemblyConstants
+{
+    public const string UndefinedProductVersion = "9.9.9.9";
+
+    public const string Version = "1.17.2.0";
+    public const string ProductVersion = "6.8.0.0";
 }
