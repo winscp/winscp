@@ -1450,8 +1450,8 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 
               'Allows direct downloads to regular local folders (e.g. Windows F' +
               'ile Explorer). Does not allow downloads to other destinations (Z' +
-              'IP archives,  FTP, etc.). Uses drag&&drop shell extension, when ' +
-              'available.'
+              'IP archives, FTP, etc.). Uses drag&&drop shell extension, when a' +
+              'vailable.'
             FocusControl = DDFakeFileEnabledButton
             WordWrap = True
             OnClick = DDLabelClick
@@ -1465,8 +1465,8 @@ object PreferencesDialog: TPreferencesDialog
             AutoSize = False
             Caption = 
               'Allows downloads to any destinations (regular folders, ZIP archi' +
-              'ves,  FTP, etc.). Files are downloaded first to temporary folder' +
-              ', from where they are delivered to the destination.'
+              'ves, FTP, etc.). Files are downloaded first to temporary folder,' +
+              ' from where they are delivered to the destination.'
             FocusControl = DDFakeFileDisabledButton
             WordWrap = True
             OnClick = DDLabelClick
