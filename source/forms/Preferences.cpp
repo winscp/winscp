@@ -3588,6 +3588,14 @@ UnicodeString TPreferencesDialog::GetControlText(TControl * Control)
     int TextLen = Control->GetTextLen();
     Result.SetLength(TextLen);
     Control->GetTextBuf(Result.c_str(), TextLen + 1);
+    auto Label = dynamic_cast<TLabel *>(Control);
+    auto StaticText = dynamic_cast<TStaticText *>(Control);
+    if (((Label != nullptr) && Label->ShowAccelChar) ||
+        ((StaticText != nullptr) && StaticText->ShowAccelChar) ||
+        ((Label == nullptr) && (StaticText == nullptr)))
+    {
+      Result = StripHotkey(Result);
+    }
   }
   return Result;
 }
@@ -3611,7 +3619,7 @@ void TPreferencesDialog::Search(TControl * Control, TStrings * Results, bool & N
     }
     else
     {
-      UnicodeString Caption = StripHotkey(GetControlText(Control));
+      UnicodeString Caption = GetControlText(Control);
       if (Caption.Length() >= 4) // do not search unit labels (like "s")
       {
         AddSearchResult(Results, Caption, Control, NewResults);
