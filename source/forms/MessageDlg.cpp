@@ -410,7 +410,7 @@ void __fastcall TMessageForm::CreateWnd()
 {
   TForm::CreateWnd();
   ApplyColorMode(this);
-  // This makes Narrator read comlete window, including the message text (created in WMGetObject)
+  // This makes Narrator read complete window, including the message text (created in WMGetObject)
   SetAccessibleRole(this, ROLE_SYSTEM_DIALOG);
 }
 //---------------------------------------------------------------------------
