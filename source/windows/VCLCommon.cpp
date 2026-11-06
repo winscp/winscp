@@ -956,14 +956,21 @@ static TComPtr<IAccPropServices> AccPropServices;
 void SetAccessibleName(TWinControl * Control, const UnicodeString & AccName)
 {
   DebugAssert(Control->HandleAllocated());
-  OleCheck(AccPropServices->SetHwndPropStr(Control->Handle, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_NAME, AccName.c_str()));
+  if (AccPropServices.Get() != nullptr)
+  {
+    AccPropServices->SetHwndPropStr(Control->Handle, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_NAME, AccName.c_str());
+  }
 }
 //---------------------------------------------------------------------------
 void SetAccessibleRole(TWinControl * Control, int Role)
 {
   DebugAssert(Control->HandleAllocated());
-  VARIANT RoleVariant = { .vt = VT_I4, .lVal = Role };
-  OleCheck(AccPropServices->SetHwndProp(Control->Handle, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_ROLE, RoleVariant));
+  if (AccPropServices.Get() != nullptr)
+  {
+    VARIANT RoleVariant = { .vt = VT_I4, .lVal = Role };
+    // ignore errors (wine does not implement it)
+    AccPropServices->SetHwndProp(Control->Handle, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_ROLE, RoleVariant);
+  }
 }
 //---------------------------------------------------------------------------
 static void ControlExposeLabels(TWinControl * Control)
