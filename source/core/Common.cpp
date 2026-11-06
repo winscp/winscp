@@ -1830,22 +1830,15 @@ static const TDateTimeParams * __fastcall GetDateTimeParams(unsigned short Year)
     // creates new entry as a side effect
     Result = &YearlyDateTimeParams[Year];
     TIME_ZONE_INFORMATION TZI;
-
     unsigned long GTZI;
-
-    HINSTANCE Kernel32 = GetModuleHandle(kernel32);
-    typedef BOOL WINAPI (* TGetTimeZoneInformationForYear)(USHORT wYear, PDYNAMIC_TIME_ZONE_INFORMATION pdtzi, LPTIME_ZONE_INFORMATION ptzi);
-    TGetTimeZoneInformationForYear GetTimeZoneInformationForYear =
-      reinterpret_cast<TGetTimeZoneInformationForYear>(GetProcAddress(Kernel32, "GetTimeZoneInformationForYear"));
-
-    if ((Year == 0) || (GetTimeZoneInformationForYear == NULL))
+    if ((Year != 0) &&
+        GetTimeZoneInformationForYear(Year, nullptr, &TZI))
     {
-      GTZI = GetTimeZoneInformation(&TZI);
+      GTZI = TIME_ZONE_ID_UNKNOWN;
     }
     else
     {
-      GetTimeZoneInformationForYear(Year, NULL, &TZI);
-      GTZI = TIME_ZONE_ID_UNKNOWN;
+      GTZI = GetTimeZoneInformation(&TZI);
     }
 
     switch (GTZI)
