@@ -1757,6 +1757,8 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
       Region = RegionBuf.c_str();
     }
 
+    S3UriStyle UriStyle = S3UriStyle(FTerminal->SessionData->S3UrlStyle);
+
     TLibS3CallbackData Data;
 
     bool Retry;
@@ -1767,7 +1769,7 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
       Retry = false;
 
       S3_create_bucket(
-        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken,
+        FLibS3Protocol, UriStyle, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken,
         (FHostName + FPortSuffix).c_str(), StrToS3(BucketName),
         StrToS3(FAuthRegion), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
 

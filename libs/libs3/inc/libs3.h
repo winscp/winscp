@@ -1964,6 +1964,7 @@ void S3_test_bucket(S3Protocol protocol, S3UriStyle uriStyle,
  * Creates a new bucket.
  *
  * @param protocol gives the protocol to use for this request
+ * @param uriStyle gives the URI style to use for this request
  * @param accessKeyId gives the Amazon Access Key ID for which to list owned
  *        buckets
  * @param secretAccessKey gives the Amazon Secret Access Key for which to list
@@ -1986,7 +1987,8 @@ void S3_test_bucket(S3Protocol protocol, S3UriStyle uriStyle,
  * @param callbackData will be passed in as the callbackData parameter to
  *        all callbacks for this request
  **/
-void S3_create_bucket(S3Protocol protocol, const char *accessKeyId,
+void S3_create_bucket(S3Protocol protocol, S3UriStyle uriStyle,
+                      const char *accessKeyId,
                       const char *secretAccessKey, const char *securityToken,
                       const char *hostName, const char *bucketName,
                       const char *authRegion, S3CannedAcl cannedAcl,
