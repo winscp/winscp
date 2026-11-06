@@ -27,9 +27,9 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 # USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
-if(NOT _expat_config_included)
-    # Protect against multiple inclusion
-    set(_expat_config_included TRUE)
+if(NOT _expat_config_in_progress)
+    # Protect against recursive inclusion by the exported targets file
+    set(_expat_config_in_progress TRUE)
 
 
 include("${CMAKE_CURRENT_LIST_DIR}/expat.cmake")
@@ -72,4 +72,5 @@ endif()
 check_required_components(expat)
 
 
-endif(NOT _expat_config_included)
+    set(_expat_config_in_progress FALSE)
+endif(NOT _expat_config_in_progress)
