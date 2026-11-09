@@ -1473,12 +1473,38 @@ begin
   else
   begin
     P := MapString;
-    // WINSCP
+    // WINSCP (updated to remove arguments for complex C++ symbols (like templates)
     TemplateDepth := 0;
     while P^ <> #0 do
     begin
       if (P^ in [#10, #13]) or ((not IgnoreSpaces) and (P^ <= ' ')) then
         Break;
+
+      // Skip "operatorXX" so it doesn't mess up bracket counting or break prematurely
+      if (P^ = 'o') and (StrLCompA(P, 'operator', 8) = 0) then
+      begin
+        Inc(P, 8);
+
+        while (P^ <> #0) and (P^ <= ' ') do
+          Inc(P);
+
+        if (P^ = '(') and ((P+1)^ = ')') then
+        begin
+          Inc(P, 2);
+          Continue;
+        end
+        else if (P^ = '[') and ((P+1)^ = ']') then
+        begin
+          Inc(P, 2);
+          Continue;
+        end
+        else
+        begin
+          while P^ in ['+', '-', '*', '/', '%', '^', '&', '|', '~', '!', '=', '<', '>', ','] do
+            Inc(P);
+          Continue;
+        end;
+      end;
 
       if P^ = '<' then
         Inc(TemplateDepth)
