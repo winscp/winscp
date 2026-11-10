@@ -71,6 +71,7 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner)
   MessageBrowser = NULL;
   NeverAskAgainCheck = NULL;
   FUpdateForShiftStateTimer = NULL;
+  FPendingAccessibility = false;
   UseSystemSettingsPre(this);
 }
 //---------------------------------------------------------------------------
@@ -338,26 +339,38 @@ void __fastcall TMessageForm::CMShowingChanged(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
+bool TMessageForm::InitAccessibility()
+{
+  TLabel * Label1 = (MainMessageLabel != nullptr) ? MainMessageLabel : MessageLabel;
+  bool Result = (Label1 != nullptr);
+  if (Result)
+  {
+    if (MessageStaticText == nullptr)
+    {
+      MessageStaticText = new TStaticText(this);
+      MessageStaticText->Parent = Label1->Parent;
+      MessageStaticText->TabOrder = 0;
+      MessageStaticText->Caption = EmptyStr;
+      SetAccessibleName(MessageStaticText, NormalizeNewLines(MessageText));
+    }
+
+    // Make Narrator display rectangle around the text it is reading
+    TRect R = Label1->BoundsRect;
+    if ((MainMessageLabel != nullptr) && (MessageLabel != nullptr))
+    {
+      R.Union(MessageLabel->BoundsRect);
+    }
+    MessageStaticText->BoundsRect = R;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void TMessageForm::WMGetObject(TMessage & Message)
 {
-  TLabel * Label1 = (MainMessageLabel != nullptr) ? MainMessageLabel : DebugNotNull(MessageLabel);
-
-  if (MessageStaticText == nullptr)
+  if (!InitAccessibility())
   {
-    MessageStaticText = new TStaticText(this);
-    MessageStaticText->Parent = Label1->Parent;
-    MessageStaticText->TabOrder = 0;
-    MessageStaticText->Caption = EmptyStr;
-    SetAccessibleName(MessageStaticText, NormalizeNewLines(MessageText));
+    FPendingAccessibility = true;
   }
-
-  // Make Narrator display rectangle around the text it is reading
-  TRect R = Label1->BoundsRect;
-  if ((MainMessageLabel != nullptr) && (MessageLabel != nullptr))
-  {
-    R.Union(MessageLabel->BoundsRect);
-  }
-  MessageStaticText->BoundsRect = R;
 
   TForm::Dispatch(&Message);
 }
@@ -1296,6 +1309,12 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
     Result->NeverAskAgainCheck->SetBounds(
       NeverAskAgainLeft, NeverAskAgainTop, NeverAskAgainBaseWidth, NeverAskAgainHeight);
+  }
+
+  if (Result->FPendingAccessibility)
+  {
+    Result->FPendingAccessibility = false;
+    DebugCheck(InitAccessibility());
   }
 
   return Result;

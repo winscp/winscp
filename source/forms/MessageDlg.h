@@ -62,12 +62,14 @@ private:
   bool FShowNoActivate;
   std::map<TObject *, TButtonSubmitEvent> FButtonSubmitEvents;
   TCheckBox * NeverAskAgainCheck;
+  bool FPendingAccessibility;
 
   void __fastcall HelpButtonSubmit(TObject * Sender, unsigned int & Answer);
   void __fastcall ReportButtonSubmit(TObject * Sender, unsigned int & Answer);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall CMShowingChanged(TMessage & Message);
   void WMGetObject(TMessage & Message);
+  bool InitAccessibility();
   void __fastcall UpdateForShiftState();
   TButton * __fastcall CreateButton(
     UnicodeString Name, UnicodeString Caption, unsigned int Answer,
