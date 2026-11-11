@@ -767,8 +767,8 @@ void TSessionData::DoLoad(
   {
     LOADING_UNSAFE;
     GssLibList = Storage->ReadString(L"GSSLibs", GssLibList);
+    GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
   }
-  GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
   PublicKeyFile = Storage->ReadString(L"PublicKeyFile", PublicKeyFile);
   DetachedCertificate = Storage->ReadString(L"DetachedCertificate", DetachedCertificate);
   AddressFamily = static_cast<TAddressFamily>
@@ -980,7 +980,11 @@ void TSessionData::DoLoad(
   Link = Storage->ReadString(L"Link", Link);
   NameOverride = Storage->ReadString(L"NameOverride", NameOverride);
 
-  PuttySettings = Storage->ReadString(L"PuttySettings", PuttySettings);
+  if (!Unsafe)
+  {
+    LOADING_UNSAFE;
+    PuttySettings = Storage->ReadString(L"PuttySettings", PuttySettings);
+  }
 
   CustomParam1 = Storage->ReadString(L"CustomParam1", CustomParam1);
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
