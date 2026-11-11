@@ -1314,7 +1314,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   if (Result->FPendingAccessibility)
   {
     Result->FPendingAccessibility = false;
-    DebugCheck(InitAccessibility());
+    DebugCheck(Result->InitAccessibility());
   }
 
   return Result;
