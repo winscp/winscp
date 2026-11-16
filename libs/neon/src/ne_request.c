@@ -489,6 +489,17 @@ static ne_buffer *initial_request_headers(ne_request *req)
     NE_DEBUG_WINSCP_CONTEXT(sess);
     ne_buffer *hdrs = ne_buffer_create();
 
+#ifdef WINSCP
+    /* RFC 7230§5.4 makes the TE header hop-by-hop and requires a proxy to
+     * strip it, so a server never benefits from a client sending it.  Some
+     * servers (S3 object stores in particular) reject requests that carry
+     * either TE or a "TE" entry in Connection.  Callers can therefore opt
+     * out of both headers. */
+    const int send_te = !sess->flags[SE_SESSFLAG_NO_TE];
+#else
+    const int send_te = 1;
+#endif
+
     if (sess->user_agent) {
         ne_buffer_zappend(hdrs, sess->user_agent);
     }
@@ -496,27 +507,55 @@ static ne_buffer *initial_request_headers(ne_request *req)
     /* If persistent connections are disabled, just send Connection:
      * close; otherwise, send Connection: Keep-Alive to pre-1.1 origin
      * servers to try harder to get a persistent connection, except if
-     * using a proxy as per 2068§19.7.1.  Always add TE: trailers. */
+     * using a proxy as per 2068§19.7.1.  Unless disabled, always add
+     * TE: trailers. */
     if (!sess->flags[NE_SESSFLAG_PERSIST]) {
-       ne_buffer_czappend(hdrs, "Connection: TE, close" EOL);
+        if (send_te) {
+            ne_buffer_czappend(hdrs, "Connection: TE, close" EOL);
+        }
+        else {
+            ne_buffer_czappend(hdrs, "Connection: close" EOL);
+        }
     } 
     else if (!sess->is_http11 && !sess->any_proxy_http) {
-        ne_buffer_czappend(hdrs, 
-                           "Keep-Alive: " EOL
-                          "Connection: TE, Keep-Alive" EOL);
+        if (send_te) {
+            ne_buffer_czappend(hdrs, 
+                               "Keep-Alive: " EOL
+                               "Connection: TE, Keep-Alive" EOL);
+        }
+        else {
+            ne_buffer_czappend(hdrs, 
+                               "Keep-Alive: " EOL
+                               "Connection: Keep-Alive" EOL);
+        }
     } 
     else if (!req->session->is_http11 && !sess->any_proxy_http) {
-        ne_buffer_czappend(hdrs, 
-                           "Keep-Alive: " EOL
-                           "Proxy-Connection: Keep-Alive" EOL
-                           "Connection: TE" EOL);
+        if (send_te) {
+            ne_buffer_czappend(hdrs, 
+                               "Keep-Alive: " EOL
+                               "Proxy-Connection: Keep-Alive" EOL
+                               "Connection: TE" EOL);
+        }
+        else {
+            ne_buffer_czappend(hdrs, 
+                               "Keep-Alive: " EOL
+                               "Proxy-Connection: Keep-Alive" EOL);
+        }
     } 
     else {
-        ne_buffer_czappend(hdrs, "Connection: TE" EOL);
+        if (send_te) {
+            ne_buffer_czappend(hdrs, "Connection: TE" EOL);
+        }
     }
 
-    ne_buffer_concat(hdrs, "TE: trailers" EOL "Host: ", 
-                     req->session->server.hostport, EOL, NULL);
+    if (send_te) {
+        ne_buffer_concat(hdrs, "TE: trailers" EOL "Host: ", 
+                         req->session->server.hostport, EOL, NULL);
+    }
+    else {
+        ne_buffer_concat(hdrs, "Host: ", req->session->server.hostport, 
+                         EOL, NULL);
+    }
 
     return hdrs;
 }
