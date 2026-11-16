@@ -658,6 +658,11 @@ void TS3FileSystem::LibS3SessionCallback(ne_session_s * Session, void * Callback
 
   ne_set_session_flag(Session, SE_SESSFLAG_SNDBUF, Data->SendBuf);
 
+  // S3 servers (NetApp StorageGRID for one) reject requests carrying the
+  // "TE: trailers" header or "TE" in the Connection header. Neither is of
+  // any use for S3 and RFC 7230§5.4 requires a proxy to strip them anyway.
+  ne_set_session_flag(Session, SE_SESSFLAG_NO_TE, 1);
+
   // Data->Timeout is propagated via timeoutMs parameter of functions like S3_list_service
 
   FileSystem->FNeonSession = Session;

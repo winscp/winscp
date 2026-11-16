@@ -114,6 +114,12 @@ typedef enum ne_session_flag_e {
     #ifdef WINSCP
     NE_SESSFLAG_LIBERAL_ESCAPING,
     SE_SESSFLAG_SNDBUF,
+    /* Do not send the "TE: trailers" request header, nor advertise
+     * "TE" in the Connection header.  Some HTTP servers (S3 object
+     * stores in particular) reject a request with either of those
+     * headers, even though RFC 7230 5.4 requires proxies to strip
+     * them on forward anyway. */
+    SE_SESSFLAG_NO_TE,
     #endif
 
     NE_SESSFLAG_LAST /* enum sentinel value */
