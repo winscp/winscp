@@ -5284,22 +5284,17 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
             {
               m_bCheckForTimeout = FALSE;
             }
-            delete [] iter->str;
-            continue;
           }
           else
           {
             delete pData;
-            delete [] iter->str;
             CString str;
             str.Format(TLS_CERT_DECODE_ERROR, CertError);
             ShowStatus(str, FZ_LOG_ERROR);
             ResetOperation(FZ_REPLY_ERROR);
-            continue;
           }
+          break;
         }
-        delete [] iter->str;
-        continue;
       }
 #ifndef MPEXT_NO_GSS
       else
@@ -5322,8 +5317,7 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
         case GSS_AUTHCOMPLETE:
         case GSS_AUTHFAILED:
           LogOnToServer(TRUE);
-          delete [] iter->str;
-          continue;
+          break;
         }
       }
 #endif
