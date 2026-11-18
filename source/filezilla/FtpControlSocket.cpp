@@ -5303,16 +5303,16 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
         switch (iter->nParam1)
         {
         case GSS_INFO:
-          LogMessageRaw(FZ_LOG_INFO, A2CT(iter->str));
+          LogMessageRaw(FZ_LOG_INFO, UnicodeString(iter->str).c_str());
           break;
         case GSS_ERROR:
-          LogMessageRaw(FZ_LOG_APIERROR, A2CT(iter->str));
+          LogMessageRaw(FZ_LOG_APIERROR, UnicodeString(iter->str).c_str());
           break;
         case GSS_COMMAND:
-          ShowStatus(A2CT(iter->str), FZ_LOG_COMMAND);
+          ShowStatus(UnicodeString(iter->str), FZ_LOG_COMMAND);
           break;
         case GSS_REPLY:
-          ShowStatus(A2CT(iter->str), FZ_LOG_REPLY);
+          ShowStatus(UnicodeString(iter->str), FZ_LOG_REPLY);
           break;
         case GSS_AUTHCOMPLETE:
         case GSS_AUTHFAILED:
