@@ -5225,26 +5225,6 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
           LogMessage(FZ_LOG_WARNING, L"Unknown proxy error" );
         }
       }
-#ifndef MPEXT_NO_GSS
-      else if (iter->pLayer == m_pGssLayer)
-      {
-        switch (iter->nParam1)
-        {
-        case GSS_INFO:
-          LogMessageRaw(FZ_LOG_INFO, A2CT(iter->str));
-          break;
-        case GSS_ERROR:
-          LogMessageRaw(FZ_LOG_APIERROR, A2CT(iter->str));
-          break;
-        case GSS_COMMAND:
-          ShowStatus(A2CT(iter->str), FZ_LOG_COMMAND);
-          break;
-        case GSS_REPLY:
-          ShowStatus(A2CT(iter->str), FZ_LOG_REPLY);
-          break;
-        }
-      }
-#endif
       else if (iter->pLayer == m_pSslLayer)
       {
         switch (iter->nParam1)
@@ -5326,9 +5306,22 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
       else
       if (iter->pLayer == m_pGssLayer)
       {
-        if (iter->nParam1 == GSS_AUTHCOMPLETE ||
-          iter->nParam1 == GSS_AUTHFAILED)
+        switch (iter->nParam1)
         {
+        case GSS_INFO:
+          LogMessageRaw(FZ_LOG_INFO, A2CT(iter->str));
+          break;
+        case GSS_ERROR:
+          LogMessageRaw(FZ_LOG_APIERROR, A2CT(iter->str));
+          break;
+        case GSS_COMMAND:
+          ShowStatus(A2CT(iter->str), FZ_LOG_COMMAND);
+          break;
+        case GSS_REPLY:
+          ShowStatus(A2CT(iter->str), FZ_LOG_REPLY);
+          break;
+        case GSS_AUTHCOMPLETE:
+        case GSS_AUTHFAILED:
           LogOnToServer(TRUE);
           delete [] iter->str;
           continue;
