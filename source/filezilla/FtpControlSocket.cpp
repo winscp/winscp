@@ -5186,7 +5186,6 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 #endif
         else if (iter->pLayer == m_pSslLayer)
         {
-          delete [] iter->str;
           LogMessage(FZ_LOG_INFO, L"TLS layer changed state from %s to %s", state2Desc, state1Desc);
         }
         else
