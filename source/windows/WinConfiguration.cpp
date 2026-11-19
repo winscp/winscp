@@ -2935,6 +2935,7 @@ void __fastcall TWinConfiguration::UpdateEntryInJumpList(
       SaveJumpList(Storage.get(), L"JumpList", ListSessions.get());
       SaveJumpList(Storage.get(), L"JumpListWorkspaces", ListWorkspaces.get());
     }
+    Storage->Flush();
   }
   catch (Exception & E)
   {

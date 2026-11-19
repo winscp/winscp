@@ -2457,6 +2457,7 @@ UnicodeString TSecureShell::StoreHostKey(
   Storage->AccessMode = smReadWrite;
   TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage, Storage.get());
   store_host_key(FSeat, AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(KeyStr).c_str());
+  Storage->Flush();
   return Storage->Source;
 }
 //---------------------------------------------------------------------------

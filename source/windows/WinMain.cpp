@@ -408,6 +408,7 @@ void __fastcall RecordWrapperVersions(UnicodeString ConsoleVersion, UnicodeStrin
             Storage->WriteString(L"ConsoleVersion", ConsoleVersion);
           }
         }
+        Storage->Flush();
       }
       __finally
       {

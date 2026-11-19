@@ -455,6 +455,7 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
     // all configuration is properly transferred to the master storage
     bool ConfigAll = All || AStorage->Temporary;
     DoSave(AStorage, ConfigAll);
+    AStorage->Flush();
   }
   __finally
   {
@@ -492,6 +493,7 @@ void __fastcall TConfiguration::SaveCustomIniFileStorageName()
       RegistryStorage->CloseSubKey();
       AppLogFmt(L"Saved custom INI file path %s", (CustomIniFileStorageName));
     }
+    RegistryStorage->Flush();
   }
 }
 //---------------------------------------------------------------------------
@@ -517,6 +519,7 @@ void __fastcall TConfiguration::Export(const UnicodeString & FileName)
     CopyData(Storage, ExportStorage);
 
     DoSave(ExportStorage, true);
+    ExportStorage->Flush();
   }
   __finally
   {
@@ -546,6 +549,7 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
     LoadFrom(ImportStorage);
 
     Storage->RecursiveDeleteSubKey(Configuration->StoredSessionsSubKey);
+    Storage->Flush();
 
     if (ImportStorage->OpenSubKey(Configuration->StoredSessionsSubKey, false))
     {
@@ -749,6 +753,7 @@ void __fastcall TConfiguration::SaveDirectoryChangesCache(const UnicodeString Se
       DirectoryChangesCache->Serialize(Data);
       Storage->WriteBinaryData(SessionKey, Data);
     }
+    Storage->Flush();
   }
   __finally
   {
@@ -803,6 +808,7 @@ void __fastcall TConfiguration::SetBannerData(
   {
     Storage->WriteString(SessionKey, BannerHash + L"," + UIntToStr(Params));
   }
+  Storage->Flush();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::NeverShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner)
@@ -837,6 +843,7 @@ void __fastcall TConfiguration::RememberLastFingerprint(const UnicodeString & Si
     UnicodeString FingerprintKey = FormatFingerprintKey(SiteKey, FingerprintType);
     Storage->WriteString(FingerprintKey, Fingerprint);
   }
+  Storage->Flush();
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::LastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType)
@@ -972,6 +979,7 @@ void __fastcall TConfiguration::CleanupRegistry(const UnicodeString & RegistryPa
         break;
       }
     }
+    Registry->Flush();
   }
 }
 //---------------------------------------------------------------------------
@@ -1613,6 +1621,7 @@ void __fastcall TConfiguration::MoveStorage(TStorage AStorage, const UnicodeStri
         // copy before save as it removes the ini file,
         // when switching from ini to registry
         CopyData(SourceStorage, TargetStorage);
+        TargetStorage->Flush();
       }
       __finally
       {
