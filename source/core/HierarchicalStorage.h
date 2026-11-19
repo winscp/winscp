@@ -64,7 +64,7 @@ public:
   void __fastcall WriteBinaryData(const UnicodeString & Name, const RawByteString & Value);
   void __fastcall WriteBinaryDataAsString(const UnicodeString & Name, const RawByteString & Value);
 
-  virtual void __fastcall Flush();
+  virtual bool Flush();
 
   __property UnicodeString Storage = { read = FStorage };
   __property UnicodeString CurrentSubKey = { read = GetCurrentSubKey };
@@ -206,6 +206,7 @@ public:
   __fastcall TCustomIniFileStorage(const UnicodeString & Storage, TCustomIniFile * IniFile);
   virtual __fastcall ~TCustomIniFileStorage();
 
+  virtual bool Flush();
   virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate);
   virtual void __fastcall CloseSubKey();
 
@@ -268,7 +269,7 @@ public:
   static TIniFileStorage * __fastcall CreateNul();
   virtual __fastcall ~TIniFileStorage();
 
-  virtual void __fastcall Flush();
+  virtual bool Flush();
 
 private:
   __fastcall TIniFileStorage(const UnicodeString & FileName, TCustomIniFile * IniFile);

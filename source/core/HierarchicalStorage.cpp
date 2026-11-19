@@ -195,8 +195,9 @@ __fastcall THierarchicalStorage::~THierarchicalStorage()
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall THierarchicalStorage::Flush()
+bool THierarchicalStorage::Flush()
 {
+  return false;
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::SetAccessMode(TStorageAccessMode value)
@@ -1192,6 +1193,13 @@ UnicodeString __fastcall TCustomIniFileStorage::GetSource()
   return Storage;
 }
 //---------------------------------------------------------------------------
+bool TCustomIniFileStorage::Flush()
+{
+  return
+    (FMasterStorage.get() != nullptr) &&
+    FMasterStorage->Flush();
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomIniFileStorage::GetCurrentSection()
 {
   return ExcludeTrailingBackslash(GetCurrentSubKeyMunged());
@@ -1747,22 +1755,20 @@ __fastcall TIniFileStorage::TIniFileStorage(const UnicodeString & AStorage, TCus
   ApplyOverrides();
 }
 //---------------------------------------------------------------------------
-void __fastcall TIniFileStorage::Flush()
+bool TIniFileStorage::Flush()
 {
-  if (FMasterStorage.get() != NULL)
-  {
-    FMasterStorage->Flush();
-  }
-  // This does not seem correct, if storage is written after it is flushed (though we probably never do that currently)
+  bool Result = TCustomIniFileStorage::Flush();
   if ((FOriginal != NULL) && !FIniFile->FileName.IsEmpty())
   {
-    std::unique_ptr<TStrings> Strings(new TStringList);
+    TStrings * Strings = new TStringList();
     std::unique_ptr<TStrings> Original(FOriginal);
-    FOriginal = NULL;
+    // even if saving fails, do not try again, unless contents is changes (what we never do anyway)
+    FOriginal = Strings;
 
-    dynamic_cast<TMemIniFile *>(FIniFile)->GetStrings(Strings.get());
+    dynamic_cast<TMemIniFile *>(FIniFile)->GetStrings(Strings);
     if (!Strings->Equals(Original.get()))
     {
+      Result = true;
       int Attr;
       // preserve attributes (especially hidden)
       bool Exists = FileExists(ApiPath(Storage));
@@ -1832,11 +1838,20 @@ void __fastcall TIniFileStorage::Flush()
       }
     }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 __fastcall TIniFileStorage::~TIniFileStorage()
 {
-  Flush();
+  // Just in case we forgot to add Flush to some code that writes to storage, still try to preserve any such changes.
+  // But we want to know (hence the check), and we never want to abort due to an exception here
+  try
+  {
+    DebugCheck(!Flush());
+  }
+  catch (...)
+  {
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::ApplyOverrides()

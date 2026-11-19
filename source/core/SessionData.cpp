@@ -2047,6 +2047,7 @@ void __fastcall TSessionData::Remove()
     {
       Remove(Storage, InternalStorageKey);
     }
+    Storage->Flush();
   }
   __finally
   {
@@ -2072,6 +2073,7 @@ void __fastcall TSessionData::CacheHostKeyIfNotCached()
       // modified to accept also fingerprint
       Storage->WriteString(HostKeyName, HostKey);
     }
+    Storage->Flush();
   }
 }
 //---------------------------------------------------------------------
@@ -5017,6 +5019,7 @@ void __fastcall TStoredSessionList::DoSave(bool All, bool Explicit,
     {
       DoSave(Storage, All, RecryptPasswordOnly, RecryptPasswordErrors);
     }
+    Storage->Flush();
   }
   __finally
   {
@@ -5264,6 +5267,7 @@ void __fastcall TStoredSessionList::Export(const UnicodeString FileName)
     {
       Save(Storage, true);
     }
+    Storage->Flush();
   }
   __finally
   {
@@ -5324,6 +5328,7 @@ void __fastcall TStoredSessionList::Cleanup()
       Storage->AccessMode = smReadWrite;
       if (Storage->OpenRootKey(False))
         Storage->RecursiveDeleteSubKey(Configuration->StoredSessionsSubKey);
+      Storage->Flush();
     }
     __finally
     {
@@ -5605,6 +5610,7 @@ void TStoredSessionList::ImportHostKeys(
   std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWriting());
 
   ImportHostKeys(SourceStorage, TargetStorage.get(), Sessions, OnlySelected, false);
+  TargetStorage->Flush();
 }
 //---------------------------------------------------------------------------
 void TStoredSessionList::ImportHostKeys(
@@ -5638,6 +5644,7 @@ void __fastcall TStoredSessionList::ImportSelectedKnownHosts(TStoredSessionList 
       }
     }
   }
+  Storage->Flush();
 }
 //---------------------------------------------------------------------------
 void TStoredSessionList::SelectKnownHostsForSelectedSessions(
