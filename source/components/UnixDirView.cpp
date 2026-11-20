@@ -16,6 +16,7 @@
 #include <Terminal.h>
 #include <WinConfiguration.h>
 #include <VCLCommon.h>
+#include <Tools.h>
 #endif
 
 #pragma package(smart_init)
@@ -1143,4 +1144,15 @@ void __fastcall TUnixDirView::SetItemCalculatedSize(TListItem * Item, __int64 Si
   OldSize = -1;
   #endif
   ItemCalculatedSizeUpdated(Item, OldSize, Size);
+}
+//---------------------------------------------------------------------------
+// Duplicated in TDirView
+TColor __fastcall TUnixDirView::GetDarkModeHeaderTextColor()
+{
+  #ifndef DESIGN_ONLY
+  // GetWindowColor is an approximation of header color
+  return GetWindowTextColor(GetWindowColor());
+  #else
+  return TCustomUnixDirView::GetDarkModeHeaderTextColor();
+  #endif
 }

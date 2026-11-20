@@ -91,7 +91,7 @@ uses
 
 Type
 
-  TFileOperation = ( foCopy, foDelete, foMove, foRename );
+  TFileOperatorOperation = ( fooCopy, fooDelete, fooMove, fooRename );
   TFileOperationFlag = ( foAllowUndo, foConfirmMouse, foFilesOnly,
     foMultiDestFiles, foNoConfirmation, foNoConfirmMkDir,
      foRenameOnCollision, foSilent, foSimpleProgress);
@@ -106,8 +106,8 @@ Type
     FFrom          : TStringList;
     FTo            : TStringList;
     fOwner         : TWinControl;
-    Procedure SetOperation( Value :TFileOperation );
-    Function  GetOperation :TFileOperation;
+    Procedure SetOperation(Value :TFileOperatorOperation);
+    Function  GetOperation :TFileOperatorOperation;
     Function  GetWantMappingHandle :Boolean;
     Procedure SetWantMappingHandle ( Value :Boolean );
     Procedure SetFlags( Value :TFileOperationFlags );
@@ -127,7 +127,7 @@ Type
 {==============================================================}
   published
 {==============================================================}
-    Property Operation : TFileOperation  Read GetOperation Write SetOperation Stored false;
+    Property Operation : TFileOperatorOperation  Read GetOperation Write SetOperation Stored false;
     Property Flags : TFileOperationFlags Read GetFlags     Write SetFlags     Stored false;
     Property WantMappingHandle :Boolean  Read GetWantMappingHandle Write SetWantMappingHandle Stored false;
   end;
@@ -144,26 +144,26 @@ uses
 
 { TFileOperator }
 
-procedure TFileOperator.SetOperation( Value :TFileOperation );
+procedure TFileOperator.SetOperation( Value :TFileOperatorOperation );
 begin
  with FData do
   case Value of
-    foCopy : wFunc := FO_COPY;
-    foDelete : wFunc := FO_DELETE;
-    foRename : wFunc := FO_RENAME;
-    foMove : wFunc := FO_MOVE;
+    fooCopy : wFunc := FO_COPY;
+    fooDelete : wFunc := FO_DELETE;
+    fooRename : wFunc := FO_RENAME;
+    fooMove : wFunc := FO_MOVE;
   end;
 end; {SetOperation}
 
 
-function TFileOperator.GetOperation :TFileOperation;
+function TFileOperator.GetOperation :TFileOperatorOperation;
 begin
-  result := foCopy;
+  result := fooCopy;
   case FData.wFunc of
-    FO_COPY   : result := foCopy;
-    FO_DELETE : result := foDelete;
-    FO_RENAME : result := foRename;
-    FO_MOVE   : result := foMove;
+    FO_COPY   : result := fooCopy;
+    FO_DELETE : result := fooDelete;
+    FO_RENAME : result := fooRename;
+    FO_MOVE   : result := fooMove;
   end;
 end; {GetOperation}
 
@@ -274,7 +274,7 @@ begin {Execute}
 
   Try
     Try
-      IF Operation = foRename Then
+      IF Operation = fooRename Then
       Result := RenameFile(FFrom[0], FTo[0])
       Else
       Result := ShFileOperation( FData ) = 0;

@@ -504,13 +504,13 @@ begin
   // if the target directory is the recycle bin, then delete the selected files:
   if IsRecycleBin then
   begin
-    FileOperator.Operation := foDelete;
+    FileOperator.Operation := fooDelete;
   end
     else
   begin
     case Effect of
-      DROPEFFECT_COPY: FileOperator.Operation := foCopy;
-      DROPEFFECT_MOVE: FileOperator.Operation := foMove;
+      DROPEFFECT_COPY: FileOperator.Operation := fooCopy;
+      DROPEFFECT_MOVE: FileOperator.Operation := fooMove;
     end;
   end;
 
@@ -2770,7 +2770,7 @@ begin
     TDriveViewInt(FDriveView).StopWatchThread;
 
   FFileOperator.Flags := FileOperatorDefaultFlags + [foNoConfirmation];
-  FFileOperator.Operation := foRename;
+  FFileOperator.Operation := fooRename;
   FFileOperator.OperandFrom.Clear;
   FFileOperator.OperandTo.Clear;
   FFileOperator.OperandFrom.Add(ItemFullFileName(Item));

@@ -85,6 +85,7 @@ type
     function GetItemSelectedByIndex(Index: Integer): Boolean;
     procedure MakeTopItem(Item: TListItem);
     procedure UpdateDarkMode;
+    function GetDarkModeHeaderTextColor: TColor; virtual;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -385,7 +386,7 @@ begin
               else
             if nmcd.dwDrawStage = CDDS_ITEMPREPAINT then
             begin
-              SetTextColor(nmcd.hdc, ColorToRGB(Font.Color));
+              SetTextColor(nmcd.hdc, ColorToRGB(GetDarkModeHeaderTextColor));
               Msg.Result := CDRF_DODEFAULT;
             end;
           end;
@@ -394,6 +395,11 @@ begin
   end;
 
   inherited;
+end;
+
+function TCustomNortonLikeListView.GetDarkModeHeaderTextColor: TColor;
+begin
+  Result := Font.Color;
 end;
 
 procedure TCustomNortonLikeListView.WMThemeChanged(var Msg: TMessage);

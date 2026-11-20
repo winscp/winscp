@@ -90,6 +90,7 @@ protected:
   virtual int __fastcall HiddenCount();
   virtual int __fastcall FilteredCount();
   DYNAMIC void __fastcall UpdatePathLabelCaption();
+  virtual TColor __fastcall GetDarkModeHeaderTextColor();
 
   __property TCustomUnixDriveView * DriveView = { read = FDriveView, write = SetDriveView };
 

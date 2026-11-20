@@ -1076,7 +1076,7 @@ begin
       DirView.StopWatchThread;
 
     FFileOperator.Flags := FileOperatorDefaultFlags + [foNoConfirmation];
-    FFileOperator.Operation := foRename;
+    FFileOperator.Operation := fooRename;
     FFileOperator.OperandFrom.Clear;
     FFileOperator.OperandTo.Clear;
     FFileOperator.OperandFrom.Add(NodePath(Node));
