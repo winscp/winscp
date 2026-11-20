@@ -21,6 +21,7 @@ protected:
   virtual void __fastcall PathChanged();
   virtual bool __fastcall TryGetLastPath(UnicodeString Drive, UnicodeString & Path);
   virtual void __fastcall CreateWnd();
+  virtual TColor __fastcall GetDarkModeHeaderTextColor();
 
 private:
   std::set<int> FIconUpdateSet;

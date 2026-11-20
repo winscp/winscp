@@ -5,6 +5,9 @@
 #include <Common.h>
 #include "DirView.h"
 #include "IEDriveInfo.h"
+#ifndef DESIGN_ONLY
+#include <Tools.h>
+#endif
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -128,5 +131,16 @@ void __fastcall TDirView::CreateWnd()
   TDirViewInt::CreateWnd();
   #ifndef DESIGN_ONLY
   AddStartupSequence(L"a" + StartupSequenceTag);
+  #endif
+}
+//---------------------------------------------------------------------------
+// Duplicated in TUnixDirView
+TColor __fastcall TDirView::GetDarkModeHeaderTextColor()
+{
+  #ifndef DESIGN_ONLY
+  // GetWindowColor is an approximation of header color
+  return GetWindowTextColor(GetWindowColor());
+  #else
+  return TDirViewInt::GetDarkModeHeaderTextColor();
   #endif
 }

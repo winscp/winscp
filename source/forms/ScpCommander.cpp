@@ -2766,12 +2766,12 @@ void TScpCommanderForm::LocalLocalCopy(
   bool Move;
   switch (Operation)
   {
-    case ::foCopy:
-      FileOperator->Operation = Fileoperator::foCopy;
+    case foCopy:
+      FileOperator->Operation = fooCopy;
       Move = false;
       break;
-    case ::foMove:
-      FileOperator->Operation = Fileoperator::foMove;
+    case foMove:
+      FileOperator->Operation = fooMove;
       Move = true;
       break;
     default:
@@ -2834,7 +2834,7 @@ void TScpCommanderForm::LocalLocalCopy(
     }
 
     ReloadLocalDirectory(DestinationDir);
-    if (Operation == ::foMove)
+    if (Operation == foMove)
     {
       UnicodeString SourceDir = SourceDirView->PathName;
       if (!SamePaths(SourceDir, DestinationDir))
