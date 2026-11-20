@@ -1848,7 +1848,7 @@ __fastcall TIniFileStorage::~TIniFileStorage()
   // But we want to know (hence the check), and we never want to abort due to an exception here
   try
   {
-    DebugCheck(!Flush());
+    DebugCheckNotEqual(Flush(), true);
   }
   catch (...)
   {
