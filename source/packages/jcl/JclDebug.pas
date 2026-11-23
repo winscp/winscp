@@ -680,7 +680,9 @@ type
     BaseOfStack: TJclAddr;
     FStackData: PPointer;
     FFramePointer: Pointer;
-    FModuleInfoList: TJclModuleInfoList;
+    {$IFDEF CPU32}
+    FModuleInfoList: TJclModuleInfoList; // used only to validate the addresses of the Win32 stack walk
+    {$ENDIF CPU32}
     FCorrectOnAccess: Boolean;
     FSkipFirstItem: Boolean;
     FDelayedTrace: Boolean;
@@ -691,15 +693,16 @@ type
     procedure CaptureBackTrace;
     {$ENDIF CPU64}
     function GetItems(Index: TJclListSize): TJclStackInfoItem;
-    function NextStackFrame(var StackFrame: PStackFrame; var StackInfo: TStackInfo): Boolean;
     procedure StoreToList(const StackInfo: TStackInfo);
+    {$IFDEF CPU32}
+    // Win32 stack walk. Win64 uses CaptureBackTrace, which needs neither these nor the modules list.
+    function NextStackFrame(var StackFrame: PStackFrame; var StackInfo: TStackInfo): Boolean;
     procedure TraceStackFrames;
     procedure TraceStackRaw;
-    {$IFDEF CPU32}
     procedure DelayStoreStack;
-    {$ENDIF CPU32}
     function ValidCallSite(CodeAddr: TJclAddr; out CallInstructionSize: Cardinal): Boolean;
     function ValidStackAddr(StackAddr: TJclAddr): Boolean;
+    {$ENDIF CPU32}
     function GetCount: Integer;
     procedure CorrectOnAccess(ASkipFirstItem: Boolean);
   public
@@ -5779,7 +5782,11 @@ begin
   else
     TopOfStack := TJclAddr(ATopOfStack);
 
+  {$IFDEF CPU32}
+  // Without stStaticModuleList this enumerates all the modules of the process at every stack list:
+  // Win64 must not pay for it, because CaptureBackTrace does not use it.
   FModuleInfoList := GlobalModulesList.CreateModulesList;
+  {$ENDIF CPU32}
   if AFirstCaller <> nil then
   begin
     Item := TJclStackInfoItem.Create;
@@ -5804,41 +5811,91 @@ destructor TJclStackInfoList.Destroy;
 begin
   if Assigned(FStackData) then
     FreeMem(FStackData);
+  {$IFDEF CPU32}
   GlobalModulesList.FreeModulesList(FModuleInfoList);
+  {$ENDIF CPU32}
   inherited Destroy;
   if (InterlockedDecrement(GlobalStackListLiveCount) = 0) and JclDebugFinalized then
     FreeJclDebugGlobals;
 end;
 
 {$IFDEF CPU64}
+procedure RtlCaptureContext(AContextRecord: PContext); stdcall; external kernel32 name 'RtlCaptureContext';
+function RtlLookupFunctionEntry(AControlPc: DWORD64; var AImageBase: DWORD64; AHistoryTable: Pointer): Pointer; stdcall;
+  external kernel32 name 'RtlLookupFunctionEntry';
+function RtlVirtualUnwind(AHandlerType: DWORD; AImageBase, AControlPc: DWORD64; AFunctionEntry: Pointer;
+  AContextRecord: PContext; var AHandlerData: Pointer; var AEstablisherFrame: DWORD64;
+  AContextPointers: Pointer): Pointer; stdcall; external kernel32 name 'RtlVirtualUnwind';
+
+// Returns the lowest address of the current thread's committed stack (NT_TIB64.StackLimit), as GetStackTop returns
+// its base.
+function GetStackLimit: DWORD64;
+asm
+        MOV     RAX, GS:[ABS 16]
+end;
+
+// The frames are walked here with RtlVirtualUnwind rather than with CaptureStackBackTrace, which ends the stack at the
+// first instruction pointer of 0.  A call through a nil pointer (an "Execution of address 0" access violation) leaves
+// exactly that:  Unwinding the exception dispatcher's frame restores the faulting context, whose RIP is 0, so the
+// trace stopped at KiUserExceptionDispatcher and lost every frame of the code that made the call.  An instruction
+// pointer without unwind information, such as 0 or any address outside the loaded modules, is taken to be in a leaf
+// function, whose return address is at the top of the stack, which is also what Windows does for one that is not 0.
 procedure TJclStackInfoList.CaptureBackTrace;
 const
-  InternalSkipFrames = 1; // skip this method
+  CMaxFrames = 128;
+  UNW_FLAG_NHANDLER = 0;
 var
-  BackTrace: array [0..127] of Pointer;
-  MaxFrames: Integer;
-  Hash: DWORD;
-  I: Integer;
-  StackInfo: TStackInfo;
-  CapturedFramesCount: Word;
+  LContextBuffer: array[0..SizeOf(TContext) + 15] of Byte;
+  LPContext: PContext;
+  LStackBase, LStackLimit, LImageBase, LEstablisherFrame, LReturnAddress: DWORD64;
+  LFunctionEntry, LHandlerData: Pointer;
+  LStep, LLevel: Integer;
+  LStackInfo: TStackInfo;
 begin
-  if JclCheckWinVersion(6, 0) then
-    MaxFrames := Length(BackTrace)
-  else
-  begin
-    // For XP and 2003 sum of FramesToSkip and FramesToCapture must be lower than 63
-    MaxFrames := 62 - InternalSkipFrames;
-  end;
+  // RtlCaptureContext requires a 16 byte aligned context record, which a local record is not guaranteed to be.
+  LPContext := PContext((TJclAddr(@LContextBuffer) + 15) and not TJclAddr(15));
+  RtlCaptureContext(LPContext);
 
-  ResetMemory(BackTrace, SizeOf(BackTrace));
-  CapturedFramesCount := CaptureStackBackTrace(InternalSkipFrames, MaxFrames, @BackTrace, Hash);
+  LStackBase := GetStackTop;
+  LStackLimit := GetStackLimit;
 
-  ResetMemory(StackInfo, SizeOf(StackInfo));
-  for I := 0 to CapturedFramesCount - 1 do
+  ResetMemory(LStackInfo, SizeOf(LStackInfo));
+  // The first unwind leaves this method, so the first address stored is the return address into the caller.  It is
+  // level 1, as CaptureStackBackTrace numbered it, so that IgnoreLevels skips the same frames as before.
+  LLevel := 1;
+  for LStep := 1 to CMaxFrames do
   begin
-    StackInfo.CallerAddr := TJclAddr(BackTrace[I]);
-    StackInfo.Level := I;
-    StoreToList(StackInfo); // skips all frames with a level less than "IgnoreLevels"
+    LFunctionEntry := RtlLookupFunctionEntry(LPContext.Rip, LImageBase, nil);
+    if LFunctionEntry <> nil then
+    begin
+      RtlVirtualUnwind(UNW_FLAG_NHANDLER, LImageBase, LPContext.Rip, LFunctionEntry, LPContext, LHandlerData,
+        LEstablisherFrame, nil);
+    end
+    else
+    begin
+      if (LPContext.Rsp < LStackLimit) or (LPContext.Rsp + SizeOf(DWORD64) > LStackBase) then
+        Break;
+      LPContext.Rip := PDWORD64(LPContext.Rsp)^;
+      Inc(LPContext.Rsp, SizeOf(DWORD64));
+    end;
+
+    // RIP 0 normally ends the stack, but after a call through a nil pointer the return address into the caller is at
+    // the top of the stack, and the next step takes it from there.  Anything there that is not an address in code with
+    // unwind information means the stack has ended.
+    if LPContext.Rip = 0 then
+    begin
+      if (LPContext.Rsp < LStackLimit) or (LPContext.Rsp + SizeOf(DWORD64) > LStackBase) then
+        Break;
+      LReturnAddress := PDWORD64(LPContext.Rsp)^;
+      if (LReturnAddress = 0) or (RtlLookupFunctionEntry(LReturnAddress, LImageBase, nil) = nil) then
+        Break;
+      Continue;
+    end;
+
+    LStackInfo.CallerAddr := TJclAddr(LPContext.Rip);
+    LStackInfo.Level := LLevel;
+    StoreToList(LStackInfo); // skips all frames with a level less than "IgnoreLevels"
+    Inc(LLevel);
   end;
 end;
 {$ENDIF CPU64}
@@ -5849,10 +5906,13 @@ begin
   begin
     FInStackTracing := True;
     try
+      {$IFDEF CPU32}
+      // FStackData is assigned only by DelayStoreStack, which exists only in Win32
       if Raw then
         TraceStackRaw
       else
         TraceStackFrames;
+      {$ENDIF CPU32}
       if FCorrectOnAccess then
         CorrectExceptStackListTop(Self, FSkipFirstItem);
     finally
@@ -5901,6 +5961,7 @@ begin
   Result := TJclStackInfoItem(Get(Index));
 end;
 
+{$IFDEF CPU32}
 function TJclStackInfoList.NextStackFrame(var StackFrame: PStackFrame; var StackInfo: TStackInfo): Boolean;
 var
   CallInstructionSize: Cardinal;
@@ -5957,6 +6018,7 @@ begin
   end;
   Result := False;
 end;
+{$ENDIF CPU32}
 
 procedure TJclStackInfoList.StoreToList(const StackInfo: TStackInfo);
 var
@@ -5971,6 +6033,7 @@ begin
   end;
 end;
 
+{$IFDEF CPU32}
 procedure TJclStackInfoList.TraceStackFrames;
 var
   StackFrame: PStackFrame;
@@ -6572,7 +6635,6 @@ begin
   end;
 end;
 
-{$IFDEF CPU32}
 procedure TJclStackInfoList.DelayStoreStack;
 var
   StackPtr: PJclAddr;
@@ -6603,7 +6665,6 @@ begin
   FFramePointer := Pointer(TJclAddr(FFramePointer) + FStackOffset);
   TopOfStack := TopOfStack + FStackOffset;
 end;
-{$ENDIF CPU32}
 
 // Validate that the code address is a valid code site
 //
@@ -6708,15 +6769,18 @@ begin
     end;
   end;
 end;
+{$ENDIF CPU32}
 
 {$IFNDEF STACKFRAMES_ON}
 {$STACKFRAMES OFF}
 {$ENDIF ~STACKFRAMES_ON}
 
+{$IFDEF CPU32}
 function TJclStackInfoList.ValidStackAddr(StackAddr: TJclAddr): Boolean;
 begin
   Result := (BaseOfStack < StackAddr) and (StackAddr < TopOfStack);
 end;
+{$ENDIF CPU32}
 
 //=== Exception frame info routines ==========================================
 
