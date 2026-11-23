@@ -1862,33 +1862,38 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
   }
   __finally
   {
-    // Tell remote side, that we're done.
-    if (FTerminal->Active)
+    CopyToRemoteFinalize(CopyBatchStarted, Failed, GotLastLine);
+  }
+}
+//---------------------------------------------------------------------------
+void TSCPFileSystem::CopyToRemoteFinalize(bool CopyBatchStarted, bool Failed, bool GotLastLine)
+{
+  // Tell remote side, that we're done.
+  if (FTerminal->Active)
+  {
+    try
     {
-      try
+      if (!GotLastLine)
       {
-        if (!GotLastLine)
+        if (CopyBatchStarted && !FScpFatalError)
         {
-          if (CopyBatchStarted && !FScpFatalError)
-          {
-            // What about case, remote side sends fatal error ???
-            // (Not sure, if it causes remote side to terminate scp)
-            FSecureShell->SendLine(L"E");
-            SCPResponse();
-          }
-          /* TODO 1 : Show stderror to user? */
-          FSecureShell->ClearStdError();
-
-          ReadCommandOutput(coExpectNoOutput | coWaitForLastLine | coOnlyReturnCode |
-            (Failed ? 0 : coRaiseExcept));
+          // What about case, remote side sends fatal error ???
+          // (Not sure, if it causes remote side to terminate scp)
+          FSecureShell->SendLine(L"E");
+          SCPResponse();
         }
+        /* TODO 1 : Show stderror to user? */
+        FSecureShell->ClearStdError();
+
+        ReadCommandOutput(coExpectNoOutput | coWaitForLastLine | coOnlyReturnCode |
+          (Failed ? 0 : coRaiseExcept));
       }
-      catch (Exception &E)
-      {
-        // Only log error message (it should always succeed, but
-        // some pending error maybe in queue) }
-        FTerminal->Log->AddException(&E);
-      }
+    }
+    catch (Exception &E)
+    {
+      // Only log error message (it should always succeed, but
+      // some pending error maybe in queue) }
+      FTerminal->Log->AddException(&E);
     }
   }
 }
