@@ -151,6 +151,7 @@ private:
   void ProcessFileChecksum(
     TCalculatedChecksumEvent OnCalculatedChecksum, TChecksumSessionAction & Action, TFileOperationProgressType * OperationProgress,
     bool FirstLevel, const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Checksum);
+  void CopyToRemoteFinalize(bool CopyBatchStarted, bool Failed, bool GotLastLine);
 
   static bool __fastcall RemoveLastLine(UnicodeString & Line,
     int & ReturnCode, UnicodeString LastLine = L"");
