@@ -809,9 +809,11 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
         (Form->Position == poOwnerFormCenter))
     {
       UpdateFormPosition(Form, Form->Position);
+      Form->Position = poDesigned;
     }
   }
 
+  // This probably should be done before we change the Position above
   bool WasFormCenter =
     (Form->Position == poMainFormCenter) ||
     (Form->Position == poOwnerFormCenter);
@@ -2004,6 +2006,11 @@ void UpdateFormPosition(TCustomForm * Form, TPosition Position, Forms::TMonitor 
     {
       CenterForm = dynamic_cast<TCustomForm*>(Form->Owner);
     }
+  }
+
+  if (CenterForm == Form)
+  {
+    CenterForm = nullptr;
   }
 
   if (Monitor == nullptr)
