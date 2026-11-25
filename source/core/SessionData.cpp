@@ -4284,7 +4284,13 @@ void __fastcall TSessionData::SetProxyMethod(TProxyMethod value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetProxyHost(UnicodeString value)
 {
-  SET_SESSION_PROPERTY(ProxyHost);
+  if (FProxyHost != value)
+  {
+    UnicodeString XProxyPassword = ProxyPassword;
+    SET_SESSION_PROPERTY(ProxyHost);
+    ProxyPassword = XProxyPassword;
+    Shred(XProxyPassword);
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetProxyPort(int value)
@@ -4294,7 +4300,13 @@ void __fastcall TSessionData::SetProxyPort(int value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetProxyUsername(UnicodeString value)
 {
-  SET_SESSION_PROPERTY(ProxyUsername);
+  if (FProxyUsername != value)
+  {
+    UnicodeString XProxyPassword = ProxyPassword;
+    SET_SESSION_PROPERTY(ProxyUsername);
+    ProxyPassword = XProxyPassword;
+    Shred(XProxyPassword);
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetProxyPassword(UnicodeString avalue)
