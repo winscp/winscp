@@ -43,7 +43,7 @@ cmake_minimum_required(VERSION 3.17.0)
 
 project(expat
     VERSION
-        2.10.0
+        2.11.0
     LANGUAGES
         C
 )
@@ -333,8 +333,11 @@ expat_install(FILES "${CMAKE_CURRENT_BINARY_DIR}/expat_config.h" DESTINATION ${C
 
 
 set(EXTRA_COMPILE_FLAGS)
-if(FLAG_WSTRICT_ALIASING)
-    set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -Wstrict-aliasing=3")
+if(FLAG_NO_STRICT_ALIASING)
+    # Argument `-Wstrict-aliasing=3` is documented to not be able to catch all
+    # violations of strict aliasing, so we apply `-fno-strict-aliasing`
+    # for security.
+    set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -fno-strict-aliasing")
 endif()
 if(FLAG_WIMPLICIT_FALLTHROUGH)
     set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -Wimplicit-fallthrough")
@@ -547,9 +550,9 @@ foreach(build_type_upper
     set_property(TARGET expat PROPERTY ${build_type_upper}_POSTFIX ${EXPAT_${build_type_upper}_POSTFIX})
 endforeach()
 
-set(LIBCURRENT 14)  # sync
-set(LIBREVISION 1)  # with
-set(LIBAGE 13    )  # configure.ac!
+set(LIBCURRENT 15)  # sync
+set(LIBREVISION 0)  # with
+set(LIBAGE 14    )  # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
 if(NOT WIN32)
@@ -647,7 +650,7 @@ if(EXPAT_BUILD_PKGCONFIG)
 endif()
 
 #
-# C command line tool xmlwf
+# C command line tool xmlwf + its documentation and internal command "gennmtab"
 #
 if(EXPAT_BUILD_TOOLS)
     set(xmlwf_SRCS
@@ -670,6 +673,9 @@ if(EXPAT_BUILD_TOOLS)
         # https://gcc.gnu.org/onlinedocs/gcc/x86-Windows-Options.html
         target_link_options(xmlwf PRIVATE -municode)
     endif()
+
+    add_executable(gennmtab gennmtab/gennmtab.c)
+    set_property(TARGET gennmtab PROPERTY RUNTIME_OUTPUT_DIRECTORY gennmtab)
 
     if(EXPAT_BUILD_DOCS)
         file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc)
@@ -729,6 +735,7 @@ if(EXPAT_BUILD_TESTS)
         tests/handlers.c
         tests/hash_tests.c
         tests/entities_tests.c
+        tests/fifth_edition_tests.c
         tests/memcheck.c
         tests/minicheck.c
         tests/misc_tests.c
@@ -737,6 +744,7 @@ if(EXPAT_BUILD_TESTS)
         tests/props_tests.c
         tests/runtests.c
         tests/structdata.c
+        tests/utfx.c
         tests/xcs_tests.c
         ${_EXPAT_C_SOURCES}
     )
@@ -905,7 +913,7 @@ if(EXPAT_BUILD_TOOLS AND NOT MSVC)
     add_custom_target(
         xmlts-zip-downloaded
         COMMAND
-            sh -c 'test -f xmlts.zip || wget --output-document=xmlts.zip https://www.w3.org/XML/Test/xmlts20080827.zip'
+            sh -c 'test -f xmlts.zip || wget --output-document=xmlts.zip https://www.w3.org/XML/Test/xmlts20130923.zip'
         BYPRODUCTS
             tests/xmlts.zip
         WORKING_DIRECTORY
