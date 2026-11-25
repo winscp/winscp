@@ -1,4 +1,4 @@
-# generated automatically by aclocal 1.19 -*- Autoconf -*-
+# generated automatically by aclocal 1.20 -*- Autoconf -*-
 
 # Copyright (C) 1996-2026 Free Software Foundation, Inc.
 
@@ -32,10 +32,10 @@ To do so, use the procedure documented by the package, typically 'autoreconf'.])
 # generated from the m4 files accompanying Automake X.Y.
 # (This private macro should not be called outside this file.)
 AC_DEFUN([AM_AUTOMAKE_VERSION],
-[am__api_version='1.19'
+[am__api_version='1.20'
 dnl Some users find AM_AUTOMAKE_VERSION and mistake it for a way to
 dnl require some minimum version.  Point them to the right macro.
-m4_if([$1], [1.19], [],
+m4_if([$1], [1.20], [],
       [AC_FATAL([Do not call $0, use AM_INIT_AUTOMAKE([$1]).])])dnl
 ])
 
@@ -51,7 +51,7 @@ m4_define([_AM_AUTOCONF_VERSION], [])
 # Call AM_AUTOMAKE_VERSION and AM_AUTOMAKE_VERSION so they can be traced.
 # This function is AC_REQUIREd by AM_INIT_AUTOMAKE.
 AC_DEFUN([AM_SET_CURRENT_AUTOMAKE_VERSION],
-[AM_AUTOMAKE_VERSION([1.19])dnl
+[AM_AUTOMAKE_VERSION([1.20])dnl
 m4_ifndef([AC_AUTOCONF_VERSION],
   [m4_copy([m4_PACKAGE_VERSION], [AC_AUTOCONF_VERSION])])dnl
 _AM_AUTOCONF_VERSION(m4_defn([AC_AUTOCONF_VERSION]))])
@@ -598,6 +598,7 @@ fi
 AC_SUBST([CSCOPE])
 
 AC_REQUIRE([_AM_SILENT_RULES])dnl
+AC_REQUIRE([_AM_JOBSERVER])dnl
 dnl The testsuite driver may need to know about EXEEXT, so add the
 dnl 'am__EXEEXT' conditional if _AM_COMPILER_EXEEXT was seen.  This
 dnl macro is hooked onto _AC_COMPILER_EXEEXT early, see below.
@@ -660,6 +661,36 @@ if test x"${install_sh+set}" != xset; then
   esac
 fi
 AC_SUBST([install_sh])])
+
+# Enable compiler access to GNU make's jobserver.       -*- Autoconf -*-
+# Copyright (C) 2026 Free Software Foundation, Inc.
+#
+# This file is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# _AM_JOBSERVER
+# -------------
+AC_DEFUN([_AM_JOBSERVER],
+[AC_ARG_ENABLE([jobserver],
+  [AS_HELP_STRING([--enable-jobserver],
+    [let compilers and linkers use the GNU make jobserver])],
+  [], [enable_jobserver=no])
+AM_JOBSERVER=
+AS_CASE([$enable_jobserver],
+  [yes], [
+    AS_IF([${MAKE-make} --version 2>/dev/null | grep 'GNU Make' >/dev/null],
+      [], [AC_MSG_ERROR([--enable-jobserver requires GNU make])])
+    dnl MAKEFLAGS begins with the single-letter flags, without a dash.
+    dnl Prefix a dash so firstword does not pick up a later option or
+    dnl variable assignment when there are no single-letter flags.
+    dnl Do not mark commands recursive under -n, -q, or -t.
+    AM_JOBSERVER='$(if $(findstring n,$(firstword -$(MAKEFLAGS)))$(findstring q,$(firstword -$(MAKEFLAGS)))$(findstring t,$(firstword -$(MAKEFLAGS))),,+)'
+  ],
+  [no], [],
+  [AC_MSG_ERROR([bad value '$enable_jobserver' for --enable-jobserver])])
+AC_SUBST([AM_JOBSERVER])
+])
 
 # Copyright (C) 2003-2026 Free Software Foundation, Inc.
 #
@@ -807,7 +838,7 @@ fi
 # spellings) for dist-bzip2/bzip3/xz/lzip/zstd/zip/shar/tarZ.  `make
 # dist' builds each archive when its tool is present and skips it
 # otherwise, without failing.  Unknown OPTION warns at autoreconf; a
-# tool absent at configure appends no rule; a tool lost afterwards
+# tool absent at configure contributes no rule; a tool lost afterwards
 # fails, which the recipe catches.  See bug#81040.
 AC_DEFUN([AM_OPTIONAL_AUTOMAKE],
 [m4_foreach_w([_am_opt_o], [$1],
@@ -820,11 +851,17 @@ AC_DEFUN([AM_OPTIONAL_AUTOMAKE],
 # Dispatch on OPT; unrecognized OPT warns and is ignored.
 AC_DEFUN([_AM_OPTIONAL_AUTOMAKE_ONE],
 [m4_case([$1],
-  [dist-bzip2], [_AM_OPTIONAL_TAR([bzip2], [bzip2], [bz2], [-c])],
+  [dist-bzip2], [_AM_OPTIONAL_TAR([bzip2], [bzip2], [bz2], [-c],
+                                  [BZIP2=$${BZIP2--9}])],
   [dist-bzip3], [_AM_OPTIONAL_TAR([bzip3], [bzip3], [bz3], [-c])],
-  [dist-xz],    [_AM_OPTIONAL_TAR([xz],    [xz],    [xz],  [-c])],
-  [dist-lzip],  [_AM_OPTIONAL_TAR([lzip],  [lzip],  [lz],  [-c])],
-  [dist-zstd],  [_AM_OPTIONAL_TAR([zstd],  [zstd],  [zst], [-c -q])],
+  [dist-xz],    [_AM_OPTIONAL_TAR([xz],    [xz],    [xz],  [-c],
+                                  [XZ_OPT=$${XZ_OPT--e}])],
+  [dist-lzip],  [_AM_OPTIONAL_TAR([lzip],  [lzip],  [lz],
+                                  [-c $${LZIP_OPT--9}])],
+  [dist-zstd],  [_AM_OPTIONAL_TAR([zstd],  [zstd],  [zst],
+                                  [-c -q $$am__zstd_opts], [],
+                                  [am__zstd_opts=$${ZSTD_OPT--19}; test \
+"$${ZSTD_CLEVEL+set}" != set || am__zstd_opts=;])],
   [dist-tarZ],  [_AM_OPTIONAL_TAR([compress], [compress], [Z], [-c])],
   [dist-zip],   [_AM_OPTIONAL_ZIP()],
   [dist-shar],  [_AM_OPTIONAL_SHAR()],
@@ -833,54 +870,63 @@ AC_DEFUN([_AM_OPTIONAL_AUTOMAKE_ONE],
 ])
 
 
+# _AM_OPTIONAL_RULES_INIT
+# -----------------------
+# Expanded once, even when AM_OPTIONAL_AUTOMAKE is called repeatedly.
+AC_DEFUN([_AM_OPTIONAL_RULES_INIT],
+[AC_SUBST([am__optional_rules])
+_AM_SUBST_NOTMAKE([am__optional_rules])
+am__optional_rules=
+AC_SUBST([am__optional_dist_targets])
+am__optional_dist_targets=
+])
+
 # _AM_OPTIONAL_RULE(TAG, VAR, RECIPE, ARTIFACTS)
 # ----------------------------------------------
-# AC_CHECK_PROG for TAG, then once append RECIPE to the top Makefile
-# via AC_CONFIG_COMMANDS (survives config.status reruns) iff configure
-# found the tool.  Hooked into dist/dist-all as an extra prerequisite.
+# Substitute RECIPE into the top-level Makefile iff configure found TAG.
+# Keeping the rules in a substitution makes all config.status invocations
+# idempotent, including selective Makefile regeneration.
+# The `dist' rule builds the target in the same sub-make as $(DIST_TARGETS),
+# so that the distdir, its dist-hook and the tarball are made only once.
 # ARTIFACTS stay out of $(DIST_ARCHIVES), so distcleancheck must remove
 # the copies that the in-tree `make dist' run by `make distcheck' leaves.
 AC_DEFUN([_AM_OPTIONAL_RULE],
 [m4_ifdef([_AM_OPTIONAL_DONE_$1], [],
  [m4_define([_AM_OPTIONAL_DONE_$1])dnl
+AC_REQUIRE([_AM_OPTIONAL_RULES_INIT])dnl
 AC_CHECK_PROG([am__optional_$2], [$1], [$1])
 AC_SUBST([am__optional_$2])dnl
-AC_CONFIG_COMMANDS([am--optional-rule-$1],
-[am__optional_mf=
-for am__optional_cand in Makefile GNUmakefile makefile; do
-  if test -f "$am__optional_cand"; then
-    am__optional_mf=$am__optional_cand
-    break
-  fi
-done
-if test -n "$am__optional_mf" && test -n "$am__optional_$2"; then
-  cat >>"$am__optional_mf" <<'_am_opt_rule_eof_'
-
-# Appended by am-optional for dist-$1.
-dist dist-all: am--optional-dist-$1
+if test -n "$am__optional_$2"; then
+  am__optional_rule=`cat <<'_am_opt_rule_eof_'
+# Optional distribution format dist-$1.
 distcleancheck: am--optional-rm-$1
 .PHONY: am--optional-dist-$1 am--optional-rm-$1
 $3
 am--optional-rm-$1:
 	-rm -f $4
 _am_opt_rule_eof_
+`
+  am__optional_rules="$am__optional_rules
+$am__optional_rule"
+  am__optional_dist_targets="$am__optional_dist_targets am--optional-dist-$1"
 fi
-],
-[am__optional_$2="$am__optional_$2"
-])])dnl
+])dnl
 ])
 
 
-# _AM_OPTIONAL_TAR(TOOL, VAR-TAG, EXT, FLAGS)
-# -------------------------------------------
+# _AM_OPTIONAL_TAR(TOOL, VAR-TAG, EXT, FLAGS, [ENV], [SETUP])
+# ---------------------------------------------------------
 # Compress the shared intermediate tarball, whose rule catches tar's own
-# failures (bug#19614); only TOOL failing is tolerated here.
+# failures (bug#19614); only TOOL failing is tolerated here.  Run TOOL
+# with FLAGS and the ENV assignments after the SETUP commands, honoring
+# the same variables as the corresponding mandatory dist-XXX rule.
 AC_DEFUN([_AM_OPTIONAL_TAR],
 [_AM_OPTIONAL_RULE([$1], [$2],
 [am--optional-dist-$1: am__distdir.tar
 	@if test -n "$(am__optional_$2)"; then \
 	  $(am__ensure_distdir_tar) || exit 1; \
-	  "$(am__optional_$2)" $4 < am__distdir.tar > $(distdir).tar.$3 \
+	  m4_ifval([$6], [$6 \
+	  ])$5 "$(am__optional_$2)" $4 < am__distdir.tar > $(distdir).tar.$3 \
 	  || { rm -f $(distdir).tar.$3; \
 	       echo "am-optional: dist-$1 failed; archive not built" >&2; }; \
 	else \
@@ -995,7 +1041,7 @@ AC_CACHE_CHECK(
   rm -f -r a.out a.exe b.out conftest.$ac_ext conftest.$ac_objext \
     conftest.dSYM conftest1.$ac_ext conftest1.$ac_objext conftest1.dSYM \
     conftest2.$ac_ext conftest2.$ac_objext conftest2.dSYM
-  unset am_i])
+  AS_UNSET([am_i])])
 if test "$am_cv_prog_cc_c_o" != yes; then
    # Losing compiler, so override with the script.
    # FIXME: It is wrong to rewrite CC.
@@ -1208,7 +1254,15 @@ AC_DEFUN([AM_SANITY_CHECK],
 # different projects.
 AC_MSG_CHECKING([whether build environment is sane])
 # Reject unsafe characters in $srcdir or the absolute working directory
-# name.  Accept space and tab only in the latter.
+# name.  Accept space and tab only in the latter.  Also reject ':', ';'
+# and '|' in $srcdir (`make' defect). '|' separates order-only prerequisites,
+# ';' breaks the dependency-tracking setup in config.status, and ':' separates
+# VPATH entries.  (Autoconf's search for auxiliary files usually fails on
+# ':' before we get here, though.)
+# Reject '<' and '>' in $srcdir as well: unquoted source paths in compiler
+# commands would be interpreted as shell redirections, possibly clobbering
+# files in the build directory.  Likewise reject '(' and ')', which are
+# shell syntax errors in those commands.
 am_lf='
 '
 case `pwd` in
@@ -1217,7 +1271,7 @@ case `pwd` in
     AC_MSG_ERROR([unsafe absolute working directory name]);;
 esac
 case $srcdir in
-  *[[\\\"\#\$\&\'\`$am_lf\ \	]]*)
+  *[[\\\"\#\$\&\'\`$am_lf\ \	:\;\|\<\>\(\)]]*)
     AC_MSG_RESULT([no])
     AC_MSG_ERROR([unsafe srcdir value: '$srcdir']);;
 esac
@@ -1257,7 +1311,7 @@ fi
 # If we didn't sleep, we still need to ensure time stamps of config.status and
 # generated files are strictly newer.
 am_sleep_pid=
-AS_IF([test -e conftest.file || grep 'slept: no' conftest.file >/dev/null 2>&1],, [dnl
+AS_IF([grep 'slept: no' conftest.file >/dev/null 2>&1], [dnl
   ( sleep "$am_cv_filesystem_timestamp_resolution" ) &
   am_sleep_pid=$!
 ])
@@ -1478,7 +1532,9 @@ m4_if([$1], [v7],
     case $_am_tool in
     gnutar)
       for _am_tar in tar gnutar gtar; do
-        AM_RUN_LOG([$_am_tar --version | grep GNU >/dev/null]) && break
+        if AM_RUN_LOG([$_am_tar --version]); then
+          ($_am_tar --version) 2>&1 | grep -i busybox >/dev/null || break
+        fi
       done
       am__tar="$_am_tar --format=m4_if([$1], [pax], [posix], [$1]) -chf - "'"$$tardir"'
       am__tar_="$_am_tar --format=m4_if([$1], [pax], [posix], [$1]) -chf - "'"$tardir"'
@@ -1486,8 +1542,11 @@ m4_if([$1], [v7],
       ;;
     plaintar)
       # Must skip GNU tar: if it does not support --format= it doesn't create
-      # ustar tarball either.
-      (tar --version | grep GNU) >/dev/null 2>&1 && continue
+      # ustar tarball either.  The same goes for bsdtar, whose default format
+      # is not ustar.  BusyBox tar, which lacks --format=, is fine here.
+      if (tar --version) >/dev/null 2>&1; then
+        (tar --version) 2>&1 | grep -i busybox >/dev/null || continue
+      fi
       am__tar='tar chf - "$$tardir"'
       am__tar_='tar chf - "$tardir"'
       am__untar='tar xf -'
@@ -1551,7 +1610,7 @@ AC_DEFUN([_AM_PROG_XARGS_N],
 AS_IF([test "`echo 1 2 3 | xargs -n2 echo`" = "1 2
 3"], [am_cv_xargs_n_works=yes], [am_cv_xargs_n_works=no])])
 AS_IF([test "$am_cv_xargs_n_works" = yes], [am__xargs_n='xargs -n'], [dnl
-  am__xargs_n='am__xargs_n () { shift; sed "s/ /\\n/g" | while read am__xargs_n_arg; do "$@" "$am__xargs_n_arg"; done; }'
+  am__xargs_n='$(SHELL) -c '\''shift; tr " " "\\012" | while read am__xargs_n_arg; do test -z "$$am__xargs_n_arg" || "$$@" "$$am__xargs_n_arg"; done'\'' am__xargs_n'
 ])dnl
 AC_SUBST(am__xargs_n)
 ])

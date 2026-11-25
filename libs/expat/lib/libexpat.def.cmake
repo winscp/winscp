@@ -97,3 +97,7 @@ EXPORTS
   XML_SetPropertyBool @83
   XML_SetPropertyDouble @84
   XML_SetPropertyUInt64 @85
+; added with version 2.11.0
+  XML_GetBuffer64 @86
+  XML_Parse64 @87
+  XML_ParseBuffer64 @88
