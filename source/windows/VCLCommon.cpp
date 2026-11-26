@@ -1975,7 +1975,7 @@ TRect GetCenterRect(TControl * CenterControl, Forms::TMonitor * CenterMonitor)
   }
   else
   {
-    Result = CenterMonitor->BoundsRect;
+    Result = CenterMonitor->WorkareaRect;
   }
   return Result;
 }
