@@ -9321,7 +9321,7 @@ void __fastcall TCustomScpExplorerForm::PasteFromClipBoard()
       if (FLAGSET(ParsedInfo, piProtocolDefined))
       {
         if (FLAGSET(ParsedInfo, piUnsafeSettings) &&
-            (MessageDialog(LoadStr(UNSAFE_SESSION), qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaOK))
+            (MessageDialog(LoadStr(UNSAFE_SESSION), qtWarning, qaOK | qaCancel, HELP_NONE) != qaOK))
         {
           Abort();
         }
