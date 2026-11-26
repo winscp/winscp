@@ -530,7 +530,7 @@ public:
   void ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
   void ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring, bool & UnsafeSettings);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
-  void ImportFromOpenssh(TStrings * Lines);
+  void ImportFromOpenssh(TStrings * Lines, bool IsJump);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
