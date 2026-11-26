@@ -1781,7 +1781,7 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
           }
           else if (SameText(Directive, L"GSSAPIDelegateCredentials"))
           {
-            AuthGSSAPIKEX = OpensshBoolValue(Value);
+            GSSAPIFwdTGT = OpensshBoolValue(Value);
           }
           else if (SameText(Directive, L"Hostname"))
           {
