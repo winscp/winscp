@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.IO.Pipes;
 using System.Threading;
 #if !NETSTANDARD
 using Microsoft.Win32;
@@ -160,7 +161,18 @@ namespace WinSCP
             using (_logger.CreateCallstack())
             {
                 // The /console is redundant for CreateForConsole
-                _process.StartInfo.Arguments += string.Format(CultureInfo.InvariantCulture, " /console /consoleinstance={0}", _instanceName);
+                if (_requestPipe != null)
+                {
+                    // The executable reads the responses and writes the requests
+                    _process.StartInfo.Arguments +=
+                        string.Format(
+                            CultureInfo.InvariantCulture, " /console /consolepipes={0},{1}",
+                            _responsePipe.GetClientHandleAsString(), _requestPipe.GetClientHandleAsString());
+                }
+                else
+                {
+                    _process.StartInfo.Arguments += string.Format(CultureInfo.InvariantCulture, " /console /consoleinstance={0}", _instanceName);
+                }
 
 #if !NETSTANDARD
                 // When running under IIS in "impersonated" mode, the process starts, but does not do anything.
@@ -210,6 +222,16 @@ namespace WinSCP
                 _process.Start();
 
                 _logger.WriteLine("Started process {0}", _process.Id);
+
+                if (_requestPipe != null)
+                {
+                    // With the executable holding the only copies of its ends,
+                    // each side sees the pipes close when the other one exits
+                    _requestPipe.DisposeLocalCopyOfClientHandle();
+                    _responsePipe.DisposeLocalCopyOfClientHandle();
+                    // The initialized header, for the executable to check the size and version
+                    SendResponse();
+                }
 
                 _thread = new Thread(ProcessEvents)
                 {
@@ -286,7 +308,7 @@ namespace WinSCP
                     {
                         _logger.WriteLineLevel(1, "Waiting for request event");
                         // Keep in sync with a delay in SessionLogReader.DoRead
-                        if (_requestEvent.WaitOne(100, false))
+                        if (WaitForRequest(100))
                         {
                             _logger.WriteLineLevel(1, "Got request event");
                             ProcessEvent();
@@ -353,6 +375,66 @@ namespace WinSCP
                     }
                 }
 
+                SendResponse();
+            }
+        }
+
+        private bool WaitForRequest(int timeout)
+        {
+            if (_requestPipe == null)
+            {
+                return _requestEvent.WaitOne(timeout, false);
+            }
+
+            if (_pendingRead == null)
+            {
+                _pendingRead = _requestPipe.BeginRead(_frame, _frameLength, _frame.Length - _frameLength, null, null);
+            }
+            if (!_pendingRead.AsyncWaitHandle.WaitOne(timeout, false))
+            {
+                return false;
+            }
+
+            int read;
+            try
+            {
+                read = _requestPipe.EndRead(_pendingRead);
+            }
+            catch (IOException e)
+            {
+                _logger.WriteException(e);
+                read = 0;
+            }
+            _pendingRead = null;
+            if (read == 0)
+            {
+                // The executable has closed its end, it is exiting
+                _logger.WriteLine("Console pipe closed");
+                Thread.Sleep(timeout);
+                return false;
+            }
+
+            _frameLength += read;
+            if (_frameLength < _frame.Length)
+            {
+                return false;
+            }
+            _frameLength = 0;
+            Marshal.Copy(_frame, 0, _commBuffer, _frame.Length);
+            return true;
+        }
+
+        private void SendResponse()
+        {
+            if (_responsePipe != null)
+            {
+                Marshal.Copy(_commBuffer, _frame, 0, _frame.Length);
+                _responsePipe.Write(_frame, 0, _frame.Length);
+                _responsePipe.Flush();
+                _logger.WriteLineLevel(1, "Response sent");
+            }
+            else
+            {
                 _responseEvent.Set();
                 _logger.WriteLineLevel(1, "Response event set");
             }
@@ -605,10 +687,48 @@ namespace WinSCP
             }
         }
 
+        // Named events and file mappings exist only on Windows. Elsewhere the
+        // executable inherits two anonymous pipes, over which it sends each request
+        // as the whole communication structure and gets it back as the response.
+        private static bool UseConsolePipes
+        {
+            get
+            {
+#if NETSTANDARD
+                return !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#else
+                return false;
+#endif
+            }
+        }
+
+        private void InitializeConsolePipes()
+        {
+            using (_logger.CreateCallstack())
+            {
+                _requestPipe = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable);
+                _responsePipe = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable);
+                _frame = new byte[ConsoleCommStruct.Size];
+                _commBuffer = Marshal.AllocHGlobal(_frame.Length);
+                Marshal.Copy(_frame, 0, _commBuffer, _frame.Length);
+
+                using (ConsoleCommStruct commStruct = AcquireCommStruct())
+                {
+                    commStruct.InitHeader();
+                }
+            }
+        }
+
         private void InitializeConsole()
         {
             using (_logger.CreateCallstack())
             {
+                if (UseConsolePipes)
+                {
+                    InitializeConsolePipes();
+                    return;
+                }
+
                 int attempts = 0;
                 Random random = new Random();
                 int process = Process.GetCurrentProcess().Id;
@@ -706,6 +826,10 @@ namespace WinSCP
 
         private ConsoleCommStruct AcquireCommStruct()
         {
+            if (_commBuffer != IntPtr.Zero)
+            {
+                return new ConsoleCommStruct(_session, _commBuffer);
+            }
             return new ConsoleCommStruct(_session, _fileMapping);
         }
 
@@ -862,6 +986,21 @@ namespace WinSCP
                     {
                         _process.Dispose();
                         _process = null;
+                    }
+                    if (_requestPipe != null)
+                    {
+                        _requestPipe.Dispose();
+                        _requestPipe = null;
+                    }
+                    if (_responsePipe != null)
+                    {
+                        _responsePipe.Dispose();
+                        _responsePipe = null;
+                    }
+                    if (_commBuffer != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(_commBuffer);
+                        _commBuffer = IntPtr.Zero;
                     }
                     if (_requestEvent != null)
                     {
@@ -1299,6 +1438,12 @@ namespace WinSCP
         private readonly List<string> _log = new List<string>();
         private AutoResetEvent _inputEvent = new AutoResetEvent(false);
         private Job _job;
+        private AnonymousPipeServerStream _requestPipe;
+        private AnonymousPipeServerStream _responsePipe;
+        private IntPtr _commBuffer;
+        private byte[] _frame;
+        private int _frameLength;
+        private IAsyncResult _pendingRead;
         private bool _cancel;
         private static readonly Dictionary<Tuple<string, DateTime>, FileVersionInfo> _versionInfoCache = new Dictionary<Tuple<string, DateTime>, FileVersionInfo>();
     }
