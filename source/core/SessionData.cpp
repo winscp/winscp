@@ -1693,7 +1693,7 @@ UnicodeString ConvertPathFromOpenssh(const UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------
-void TSessionData::ImportFromOpenssh(TStrings * Lines)
+void TSessionData::ImportFromOpenssh(TStrings * Lines, bool IsJump)
 {
   bool SkippingSection = false;
   std::unique_ptr<TStrings> UsedDirectives(CreateSortedStringList());
@@ -1803,10 +1803,11 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
           {
             UserName = Value;
           }
-          else if (SameText(Directive, L"ProxyJump"))
+          // multiple jumps are not supported
+          else if (!IsJump && SameText(Directive, L"ProxyJump"))
           {
             UnicodeString Jump = Value;
-            // multiple jumps are not supported
+            // dtto
             if (Jump.Pos(L",") == 0)
             {
               std::unique_ptr<TSessionData> JumpData(new TSessionData(EmptyStr));
@@ -1815,7 +1816,7 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
                   !JumpData->HostName.IsEmpty())
               {
                 JumpData->Name = JumpData->HostName;
-                JumpData->ImportFromOpenssh(Lines);
+                JumpData->ImportFromOpenssh(Lines, true);
 
                 Tunnel = true;
                 TunnelHostName = JumpData->HostName;
@@ -5247,7 +5248,7 @@ void TStoredSessionList::ImportFromOpenssh(TStrings * Lines)
             Data->CopyData(DefaultSettings);
             Data->Name = Name;
             Data->HostName = Name;
-            Data->ImportFromOpenssh(Lines);
+            Data->ImportFromOpenssh(Lines, false);
             Add(Data.release());
             Hosts->Add(Name);
           }
